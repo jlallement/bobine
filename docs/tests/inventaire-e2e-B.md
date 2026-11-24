@@ -11,9 +11,11 @@ Classes : `parcours` (reste en e2e), `composant` (test Vitest + Testing Library 
 (`fichier › describe › it`). « partiel » veut dire qu'une partie seulement du contrat est
 vérifiée ailleurs : souvent la logique du main, sans le câblage ni le rendu.
 
-**Remplaçants du panneau (2026-11-24)** : 49 lignes passées à « oui » (`acp`, `android`, `changes`, `panel`, `pr-ci`, `replay-changes`, `simulator`). Les chiffres du résumé restent ceux de l'inventaire.
+**Remplaçants du panneau (2026-11-24)** : 49 lignes passées à « oui » (`acp`, `android`, `changes`, `panel`, `pr-ci`, `replay-changes`, `simulator`). Chiffres du résumé recalculés à l'assemblage (voir « Résumé chiffré »).
 
 ## Résumé chiffré
+
+**Recalculé le 2026-11-24 à l'assemblage des remplaçants** (branche `test/pyramide`) : « couvertes » = un remplaçant complet est cité dans « Déjà couvert ? » (test Vitest ou étape de journée type), « en partie » = remplaçant partiel. Ce qui part de l'e2e, et à quelle condition : `docs/tests/plan-suppressions.md`. Les verdicts ci-dessous restent ceux de l'inventaire ; ceux du plan les remplacent.
 
 - **Suites** : 42 (dont 2 journées types, `parcours-deleguer` et `parcours-outils`).
 - **Vérifications** : 688.
@@ -22,7 +24,7 @@ vérifiée ailleurs : souvent la logique du main, sans le câblage ni le rendu.
   - `unitaire-main` : 64
   - `capture` : 23
   - `doublon` : 252
-- **Déjà couvertes ailleurs** : 562 sur 688, dont 271 entièrement et 291 en partie. 126 ne sont
+- **Déjà couvertes ailleurs** : 633 sur 688, dont 442 entièrement et 191 en partie. 55 ne sont
   couvertes nulle part.
 - **Suites qui pourraient disparaître entièrement** (8) : `astuces`, `commands`, `export`,
   `memoire`, `providers`, `relecture-commits`, `roles-meme-icone`, `textes-plateforme`. Pour
@@ -37,50 +39,50 @@ vérifiée ailleurs : souvent la logique du main, sans le câblage ni le rendu.
 
 ### Par suite
 
-| Suite | Total | parcours | composant | unitaire-main | capture | doublon | couvert | verdict |
+| Suite | Total | parcours | composant | unitaire-main | capture | doublon | couvert (+ part.) | verdict |
 |---|---|---|---|---|---|---|---|---|
-| `acp` | 14 | 1 | 7 | 0 | 0 | 6 | 10 | reduire |
-| `android` | 29 | 9 | 9 | 0 | 3 | 8 | 24 | reduire |
-| `astuces` | 12 | 0 | 3 | 1 | 0 | 8 | 10 | disparaitre |
-| `auth` | 30 | 6 | 14 | 5 | 0 | 5 | 23 | reduire |
-| `bob` | 9 | 2 | 2 | 0 | 0 | 5 | 7 | reduire |
-| `browser-view` | 21 | 16 | 2 | 0 | 0 | 3 | 17 | reduire |
-| `changes` | 14 | 1 | 7 | 3 | 0 | 3 | 11 | reduire |
-| `commands` | 17 | 0 | 10 | 0 | 2 | 5 | 13 | disparaitre |
-| `composer` | 53 | 5 | 18 | 0 | 7 | 23 | 39 | reduire |
-| `custom-agent` | 9 | 3 | 5 | 1 | 0 | 0 | 8 | reduire |
-| `diagnostic` | 28 | 7 | 9 | 10 | 0 | 2 | 19 | reduire |
+| `acp` | 14 | 1 | 7 | 0 | 0 | 6 | 14 | reduire |
+| `android` | 29 | 9 | 9 | 0 | 3 | 8 | 16 (+10 part.) | reduire |
+| `astuces` | 12 | 0 | 3 | 1 | 0 | 8 | 12 | disparaitre |
+| `auth` | 30 | 6 | 14 | 5 | 0 | 5 | 17 (+8 part.) | reduire |
+| `bob` | 9 | 2 | 2 | 0 | 0 | 5 | 6 (+1 part.) | reduire |
+| `browser-view` | 21 | 16 | 2 | 0 | 0 | 3 | 2 (+15 part.) | reduire |
+| `changes` | 14 | 1 | 7 | 3 | 0 | 3 | 12 (+2 part.) | reduire |
+| `commands` | 17 | 0 | 10 | 0 | 2 | 5 | 15 | disparaitre |
+| `composer` | 53 | 5 | 18 | 0 | 7 | 23 | 35 (+14 part.) | reduire |
+| `custom-agent` | 9 | 3 | 5 | 1 | 0 | 0 | 6 (+2 part.) | reduire |
+| `diagnostic` | 28 | 7 | 9 | 10 | 0 | 2 | 18 (+9 part.) | reduire |
 | `export` | 5 | 0 | 0 | 3 | 0 | 2 | 5 | disparaitre |
-| `filles-fusion` | 14 | 4 | 0 | 0 | 0 | 10 | 13 | reduire |
-| `filles-visibilite` | 7 | 2 | 0 | 0 | 0 | 5 | 6 | reduire |
-| `fresh-start` | 11 | 3 | 0 | 0 | 1 | 7 | 10 | reduire |
-| `gitlab` | 16 | 1 | 5 | 0 | 0 | 10 | 15 | reduire |
-| `history` | 17 | 1 | 9 | 0 | 1 | 6 | 14 | reduire |
-| `launch` | 5 | 3 | 1 | 0 | 0 | 1 | 5 | reduire |
-| `links` | 17 | 3 | 8 | 0 | 0 | 6 | 16 | reduire |
-| `memoire` | 17 | 0 | 7 | 0 | 0 | 10 | 13 | disparaitre |
-| `network` | 6 | 1 | 1 | 0 | 0 | 4 | 6 | reduire |
-| `onboarding` | 43 | 14 | 12 | 4 | 1 | 12 | 35 | reduire |
-| `panel` | 25 | 3 | 8 | 0 | 1 | 13 | 17 | reduire |
-| `parcours-deleguer` | 11 | 11 | 0 | 0 | 0 | 0 | 6 | garder |
-| `parcours-outils` | 9 | 8 | 1 | 0 | 0 | 0 | 9 | garder |
-| `pendant-tour` | 9 | 2 | 1 | 0 | 1 | 5 | 9 | reduire |
-| `pilote` | 43 | 14 | 0 | 21 | 0 | 8 | 37 | reduire |
-| `platform` | 5 | 1 | 3 | 0 | 0 | 1 | 5 | reduire |
-| `pr-ci` | 19 | 6 | 6 | 0 | 0 | 7 | 17 | reduire |
-| `providers` | 13 | 0 | 4 | 2 | 0 | 7 | 11 | disparaitre |
-| `quick` | 17 | 4 | 8 | 4 | 0 | 1 | 11 | reduire |
+| `filles-fusion` | 14 | 4 | 0 | 0 | 0 | 10 | 10 (+3 part.) | reduire |
+| `filles-visibilite` | 7 | 2 | 0 | 0 | 0 | 5 | 5 (+1 part.) | reduire |
+| `fresh-start` | 11 | 3 | 0 | 0 | 1 | 7 | 7 (+3 part.) | reduire |
+| `gitlab` | 16 | 1 | 5 | 0 | 0 | 10 | 10 (+5 part.) | reduire |
+| `history` | 17 | 1 | 9 | 0 | 1 | 6 | 14 (+2 part.) | reduire |
+| `launch` | 5 | 3 | 1 | 0 | 0 | 1 | 1 (+4 part.) | reduire |
+| `links` | 17 | 3 | 8 | 0 | 0 | 6 | 6 (+10 part.) | reduire |
+| `memoire` | 17 | 0 | 7 | 0 | 0 | 10 | 16 | disparaitre |
+| `network` | 6 | 1 | 1 | 0 | 0 | 4 | 5 (+1 part.) | reduire |
+| `onboarding` | 43 | 14 | 12 | 4 | 1 | 12 | 27 (+14 part.) | reduire |
+| `panel` | 25 | 3 | 8 | 0 | 1 | 13 | 21 (+3 part.) | reduire |
+| `parcours-deleguer` | 11 | 11 | 0 | 0 | 0 | 0 | 0 (+6 part.) | garder |
+| `parcours-outils` | 9 | 8 | 1 | 0 | 0 | 0 | 0 (+9 part.) | garder |
+| `pendant-tour` | 9 | 2 | 1 | 0 | 1 | 5 | 6 (+3 part.) | reduire |
+| `pilote` | 43 | 14 | 0 | 21 | 0 | 8 | 10 (+27 part.) | reduire |
+| `platform` | 5 | 1 | 3 | 0 | 0 | 1 | 2 (+3 part.) | reduire |
+| `pr-ci` | 19 | 6 | 6 | 0 | 0 | 7 | 13 (+6 part.) | reduire |
+| `providers` | 13 | 0 | 4 | 2 | 0 | 7 | 13 | disparaitre |
+| `quick` | 17 | 4 | 8 | 4 | 0 | 1 | 11 (+4 part.) | reduire |
 | `relecture-commits` | 7 | 0 | 0 | 0 | 1 | 6 | 6 | disparaitre |
-| `replay-changes` | 12 | 1 | 2 | 3 | 0 | 6 | 10 | reduire |
-| `resume` | 7 | 2 | 3 | 1 | 0 | 1 | 4 | reduire |
+| `replay-changes` | 12 | 1 | 2 | 3 | 0 | 6 | 11 (+1 part.) | reduire |
+| `resume` | 7 | 2 | 3 | 1 | 0 | 1 | 5 (+1 part.) | reduire |
 | `roles-meme-icone` | 4 | 0 | 1 | 0 | 0 | 3 | 4 | disparaitre |
-| `scheduled` | 18 | 3 | 8 | 1 | 1 | 5 | 12 | reduire |
-| `simulator` | 24 | 3 | 11 | 1 | 3 | 6 | 17 | reduire |
-| `subagents` | 29 | 4 | 4 | 3 | 0 | 18 | 28 | reduire |
+| `scheduled` | 18 | 3 | 8 | 1 | 1 | 5 | 7 (+6 part.) | reduire |
+| `simulator` | 24 | 3 | 11 | 1 | 3 | 6 | 17 (+6 part.) | reduire |
+| `subagents` | 29 | 4 | 4 | 3 | 0 | 18 | 22 (+6 part.) | reduire |
 | `textes-plateforme` | 9 | 0 | 9 | 0 | 0 | 0 | 9 | disparaitre |
-| `travaux-groupe` | 12 | 1 | 1 | 0 | 1 | 9 | 11 | reduire |
-| `user-commands` | 6 | 1 | 2 | 0 | 0 | 3 | 5 | reduire |
-| `worktree-setup` | 15 | 2 | 0 | 1 | 0 | 12 | 15 | reduire |
+| `travaux-groupe` | 12 | 1 | 1 | 0 | 1 | 9 | 9 (+2 part.) | reduire |
+| `user-commands` | 6 | 1 | 2 | 0 | 0 | 3 | 5 (+1 part.) | reduire |
+| `worktree-setup` | 15 | 2 | 0 | 1 | 0 | 12 | 12 (+3 part.) | reduire |
 
 ### Tests de remplacement à créer (fichiers absents aujourd'hui)
 
@@ -174,7 +176,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `acp.mjs` — onglet « Échanges ACP » du panneau : lignes, regroupement, JSON, filtre, pause
 
-<!-- stats suite=acp total=14 parcours=1 composant=7 unitaire-main=0 capture=0 doublon=6 couvert=10 verdict=reduire -->
+<!-- stats suite=acp total=14 parcours=1 composant=7 unitaire-main=0 capture=0 doublon=6 couvert=14 complet=14 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -200,7 +202,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `android.mjs` — émulateur Android par un faux SDK : outils de l'agent, vidéo H.264, gestes, cadre, zoom, rotation, planche contact
 
-<!-- stats suite=android total=29 parcours=9 composant=9 unitaire-main=0 capture=3 doublon=8 couvert=24 verdict=reduire -->
+<!-- stats suite=android total=29 parcours=9 composant=9 unitaire-main=0 capture=3 doublon=8 couvert=26 complet=16 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -242,7 +244,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `astuces.mjs` — astuces de Bobine : aparté pendant le tour, contexte plein, « Ne plus montrer », Réglages, « Planifier… » au troisième jour
 
-<!-- stats suite=astuces total=12 parcours=0 composant=3 unitaire-main=1 capture=0 doublon=8 couvert=10 verdict=disparaitre -->
+<!-- stats suite=astuces total=12 parcours=0 composant=3 unitaire-main=1 capture=0 doublon=8 couvert=12 complet=12 verdict=disparaitre -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -266,7 +268,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `auth.mjs` — connexion aux agents : clé d'API (enregistrement, suppression, illisible, trousseau lent), connexion dans un terminal, SSO sans retour, licence
 
-<!-- stats suite=auth total=30 parcours=6 composant=14 unitaire-main=5 capture=0 doublon=5 couvert=23 verdict=reduire -->
+<!-- stats suite=auth total=30 parcours=6 composant=14 unitaire-main=5 capture=0 doublon=5 couvert=25 complet=17 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -309,7 +311,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `bob.mjs` — premier lancement de Bob simulé : dossier, connexion, formulaires de l'agent, licence
 
-<!-- stats suite=bob total=9 parcours=2 composant=2 unitaire-main=0 capture=0 doublon=5 couvert=7 verdict=reduire -->
+<!-- stats suite=bob total=9 parcours=2 composant=2 unitaire-main=0 capture=0 doublon=5 couvert=7 complet=6 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -330,7 +332,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `browser-view.mjs` — navigateur intégré (WebContentsView) : la vue native suit la zone (colonne, panneau agrandi, zoom de l'interface), défilement, zoom de la page, raccourcis, clic de l'agent, taille imposée par l'agent
 
-<!-- stats suite=browser-view total=21 parcours=16 composant=2 unitaire-main=0 capture=0 doublon=3 couvert=17 verdict=reduire -->
+<!-- stats suite=browser-view total=21 parcours=16 composant=2 unitaire-main=0 capture=0 doublon=3 couvert=17 complet=2 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -364,7 +366,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `changes.mjs` — onglet Modifications : en-tête, vues Conversation et Git, annuler une modification, « Ouvrir » (exécutable montré, jamais lancé), remarques sur les lignes envoyées à l'agent
 
-<!-- stats suite=changes total=14 parcours=1 composant=7 unitaire-main=3 capture=0 doublon=3 couvert=11 verdict=reduire -->
+<!-- stats suite=changes total=14 parcours=1 composant=7 unitaire-main=3 capture=0 doublon=3 couvert=14 complet=12 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -391,7 +393,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `commands.mjs` — menu des commandes « / » (agent et app), complétion, envoi, et commandes de l'app (/context, /cost, /mode, /help, /compact, /compress, /clear)
 
-<!-- stats suite=commands total=17 parcours=0 composant=10 unitaire-main=0 capture=2 doublon=5 couvert=13 verdict=disparaitre -->
+<!-- stats suite=commands total=17 parcours=0 composant=10 unitaire-main=0 capture=2 doublon=5 couvert=15 complet=15 verdict=disparaitre -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -420,7 +422,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `composer.mjs` — zone de saisie : focus après les menus, infobulles, liste des modèles, repli de la barre, mode Plan visible, premier envoi pendant le démarrage de l'agent
 
-<!-- stats suite=composer total=53 parcours=5 composant=18 unitaire-main=0 capture=7 doublon=23 couvert=39 verdict=reduire -->
+<!-- stats suite=composer total=53 parcours=5 composant=18 unitaire-main=0 capture=7 doublon=23 couvert=49 complet=35 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -486,7 +488,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `custom-agent.mjs` — agent ACP déclaré par l'utilisateur dans Réglages › Agents : formulaire, page, conversation, session neuve après redémarrage (agent sans reprise), modifier, supprimer
 
-<!-- stats suite=custom-agent total=9 parcours=3 composant=5 unitaire-main=1 capture=0 doublon=0 couvert=8 verdict=reduire -->
+<!-- stats suite=custom-agent total=9 parcours=3 composant=5 unitaire-main=1 capture=0 doublon=0 couvert=8 complet=6 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -507,7 +509,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `diagnostic.mjs` — Réglages › Diagnostic : vérifications (agents essayés hors conversation, PATH, MCP), carte Journal, rapport copié, « Signaler un problème », blocage de connexion, quitter pendant l'essai, niveaux du journal
 
-<!-- stats suite=diagnostic total=28 parcours=7 composant=9 unitaire-main=10 capture=0 doublon=2 couvert=19 verdict=reduire -->
+<!-- stats suite=diagnostic total=28 parcours=7 composant=9 unitaire-main=10 capture=0 doublon=2 couvert=27 complet=18 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -548,7 +550,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `export.mjs` — export Markdown et JSON d'une conversation (fenêtre native remplacée) et sauvegarde de l'historique
 
-<!-- stats suite=export total=5 parcours=0 composant=0 unitaire-main=3 capture=0 doublon=2 couvert=5 verdict=disparaitre -->
+<!-- stats suite=export total=5 parcours=0 composant=0 unitaire-main=3 capture=0 doublon=2 couvert=5 complet=5 verdict=disparaitre -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -564,7 +566,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `filles-fusion.mjs` — fusion enchaînée des trois travaux d'une carte de groupe dans un vrai dépôt : recouvrement, fille non commitée, dossier principal non commité (« Committer d'abord », « Mettre de côté »), conflit résolu par la fille, « Puis nettoyer », redémarrage
 
-<!-- stats suite=filles-fusion total=14 parcours=4 composant=0 unitaire-main=0 capture=0 doublon=10 couvert=13 verdict=reduire -->
+<!-- stats suite=filles-fusion total=14 parcours=4 composant=0 unitaire-main=0 capture=0 doublon=10 couvert=13 complet=10 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -590,7 +592,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `filles-visibilite.mjs` — fille lancée depuis le menu du titre avec un worktree volontairement lent : préparation visible, fille publiée, Récents ou dossier repliés révélés
 
-<!-- stats suite=filles-visibilite total=7 parcours=2 composant=0 unitaire-main=0 capture=0 doublon=5 couvert=6 verdict=reduire -->
+<!-- stats suite=filles-visibilite total=7 parcours=2 composant=0 unitaire-main=0 capture=0 doublon=5 couvert=6 complet=5 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -608,7 +610,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `fresh-start.mjs` — Recommencer à neuf : profil temporaire (pastille, dossier temporaire supprimé à la fermeture), puis réinitialisation (confirmation, Bobine quitte, dossier en corbeille avec un LISEZ-MOI)
 
-<!-- stats suite=fresh-start total=11 parcours=3 composant=0 unitaire-main=0 capture=1 doublon=7 couvert=10 verdict=reduire -->
+<!-- stats suite=fresh-start total=11 parcours=3 composant=0 unitaire-main=0 capture=1 doublon=7 couvert=10 complet=7 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -631,7 +633,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `gitlab.mjs` — « Ouvrir une MR » sur un GitLab auto-hébergé avec un faux `glab` : non connecté, MR ouverte, « Pousser vers la MR », hôte injoignable, forge inconnue (fiche 189)
 
-<!-- stats suite=gitlab total=16 parcours=1 composant=5 unitaire-main=0 capture=0 doublon=10 couvert=15 verdict=reduire -->
+<!-- stats suite=gitlab total=16 parcours=1 composant=5 unitaire-main=0 capture=0 doublon=10 couvert=15 complet=10 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -659,7 +661,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `history.mjs` — Historique : infobulle, recherche dans le contenu et ⌘F, brouillons, ligne et clic droit, épinglage, dossiers, suppression (fiches 026, 086, 131, 149, 155, 276)
 
-<!-- stats suite=history total=17 parcours=1 composant=9 unitaire-main=0 capture=1 doublon=6 couvert=14 verdict=reduire -->
+<!-- stats suite=history total=17 parcours=1 composant=9 unitaire-main=0 capture=1 doublon=6 couvert=16 complet=14 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -688,7 +690,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `launch.mjs` — lancer l'app du projet : `.bob/launch.json`, serveur de dev, navigateur intégré, journal, arrêt
 
-<!-- stats suite=launch total=5 parcours=3 composant=1 unitaire-main=0 capture=0 doublon=1 couvert=5 verdict=reduire -->
+<!-- stats suite=launch total=5 parcours=3 composant=1 unitaire-main=0 capture=0 doublon=1 couvert=5 complet=1 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -705,7 +707,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `links.mjs` — Liens vers des fichiers et liens web dans la conversation : aperçu .md, app par défaut, Finder, exécutable, page HTML dans le navigateur intégré, adresses locales/externes (fiches 052, 064, 154, 272)
 
-<!-- stats suite=links total=17 parcours=3 composant=8 unitaire-main=0 capture=0 doublon=6 couvert=16 verdict=reduire -->
+<!-- stats suite=links total=17 parcours=3 composant=8 unitaire-main=0 capture=0 doublon=6 couvert=16 complet=6 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -734,7 +736,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `memoire.mjs` — Mémoire commune contre l'agent factice : carte « Retenir ? », Non/Retenir, contenu externe, index, onglet Session, Réglages › Mémoire, mémoire coupée (fiche 182)
 
-<!-- stats suite=memoire total=17 parcours=0 composant=7 unitaire-main=0 capture=0 doublon=10 couvert=13 verdict=disparaitre -->
+<!-- stats suite=memoire total=17 parcours=0 composant=7 unitaire-main=0 capture=0 doublon=10 couvert=16 complet=16 verdict=disparaitre -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -764,7 +766,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `network.mjs` — pannes réseau : reconnexion en 5 tentatives, « Connexion impossible », « Réessayer », Échap
 
-<!-- stats suite=network total=6 parcours=1 composant=1 unitaire-main=0 capture=0 doublon=4 couvert=6 verdict=reduire -->
+<!-- stats suite=network total=6 parcours=1 composant=1 unitaire-main=0 capture=0 doublon=4 couvert=6 complet=5 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -782,7 +784,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `onboarding.mjs` — accueil du premier lancement (Agent → Connexion → Dossier → Essai) : parcours complet, aucun agent, connexion dans le terminal, SSO sans retour, connexion expirée, annulation, fermeture, Cmd+Q, plantage, coût « comme Bob »
 
-<!-- stats suite=onboarding total=43 parcours=14 composant=12 unitaire-main=4 capture=1 doublon=12 couvert=35 verdict=reduire -->
+<!-- stats suite=onboarding total=43 parcours=14 composant=12 unitaire-main=4 capture=1 doublon=12 couvert=41 complet=27 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -838,7 +840,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `panel.mjs` — Panneau latéral à onglets : ouverture, Tâches, largeur, menu « + », agrandi, ✕ et clic molette, état de l'agent (fiches 029, 035, 082, 154, 166, 185, 226)
 
-<!-- stats suite=panel total=25 parcours=3 composant=8 unitaire-main=0 capture=1 doublon=13 couvert=17 verdict=reduire -->
+<!-- stats suite=panel total=25 parcours=3 composant=8 unitaire-main=0 capture=1 doublon=13 couvert=24 complet=21 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -876,7 +878,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `parcours-deleguer.mjs` — Journée type « Déléguer » : trois travaux lancés, réponse dans un travail, commits, fusion avec conflit résolu, suppression, corbeille, restauration, relance (fiche 277)
 
-<!-- stats suite=parcours-deleguer total=11 parcours=11 composant=0 unitaire-main=0 capture=0 doublon=0 couvert=6 verdict=garder -->
+<!-- stats suite=parcours-deleguer total=11 parcours=11 composant=0 unitaire-main=0 capture=0 doublon=0 couvert=6 complet=0 verdict=garder -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -897,7 +899,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `parcours-outils.mjs` — Journée type « Outils de l'app » : terminal (à la main puis par l'agent), navigateur intégré annoté, panneaux par conversation, fenêtre rapide, recherche, export (fiche 277)
 
-<!-- stats suite=parcours-outils total=9 parcours=8 composant=1 unitaire-main=0 capture=0 doublon=0 couvert=9 verdict=garder -->
+<!-- stats suite=parcours-outils total=9 parcours=8 composant=1 unitaire-main=0 capture=0 doublon=0 couvert=9 complet=0 verdict=garder -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -916,7 +918,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `pendant-tour.mjs` — Pendant le tour : commande sans sortie interrompue, « Compacter » à 85 %, plafond de coût (dollars puis jetons), réglages (fiche 157)
 
-<!-- stats suite=pendant-tour total=9 parcours=2 composant=1 unitaire-main=0 capture=1 doublon=5 couvert=9 verdict=reduire -->
+<!-- stats suite=pendant-tour total=9 parcours=2 composant=1 unitaire-main=0 capture=1 doublon=5 couvert=9 complet=6 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -937,7 +939,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `pilote.mjs` — la commande `pnpm pilote` (lancer, cliquer, attendre, etat, envoyer, repondre, capture, note, journal, arreter) contre l'app buildée et l'agent factice
 
-<!-- stats suite=pilote total=43 parcours=14 composant=0 unitaire-main=21 capture=0 doublon=8 couvert=37 verdict=reduire -->
+<!-- stats suite=pilote total=43 parcours=14 composant=0 unitaire-main=21 capture=0 doublon=8 couvert=37 complet=10 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -993,7 +995,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `platform.mjs` — même app lancée avec les capacités de macOS, Linux et Windows (`BOBINE_PLATFORM`) : menu et cadre de fenêtre, notation des raccourcis, capture, simulateur dans le « + », groupe iOS du Diagnostic
 
-<!-- stats suite=platform total=5 parcours=1 composant=3 unitaire-main=0 capture=0 doublon=1 couvert=5 verdict=reduire -->
+<!-- stats suite=platform total=5 parcours=1 composant=3 unitaire-main=0 capture=0 doublon=1 couvert=5 complet=2 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1010,7 +1012,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `pr-ci.mjs` — Suivi de la PR et de la CI avec un faux `gh` : carte, contrôles, « Corriger », poussées, onglet Session, fusion d'office, « Nettoyer » (fiche 176)
 
-<!-- stats suite=pr-ci total=19 parcours=6 composant=6 unitaire-main=0 capture=0 doublon=7 couvert=17 verdict=reduire -->
+<!-- stats suite=pr-ci total=19 parcours=6 composant=6 unitaire-main=0 capture=0 doublon=7 couvert=19 complet=13 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1041,7 +1043,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `providers.mjs` — Réglages › Agents › Fournisseurs de modèles sur un vrai `opencode.jsonc` jetable : clé, ajout, « Tester » contre un faux serveur OpenAI, liste blanche, proxy, Diagnostic, suppression
 
-<!-- stats suite=providers total=13 parcours=0 composant=4 unitaire-main=2 capture=0 doublon=7 couvert=11 verdict=disparaitre -->
+<!-- stats suite=providers total=13 parcours=0 composant=4 unitaire-main=2 capture=0 doublon=7 couvert=13 complet=13 verdict=disparaitre -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1066,7 +1068,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `quick.mjs` — Fenêtre rapide (menu, raccourci global, capture d'écran simulée et ses refus, envoi dans une nouvelle conversation, Échap, agent bloqué)
 
-<!-- stats suite=quick total=17 parcours=4 composant=8 unitaire-main=4 capture=0 doublon=1 couvert=11 verdict=reduire -->
+<!-- stats suite=quick total=17 parcours=4 composant=8 unitaire-main=4 capture=0 doublon=1 couvert=15 complet=11 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1096,7 +1098,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `relecture-commits.mjs` — `@code-reviewer` après une fusion : portée = commits de la conversation, diff relu ouvert depuis `fichier:ligne`, « corrigé depuis », « rien à signaler », fichier hors portée
 
-<!-- stats suite=relecture-commits total=7 parcours=0 composant=0 unitaire-main=0 capture=1 doublon=6 couvert=6 verdict=disparaitre -->
+<!-- stats suite=relecture-commits total=7 parcours=0 composant=0 unitaire-main=0 capture=1 doublon=6 couvert=6 complet=6 verdict=disparaitre -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1115,7 +1117,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `replay-changes.mjs` — Modifications après redémarrage : diffs d'OpenCode refaits depuis le patch, `write` sans diff (créé, réécrit), création par Bob 2.0.9
 
-<!-- stats suite=replay-changes total=12 parcours=1 composant=2 unitaire-main=3 capture=0 doublon=6 couvert=10 verdict=reduire -->
+<!-- stats suite=replay-changes total=12 parcours=1 composant=2 unitaire-main=3 capture=0 doublon=6 couvert=12 complet=11 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1139,7 +1141,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `resume.mjs` — reprendre une session commencée ailleurs (stockée par l'agent) : liste du dossier, tous les dossiers, filtre, reprise et rejeu, plus proposée ensuite
 
-<!-- stats suite=resume total=7 parcours=2 composant=3 unitaire-main=1 capture=0 doublon=1 couvert=4 verdict=reduire -->
+<!-- stats suite=resume total=7 parcours=2 composant=3 unitaire-main=1 capture=0 doublon=1 couvert=6 complet=5 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1158,7 +1160,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `roles-meme-icone.mjs` — deux rôles personnels de même icône et même couleur (deux fichiers, deux tuiles) ; identifiant d'un rôle fourni refusé à l'étape 1, identifiant libre proposé
 
-<!-- stats suite=roles-meme-icone total=4 parcours=0 composant=1 unitaire-main=0 capture=0 doublon=3 couvert=4 verdict=disparaitre -->
+<!-- stats suite=roles-meme-icone total=4 parcours=0 composant=1 unitaire-main=0 capture=0 doublon=3 couvert=4 complet=4 verdict=disparaitre -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1173,7 +1175,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `scheduled.mjs` — Tâches planifiées : échéance au lancement, autorisation qui attend, manquées sans rattrapage, formulaire, « Lancer maintenant » arrêté au plafond
 
-<!-- stats suite=scheduled total=18 parcours=3 composant=8 unitaire-main=1 capture=1 doublon=5 couvert=12 verdict=reduire -->
+<!-- stats suite=scheduled total=18 parcours=3 composant=8 unitaire-main=1 capture=1 doublon=5 couvert=13 complet=7 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1203,7 +1205,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `simulator.mjs` — Simulateur iOS avec faux `xcrun`/`axe` : outils MCP de l'agent, flux vidéo BGRA, gestes, zoom, flux perdu, planche contact
 
-<!-- stats suite=simulator total=24 parcours=3 composant=11 unitaire-main=1 capture=3 doublon=6 couvert=17 verdict=reduire -->
+<!-- stats suite=simulator total=24 parcours=3 composant=11 unitaire-main=1 capture=3 doublon=6 couvert=23 complet=17 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1240,7 +1242,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `subagents.mjs` — Carte « Sous-agents » : Bob (autorisation, coût relu dans sa base), OpenCode 1.19/2/2.3.0, arrière-plan, parallèles, réponse hors tour, redémarrages
 
-<!-- stats suite=subagents total=29 parcours=4 composant=4 unitaire-main=3 capture=0 doublon=18 couvert=28 verdict=reduire -->
+<!-- stats suite=subagents total=29 parcours=4 composant=4 unitaire-main=3 capture=0 doublon=18 couvert=28 complet=22 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1281,7 +1283,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `textes-plateforme.mjs` — Réglages lancés avec les capacités de Linux puis de Windows (`BOBINE_PLATFORM`) : ni Mac, ni Finder, ni Dock, ni trousseau macOS ; clé d'API en clair sous Linux sans trousseau
 
-<!-- stats suite=textes-plateforme total=9 parcours=0 composant=9 unitaire-main=0 capture=0 doublon=0 couvert=9 verdict=disparaitre -->
+<!-- stats suite=textes-plateforme total=9 parcours=0 composant=9 unitaire-main=0 capture=0 doublon=0 couvert=9 complet=9 verdict=disparaitre -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1302,7 +1304,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `travaux-groupe.mjs` — Carte de groupe (proposés, en cours, finis, recommandés), fusion dans la carte, travail qui écrit + « Faire relire », conflit qui reste
 
-<!-- stats suite=travaux-groupe total=12 parcours=1 composant=1 unitaire-main=0 capture=1 doublon=9 couvert=11 verdict=reduire -->
+<!-- stats suite=travaux-groupe total=12 parcours=1 composant=1 unitaire-main=0 capture=1 doublon=9 couvert=11 complet=9 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1326,7 +1328,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `user-commands.mjs` — Commandes « / » personnelles et du projet (`.bobine/commands`, ancien `.bob-desktop`) : réglages, menu, consigne développée reçue par l'agent
 
-<!-- stats suite=user-commands total=6 parcours=1 composant=2 unitaire-main=0 capture=0 doublon=3 couvert=5 verdict=reduire -->
+<!-- stats suite=user-commands total=6 parcours=1 composant=2 unitaire-main=0 capture=0 doublon=3 couvert=6 complet=5 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1344,7 +1346,7 @@ du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `
 
 ### `worktree-setup.mjs` — Préparation des worktrees : `.worktreeinclude`, commandes de `.bobine/worktree.json` à autoriser, D1 à D6, tâche planifiée qui n'attend pas (D3)
 
-<!-- stats suite=worktree-setup total=15 parcours=2 composant=0 unitaire-main=1 capture=0 doublon=12 couvert=15 verdict=reduire -->
+<!-- stats suite=worktree-setup total=15 parcours=2 composant=0 unitaire-main=1 capture=0 doublon=12 couvert=15 complet=12 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|

@@ -9,61 +9,61 @@ sondage ; les fichiers marqués « à créer » n'existent pas encore).
 Classes : `parcours` (reste e2e) · `composant` (Vitest + Testing Library, sans l'app) ·
 `unitaire-main` · `capture` (capture nocturne) · `doublon` (déjà vérifié ailleurs).
 
-**Remplaçants du panneau (2026-11-24)** : 9 lignes passées à « oui » (`pr-ci-sans-ci` 1–3, `worktree-cycle` 4, 5, 7, `terminal` 13, 14, 16). Les chiffres du résumé restent ceux de l'inventaire.
+**Remplaçants du panneau (2026-11-24)** : 9 lignes passées à « oui » (`pr-ci-sans-ci` 1–3, `worktree-cycle` 4, 5, 7, `terminal` 13, 14, 16). Chiffres du résumé recalculés à l'assemblage (voir « Résumé chiffré »).
 
 ## Résumé chiffré
+
+**Recalculé le 2026-11-24 à l'assemblage des remplaçants** (branche `test/pyramide`) : « couvertes » = un remplaçant complet est cité dans « Déjà couvert ? » (test Vitest ou étape de journée type), « en partie » = remplaçant partiel. Ce qui part de l'e2e, et à quelle condition : `docs/tests/plan-suppressions.md`. Les verdicts ci-dessous restent ceux de l'inventaire ; ceux du plan les remplacent.
 
 - **42 suites, 643 vérifications.**
 - Par classe : **parcours 143** (22 %) · **composant 169** (26 %) · **unitaire-main 43** (7 %) ·
   **capture 37** (6 %) · **doublon 251** (39 %).
-- **Déjà entièrement couvertes ailleurs : ≈ 294** (plus ≈ 130 couvertes en partie). Les lots ne
-  comptent pas tout à fait de la même façon : les lots 1, 5 et 6 mettent les partielles à part.
-  Pour les lots 3 et 4, le chiffre peut en inclure quelques-unes.
+- **Déjà couvertes ailleurs : 407** entièrement, 150 en partie, 86 nulle part (sur 643).
 
-| Suite | N | parcours / composant / unit.-main / capture / doublon | Couvertes ailleurs | Verdict |
+| Suite | N | parcours / composant / unit.-main / capture / doublon | Couvertes ailleurs (+ part.) | Verdict |
 |---|---|---|---|---|
-| about | 10 | 3 / 2 / 0 / 0 / 5 | 5 (+5 part.) | garder, réduite |
-| aide | 15 | 5 / 5 / 1 / 0 / 4 | 4 (+9 part.) | garder, réduite |
-| aparte | 12 | 1 / 4 / 0 / 1 / 6 | 6 (+4 part.) | disparaît (concurrence → parcours-matinee ét. 8) |
+| about | 10 | 3 / 2 / 0 / 0 / 5 | 6 (+4 part.) | garder, réduite |
+| aide | 15 | 5 / 5 / 1 / 0 / 4 | 5 (+8 part.) | garder, réduite |
+| aparte | 12 | 1 / 4 / 0 / 1 / 6 | 11 (+1 part.) | disparaît (concurrence → parcours-matinee ét. 8) |
 | aurore | 11 | 0 / 0 / 0 / 10 / 1 | 1 (+8 part.) | disparaît, si la capture nocturne garde des assertions de style calculé |
-| base | 18 | 0 / 11 / 2 / 2 / 3 | 3 | disparaît (tests de composant d'abord à créer) |
-| browser-annotate | 26 | 8 / 5 / 4 / 1 / 8 | 22 | garder, réduite |
-| certificats | 24 | 11 / 5 / 2 / 0 / 6 | 16 | garder, réduite |
-| command | 14 | 2 / 8 / 0 / 0 / 4 | 3 (+8 part.) | garder, réduite |
-| commit-redige | 15 | 1 / 0 / 0 / 0 / 14 | 14 | disparaît (« Committer puis fusionner » → parcours-deleguer ét. 4) |
-| cout-connexion | 6 | 1 / 2 / 0 / 0 / 3 | 3 | disparaît |
-| degrade-haut | 28 | 27 / 1 / 0 / 0 / 0 | 0 | garder, réduite |
-| dossiers | 8 | 1 / 1 / 0 / 0 / 6 | 8 | disparaît (si `additionalDirectories` devient une étape de journée) |
-| fil | 17 | 0 / 6 / 0 / 0 / 11 | 11 (+4 part.) | disparaît |
-| filles-tech-lead | 11 | 2 / 1 / 0 / 0 / 8 | 8 (+3 part.) | disparaît (vérif. 7–8 → parcours-deleguer ét. 3–4) |
-| finitions | 10 | 1 / 2 / 0 / 5 / 2 | 2 (+5 part.) | disparaît (clic d'onglet au cran serré → parcours-longue ét. 5) |
-| git | 19 | 1 / 8 / 2 / 4 / 4 | 6 | disparaît (point de branche → parcours-matinee ét. 5) |
-| historique-saisie | 23 | 4 / 4 / 1 / 0 / 14 | 15 | garder, réduite |
-| language | 8 | 2 / 1 / 3 / 0 / 2 | 2 | garder, réduite |
-| limite-etapes | 7 | 1 / 2 / 0 / 0 / 4 | 7 | disparaît (réouverture → parcours-pannes) |
-| mcp | 37 | 5 / 13 / 8 / 2 / 9 | 13 | garder, réduite |
-| mermaid | 7 | 2 / 1 / 0 / 1 / 3 | 3 | disparaît (bloc Mermaid → parcours-longue ét. 1) |
-| nouvelle-version | 13 | 1 / 1 / 0 / 1 / 10 | 10 (+2 part.) | garder, réduite |
+| base | 18 | 0 / 11 / 2 / 2 / 3 | 16 | disparaît (tests de composant d'abord à créer) |
+| browser-annotate | 26 | 8 / 5 / 4 / 1 / 8 | 15 (+7 part.) | garder, réduite |
+| certificats | 24 | 11 / 5 / 2 / 0 / 6 | 10 (+6 part.) | garder, réduite |
+| command | 14 | 2 / 8 / 0 / 0 / 4 | 10 (+4 part.) | garder, réduite |
+| commit-redige | 15 | 1 / 0 / 0 / 0 / 14 | 14 (+1 part.) | disparaît (« Committer puis fusionner » → parcours-deleguer ét. 4) |
+| cout-connexion | 6 | 1 / 2 / 0 / 0 / 3 | 5 | disparaît |
+| degrade-haut | 28 | 27 / 1 / 0 / 0 / 0 | 0 (+2 part.) | garder, réduite |
+| dossiers | 8 | 1 / 1 / 0 / 0 / 6 | 6 (+2 part.) | disparaît (si `additionalDirectories` devient une étape de journée) |
+| fil | 17 | 0 / 6 / 0 / 0 / 11 | 17 | disparaît |
+| filles-tech-lead | 11 | 2 / 1 / 0 / 0 / 8 | 9 (+2 part.) | disparaît (vérif. 7–8 → parcours-deleguer ét. 3–4) |
+| finitions | 10 | 1 / 2 / 0 / 5 / 2 | 4 (+3 part.) | disparaît (clic d'onglet au cran serré → parcours-longue ét. 5) |
+| git | 19 | 1 / 8 / 2 / 4 / 4 | 11 (+4 part.) | disparaît (point de branche → parcours-matinee ét. 5) |
+| historique-saisie | 23 | 4 / 4 / 1 / 0 / 14 | 17 (+5 part.) | garder, réduite |
+| language | 8 | 2 / 1 / 3 / 0 / 2 | 4 (+3 part.) | garder, réduite |
+| limite-etapes | 7 | 1 / 2 / 0 / 0 / 4 | 6 (+1 part.) | disparaît (réouverture → parcours-pannes) |
+| mcp | 37 | 5 / 13 / 8 / 2 / 9 | 13 (+18 part.) | garder, réduite |
+| mermaid | 7 | 2 / 1 / 0 / 1 / 3 | 5 | disparaît (bloc Mermaid → parcours-longue ét. 1) |
+| nouvelle-version | 13 | 1 / 1 / 0 / 1 / 10 | 11 (+1 part.) | garder, réduite |
 | outils-projet | 8 | 1 / 1 / 0 / 0 / 6 | 6 (+2 part.) | disparaît (redémarrage jusqu'à `ios_build` → parcours-outils) |
-| parallel | 5 | 2 / 1 / 0 / 0 / 2 | 2 (+2 part.) | disparaît (2 vérif. → parcours-matinee ét. 8, parcours-outils ét. 4) |
-| parcours-matinee | 17 | 17 / 0 / 0 / 0 / 0 | 0 (13 part.) | **journée type, garder** |
-| parcours-reglages | 11 | 11 / 0 / 0 / 0 / 0 | 0 (6 part.) | **journée type, garder** |
-| permissions | 12 | 0 / 3 / 1 / 0 / 8 | 8 (+4 part.) | disparaît |
-| plan | 11 | 0 / 4 / 1 / 4 / 2 | 2 (+6 part.) | garder, réduite |
-| pr-ci-sans-ci | 4 | 1 / 3 / 0 / 0 / 0 | 0 | disparaît (après création de `PrCard.test.tsx`) |
-| profil | 42 | 10 / 12 / 3 / 0 / 17 | 17 (+13 part.) | garder, réduite |
-| queue | 9 | 0 / 2 / 1 / 0 / 6 | 6 (+2 part.) | disparaît |
-| regles-approbation | 31 | 1 / 10 / 2 / 0 / 18 | 20 | disparaît |
+| parallel | 5 | 2 / 1 / 0 / 0 / 2 | 3 (+2 part.) | disparaît (2 vérif. → parcours-matinee ét. 8, parcours-outils ét. 4) |
+| parcours-matinee | 17 | 17 / 0 / 0 / 0 / 0 | 0 (+13 part.) | **journée type, garder** |
+| parcours-reglages | 11 | 11 / 0 / 0 / 0 / 0 | 0 (+6 part.) | **journée type, garder** |
+| permissions | 12 | 0 / 3 / 1 / 0 / 8 | 11 (+1 part.) | disparaît |
+| plan | 11 | 0 / 4 / 1 / 4 / 2 | 7 (+3 part.) | garder, réduite |
+| pr-ci-sans-ci | 4 | 1 / 3 / 0 / 0 / 0 | 3 (+1 part.) | disparaît (après création de `PrCard.test.tsx`) |
+| profil | 42 | 10 / 12 / 3 / 0 / 17 | 27 (+10 part.) | garder, réduite |
+| queue | 9 | 0 / 2 / 1 / 0 / 6 | 8 (+1 part.) | disparaît |
+| regles-approbation | 31 | 1 / 10 / 2 / 0 / 18 | 29 (+2 part.) | disparaît |
 | repere | 8 | 1 / 0 / 0 / 2 / 5 | 5 (+2 part.) | disparaît (1 vérif. → parcours-reglages ét. 10) |
-| restart | 5 | 2 / 1 / 0 / 0 / 2 | 3 | disparaît |
-| roles-gestion | 23 | 3 / 6 / 2 / 0 / 12 | 21 | disparaît (nouvelle étape de parcours-reglages + `TeamSection.test.tsx`) |
+| restart | 5 | 2 / 1 / 0 / 0 / 2 | 4 (+1 part.) | disparaît |
+| roles-gestion | 23 | 3 / 6 / 2 / 0 / 12 | 18 (+5 part.) | disparaît (nouvelle étape de parcours-reglages + `TeamSection.test.tsx`) |
 | rules | 3 | 0 / 2 / 0 / 0 / 1 | 1 (+2 part.) | disparaît |
-| settings | 43 | 3 / 22 / 3 / 2 / 13 | 16 (+17 part.) | garder, réduite (seul le menu ☰ Linux reste e2e) |
-| startup | 11 | 4 / 2 / 1 / 0 / 4 | 4 (+5 part.) | garder, réduite |
-| terminal | 18 | 5 / 5 / 0 / 1 / 7 | 7 | disparaît (5 vérif. → parcours-outils ét. 1–2) |
+| settings | 43 | 3 / 22 / 3 / 2 / 13 | 33 (+7 part.) | garder, réduite (seul le menu ☰ Linux reste e2e) |
+| startup | 11 | 4 / 2 / 1 / 0 / 4 | 6 (+4 part.) | garder, réduite |
+| terminal | 18 | 5 / 5 / 0 / 1 / 7 | 15 (+2 part.) | disparaît (5 vérif. → parcours-outils ét. 1–2) |
 | travail-recette | 9 | 0 / 1 / 1 / 0 / 7 | 7 (+2 part.) | disparaît |
-| usage | 15 | 1 / 5 / 0 / 0 / 9 | 9 (+4 part.) | disparaît (rejeu tardif → parcours-longue ét. 8) |
-| worktree-cycle | 19 | 2 / 6 / 5 / 1 / 5 | 9 | garder, réduite |
+| usage | 15 | 1 / 5 / 0 / 0 / 9 | 13 (+1 part.) | disparaît (rejeu tardif → parcours-longue ét. 8) |
+| worktree-cycle | 19 | 2 / 6 / 5 / 1 / 5 | 15 (+3 part.) | garder, réduite |
 
 - **Suites qui peuvent disparaître entièrement : 25.** Presque toutes **sous condition** :
   déplacer d'abord 1 à 5 vérifications `parcours` dans une journée type, ou créer les tests de
@@ -211,7 +211,7 @@ worktree `inventaire-e2e` (2026-11-24).
 
 ### `queue.mjs` — écrire pendant que l'agent travaille : file d'attente, « Modifier », « Envoyer maintenant », Échap (fiche 020, 247)
 Verdict : **disparaît entièrement** — le parcours bout en bout est dans `parcours-matinee` (étapes 9-10) ; le reste se teste en composant ou est déjà dans `agent-host.test.ts`.
-Compte : 9 vérifications — parcours 0, composant 2, unitaire-main 1, capture 0, doublon 6 ; déjà couvertes ailleurs : 6 (+2 partielles)
+Compte : 9 vérifications — parcours 0, composant 2, unitaire-main 1, capture 0, doublon 6 ; déjà couvertes ailleurs : 8 (+1 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -237,7 +237,7 @@ Compte : 3 vérifications — parcours 0, composant 2, unitaire-main 0, capture 
 
 ### `parallel.mjs` — conversations en parallèle : réponse qui continue ailleurs, conversation en worktree, côte à côte, suppression du worktree (fiche 036)
 Verdict : **disparaît entièrement** — à condition de déplacer 2 vérifications dans des journées types (worktree par le menu du dossier, envoi côte à côte).
-Compte : 5 vérifications — parcours 2, composant 1, unitaire-main 0, capture 0, doublon 2 ; déjà couvertes ailleurs : 2 (+2 partielles)
+Compte : 5 vérifications — parcours 2, composant 1, unitaire-main 0, capture 0, doublon 2 ; déjà couvertes ailleurs : 3 (+2 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -264,7 +264,7 @@ Compte : 8 vérifications — parcours 1, composant 0, unitaire-main 0, capture 
 
 ### `profil.mjs` — intégrité du profil : profils réels 0.7/0.8/0.9, profil abîmé, corbeille, restauration (au lancement, réversible), lecture seule d'un profil plus récent, disque plein réel (fiches 196, 197, 228)
 Verdict : **à garder (réduite)** — garder les lancements que rien d'autre ne fait (vieux profils réels, restauration au lancement, lecture seule de bout en bout, disque plein réel) ; corbeille et avis passent en composant ou sont déjà couverts.
-Compte : 42 vérifications — parcours 10, composant 12, unitaire-main 3, capture 0, doublon 17 ; déjà couvertes ailleurs : 17 (+13 partielles)
+Compte : 42 vérifications — parcours 10, composant 12, unitaire-main 3, capture 0, doublon 17 ; déjà couvertes ailleurs : 27 (+10 partielles)
 
 (Hors compte : `check(true, 'disque plein : image disque macOS seulement (ignoré ici)')` hors macOS, qui ne vérifie rien.)
 
@@ -315,7 +315,7 @@ Compte : 42 vérifications — parcours 10, composant 12, unitaire-main 3, captu
 
 ### `settings.mjs` — menus (macOS / Linux), raccourcis, ⌘K, largeur de la barre latérale, Réglages (apparence, confidentialité, notifications, conversations, agents, raccourcis, nouveautés, recherche), menu ☰ hors macOS (fiches 027, 051, 072, 101, 102, 113, 136, 145)
 Verdict : **à garder (réduite)** — presque tout passe en composant ou est déjà couvert ; ne restent e2e que le menu ☰ Linux (barre native d'Electron, Alt, aller-retour par le main). Les cookies passent en unitaire-main.
-Compte : 43 vérifications — parcours 3, composant 22, unitaire-main 3, capture 2, doublon 13 ; déjà couvertes ailleurs : 16 (+17 partielles)
+Compte : 43 vérifications — parcours 3, composant 22, unitaire-main 3, capture 2, doublon 13 ; déjà couvertes ailleurs : 33 (+7 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -387,7 +387,7 @@ Chemins des tests relatifs à la racine du dépôt ; numéros d'étape : fiche 2
 
 ### `mcp.mjs` — Réglages › Serveurs MCP : outils de Bobine (familles, poids, coupure), serveurs des agents écrits dans les fichiers de Bob/OpenCode, « Tester », menu ⚙ de la session, tools/list avant/après redémarrage de l'agent
 Verdict : **à garder (réduite)** — 5 vérifications exigent l'app réelle (tools/list réel de l'agent avant/après coupure + redémarrage, états réels des serveurs dans le menu ⚙, en-tête des Réglages qui défile) ; elles peuvent devenir une étape de `parcours-reglages` (alors la suite disparaît) ; le reste passe en composant/unitaire, dont beaucoup existent déjà.
-Compte : 37 vérifications — parcours 5, composant 13, unitaire-main 8, capture 2, doublon 9 ; déjà couvertes ailleurs : 13
+Compte : 37 vérifications — parcours 5, composant 13, unitaire-main 8, capture 2, doublon 9 ; déjà couvertes ailleurs : 13 (+18 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -433,7 +433,7 @@ Compte : 37 vérifications — parcours 5, composant 13, unitaire-main 8, captur
 
 ### `regles-approbation.mjs` — Règles d'approbation « pour tous les projets » (fiche 215) : IPC, section des cartes de commande, refus par le terminal de l'app, page Réglages › Approbations, groupe interdit, fichier illisible
 Verdict : **disparaît entièrement** — 18 vérifications existent déjà à l'identique (`GlobalRuleSection`, `ApprovalRulesPage`, `bob-approval-rules`, `approval-rules`) ; seule la commande refusée partout par le terminal de l'app (agent → MCP → règles relues) doit rester de bout en bout, comme variante de `parcours-outils` étape 2 ; les 10 vérifications de composant restantes vont dans `ApprovalRulesPage.test.tsx` et `GlobalRuleSection.test.tsx`.
-Compte : 31 vérifications — parcours 1, composant 10, unitaire-main 2, capture 0, doublon 18 ; déjà couvertes ailleurs : 20
+Compte : 31 vérifications — parcours 1, composant 10, unitaire-main 2, capture 0, doublon 18 ; déjà couvertes ailleurs : 29 (+2 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -473,7 +473,7 @@ Compte : 31 vérifications — parcours 1, composant 10, unitaire-main 2, captur
 
 ### `pr-ci-sans-ci.mjs` — Carte de suivi de PR sur un dépôt sans CI (faux `gh`) : « Aucune CI détectée », fusion d'office qui n'aura jamais lieu, « Fusionner maintenant » refusé si la branche est en retard, puis fusion
 Verdict : **disparaît entièrement** — la logique est déjà testée dans le main (`pr-watch`, `pr-tracking`) ; il manque un test de composant de `PrCard` (aucun aujourd'hui) pour les textes et l'état du bouton ; la fusion au clic de bout en bout (faux `gh`, worktree réel) rejoint `pr-ci.mjs` ou une journée type.
-Compte : 4 vérifications — parcours 1, composant 3, unitaire-main 0, capture 0, doublon 0 ; déjà couvertes ailleurs : 0
+Compte : 4 vérifications — parcours 1, composant 3, unitaire-main 0, capture 0, doublon 0 ; déjà couvertes ailleurs : 3 (+1 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -486,7 +486,7 @@ Compte : 4 vérifications — parcours 1, composant 3, unitaire-main 0, capture 
 
 ### `restart.mjs` — Redémarrage de l'app sur les mêmes données : conversation dans « Récents », consommation gardée, reprise par session/load, suppression confirmée dans l'app, replis de la barre latérale gardés
 Verdict : **disparaît entièrement** — la reprise est déjà vérifiée par `parcours-matinee` (étapes 13–14) ; la consommation gardée et l'absence de boîte native s'ajoutent à des étapes existantes ; les replis sont couverts par `Sidebar.test.tsx`.
-Compte : 5 vérifications — parcours 2, composant 1, unitaire-main 0, capture 0, doublon 2 ; déjà couvertes ailleurs : 3
+Compte : 5 vérifications — parcours 2, composant 1, unitaire-main 0, capture 0, doublon 2 ; déjà couvertes ailleurs : 4 (+1 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -500,7 +500,7 @@ Compte : 5 vérifications — parcours 2, composant 1, unitaire-main 0, capture 
 
 ### `cout-connexion.mjs` — Coût d'un modèle payant annoncé nul (« coût inconnu », jamais « gratuit » ni « 0,00 »), Mon activité cohérente, Mon activité à 720 px, modèles « sans doute » à connecter après un refus
 Verdict : **disparaît entièrement** — tout est déjà testé en composant ou dans le main, sauf deux lignes de composant à compléter et la mise en page à 720 px, à reprendre par `degrade-haut.mjs` §8.
-Compte : 6 vérifications — parcours 1, composant 2, unitaire-main 0, capture 0, doublon 3 ; déjà couvertes ailleurs : 3
+Compte : 6 vérifications — parcours 1, composant 2, unitaire-main 0, capture 0, doublon 3 ; déjà couvertes ailleurs : 5
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -515,7 +515,7 @@ Compte : 6 vérifications — parcours 1, composant 2, unitaire-main 0, capture 
 
 ### `degrade-haut.mjs` — Défilement vers un message (sommaire, message pas encore rendu, `scrollIntoView`, recherche) qui s'arrête sous le dégradé de la barre de titre ; racine et en-têtes immobiles sur chaque page (clavier, fenêtre étroite, débordement)
 Verdict : **à garder (réduite)** — chaque vérification mesure la mise en page réelle (`getBoundingClientRect`, `scrollTop` de `html`/`body`/`#root`, `::after`, défilement doux), que jsdom ne calcule pas. On peut la réduire : moins de pas de Tab, une seule taille de fenêtre pour les Réglages, et le cas du sommaire joint à `parcours-longue` étape 2.
-Compte : 28 vérifications — parcours 27, composant 1, unitaire-main 0, capture 0, doublon 0 ; déjà couvertes ailleurs : 0
+Compte : 28 vérifications — parcours 27, composant 1, unitaire-main 0, capture 0, doublon 0 ; déjà couvertes ailleurs : 0 (+2 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -574,7 +574,7 @@ pas « non » (partielles comprises).
 
 ### `browser-annotate.mjs` — annoter une page vivante dans le navigateur intégré (défilement, zoom, bulle, épingles, Échap, envoi avec captures)
 Verdict : **à garder (réduite)** — huit vérifications ne se voient que dans la vraie vue native (entrées réelles, gel/dégel de la vue, contenu ACP envoyé) ; parcours-outils étape 3 n'en couvre qu'une partie.
-Compte : 26 vérifications — parcours 8, composant 5, unitaire-main 4, capture 1, doublon 8 ; déjà couvertes ailleurs : 22
+Compte : 26 vérifications — parcours 8, composant 5, unitaire-main 4, capture 1, doublon 8 ; déjà couvertes ailleurs : 15 (+7 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -607,7 +607,7 @@ Compte : 26 vérifications — parcours 8, composant 5, unitaire-main 4, capture
 
 ### `certificats.mjs` — navigateur intégré face à un certificat auto-signé : avertissement, « Continuer », « Non sécurisé », révocation, site public, nom en `.test`
 Verdict : **à garder (réduite)** — sécurité réelle de Chromium (vérification de certificat, isolement de session, WebSocket, popups, IP contactée) : rien de cela ne se simule dans jsdom.
-Compte : 24 vérifications — parcours 11, composant 5, unitaire-main 2, capture 0, doublon 6 ; déjà couvertes ailleurs : 16
+Compte : 24 vérifications — parcours 11, composant 5, unitaire-main 2, capture 0, doublon 6 ; déjà couvertes ailleurs : 10 (+6 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -638,7 +638,7 @@ Compte : 24 vérifications — parcours 11, composant 5, unitaire-main 2, captur
 
 ### `roles-gestion.mjs` — section Équipe, assistant de création de rôle, « Créer et essayer », « Enregistrer comme rôle », Réglages › Rôles, changement de langue
 Verdict : **disparaît entièrement** — à condition d'une nouvelle étape de `parcours-reglages` (créer un rôle de projet, fichier écrit, l'essayer ; puis relecture des rôles fournis au changement de langue de l'étape 2) et d'un `TeamSection.test.tsx` ; tout le reste est déjà en Vitest.
-Compte : 23 vérifications — parcours 3, composant 6, unitaire-main 2, capture 0, doublon 12 ; déjà couvertes ailleurs : 21
+Compte : 23 vérifications — parcours 3, composant 6, unitaire-main 2, capture 0, doublon 12 ; déjà couvertes ailleurs : 18 (+5 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -668,7 +668,7 @@ Compte : 23 vérifications — parcours 3, composant 6, unitaire-main 2, capture
 
 ### `limite-etapes.mjs` — limite d'étapes de l'agent (imitation de Bob 2.0.9) : carte, refus, « Rouvrir la session », « Nouvelle session avec le résumé »
 Verdict : **disparaît entièrement** — à condition que la réouverture réelle (#5) devienne une étape de `parcours-pannes` ; le reste est couvert par `TurnGuards.test.tsx`, `agent-host-turn-limit.test.ts` et `trace-replay.test.ts`.
-Compte : 7 vérifications — parcours 1, composant 2, unitaire-main 0, capture 0, doublon 4 ; déjà couvertes ailleurs : 7
+Compte : 7 vérifications — parcours 1, composant 2, unitaire-main 0, capture 0, doublon 4 ; déjà couvertes ailleurs : 6 (+1 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -682,7 +682,7 @@ Compte : 7 vérifications — parcours 1, composant 2, unitaire-main 0, capture 
 
 ### `mermaid.mjs` — diagrammes Mermaid : chargement paresseux, dessin réel, bloc invalide, couleurs du thème, code/diagramme, agrandir
 Verdict : **disparaît entièrement** — à condition qu'un bloc Mermaid (et la vérification du chargement paresseux) rejoigne les réponses Markdown de `parcours-longue` étape 1 ; le reste va dans `MermaidBlock.test.tsx` ou en capture.
-Compte : 7 vérifications — parcours 2, composant 1, unitaire-main 0, capture 1, doublon 3 ; déjà couvertes ailleurs : 3
+Compte : 7 vérifications — parcours 2, composant 1, unitaire-main 0, capture 1, doublon 3 ; déjà couvertes ailleurs : 5
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -696,7 +696,7 @@ Compte : 7 vérifications — parcours 2, composant 1, unitaire-main 0, capture 
 
 ### `dossiers.mjs` — plusieurs dossiers par conversation : ajout, transmission à l'agent (`additionalDirectories`), ligne de contexte, retrait, agent sans la capacité
 Verdict : **disparaît entièrement** — à condition que la transmission réelle (#3) devienne une étape de journée (par ex. `parcours-reglages`, agent factice avec `MOCK_AGENT_DIRECTORIES`) ; le reste est en Vitest.
-Compte : 8 vérifications — parcours 1, composant 1, unitaire-main 0, capture 0, doublon 6 ; déjà couvertes ailleurs : 8
+Compte : 8 vérifications — parcours 1, composant 1, unitaire-main 0, capture 0, doublon 6 ; déjà couvertes ailleurs : 6 (+2 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -730,7 +730,7 @@ le compte « déjà couvertes ailleurs » ne compte que ces « oui » (pas les �
 
 ### `historique-saisie.mjs` — rappel des messages envoyés par ↑ / ↓ dans la saisie (fiche 227), dans un dépôt jetable avec un message confié à un rôle (fille)
 Verdict : **à garder (réduite)** — seuls le repli réel des lignes longues (mesure du navigateur) et la saisie étroite pendant un tour demandent la vraie app ; tout le reste est déjà vérifié par `SentHistory.test.tsx` et `composer-keys.test.ts`
-Compte : 23 vérifications — parcours 4, composant 4, unitaire-main 1, capture 0, doublon 14 ; déjà couvertes ailleurs : 15
+Compte : 23 vérifications — parcours 4, composant 4, unitaire-main 1, capture 0, doublon 14 ; déjà couvertes ailleurs : 17 (+5 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -760,7 +760,7 @@ Compte : 23 vérifications — parcours 4, composant 4, unitaire-main 1, capture
 
 ### `git.mjs` — barre de titre, branche git dans la saisie, « Committer » hors worktree, fondus et flèche du fil (fiches 049, 123, 246)
 Verdict : **disparaît entièrement** — le point de la branche après un tour de l’agent passe dans `parcours-matinee` étape 5 ; le commit réel est couvert par `parcours-matinee` étape 7 et les tests du main ; le reste est du composant ou de la capture
-Compte : 19 vérifications — parcours 1, composant 8, unitaire-main 2, capture 4, doublon 4 ; déjà couvertes ailleurs : 6
+Compte : 19 vérifications — parcours 1, composant 8, unitaire-main 2, capture 4, doublon 4 ; déjà couvertes ailleurs : 11 (+4 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -786,7 +786,7 @@ Compte : 19 vérifications — parcours 1, composant 8, unitaire-main 2, capture
 
 ### `worktree-cycle.mjs` — cycle complet d’un worktree ouvert depuis le menu du dossier : départ, commit, fusion avec conflit résolu par l’agent, nettoyage, orphelins (fiches 110, 123, 126)
 Verdict : **à garder (réduite)** — la bascule en worktree depuis le menu du dossier et la résolution d’un conflit par l’agent sur un seul worktree n’existent dans aucun parcours (`parcours-deleguer` passe par la fusion groupée, un autre chemin) ; le reste est couvert par `worktree-cycle.test.ts` / `worktree-ipc.test.ts` ou relève du composant
-Compte : 19 vérifications — parcours 2, composant 6, unitaire-main 5, capture 1, doublon 5 ; déjà couvertes ailleurs : 9
+Compte : 19 vérifications — parcours 2, composant 6, unitaire-main 5, capture 1, doublon 5 ; déjà couvertes ailleurs : 15 (+3 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -812,7 +812,7 @@ Compte : 19 vérifications — parcours 2, composant 6, unitaire-main 5, capture
 
 ### `terminal.mjs` — terminal à côté de la conversation : ⌃`, police d’icônes, commande de l’agent, commandes retenues, couleurs, extrait joint, refus (fiches 034, 072, 122, 134, 201)
 Verdict : **disparaît entièrement** — à condition de déplacer ses 5 vérifications `parcours` dans `parcours-outils` étapes 1 et 2 ; le reste est déjà dans `parcours-outils`, dans les tests du main ou relève du composant
-Compte : 18 vérifications — parcours 5, composant 5, unitaire-main 0, capture 1, doublon 7 ; déjà couvertes ailleurs : 7
+Compte : 18 vérifications — parcours 5, composant 5, unitaire-main 0, capture 1, doublon 7 ; déjà couvertes ailleurs : 15 (+2 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -837,7 +837,7 @@ Compte : 18 vérifications — parcours 5, composant 5, unitaire-main 0, capture
 
 ### `base.mjs` — essai de fumée historique : accueil, indicateur d’activité, autorisations, réglages de session, menu des agents, nouvelle conversation, renommage
 Verdict : **disparaît entièrement** — aucune course ni processus propre ; autorisations et modèle/mode sont refaits par `parcours-matinee` ; le reste demande des tests de composant (plusieurs à créer)
-Compte : 18 vérifications — parcours 0, composant 11, unitaire-main 2, capture 2, doublon 3 ; déjà couvertes ailleurs : 3
+Compte : 18 vérifications — parcours 0, composant 11, unitaire-main 2, capture 2, doublon 3 ; déjà couvertes ailleurs : 16
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -862,7 +862,7 @@ Compte : 18 vérifications — parcours 0, composant 11, unitaire-main 2, captur
 
 ### `language.mjs` — langue de l’interface changée à chaud (fenêtres, menu macOS), gardée d’un lancement à l’autre (fiche 074)
 Verdict : **à garder (réduite)** — « chaque fenêtre suit » et « relancée en anglais dès le départ » sont des vérifications entre processus ou après redémarrage, que `parcours-reglages` (sans redémarrage) ne fait pas
-Compte : 8 vérifications — parcours 2, composant 1, unitaire-main 3, capture 0, doublon 2 ; déjà couvertes ailleurs : 2
+Compte : 8 vérifications — parcours 2, composant 1, unitaire-main 3, capture 0, doublon 2 ; déjà couvertes ailleurs : 4 (+3 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -899,7 +899,7 @@ Les noms de tests cités ont été retrouvés par grep (`rg`) dans `src/**/*.tes
 
 ### `parcours-matinee.mjs` — journée type « matinée de dev » (fiche 277) : demande, autorisations, modifications, relecture, commit rédigé, deux conversations, file d’attente, Stop, modèle/mode, ⌘Q puis relance
 Verdict : **à garder** — c’est l’une des journées types ; toutes ses vérifications enchaînent de vrais processus (agent factice par ACP, git réel, IPC, redémarrage).
-Compte : 17 vérifications — parcours 17, composant 0, unitaire-main 0, capture 0, doublon 0 ; déjà couvertes ailleurs : 0 en entier (13 en partie)
+Compte : 17 vérifications — parcours 17, composant 0, unitaire-main 0, capture 0, doublon 0 ; déjà couvertes ailleurs : 0 (+13 partielles)
 
 | # | Vérification (libellé court) | Ce qu’elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -932,7 +932,7 @@ Compte : 17 vérifications — parcours 17, composant 0, unitaire-main 0, captur
 
 ### `fil.mjs` — fil (fiche 156) : durée du tour, copier un message, image en grand et glissée, « Ouvrir dans l’éditeur », carte « Où en était-on ? »
 Verdict : **disparaît entièrement** — tout se vérifie sans lancer l’app ; 11 vérifications le sont déjà, 6 tests de composant à ajouter (dont 4 en partie couverts) ; captures `156-*` → capture nocturne.
-Compte : 17 vérifications — parcours 0, composant 6, unitaire-main 0, capture 0, doublon 11 ; déjà couvertes ailleurs : 11 (+4 en partie)
+Compte : 17 vérifications — parcours 0, composant 6, unitaire-main 0, capture 0, doublon 11 ; déjà couvertes ailleurs : 17
 
 | # | Vérification (libellé court) | Ce qu’elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -958,7 +958,7 @@ Compte : 17 vérifications — parcours 0, composant 6, unitaire-main 0, capture
 
 ### `commit-redige.mjs` — message de commit rédigé par l’agent (fiche 246) : réponse normale + « Committer puis fusionner » depuis la carte, agent lent (repli, « Réessayer »), « Arrêter »
 Verdict : **disparaît entièrement** — les tests du main lancent déjà le vrai agent factice et vérifient les processus ; seule la relecture automatique de la vue Git après « Committer puis fusionner » reste e2e, à porter dans `parcours-deleguer`.
-Compte : 15 vérifications — parcours 1, composant 0, unitaire-main 0, capture 0, doublon 14 ; déjà couvertes ailleurs : 14
+Compte : 15 vérifications — parcours 1, composant 0, unitaire-main 0, capture 0, doublon 14 ; déjà couvertes ailleurs : 14 (+1 partielles)
 
 | # | Vérification (libellé court) | Ce qu’elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -982,7 +982,7 @@ Compte : 15 vérifications — parcours 1, composant 0, unitaire-main 0, capture
 
 ### `aide.mjs` — aide intégrée (fiche 186) : fenêtre à part (⌘?), sommaire, langue, images, recherche au clavier avec surlignage, liens externes, liens « ? » des Réglages
 Verdict : **à garder (réduite)** — garder la fenêtre native, le chargement réel des images et le surlignage visible (CSS Highlights + défilement : jsdom n’a ni l’un ni l’autre) ; « ? » → fenêtre d’aide à porter dans `parcours-reglages` ; le reste en tests de composant.
-Compte : 15 vérifications — parcours 5, composant 5, unitaire-main 1, capture 0, doublon 4 ; déjà couvertes ailleurs : 4 (+9 en partie)
+Compte : 15 vérifications — parcours 5, composant 5, unitaire-main 1, capture 0, doublon 4 ; déjà couvertes ailleurs : 5 (+8 partielles)
 
 | # | Vérification (libellé court) | Ce qu’elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1006,7 +1006,7 @@ Compte : 15 vérifications — parcours 5, composant 5, unitaire-main 1, capture
 
 ### `usage.mjs` — consommation (fiches 019, 109, 113, 130, 245) : jauge, détail et coût par échange, alerte, compaction ; coût comme Bob (base de Bob), rejeu tardif à la réouverture, journal SQLite
 Verdict : **disparaît entièrement** — le rendu et le calcul sont déjà couverts ou se vérifient en composant ; seule la réouverture avec rejeu tardif reste e2e, à porter dans `parcours-longue`.
-Compte : 15 vérifications (17 appels, `checkCost` joué deux fois) — parcours 1, composant 5, unitaire-main 0, capture 0, doublon 9 ; déjà couvertes ailleurs : 9 (+4 en partie)
+Compte : 15 vérifications (17 appels, `checkCost` joué deux fois) — parcours 1, composant 5, unitaire-main 0, capture 0, doublon 9 ; déjà couvertes ailleurs : 13 (+1 partielles)
 
 | # | Vérification (libellé court) | Ce qu’elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1030,7 +1030,7 @@ Compte : 15 vérifications (17 appels, `checkCost` joué deux fois) — parcours
 
 ### `command.mjs` — dossier et lancement (fiche 158) : menu du dossier (Mac/Linux), `bobine <dossier> "message"` au premier lancement et par une seconde instance, installation de la commande
 Verdict : **à garder (réduite)** — garder le lancement avec arguments et la seconde instance (vrais processus Electron, verrou d’instance unique) ; menu et réglage en composant, script déjà testé côté main.
-Compte : 14 vérifications — parcours 2, composant 8, unitaire-main 0, capture 0, doublon 4 ; déjà couvertes ailleurs : 3 (+8 en partie)
+Compte : 14 vérifications — parcours 2, composant 8, unitaire-main 0, capture 0, doublon 4 ; déjà couvertes ailleurs : 10 (+4 partielles)
 
 | # | Vérification (libellé court) | Ce qu’elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1053,7 +1053,7 @@ Compte : 14 vérifications — parcours 2, composant 8, unitaire-main 0, capture
 
 ### `outils-projet.mjs` — outils iOS apparus avec un projet Xcode créé pendant la conversation (fiche 241) : agent qui ne suit pas la liste (avis, « Redémarrer l’agent ») et agent qui la suit
 Verdict : **disparaît entièrement** — la détection, les avis et la relecture de la liste sont testés côté main et composant ; le redémarrage de bout en bout jusqu’à `ios_build` déclaré est à porter dans `parcours-outils`.
-Compte : 8 vérifications — parcours 1, composant 1, unitaire-main 0, capture 0, doublon 6 ; déjà couvertes ailleurs : 6 (+2 en partie)
+Compte : 8 vérifications — parcours 1, composant 1, unitaire-main 0, capture 0, doublon 6 ; déjà couvertes ailleurs : 6 (+2 partielles)
 
 | # | Vérification (libellé court) | Ce qu’elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1094,7 +1094,7 @@ cités en fin de suite (« Captures ») et partent dans la capture nocturne. Une
 
 ### `permissions.mjs` — « Toujours autoriser » retenu d'une conversation à l'autre, révocable, demande retirée par l'agent, cartes de la fiche 214 (pastille, tâches, MCP, risque)
 Verdict : **disparaît entièrement** — tout est déjà testé côté composant (PermissionCardExtras) ou main (manager, agent-host) ; il manque deux petits tests (révocation qui fait revenir la demande, carte retirée sans « annulée »).
-Compte : 12 vérifications — parcours 0, composant 3, unitaire-main 1, capture 0, doublon 8 ; déjà couvertes ailleurs : 12 (dont 4 en partie)
+Compte : 12 vérifications — parcours 0, composant 3, unitaire-main 1, capture 0, doublon 8 ; déjà couvertes ailleurs : 11 (+1 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1117,7 +1117,7 @@ Captures : `c0-autorisation-retenue`, `c1-outils-autorises`, `c2-demande-avant-r
 
 ### `nouvelle-version.mjs` — avis de nouvelle version contre un faux serveur : ligne de la barre latérale, « Plus tard », « Voir », Réglages › Nouveautés, une fois par 24 h, échec silencieux, réglage coupé
 Verdict : **à garder (réduite)** — un seul lancement suffit pour la vraie requête Electron (en-têtes réellement envoyés par la pile réseau de Chromium) ; le reste est déjà testé en unitaire et en composant.
-Compte : 13 vérifications — parcours 1, composant 1, unitaire-main 0, capture 1, doublon 10 ; déjà couvertes ailleurs : 12 (dont 2 en partie)
+Compte : 13 vérifications — parcours 1, composant 1, unitaire-main 0, capture 1, doublon 10 ; déjà couvertes ailleurs : 11 (+1 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1141,7 +1141,7 @@ Captures : `nouvelle-version-ligne`, `-reglages`, `-connue-echec`, `-a-jour`, `-
 
 ### `aparte.mjs` — aparté (`/btw`, ⇧⌘A) : question à côté pendant un tour, session à part du même agent, lecture seule, « Ajouter au fil »
 Verdict : **disparaît entièrement** — seule la vraie concurrence (aparté pendant un tour qui attend une permission) doit rester e2e : à poser comme sous-étape de `parcours-matinee` étape 8 (tour long).
-Compte : 12 vérifications — parcours 1, composant 4, unitaire-main 0, capture 1, doublon 6 ; déjà couvertes ailleurs : 10 (dont 4 en partie)
+Compte : 12 vérifications — parcours 1, composant 4, unitaire-main 0, capture 1, doublon 6 ; déjà couvertes ailleurs : 11 (+1 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1164,7 +1164,7 @@ Captures : `180-aparte-conversation-vide`, `180-avant-pendant-tour`, `180-menu-b
 
 ### `startup.mjs` — premier lancement sans dossier, dossier choisi par le dialogue (simulé), fenêtre retrouvée à sa place puis ramenée d'un écran disparu, menu Fenêtre
 Verdict : **à garder (réduite)** — le premier lancement devient composant + main ; garder deux relances : fenêtre native à sa place, puis ramenée et agrandie.
-Compte : 11 vérifications — parcours 4, composant 2, unitaire-main 1, capture 0, doublon 4 ; déjà couvertes ailleurs : 9 (dont 5 en partie)
+Compte : 11 vérifications — parcours 4, composant 2, unitaire-main 1, capture 0, doublon 4 ; déjà couvertes ailleurs : 6 (+4 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1186,7 +1186,7 @@ Captures : `44-premier-lancement`, `45-dossier-choisi`.
 
 ### `plan.mjs` — plan annoté (plan écrit dans `plan.md` comme Bob) : remarques, barre stable, plan long, rechargement, version 2 et diff, exécution unique
 Verdict : **à garder (réduite)** — les mesures de mise en page (2, 3, 4, 6) ne se font pas sous jsdom ; tant que la capture nocturne ne les vérifie pas, garder un e2e court sur la barre du plan. Le reste passe en composant / partagé.
-Compte : 11 vérifications — parcours 0, composant 4, unitaire-main 1, capture 4, doublon 2 ; déjà couvertes ailleurs : 8 (dont 6 en partie)
+Compte : 11 vérifications — parcours 0, composant 4, unitaire-main 1, capture 4, doublon 2 ; déjà couvertes ailleurs : 7 (+3 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1208,7 +1208,7 @@ Captures : `97a`, `97`, `98`, `98b`, `99-plan-version-2`.
 
 ### `parcours-reglages.mjs` — journée type (fiche 277) : réglages changés pendant le travail (langue, thème, proxy, agent par défaut, mémoire, `@rôle`) sans rien perdre
 Verdict : **à garder** — c'est une journée type ; chaque étape enchaîne IPC, processus d'agent et état réel.
-Compte : 11 vérifications — parcours 11, composant 0, unitaire-main 0, capture 0, doublon 0 ; déjà couvertes ailleurs : 6 (toutes en partie)
+Compte : 11 vérifications — parcours 11, composant 0, unitaire-main 0, capture 0, doublon 0 ; déjà couvertes ailleurs : 0 (+6 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1230,7 +1230,7 @@ Captures : `276-reglages-autre-langue`, `276-reglages-proxy`, `276-reglages-role
 
 ### `filles-tech-lead.mjs` — mère tech lead dans un dépôt git : agent inconnu refusé, modèle proposé et sa raison, correction par `message_child`, recommandation, fusion du seul travail de la carte, fille bavarde
 Verdict : **disparaît entièrement** — tout est en double sauf la relecture des branches après de vrais commits et la fusion limitée à la carte, à ajouter à `parcours-deleguer` étapes 3–4 (un travail lancé à la main hors de la carte, non fusionné).
-Compte : 11 vérifications — parcours 2, composant 1, unitaire-main 0, capture 0, doublon 8 ; déjà couvertes ailleurs : 11 (dont 3 en partie)
+Compte : 11 vérifications — parcours 2, composant 1, unitaire-main 0, capture 0, doublon 8 ; déjà couvertes ailleurs : 9 (+2 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1252,7 +1252,7 @@ Captures : `filles-tech-lead-1-proposition`, `-2-recommandee`, `-4-fusionnee`, `
 
 ### `aurore.mjs` — thème Aurore / Aurore nuit : vignette « Nouveau », six touches (lueur, bulle, liseré, dégradé, ombre, verre), repli transparence réduite / contraste
 Verdict : **disparaît entièrement** — ce sont des styles calculés par un vrai moteur : ils vont dans la capture nocturne, **à condition que ces assertions de style calculé y restent** (sinon elles sont perdues) ; les valeurs des jetons sont déjà testées dans `theme-aurora.test.ts`.
-Compte : 11 vérifications — parcours 0, composant 0, unitaire-main 0, capture 10, doublon 1 ; déjà couvertes ailleurs : 9 (dont 8 en partie)
+Compte : 11 vérifications — parcours 0, composant 0, unitaire-main 0, capture 10, doublon 1 ; déjà couvertes ailleurs : 1 (+8 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1272,7 +1272,7 @@ Compte : 11 vérifications — parcours 0, composant 0, unitaire-main 0, capture
 
 ### `finitions.mjs` — finitions 0.9.1 : pied de réponse (bilan), « ↓ N nouveaux », à 900 px onglets et puce de l'agent jamais coupés, pied du tour sans débordement
 Verdict : **disparaît entièrement** — les mesures de mise en page vont dans la capture nocturne ; le clic sur un onglet serré (✕ invisible posé dessus) va dans `parcours-longue` étape 5 (panneau ouvert, fenêtre étroite).
-Compte : 10 vérifications — parcours 1, composant 2, unitaire-main 0, capture 5, doublon 2 ; déjà couvertes ailleurs : 7 (dont 5 en partie)
+Compte : 10 vérifications — parcours 1, composant 2, unitaire-main 0, capture 5, doublon 2 ; déjà couvertes ailleurs : 4 (+3 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1293,7 +1293,7 @@ Captures : `185-bilan-du-tour`, `185-nouveaux`, `185-900-onglets`, `261-pied-900
 
 ### `about.mjs` — fenêtre « À propos de Bobine » : ouverte par le menu, une seule, attachée ; textes, « Copier les infos techniques », liens, « Nouveautés », Échap
 Verdict : **à garder (réduite)** — garder la fenêtre native (une seule, attachée, taille), « Nouveautés » qui ouvre les Réglages de la fenêtre principale, et Échap ; les textes sont déjà testés en composant.
-Compte : 10 vérifications — parcours 3, composant 2, unitaire-main 0, capture 0, doublon 5 ; déjà couvertes ailleurs : 10 (dont 5 en partie)
+Compte : 10 vérifications — parcours 3, composant 2, unitaire-main 0, capture 0, doublon 5 ; déjà couvertes ailleurs : 6 (+4 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -1314,7 +1314,7 @@ Captures : `o0-a-propos`, `o1-a-propos-copie`, `o2-nouveautes`.
 
 ### `travail-recette.mjs` — recette du 20 novembre (fiche 267) : quota gratuit épuisé (conversation et travail), `@rôle` + Entrée aussitôt, activité d'une longue commande sur une ligne
 Verdict : **disparaît entièrement** — tout est déjà testé en composant (BlockerPanel, WorkCard, RoleComposerLoss) et en main (turn-quota, turn-auth-manager).
-Compte : 9 vérifications — parcours 0, composant 1, unitaire-main 1, capture 0, doublon 7 ; déjà couvertes ailleurs : 9 (dont 2 en partie)
+Compte : 9 vérifications — parcours 0, composant 1, unitaire-main 1, capture 0, doublon 7 ; déjà couvertes ailleurs : 7 (+2 partielles)
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|

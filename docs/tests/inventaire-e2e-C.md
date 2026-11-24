@@ -10,14 +10,16 @@ Classes : `parcours` (reste e2e), `composant`, `unitaire-main`, `capture` (captu
 `doublon` (déjà vérifié ailleurs). « Couvert » compte aussi les couvertures partielles
 (« partiel : … » dans le tableau).
 
-**Remplaçants du panneau (2026-11-24)** : 10 lignes passées à « oui » (`session` 3, 4, 13, 31, `onglets-etroits` 2, 6–10). Les chiffres du résumé restent ceux de l'inventaire.
+**Remplaçants du panneau (2026-11-24)** : 10 lignes passées à « oui » (`session` 3, 4, 13, 31, `onglets-etroits` 2, 6–10). Chiffres du résumé recalculés à l'assemblage (voir « Résumé chiffré »).
 
 ## Résumé chiffré
+
+**Recalculé le 2026-11-24 à l'assemblage des remplaçants** (branche `test/pyramide`) : « couvertes » = un remplaçant complet est cité dans « Déjà couvert ? » (test Vitest ou étape de journée type), « en partie » = remplaçant partiel. Ce qui part de l'e2e, et à quelle condition : `docs/tests/plan-suppressions.md`. Les verdicts ci-dessous restent ceux de l'inventaire ; ceux du plan les remplacent.
 
 - **41 suites**, **656 vérifications** (chaque `check` ; une `check` dans une boucle compte une fois).
 - Par classe : **parcours 124** (19 %) · **composant 257** (39 %) · **unitaire-main 71** (11 %) ·
   **capture 61** (9 %) · **doublon 143** (22 %).
-- **Déjà couvertes ailleurs (en tout ou en partie) : 522 / 656** ; 134 sans aucun test équivalent.
+- **Déjà couvertes ailleurs (en tout ou en partie) : 561 / 656** (dont 442 entièrement) ; 95 sans aucun test équivalent.
 - Verdicts : **10 suites supprimables entièrement** (sous condition, voir chaque verdict),
   **28 à réduire** (garder quelques vérifications, souvent à déplacer dans une journée type),
   **3 à garder** (`pannes-visibles` allégée, `parcours-longue`, `parcours-pannes`).
@@ -29,50 +31,50 @@ Classes : `parcours` (reste e2e), `composant`, `unitaire-main`, `capture` (captu
 **À garder** : `pannes-visibles` (9 vérifs sur processus réels : SIGKILL, kill -9, orphelins),
 `parcours-longue`, `parcours-pannes`.
 
-| Suite | Vérifs | parcours | composant | unit.-main | capture | doublon | couvert | Verdict |
+| Suite | Vérifs | parcours | composant | unit.-main | capture | doublon | couvert (+ part.) | Verdict |
 |---|---:|---:|---:|---:|---:|---:|---:|---|
-| `filles` | 51 | 5 | 13 | 1 | 0 | 32 | 48 | à réduire |
+| `filles` | 51 | 5 | 13 | 1 | 0 | 32 | 44 (+6 part.) | à réduire |
 | `filles-non-commite` | 15 | 1 | 0 | 0 | 0 | 14 | 15 | supprimable |
-| `handover` | 8 | 1 | 4 | 1 | 0 | 2 | 7 | à réduire |
-| `inbox` | 25 | 2 | 2 | 0 | 5 | 16 | 21 | à réduire |
-| `roles-export` | 17 | 2 | 2 | 0 | 1 | 12 | 15 | à réduire |
-| `roles-travail` | 37 | 3 | 24 | 0 | 7 | 3 | 33 | à réduire |
-| `session` | 31 | 3 | 24 | 2 | 1 | 1 | 30 | à réduire |
-| `connexion-expiree` | 22 | 2 | 13 | 5 | 0 | 2 | 22 | à réduire |
-| `pannes-visibles` | 24 | 9 | 12 | 1 | 0 | 2 | 22 | garder |
+| `handover` | 8 | 1 | 4 | 1 | 0 | 2 | 6 (+2 part.) | à réduire |
+| `inbox` | 25 | 2 | 2 | 0 | 5 | 16 | 18 (+3 part.) | à réduire |
+| `roles-export` | 17 | 2 | 2 | 0 | 1 | 12 | 15 (+1 part.) | à réduire |
+| `roles-travail` | 37 | 3 | 24 | 0 | 7 | 3 | 28 (+5 part.) | à réduire |
+| `session` | 31 | 3 | 24 | 2 | 1 | 1 | 26 (+4 part.) | à réduire |
+| `connexion-expiree` | 22 | 2 | 13 | 5 | 0 | 2 | 20 (+2 part.) | à réduire |
+| `pannes-visibles` | 24 | 9 | 12 | 1 | 0 | 2 | 15 (+8 part.) | garder |
 | `reprise` | 4 | 0 | 1 | 0 | 0 | 3 | 4 | supprimable |
-| `failures` | 11 | 1 | 0 | 6 | 0 | 4 | 11 | à réduire |
-| `autorisation-commande` | 48 | 2 | 31 | 5 | 10 | 0 | 37 | à réduire |
-| `browser` | 48 | 21 | 5 | 18 | 2 | 2 | 37 | à réduire |
-| `annotate` | 7 | 4 | 2 | 0 | 1 | 0 | 4 | à réduire |
-| `command-output` | 5 | 1 | 2 | 0 | 2 | 0 | 3 | supprimable |
+| `failures` | 11 | 1 | 0 | 6 | 0 | 4 | 10 (+1 part.) | à réduire |
+| `autorisation-commande` | 48 | 2 | 31 | 5 | 10 | 0 | 36 (+3 part.) | à réduire |
+| `browser` | 48 | 21 | 5 | 18 | 2 | 2 | 25 (+12 part.) | à réduire |
+| `annotate` | 7 | 4 | 2 | 0 | 1 | 0 | 2 (+2 part.) | à réduire |
+| `command-output` | 5 | 1 | 2 | 0 | 2 | 0 | 4 (+1 part.) | supprimable |
 | `commit-choisi` | 8 | 1 | 6 | 1 | 0 | 0 | 8 | à réduire |
-| `branch` | 12 | 3 | 5 | 3 | 0 | 1 | 8 | à réduire |
-| `perf` | 25 | 15 | 3 | 0 | 0 | 7 | 15 | à réduire |
-| `usage-board` | 29 | 2 | 5 | 2 | 5 | 15 | 23 | à réduire |
-| `quota` | 13 | 4 | 1 | 2 | 0 | 6 | 11 | à réduire |
-| `versions` | 10 | 3 | 3 | 0 | 0 | 4 | 10 | à réduire |
-| `debordements` | 11 | 0 | 0 | 0 | 6 | 5 | 5 | à réduire |
-| `onglets-etroits` | 10 | 2 | 6 | 0 | 2 | 0 | 3 | à réduire |
+| `branch` | 12 | 3 | 5 | 3 | 0 | 1 | 9 (+2 part.) | à réduire |
+| `perf` | 25 | 15 | 3 | 0 | 0 | 7 | 7 (+8 part.) | à réduire |
+| `usage-board` | 29 | 2 | 5 | 2 | 5 | 15 | 17 (+6 part.) | à réduire |
+| `quota` | 13 | 4 | 1 | 2 | 0 | 6 | 7 (+4 part.) | à réduire |
+| `versions` | 10 | 3 | 3 | 0 | 0 | 4 | 4 (+6 part.) | à réduire |
+| `debordements` | 11 | 0 | 0 | 0 | 6 | 5 | 5 (+4 part.) | à réduire |
+| `onglets-etroits` | 10 | 2 | 6 | 0 | 2 | 0 | 6 (+2 part.) | à réduire |
 | `polices` | 7 | 2 | 3 | 0 | 0 | 2 | 5 | à réduire |
-| `libelles` | 4 | 0 | 2 | 0 | 0 | 2 | 3 | supprimable |
-| `long-thread` | 4 | 0 | 1 | 0 | 0 | 3 | 4 | supprimable |
-| `activity` | 14 | 0 | 12 | 0 | 1 | 1 | 12 | supprimable |
-| `attachments` | 17 | 2 | 13 | 1 | 0 | 1 | 14 | à réduire |
-| `discussion` | 16 | 3 | 11 | 2 | 0 | 0 | 15 | à réduire |
-| `fun` | 10 | 1 | 5 | 2 | 0 | 2 | 7 | à réduire |
-| `mentions` | 6 | 1 | 2 | 3 | 0 | 0 | 5 | à réduire |
-| `notifications` | 15 | 3 | 0 | 12 | 0 | 0 | 13 | à réduire |
-| `parcours-longue` | 10 | 9 | 1 | 0 | 0 | 0 | 4 | garder |
-| `parcours-pannes` | 9 | 9 | 0 | 0 | 0 | 0 | 1 | garder |
-| `pinned-plan` | 9 | 0 | 6 | 0 | 3 | 0 | 6 | supprimable |
-| `presentation` | 13 | 2 | 6 | 1 | 4 | 0 | 9 | à réduire |
-| `questions` | 15 | 2 | 12 | 0 | 0 | 1 | 13 | à réduire |
-| `relecture` | 10 | 0 | 8 | 1 | 1 | 0 | 9 | supprimable |
-| `sommaire` | 8 | 3 | 4 | 0 | 1 | 0 | 3 | à réduire |
-| `tables` | 10 | 0 | 1 | 0 | 9 | 0 | 5 | supprimable |
-| `touches` | 8 | 0 | 6 | 2 | 0 | 0 | 6 | supprimable |
-| **Total** | **656** | **124** | **257** | **71** | **61** | **143** | **522** | 10 / 28 / 3 |
+| `libelles` | 4 | 0 | 2 | 0 | 0 | 2 | 3 (+1 part.) | supprimable |
+| `long-thread` | 4 | 0 | 1 | 0 | 0 | 3 | 3 (+1 part.) | supprimable |
+| `activity` | 14 | 0 | 12 | 0 | 1 | 1 | 12 (+1 part.) | supprimable |
+| `attachments` | 17 | 2 | 13 | 1 | 0 | 1 | 14 (+2 part.) | à réduire |
+| `discussion` | 16 | 3 | 11 | 2 | 0 | 0 | 11 (+5 part.) | à réduire |
+| `fun` | 10 | 1 | 5 | 2 | 0 | 2 | 6 (+1 part.) | à réduire |
+| `mentions` | 6 | 1 | 2 | 3 | 0 | 0 | 6 | à réduire |
+| `notifications` | 15 | 3 | 0 | 12 | 0 | 0 | 12 (+2 part.) | à réduire |
+| `parcours-longue` | 10 | 9 | 1 | 0 | 0 | 0 | 1 (+3 part.) | garder |
+| `parcours-pannes` | 9 | 9 | 0 | 0 | 0 | 0 | 0 (+1 part.) | garder |
+| `pinned-plan` | 9 | 0 | 6 | 0 | 3 | 0 | 4 (+2 part.) | supprimable |
+| `presentation` | 13 | 2 | 6 | 1 | 4 | 0 | 2 (+7 part.) | à réduire |
+| `questions` | 15 | 2 | 12 | 0 | 0 | 1 | 10 (+5 part.) | à réduire |
+| `relecture` | 10 | 0 | 8 | 1 | 1 | 0 | 7 (+2 part.) | supprimable |
+| `sommaire` | 8 | 3 | 4 | 0 | 1 | 0 | 4 (+1 part.) | à réduire |
+| `tables` | 10 | 0 | 1 | 0 | 9 | 0 | 3 (+3 part.) | supprimable |
+| `touches` | 8 | 0 | 6 | 2 | 0 | 0 | 8 | supprimable |
+| **Total** | **656** | **124** | **257** | **71** | **61** | **143** | **442 (+119 part.)** | 10 / 28 / 3 |
 
 ## Risques repérés (synthèse ; le détail est en fin de chaque lot)
 
@@ -209,7 +211,7 @@ Chemins de tests abrégés : `C/` = `src/renderer/src/components/`, `M/` = `src/
 | 51 | `/split` : carte sur demande même réglé « Jamais » | demande explicite prime | doublon | — | `M/conversations/children.test.ts` › « `chantiers` (fiche 118) : « Jamais » : il fait le travail lui-même ; `/split` : il propose » |
 
 **Verdict** : à réduire (garder 5 vérifs : 19, 31-33, 44) — l'essentiel est déjà en tests main (`children*.test.ts`, agent factice + git réel) et composants ; garder la suppression de la mère affichée (journal IPC), la rafale sous le pointeur (mise en page réelle) et la consigne après redémarrage. Les cas composant non couverts (2, 14, 45) sont à créer avant suppression.
-<!-- stats suite=filles total=51 parcours=5 composant=13 unitaire-main=1 capture=0 doublon=32 couvert=48 verdict=reduire -->
+<!-- stats suite=filles total=51 parcours=5 composant=13 unitaire-main=1 capture=0 doublon=32 couvert=50 complet=44 verdict=reduire -->
 
 ### `filles-non-commite.mjs` — filles et travail non commité de la mère : rôle cité (ligne orange, voir, partir sans, juste un avis), tâches proposées (committer d'abord, `.env` décoché), dépôt sans commit.
 
@@ -232,7 +234,7 @@ Chemins de tests abrégés : `C/` = `src/renderer/src/components/`, `M/` = `src/
 | 15 | Proposition lancée : dans le dossier, toujours aucun commit | `start_child` sans commit vide | doublon | — | `M/conversations/children-uncommitted.test.ts` › « fille sans rôle (« Lancer en parallèle… », `start_child`) : dans le dossier aussi » ; `M/mcp/children-tools.test.ts` › « fiche 262 : dépôt sans commit, la fille écrit dans le dossier ; jamais de commit vide » |
 
 **Verdict** : supprimable entièrement — à condition de reporter la vérif 3 (un envoi `@rôle` sur dossier modifié, la fille ne voit pas le fichier) comme une étape de `parcours-deleguer`. Tout le reste est vérifié à l'identique par `children-uncommitted.test.ts` (git réel + agent factice) et par les tests de composant.
-<!-- stats suite=filles-non-commite total=15 parcours=1 composant=0 unitaire-main=0 capture=0 doublon=14 couvert=15 verdict=supprimable -->
+<!-- stats suite=filles-non-commite total=15 parcours=1 composant=0 unitaire-main=0 capture=0 doublon=14 couvert=15 complet=15 verdict=supprimable -->
 
 ### `handover.mjs` — « Continuer avec » un autre agent : menu, confirmation, bascule dans la même conversation, contexte transmis une fois, titre gardé.
 
@@ -248,7 +250,7 @@ Chemins de tests abrégés : `C/` = `src/renderer/src/components/`, `M/` = `src/
 | 8 | Conversation vide : pas de « Continuer avec » | menu de choix d'agent seul | composant | `C/composer/AgentMenu.test.tsx` (à créer) | non — **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/composer/AgentMenu.test.tsx` › conversation vide : pas de « Continuer avec », seulement le choix de l’agent |
 
 **Verdict** : à réduire (garder 2 vérifs : 4, 5) — la bascule réelle entre deux agents factices reste un parcours ; elle peut devenir une étape de `parcours-reglages`. Le menu et le dialogue n'ont aucun test de composant : à créer avant suppression.
-<!-- stats suite=handover total=8 parcours=1 composant=4 unitaire-main=1 capture=0 doublon=2 couvert=7 verdict=reduire -->
+<!-- stats suite=handover total=8 parcours=1 composant=4 unitaire-main=1 capture=0 doublon=2 couvert=8 complet=6 verdict=reduire -->
 
 ### `inbox.mjs` — attention sur place : autorisation, question, filles non lues, compteur du Dock, bannière groupée, lecture, titres bruts façon Bob, grille de la barre latérale.
 
@@ -281,7 +283,7 @@ Chemins de tests abrégés : `C/` = `src/renderer/src/components/`, `M/` = `src/
 | 25 | Plus aucun chemin absolu du dossier dans la page | aucun chemin absolu rendu | composant | `C/thread/ToolCall.session.test.tsx` (existant) | partiel : `S/tool-label.test.ts` › « titre sans libellé : les chemins du dossier deviennent relatifs » — **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/thread/ToolCall.test.tsx` › aucun chemin absolu du dossier dans la carte (inbox n° 25) (sur toute la page : e2e inbox) |
 
 **Verdict** : à réduire (garder 2 vérifs : 2, 13) — le non-lu de bout en bout (fenêtre sans focus) et le vrai compteur du Dock ; la grille (8-11) et les couleurs (6) passent en capture nocturne ; le reste est déjà vérifié par `attention.test.ts`, `dock-badge.test.ts`, `grouping.test.ts`, `inbox.test.ts` et `Sidebar.test.tsx`.
-<!-- stats suite=inbox total=25 parcours=2 composant=2 unitaire-main=0 capture=5 doublon=16 couvert=21 verdict=reduire -->
+<!-- stats suite=inbox total=25 parcours=2 composant=2 unitaire-main=0 capture=5 doublon=16 couvert=21 complet=18 verdict=reduire -->
 
 ### `roles-export.mjs` — « Installer dans Bob / OpenCode » un rôle : feuille, installation dans les vrais fichiers, conflit, mise à jour, lancer dans le mode, retrait, modifié à la main, nom long, installation sans rôle.
 
@@ -306,7 +308,7 @@ Chemins de tests abrégés : `C/` = `src/renderer/src/components/`, `M/` = `src/
 | 17 | Installation sans rôle retirée : fichier supprimé | retrait d'un orphelin | doublon | — | `M/roles/export/service.test.ts` › « restent visibles et se retirent ; projet : seulement dans son dossier » |
 
 **Verdict** : à réduire (garder 2 vérifs : 4, 8) — une installation de bout en bout dans un vrai fichier et « lancer dans ce mode » contre l'agent factice ; tout le reste est dans `service.test.ts`, `adapters.test.ts` et `RoleExport.test.tsx`. Les deux parcours peuvent devenir une étape de `parcours-reglages`.
-<!-- stats suite=roles-export total=17 parcours=2 composant=2 unitaire-main=0 capture=1 doublon=12 couvert=15 verdict=reduire -->
+<!-- stats suite=roles-export total=17 parcours=2 composant=2 unitaire-main=0 capture=1 doublon=12 couvert=16 complet=15 verdict=reduire -->
 
 #### Risques repérés (lot 1)
 
@@ -383,7 +385,7 @@ Abréviations des chemins : `thread/` = `src/renderer/src/components/thread/`, `
 | 48 | modification hors du dossier (outil edit, Bob) : bandeau, pas de Toujours | risque d'une écriture de fichier | unitaire-main | `src/main/agent/permission-risk.test.ts` | `src/main/agent/permission-risk.test.ts` › « Bob 2.0.9 : rawInput.path et diff absolus, une seule mention par chemin » |
 
 **Verdict** : à réduire (garder 2 vérifs : #5 fin de commande atteignable et #6 molette contenue, sur commande-tres-longue en fenêtre normale et à 900 px) — tout le reste est déjà en composant/unitaire ou relève d'une capture nocturne (cartes serrées, positions de « Copier », « · »).
-<!-- stats suite=autorisation-commande total=48 parcours=2 composant=31 unitaire-main=5 capture=10 doublon=0 couvert=37 verdict=reduire -->
+<!-- stats suite=autorisation-commande total=48 parcours=2 composant=31 unitaire-main=5 capture=10 doublon=0 couvert=39 complet=36 verdict=reduire -->
 
 ### `browser.mjs` — navigateur intégré piloté par l'agent : outils, débogage, planche contact, popups, accord par site, téléchargements, boîtes de page, vue native, branche
 
@@ -439,7 +441,7 @@ Abréviations des chemins : `thread/` = `src/renderer/src/components/thread/`, `
 | 48 | branche : le navigateur reprend la page de l'originale | état du navigateur copié à la branche | parcours | garder ici (ou `unitaire-main` dans `src/main/conversations/branching.test.ts`) | non |
 
 **Verdict** : à réduire (garder ~21 vérifs : #1, 3, 4, 6–8, 15, 17, 22–25, 27, 34, 39, 40, 42–45, 48) — tout ce qui touche la vraie vue native, la garde de navigation, les fenêtres et téléchargements réels reste ; les outils de débogage, execute, refus/accord et attente sont déjà en unitaire.
-<!-- stats suite=browser total=48 parcours=21 composant=5 unitaire-main=18 capture=2 doublon=2 couvert=37 verdict=reduire -->
+<!-- stats suite=browser total=48 parcours=21 composant=5 unitaire-main=18 capture=2 doublon=2 couvert=37 complet=25 verdict=reduire -->
 
 ### `annotate.mjs` — annoter une image jointe (rectangle, flèche, texte), Échap, Appliquer, et dans la fenêtre rapide
 
@@ -455,7 +457,7 @@ Abréviations des chemins : `thread/` = `src/renderer/src/components/thread/`, `
 
 **Verdict** : à réduire (garder 4 vérifs : #2, #5, #6, #7) — Échap et les gestes passent en test de composant, le texte long en capture.
 **Défaut relevé (2026-11-24, ni e2e ni test)** : Échap dans la saisie d’un texte ferme toute l’annotation au lieu d’abandonner ce texte seul — Radix écoute Échap en capture sur le document, avant le `stopPropagation` de la saisie (`ImageAnnotator.tsx`). Un test de composant le montre (rouge) ; à corriger dans l’app avant de l’ajouter.
-<!-- stats suite=annotate total=7 parcours=4 composant=2 unitaire-main=0 capture=1 doublon=0 couvert=4 verdict=reduire -->
+<!-- stats suite=annotate total=7 parcours=4 composant=2 unitaire-main=0 capture=1 doublon=0 couvert=4 complet=2 verdict=reduire -->
 
 ### `command-output.mjs` — sortie d'une commande de l'agent (extension terminal ACP) : morceaux, couleurs ANSI, code de sortie, palette
 
@@ -468,7 +470,7 @@ Abréviations des chemins : `thread/` = `src/renderer/src/components/thread/`, `
 | 5 | commande en échec : code 2 signalé (`failed`) | statut et classe d'échec | composant | `thread/TerminalView.test.tsx` (à créer) | non — **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/thread/TerminalView.test.tsx` › commande en échec : « code 2 », signalée en échec (command-output n° 5) |
 
 **Verdict** : supprimable entièrement — à condition d'ajouter un tour `/scenario commande` à `parcours-outils` et de créer `TerminalView.test.tsx` ; les couleurs vont en capture.
-<!-- stats suite=command-output total=5 parcours=1 composant=2 unitaire-main=0 capture=2 doublon=0 couvert=3 verdict=supprimable -->
+<!-- stats suite=command-output total=5 parcours=1 composant=2 unitaire-main=0 capture=2 doublon=0 couvert=5 complet=4 verdict=supprimable -->
 
 ### `commit-choisi.mjs` — « Committer d'abord » avec fichiers à cocher sur la carte « Fusion refusée » (40 fichiers dont un `.env`), dépôt git réel
 
@@ -484,7 +486,7 @@ Abréviations des chemins : `thread/` = `src/renderer/src/components/thread/`, `
 | 8 | les 39 cochés commités, puis la fusion a suivi | commit des cochés + fusion | unitaire-main | `src/main/changes/worktree-cycle.test.ts` | idem |
 
 **Verdict** : à réduire (garder 1 vérif : #7, idéalement déplacée dans l'étape de fusion de `parcours-deleguer`) — tout le reste est déjà couvert en composant et en unitaire sur vrai git.
-<!-- stats suite=commit-choisi total=8 parcours=1 composant=6 unitaire-main=1 capture=0 doublon=0 couvert=8 verdict=reduire -->
+<!-- stats suite=commit-choisi total=8 parcours=1 composant=6 unitaire-main=1 capture=0 doublon=0 couvert=8 complet=8 verdict=reduire -->
 
 ### `branch.mjs` — modifier un message et repartir de là (branche, fichiers remis, original intact, « Réessayer », branches à plat)
 
@@ -504,7 +506,7 @@ Abréviations des chemins : `thread/` = `src/renderer/src/components/thread/`, `
 | 12 | liste : branches à plat, repère, titres au même bord | pas d'imbrication ni de décalage | composant | `sidebar/Sidebar.test.tsx` (classes `nested`/`row-slot` ; bord exact en capture) | partiel : `sidebar/Sidebar.test.tsx` › « plus de colonne d'icône vide : seule une fille sous sa mère en a une, avec son lien » — **Déjà couvert, vérifié (lot dialogues)** : `src/renderer/src/components/sidebar/Sidebar.test.tsx` › une branche garde sa place, sans flèche ; son origine dans l’infobulle (fiche 131) + › branche et original distinguables… (bord exact : capture) |
 
 **Verdict** : à réduire (garder 3 vérifs : #6, #10, #11, regroupées en une étape « repartir d'un message » de `parcours-matinee`) — le reste en composant ou unitaire.
-<!-- stats suite=branch total=12 parcours=3 composant=5 unitaire-main=3 capture=0 doublon=1 couvert=8 verdict=reduire -->
+<!-- stats suite=branch total=12 parcours=3 composant=5 unitaire-main=3 capture=0 doublon=1 couvert=11 complet=9 verdict=reduire -->
 
 #### Totaux (lot 2)
 
@@ -573,7 +575,7 @@ Chemins de tests relatifs à `src/` sauf mention ; journées types dans `e2e/sui
 | 37 | en-tête de la fille : lecture seule seulement demandée (L657) | niveau `requested` dans l'en-tête | composant | `RoleWork.test.tsx` (existant) | `renderer/src/components/roles/RoleWork.test.tsx` › « en-tête de la fille : son rôle et sa lecture seule » |
 
 **Verdict** : à réduire (garder 3 vérifs : n° 2-3 `@rôle` en tout premier message, n° 32 « Répondre » dans la même carte) : presque tout le reste est déjà en test de composant. Les contrôles de mise en page de l'en-tête et de la carte (n° 20-23, 29) passent en capture nocturne. Les vérifs gardées peuvent devenir une étape de `parcours-reglages`.
-<!-- stats suite=roles-travail total=37 parcours=3 composant=24 unitaire-main=0 capture=7 doublon=3 couvert=33 verdict=reduire -->
+<!-- stats suite=roles-travail total=37 parcours=3 composant=24 unitaire-main=0 capture=7 doublon=3 couvert=33 complet=28 verdict=reduire -->
 
 ### `session.mjs` — onglet « Session » du panneau : ouverture automatique, environnement, contexte (avec et sans total), mesure des MCP, modifications, ce qui tourne et son arrêt, compaction, fenêtre étroite.
 
@@ -612,7 +614,7 @@ Chemins de tests relatifs à `src/` sauf mention ; journées types dans `e2e/sui
 | 31 | « Dossier » ouvre Modifications › Git (waitFor L515, check L516) | navigation vers la vue Git | composant | `SessionChanges.test.tsx` (à compléter) | oui : `src/renderer/src/components/panel/SessionChanges.test.tsx › onglet « Session » : Modifications (fiche 207) › conversation neuve dans un dossier au fichier non commité : « Aucune » / « 1 fichier non commité »` (« Dossier » → `onOpenGit` ; la vue Git ouverte : `usePanel.test.ts`) |
 
 **Verdict** : à réduire (garder 3 vérifs : n° 10 « Mesurer » lance le vrai serveur MCP, n° 15 commande du pty vue « en cours », n° 19 Arrêter coupe de vrais processus) : tout le reste est déjà en test de composant ou de logique partagée. Les trois vérifs gardées peuvent devenir une étape de `parcours-outils`. Le second lancement (sans total) et `changesRows` sont entièrement supprimables.
-<!-- stats suite=session total=31 parcours=3 composant=24 unitaire-main=2 capture=1 doublon=1 couvert=30 verdict=reduire -->
+<!-- stats suite=session total=31 parcours=3 composant=24 unitaire-main=2 capture=1 doublon=1 couvert=30 complet=26 verdict=reduire -->
 
 ### `connexion-expiree.mjs` — refus `authRequired` en pleine conversation (carte, statut, connexion dans le terminal, Réessayer), refus après un outil, refus `-32603` de Bob reconnecté par SSO, modèle d'un fournisseur non connecté.
 
@@ -642,7 +644,7 @@ Chemins de tests relatifs à `src/` sauf mention ; journées types dans `e2e/sui
 | 22 | le modèle refusé reste marqué dans le sélecteur de la saisie (waitFor L256, check L259) | la marque (main) survit à la carte et atteint la puce de la saisie | composant | `ModelChip.test.tsx` (à compléter : marque) | partiel : `main/agent/turn-auth-model.test.ts` › « aucun modèle ne répond : la carte revient avec le nouveau modèle, les deux marqués » — **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/common/ModelChip.test.tsx` › modèle refusé faute de connexion : marqué dans la liste, toujours choisissable (connexion-expiree n° 22) (marque posée par le main : `src/main/agent/turn-auth-model.test.ts`) |
 
 **Verdict** : à réduire (garder 2 vérifs : n° 6 connexion dans le vrai terminal, n° 7 « Réessayer » de bout en bout) : chaque règle (carte, statut, avis masqué, Bob, modèle refusé) a déjà son test de composant ou du main. Les deux vérifs gardées peuvent devenir une étape de `parcours-pannes`. Les trois autres lancements de l'app (outil, Bob, modèle) sont supprimables.
-<!-- stats suite=connexion-expiree total=22 parcours=2 composant=13 unitaire-main=5 capture=0 doublon=2 couvert=22 verdict=reduire -->
+<!-- stats suite=connexion-expiree total=22 parcours=2 composant=13 unitaire-main=5 capture=0 doublon=2 couvert=22 complet=20 verdict=reduire -->
 
 ### `pannes-visibles.mjs` — agent qui ne joint pas son modèle (proxy, relance), agent silencieux, agent tenace qui ignore Stop et SIGTERM, processus restants (kill -9, arrière-plan, quitter), plantage de Bobine (rapport, orphelins), élément du fil illisible, erreur interne du main.
 
@@ -674,7 +676,7 @@ Chemins de tests relatifs à `src/` sauf mention ; journées types dans `e2e/sui
 | 24 | en quittant : aucun processus restant (L313) | aucune fuite après le lancement de reprise | parcours | garder ici | partiel : `main/quit-guard.test.ts` › « rien à attendre : l'app sort tout de suite » |
 
 **Verdict** : à garder, allégée (garder les 9 vérifs `parcours` : n° 4, 8, 12-16, 20, 24) : c'est la seule suite qui compte les vrais processus (`ps`) après SIGKILL, kill -9 et la fermeture, ce qu'aucun test sans fenêtre ne voit. Les bandeaux (silence, injoignable, proxy masqué), l'élément illisible et les avis d'erreur interne passent en tests de composant, déjà presque tous écrits.
-<!-- stats suite=pannes-visibles total=24 parcours=9 composant=12 unitaire-main=1 capture=0 doublon=2 couvert=22 verdict=garder -->
+<!-- stats suite=pannes-visibles total=24 parcours=9 composant=12 unitaire-main=1 capture=0 doublon=2 couvert=23 complet=15 verdict=garder -->
 
 ### `reprise.mjs` — ⌘Q pendant qu'un agent répond, « Quitter » à la question, puis à la relance la conversation qui travaillait est rouverte et reprend.
 
@@ -686,7 +688,7 @@ Chemins de tests relatifs à `src/` sauf mention ; journées types dans `e2e/sui
 | 4 | relance : la conversation reprend dans le même fil (L89) | l'agent relancé répond dans le même fil | doublon | `parcours-pannes` étape 7 | `parcours-pannes` › étape « relancer : la conversation qui travaillait est rouverte » (« relance : la conversation interrompue reprend ») |
 
 **Verdict** : supprimable entièrement : `parcours-pannes` fait déjà le même enchaînement (quitter en plein tour, relancer, reprendre). Pour ne rien perdre, ajouter à `parcours-pannes` le contrôle du titre de la question (`quit.title_one`) et celui de la saisie vide à la relance.
-<!-- stats suite=reprise total=4 parcours=0 composant=1 unitaire-main=0 capture=0 doublon=3 couvert=4 verdict=supprimable -->
+<!-- stats suite=reprise total=4 parcours=0 composant=1 unitaire-main=0 capture=0 doublon=3 couvert=4 complet=4 verdict=supprimable -->
 
 ### `failures.mjs` — agent qui plante en plein tour puis relancé, agent figé qui ignore Stop, menu « Afficher le journal », `main.log`, index d'historique abîmé au démarrage.
 
@@ -705,7 +707,7 @@ Chemins de tests relatifs à `src/` sauf mention ; journées types dans `e2e/sui
 | 11 | le fichier abîmé est mis de côté, pas écrasé (L106) | rien n'est perdu | unitaire-main | `main/conversations/store.test.ts` (existant) | `main/conversations/store.test.ts` › « index illisible : mis de côté, reprise sur la dernière bonne copie (fiche 041) » |
 
 **Verdict** : à réduire (garder 1 vérif : n° 9, démarrage réel sur un historique abîmé, à déplacer en étape de `parcours-pannes`) : le plantage et la relance sont déjà dans `parcours-pannes`, l'agent figé dans `pannes-visibles`, le reste dans les tests du main. Une fois le n° 9 déplacé, la suite est supprimable.
-<!-- stats suite=failures total=11 parcours=1 composant=0 unitaire-main=6 capture=0 doublon=4 couvert=11 verdict=reduire -->
+<!-- stats suite=failures total=11 parcours=1 composant=0 unitaire-main=6 capture=0 doublon=4 couvert=11 complet=10 verdict=reduire -->
 
 #### Risques repérés (lot 3)
 
@@ -756,7 +758,7 @@ Abréviations des chemins : `C/` = `src/renderer/src/components/`, `R/` = `src/r
 | 25 | streaming : aucune tâche > 400 ms | streaming d'un bloc de code au bout d'un long fil sans re-rendu du fil | parcours | garder ici | partiel : `C/thread/Transcript.test.tsx` › « un morceau de réponse ne refait pas le rendu des outils déjà affichés » |
 
 **Verdict** : à réduire (garder 15 vérifs : budgets 1, 2, 4, 6, 15, 16, 22, 25 et visibilité/ancrage 9, 11-14, 18, 19) — c'est une suite de mesure à part (`alone`) ; les contrats de contenu (plafonds, fenêtre de rendu, recherche) sont déjà dans DiffView/CappedText/useEntryWindow.
-<!-- stats suite=perf total=25 parcours=15 composant=3 unitaire-main=0 capture=0 doublon=7 couvert=15 verdict=reduire -->
+<!-- stats suite=perf total=25 parcours=15 composant=3 unitaire-main=0 capture=0 doublon=7 couvert=15 complet=7 verdict=reduire -->
 
 ### `usage-board.mjs` — « Mon activité » : page ouverte depuis la puce, chiffres, grille, périodes, agent, exports CSV, largeurs, menu ⇧⌘U, remise à zéro et collecte qui continue.
 
@@ -793,7 +795,7 @@ Abréviations des chemins : `C/` = `src/renderer/src/components/`, `R/` = `src/r
 | 29 | un clic sur une conversation du tableau l'ouvre | tableau conversations → ouverture | doublon | `C/activity/ActivityPage.test.tsx` | `C/activity/ActivityPage.test.tsx` › « tableaux : par modèle (non communiqué), par projet, conversations (un clic l'ouvre) » |
 
 **Verdict** : à réduire (garder 2 vérifs : 5 et 28, idéalement dans une journée type, + les 5 largeurs en capture nocturne) — la logique de la page est déjà testée en composant ; manquent seulement le lien de la puce, la fermeture de la page et la commande de menu côté renderer.
-<!-- stats suite=usage-board total=29 parcours=2 composant=5 unitaire-main=2 capture=5 doublon=15 couvert=23 verdict=reduire -->
+<!-- stats suite=usage-board total=29 parcours=2 composant=5 unitaire-main=2 capture=5 doublon=15 couvert=23 complet=17 verdict=reduire -->
 
 ### `quota.mjs` — quota de l'agent lu par un faux `/status` quand l'agent est prêt, affiché et relu ; jamais lu pour un agent non utilisé ; lecture tuée quand l'app quitte.
 
@@ -814,7 +816,7 @@ Abréviations des chemins : `C/` = `src/renderer/src/components/`, `R/` = `src/r
 | 13 | rien d'écrit dans les données après la sortie | le fils tué n'écrit pas sa session après coup | parcours | garder ici | partiel : `src/main/agent/quota.test.ts` › « l'adaptateur rend sa lecture après l'arrêt : ni suppression de sessions ni quota » |
 
 **Verdict** : à réduire (garder 4 vérifs : 1, 11, 12, 13) — l'affichage et la logique de lecture sont testés ; restent la chaîne pty réelle et le processus orphelin à la sortie.
-<!-- stats suite=quota total=13 parcours=4 composant=1 unitaire-main=2 capture=0 doublon=6 couvert=11 verdict=reduire -->
+<!-- stats suite=quota total=13 parcours=4 composant=1 unitaire-main=2 capture=0 doublon=6 couvert=11 complet=7 verdict=reduire -->
 
 ### `versions.mjs` — avis de version de l'agent (plus récente une seule fois, même après redémarrage ; plus ancienne ; refus sous le plancher ou protocole incompatible).
 
@@ -832,7 +834,7 @@ Abréviations des chemins : `C/` = `src/renderer/src/components/`, `R/` = `src/r
 | 10 | protocole incompatible : idem | refus protocole + état du composer | composant | idem | partiel : `src/main/agent/version-check.test.ts` › « protocole incompatible : démarrage refusé, expliqué » |
 
 **Verdict** : à réduire (garder 3 vérifs : 5, 6, 7) — seuls la persistance à travers un vrai redémarrage et le fil rouvert justifient l'app ; le reste est déjà dans `version-check.test.ts`.
-<!-- stats suite=versions total=10 parcours=3 composant=3 unitaire-main=0 capture=0 doublon=4 couvert=10 verdict=reduire -->
+<!-- stats suite=versions total=10 parcours=3 composant=3 unitaire-main=0 capture=0 doublon=4 couvert=10 complet=4 verdict=reduire -->
 
 ### `debordements.mjs` — le fil plein de contenus trop larges ne défile jamais de côté (1440 px, conversation étroite, panneau forcé) ; le panneau cède sa largeur et revient.
 
@@ -851,7 +853,7 @@ Abréviations des chemins : `C/` = `src/renderer/src/components/`, `R/` = `src/r
 | 11 | panneau ouvert à la main, conversation écrasée : rien ne dépasse | cas extrême | capture | idem | non |
 
 **Verdict** : à réduire (garder 6 vérifs : 5, 7-11, sous forme de mesure dans une capture nocturne qui échoue sur dépassement) — les règles de largeur du panneau sont déjà en unitaire ; la détection des débordements exige un vrai moteur de mise en page.
-<!-- stats suite=debordements total=11 parcours=0 composant=0 unitaire-main=0 capture=6 doublon=5 couvert=5 verdict=reduire -->
+<!-- stats suite=debordements total=11 parcours=0 composant=0 unitaire-main=0 capture=6 doublon=5 couvert=9 complet=5 verdict=reduire -->
 
 ### `onglets-etroits.mjs` — panneau à 280 px avec tous les outils, en français puis en anglais : rien de coupé, clics sur les onglets et le menu « + » sans fermeture accidentelle, puce de l'agent en icône.
 
@@ -869,7 +871,7 @@ Abréviations des chemins : `C/` = `src/renderer/src/components/`, `R/` = `src/r
 | 10 | puce de l'agent en icône, nom gardé pour les lecteurs (×2) | repli de la barre au plus étroit | composant | `C/composer/useBarFold.test.ts` + `useBarFold.dom.test.tsx` (à compléter : nom accessible) | oui : `src/renderer/src/components/composer/AgentMenu.test.tsx › puce de l’agent (fiche 185, D26) › nom gardé dans la puce et dans son infobulle ; l’icône est décorative` + `useBarFold.test.ts` (passage en icône) ; le rendu à 280 px : capture |
 
 **Verdict** : à réduire (garder 2 vérifs : 3 et 5, hit-test réel ; 1 et 4 en capture nocturne fr/en) — le menu « + » (6-9) et le compteur n'ont aucun test de composant aujourd'hui : à créer avant de retirer.
-<!-- stats suite=onglets-etroits total=10 parcours=2 composant=6 unitaire-main=0 capture=2 doublon=0 couvert=3 verdict=reduire -->
+<!-- stats suite=onglets-etroits total=10 parcours=2 composant=6 unitaire-main=0 capture=2 doublon=0 couvert=8 complet=6 verdict=reduire -->
 
 ### `polices.mjs` — Inter et JetBrains Mono livrées et chargées depuis l'app ; ligatures du code coupées par défaut, activées par Réglages › Apparence ; Aurore nuit gardée.
 
@@ -884,7 +886,7 @@ Abréviations des chemins : `C/` = `src/renderer/src/components/`, `R/` = `src/r
 | 7 | Aurore nuit gardée après le réglage des ligatures (sombre) | un réglage n'écrase pas la palette | composant | `C/settings/SettingsDialog.test.tsx` / `R/appearance.test.ts` | **oui, remplaçant créé** (2026-11-24) : `R/appearance.test.ts` › « Aurore nuit gardée après le réglage des ligatures (sombre) » — avant : partiel : `C/settings/SettingsDialog.test.tsx` › « huit thèmes, six accents : chaque choix part dans les préférences ; Aurore « Nouveau » » |
 
 **Verdict** : à réduire (garder 2 vérifs : 1 et 2, chargement réel des polices ; les captures p1-p6 en nocturne) — le reste se teste sur `appearance.ts` et SettingsDialog.
-<!-- stats suite=polices total=7 parcours=2 composant=3 unitaire-main=0 capture=0 doublon=2 couvert=5 verdict=reduire -->
+<!-- stats suite=polices total=7 parcours=2 composant=3 unitaire-main=0 capture=0 doublon=2 couvert=5 complet=5 verdict=reduire -->
 
 ### `libelles.mjs` — libellés de la 0.11 : nom du profil plutôt que celui annoncé, options d'autorisation traduites, dossiers récents coupés au milieu.
 
@@ -896,7 +898,7 @@ Abréviations des chemins : `C/` = `src/renderer/src/components/`, `R/` = `src/r
 | 4 | dossier récent : nom entier, début coupé, chemin en infobulle, ordre des 3 | coupe au milieu, nom jamais tronqué | composant | test de `DataSettings` (à créer) pour nom/infobulle/ordre ; la coupe réelle (scrollWidth) en capture | partiel : `src/shared/presentation.test.ts` › « le nom du dossier à part, le reste avant, le dossier personnel en ~ » |
 
 **Verdict** : supprimable entièrement — après ajout de 2 tests de composant (infobulle du bouton d'autorisation, liste des dossiers récents) ; la coupe visuelle va dans une capture.
-<!-- stats suite=libelles total=4 parcours=0 composant=2 unitaire-main=0 capture=0 doublon=2 couvert=3 verdict=supprimable -->
+<!-- stats suite=libelles total=4 parcours=0 composant=2 unitaire-main=0 capture=0 doublon=2 couvert=4 complet=3 verdict=supprimable -->
 
 ### `long-thread.mjs` — fil de 300 appels d'outils puis streaming : regroupement, cartes lisibles, coût du streaming (journalisé seulement).
 
@@ -908,7 +910,7 @@ Abréviations des chemins : `C/` = `src/renderer/src/components/`, `R/` = `src/r
 | 4 | cartes lisibles : chemins relatifs, infobulle | libellé « ce que l'outil a fait et sur quoi », chemin relatif | doublon | `C/thread/Transcript.test.tsx` | `C/thread/Transcript.test.tsx` › « outil de l'agent : ce qu'il a fait et sur quoi, chemin relatif au dossier (fiche 107) » |
 
 **Verdict** : supprimable entièrement — tout est en composant, et la partie « performance » n'asserte rien (mesures imprimées) ; `perf.mjs` porte déjà des budgets de streaming.
-<!-- stats suite=long-thread total=4 parcours=0 composant=1 unitaire-main=0 capture=0 doublon=3 couvert=4 verdict=supprimable -->
+<!-- stats suite=long-thread total=4 parcours=0 composant=1 unitaire-main=0 capture=0 doublon=3 couvert=4 complet=3 verdict=supprimable -->
 
 #### Risques repérés (lot 4)
 
@@ -949,7 +951,7 @@ Chemins de test relatifs à la racine du dépôt. « couvert » = un test exista
 | 14 | à 720 px, indicateur sur une ligne (≤ 40 px) | pas de retour à la ligne en fenêtre étroite | capture | capture nocturne `267-indicateur-720` | non |
 
 **Verdict** : supprimable entièrement — tout est de la logique de libellé déjà testée en unitaire ; il manque un `ToolCall.test.tsx` (rendu carte + `tool-json`) et la capture 720 px en nocturne.
-<!-- stats suite=activity total=14 parcours=0 composant=12 unitaire-main=0 capture=1 doublon=1 couvert=12 verdict=supprimable -->
+<!-- stats suite=activity total=14 parcours=0 composant=12 unitaire-main=0 capture=1 doublon=1 couvert=13 complet=12 verdict=supprimable -->
 
 ### `attachments.mjs` — image collée, mention @fichier, glisser-déposer, fichier exclu, long texte collé.
 
@@ -974,7 +976,7 @@ Chemins de test relatifs à la racine du dépôt. « couvert » = un test exista
 | 17 | « Remettre dans la saisie » | texte revient, puce part | composant | `Composer.test.tsx` | `Composer.test.tsx` › « aperçu du texte collé, puis remis dans la saisie » |
 
 **Verdict** : à réduire (garder 2 vérifs : #8 dépôt natif d'un vrai fichier, #5 pièce jointe reçue par l'agent) — idéalement fusionnées en une étape de journée type ; le reste est dans `Composer.test.tsx`.
-<!-- stats suite=attachments total=17 parcours=2 composant=13 unitaire-main=1 capture=0 doublon=1 couvert=14 verdict=reduire -->
+<!-- stats suite=attachments total=17 parcours=2 composant=13 unitaire-main=1 capture=0 doublon=1 couvert=16 complet=14 verdict=reduire -->
 
 ### `discussion.mjs` — espace Discussion : sélecteur, accueil, document déposé, écriture accordée/refusée, panneaux, lien physique, « Continuer dans un projet ».
 
@@ -998,7 +1000,7 @@ Chemins de test relatifs à la racine du dépôt. « couvert » = un test exista
 | 16 | espace Code : les discussions n'y sont pas | filtre par espace | composant | `Sidebar.test.tsx` | partiel : `Sidebar.test.tsx` › « espace Discussion (fiche 224)… » — **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/sidebar/Sidebar.test.tsx` › espace Code : les discussions n’y sont pas (discussion n° 16) |
 
 **Verdict** : à réduire (garder 3 vérifs : #4, #13, #14 — tour réel avec permissions décidées par le main et vrai lien physique) ; le reste en composants (3 fichiers à créer : DocumentCards, DocumentsPanel, ContinueInProjectDialog).
-<!-- stats suite=discussion total=16 parcours=3 composant=11 unitaire-main=2 capture=0 doublon=0 couvert=15 verdict=reduire -->
+<!-- stats suite=discussion total=16 parcours=3 composant=11 unitaire-main=2 capture=0 doublon=0 couvert=16 complet=11 verdict=reduire -->
 
 ### `fun.mjs` — options d'ambiance : prénom, thèmes Aurore/Nuit noire, police du code, suggestions, sommaire, bobcoins, budget dépassé.
 
@@ -1016,7 +1018,7 @@ Chemins de test relatifs à la racine du dépôt. « couvert » = un test exista
 | 10 | budget dépassé : titre et description de Bob | pas « Internal error » | unitaire-main | `process-utils.test.ts` | `src/main/agent/process-utils.test.ts` › « erreur de budget de Bob : titre et description au lieu de « Internal error » » |
 
 **Verdict** : à réduire (garder 1 vérif : #3, à déplacer dans `polices.mjs`) — suite fourre-tout ; créer `Welcome.test.tsx`, le reste est déjà couvert ou doublon.
-<!-- stats suite=fun total=10 parcours=1 composant=5 unitaire-main=2 capture=0 doublon=2 couvert=7 verdict=reduire -->
+<!-- stats suite=fun total=10 parcours=1 composant=5 unitaire-main=2 capture=0 doublon=2 couvert=7 complet=6 verdict=reduire -->
 
 ### `mentions.mjs` — mentions `@git-changes` et `@terminal` jointes au message, fichier exclu sauté.
 
@@ -1030,7 +1032,7 @@ Chemins de test relatifs à la racine du dépôt. « couvert » = un test exista
 | 6 | fil : pièces jointes montrées | `msg-attachments .attachment` | composant | `Transcript.test.tsx` | non — **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/thread/Transcript.test.tsx` › message envoyé avec pièces jointes : fichier, mention de contexte et image montrés (attachments n° 6, mentions n° 6) |
 
 **Verdict** : à réduire (garder 1 vérif : #5, à faire passer dans `parcours-outils`) — puis suite supprimable.
-<!-- stats suite=mentions total=6 parcours=1 composant=2 unitaire-main=3 capture=0 doublon=0 couvert=5 verdict=reduire -->
+<!-- stats suite=mentions total=6 parcours=1 composant=2 unitaire-main=3 capture=0 doublon=0 couvert=6 complet=6 verdict=reduire -->
 
 ### `notifications.mjs` — notifications, son, rebond et badge du Dock, clic sur la notification, cloche coupée, refus de macOS.
 
@@ -1053,7 +1055,7 @@ Chemins de test relatifs à la racine du dépôt. « couvert » = un test exista
 | 15 | refus de macOS : le Dock rebondit quand même | | unitaire-main | `dock-bounce.test.ts` (à compléter) | **remplaçant écrit (2026-11-24)** : `src/main/notifications/system-notifier.test.ts › appAttention : un refus des notifications ne coupe ni le Dock ni son compteur › macOS refuse la bannière : le Dock rebondit quand même, le compteur passe à 1 et y reste` ; avant : partiel : `src/main/notifications/dock-bounce.test.ts` › « un `critical` remplace un `informational` qui rebondit encore, jamais l'inverse » |
 
 **Verdict** : à réduire (garder 3 vérifs : #1, #10, #14 — câblage réel Notification ↔ main ↔ renderer) ; toute la logique son/rebond/badge est déjà en unitaire-main.
-<!-- stats suite=notifications total=15 parcours=3 composant=0 unitaire-main=12 capture=0 doublon=0 couvert=13 verdict=reduire -->
+<!-- stats suite=notifications total=15 parcours=3 composant=0 unitaire-main=12 capture=0 doublon=0 couvert=14 complet=12 verdict=reduire -->
 
 ### `parcours-longue.mjs` — journée type : 36 échanges riches, sommaire, envoi depuis le haut, redimensionnement, panneau, autre conversation, relance.
 
@@ -1071,7 +1073,7 @@ Chemins de test relatifs à la racine du dépôt. « couvert » = un test exista
 | 10 | relance : le long fil continue | | parcours | garder ici | non |
 
 **Verdict** : à garder — c'est une journée type ; seul #2 (compte du sommaire) peut descendre en composant, et elle peut absorber les vérifs de trait courant de `sommaire.mjs`.
-<!-- stats suite=parcours-longue total=10 parcours=9 composant=1 unitaire-main=0 capture=0 doublon=0 couvert=4 verdict=garder -->
+<!-- stats suite=parcours-longue total=10 parcours=9 composant=1 unitaire-main=0 capture=0 doublon=0 couvert=4 complet=1 verdict=garder -->
 
 ### `parcours-pannes.mjs` — journée type : plantage d'un agent, isolement, relance, silence, erreur de tour, quitter pendant un tour, relance de l'app.
 
@@ -1088,7 +1090,7 @@ Chemins de test relatifs à la racine du dépôt. « couvert » = un test exista
 | 9 | l'autre a gardé ses pannes et répond | persistance du fil | parcours | garder ici | non |
 
 **Verdict** : à garder — tout est course entre processus et redémarrage ; aucune vérif de détail ne mérite de descendre (le libellé de l'avis #2 pourrait seulement être doublé par un test de composant).
-<!-- stats suite=parcours-pannes total=9 parcours=9 composant=0 unitaire-main=0 capture=0 doublon=0 couvert=1 verdict=garder -->
+<!-- stats suite=parcours-pannes total=9 parcours=9 composant=0 unitaire-main=0 capture=0 doublon=0 couvert=1 complet=0 verdict=garder -->
 
 ### `pinned-plan.mjs` — liste de tâches épinglée au-dessus de la saisie pendant le tour, repliée, à côté, retirée à la fin.
 
@@ -1105,7 +1107,7 @@ Chemins de test relatifs à la racine du dépôt. « couvert » = un test exista
 | 9 | fin du tour : liste retirée, carte « Plan » et compteur « 3 / 3 » | | composant | `PinnedPlan.test.tsx` + `Transcript.test.tsx` | partiel : `PinnedPlan.test.tsx` › « épinglé tant que l'agent travaille, et s'il y a des tâches » |
 
 **Verdict** : supprimable entièrement — logique déjà dans `PinnedPlan.test.tsx`, les positions passent en captures nocturnes.
-<!-- stats suite=pinned-plan total=9 parcours=0 composant=6 unitaire-main=0 capture=3 doublon=0 couvert=6 verdict=supprimable -->
+<!-- stats suite=pinned-plan total=9 parcours=0 composant=6 unitaire-main=0 capture=3 doublon=0 couvert=6 complet=4 verdict=supprimable -->
 
 ### `presentation.mjs` — densité compacte (jetons) et mode présentation (Réglages, menu Affichage, pastille, coûts masqués).
 
@@ -1126,7 +1128,7 @@ Chemins de test relatifs à la racine du dépôt. « couvert » = un test exista
 | 13 | pastille : quitte le mode, texte et menu rétablis | aller-retour avec le menu natif | parcours | garder ici (avec 9) | partiel : `src/shared/preferences.test.ts` › « le mode présentation n'est pas une préférence : jamais repris d'un fichier » |
 
 **Verdict** : à réduire (garder 2 vérifs : #9 et #13, synchro avec le menu natif du main) — densité en captures, le reste en composants.
-<!-- stats suite=presentation total=13 parcours=2 composant=6 unitaire-main=1 capture=4 doublon=0 couvert=9 verdict=reduire -->
+<!-- stats suite=presentation total=13 parcours=2 composant=6 unitaire-main=1 capture=4 doublon=0 couvert=9 complet=2 verdict=reduire -->
 
 ### `questions.mjs` — questions à choix, OpenCode 2, plan à valider, question obligatoire, `ask_user` par le serveur MCP de l'app.
 
@@ -1149,7 +1151,7 @@ Chemins de test relatifs à la racine du dépôt. « couvert » = un test exista
 | 15 | ask_user : la réponse revient comme résultat d'outil | aller-retour MCP | parcours | garder ici | partiel : `ask-user.test.ts` › « résultat renvoyé à l'agent » |
 
 **Verdict** : à réduire (garder 2 vérifs : #14, #15, aller-retour `ask_user` par le serveur MCP) ; créer `PlanApproval.test.tsx`, aucun test de composant pour la carte de plan aujourd'hui.
-<!-- stats suite=questions total=15 parcours=2 composant=12 unitaire-main=0 capture=0 doublon=1 couvert=13 verdict=reduire -->
+<!-- stats suite=questions total=15 parcours=2 composant=12 unitaire-main=0 capture=0 doublon=1 couvert=15 complet=10 verdict=reduire -->
 
 ### `relecture.mjs` — « Faire relire… » : dialogue, carte du Code reviewer, remarques, diff, « corriger », conversation du relecteur.
 
@@ -1167,7 +1169,7 @@ Chemins de test relatifs à la racine du dépôt. « couvert » = un test exista
 | 10 | relecteur : la demande, consigne repliée | | composant | `RoleWork.test.tsx` | `RoleWork.test.tsx` › « premier message : la demande seule, la consigne du rôle repliée sous « Consigne du rôle » » |
 
 **Verdict** : supprimable entièrement — le lancement de bout en bout est déjà dans `parcours-matinee` ; y ajouter au besoin le clic `fichier:ligne` sur le vrai diff (#6) ; #8 en capture.
-<!-- stats suite=relecture total=10 parcours=0 composant=8 unitaire-main=1 capture=1 doublon=0 couvert=9 verdict=supprimable -->
+<!-- stats suite=relecture total=10 parcours=0 composant=8 unitaire-main=1 capture=1 doublon=0 couvert=9 complet=7 verdict=supprimable -->
 
 ### `sommaire.mjs` — sommaire de 80 messages : hauteur bornée, regroupement des traits, trait courant qui suit le défilement.
 
@@ -1183,7 +1185,7 @@ Chemins de test relatifs à la racine du dépôt. « couvert » = un test exista
 | 8 | fenêtre basse : la colonne raccourcit | | composant | `outline-layout.test.ts` | partiel : `outline-layout.test.ts` › « hauteur maximale : 30 % du fil, 240 px au plus » |
 
 **Verdict** : à réduire (garder 3 vérifs : #4–#6, trait courant qui suit le vrai défilement) — à fusionner dans `parcours-longue` (qui n'a que 36 messages : il faudrait assez de messages pour regrouper les traits).
-<!-- stats suite=sommaire total=8 parcours=3 composant=4 unitaire-main=0 capture=1 doublon=0 couvert=3 verdict=reduire -->
+<!-- stats suite=sommaire total=8 parcours=3 composant=4 unitaire-main=0 capture=1 doublon=0 couvert=5 complet=4 verdict=reduire -->
 
 ### `tables.mjs` — rendu Markdown : tableaux, mise en forme riche, blocs de code colorés par la palette.
 
@@ -1201,7 +1203,7 @@ Chemins de test relatifs à la racine du dépôt. « couvert » = un test exista
 | 10 | blocs de code dans l'autre variante : ses couleurs | | capture | capture nocturne `h2-code-<variante>` | partiel : themes.test (même test que 9) |
 
 **Verdict** : supprimable entièrement — que du rendu visuel (captures nocturnes) et un alignement vérifiable en composant.
-<!-- stats suite=tables total=10 parcours=0 composant=1 unitaire-main=0 capture=9 doublon=0 couvert=5 verdict=supprimable -->
+<!-- stats suite=tables total=10 parcours=0 composant=1 unitaire-main=0 capture=9 doublon=0 couvert=6 complet=3 verdict=supprimable -->
 
 ### `touches.mjs` — petites touches : copier, heure, accent, largeur du fil, mode de nouvelle conversation, archiver, confirmation avant de quitter.
 
@@ -1217,7 +1219,7 @@ Chemins de test relatifs à la racine du dépôt. « couvert » = un test exista
 | 8 | quitter pendant une réponse : confirmation, « Annuler » garde l'app | | unitaire-main | `quit-guard.test.ts` | `src/main/quit-guard.test.ts` › « un agent travaille : question ; « Annuler » garde l'app, « Quitter » redemande de quitter » |
 
 **Verdict** : supprimable entièrement — le chemin « Quitter » réel est déjà dans `reprise.mjs` et les journées types ; le reste en composants (créer `CopyButton.test.tsx`).
-<!-- stats suite=touches total=8 parcours=0 composant=6 unitaire-main=2 capture=0 doublon=0 couvert=6 verdict=supprimable -->
+<!-- stats suite=touches total=8 parcours=0 composant=6 unitaire-main=2 capture=0 doublon=0 couvert=8 complet=8 verdict=supprimable -->
 
 #### Risques repérés (lot 5)
 
