@@ -609,3 +609,31 @@ Dependabot comme les autres.
     masqueraient le constat avant que le diagnostic réparé ne parle. Étape suivante : lire les
     captures `.txt` du prochain échec ; si le rendu de l'onglet y est en arrière-plan et la page
     `about:blank` en chargement, épreuve A/B de ces options dans `e2e/lib.mjs` (branche jetable).
+- 2026-11-24 — Passages macOS de cette branche, 45375547896, 45375561141, 45375571622 : `browser`
+  rouge trois fois, sous trois formes. Le diagnostic réparé parle : à chaque échec, l'onglet est
+  chargé (`loading: false`), visible, débogueur attaché, son rendu à la même priorité que la
+  fenêtre (`pri 20`). **La piste du rendu en arrière-plan est écartée** ; pas d'épreuve A/B des
+  options d'automatisation. Le symptôme « onglet neuf resté en chargement » ne s'est pas montré.
+  | Échec | Cause |
+  |---|---|
+  | `browser` clair (en) : « Bonjour, ! », 1 action en échec | **Défaut de l'app.** Le clic de l'agent sur le champ (`browser_click`) n'est pas arrivé, la saisie qui suit échoue (« No text field has focus »). Déjà vu en local sous charge (fiche 094, 2 sur 7). |
+  | `browser` sombre (en) : fichier non enregistré, puis bandeau « File saved » jamais affiché | **Même défaut.** `telechargement` clique en (60, 60) sur « Exporter » aussitôt `browser_navigate` rendu ; le CDP répond « Clic en (60, 60) », mais la page ne reçoit rien et aucun téléchargement ne part. |
+  | `browser` sombre (fr) : agent pas « Prêt » en 15 s | **Lenteur, pas un blocage** : toutes les actions réussies (« Bonjour, Ada ! »), tour fini en 18,6 s, 3 s après la capture. Cause de la lenteur non établie ; une borne d'essai n'est pas touchée. |
+  Mécanisme, lu dans Chromium (`WidgetInputHandlerManager::DispatchEvent`) puis reproduit : tant
+  que le rendu d'une page est suspendu (juste après une navigation, jusqu'à sa première peinture),
+  Chromium jette clics, touches et molette, en les acquittant « non consommés » ; le CDP ne dit
+  rien. Reproduit en local (Electron 45.4.1, script hors dépôt) : clic par le CDP aussitôt
+  `loadURL` rendu, perdu 3 fois sur 3, même sur une page au contenu immédiat ; dans une vue cachée
+  jamais montrée, toujours perdu, même après 5 s ; avec `--allow-pre-commit-input`, reçu dans les
+  trois cas. Sur un Mac rapide, l'aller-retour MCP entre deux outils suffit d'ordinaire à la
+  première peinture ; sur la VM sans GPU, non. Pour un utilisateur, c'est le même défaut : un clic
+  de l'agent juste après une navigation sur une machine chargée, ou dans un onglet que le panneau
+  ne montre pas, est perdu sans erreur.
+  Correctif à la cause : l'app pose `allow-pre-commit-input` avant `ready`
+  (`src/main/browser/chromium-switches.ts`, appelé dans `index.ts`). Écarté : attendre la première
+  peinture avant chaque action (`first-contentful-paint`) : ne règle ni l'onglet caché (jamais
+  peint), ni le clic perdu alors que la peinture est déjà là (relevé en local). Rien de visible ne
+  change ; seule différence pour l'utilisateur, un clic dans les quelques centaines de ms avant la
+  première peinture d'une page n'est plus jeté. Essai unitaire `chromium-switches.test.ts` (l'option
+  posée) ; l'effet dans Chromium se vérifie par l'e2e `browser` (saisie, téléchargement). À
+  relancer sur GitHub macOS : `browser parcours-outils`, trois fois.
