@@ -2,6 +2,14 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- The title the agent gives a conversation no longer comes from what Bobine adds to your first
+  message (“Summarize the bobine_capabilities project”): the conversation then keeps the title
+  taken from your message.
+
 ## 1.0.0 — November 24, 2026
 
 ### Fixes

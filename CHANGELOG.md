@@ -2,6 +2,14 @@
 
 Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrections
+
+- Le titre donné par l’agent à une conversation ne reprend plus ce que Bobine joint à votre
+  premier message (« Résumer le projet bobine_capabilities ») : la conversation garde alors le
+  titre tiré de votre message.
+
 ## 1.0.0 — 24 novembre 2026
 
 ### Corrections
