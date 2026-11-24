@@ -328,25 +328,11 @@ export async function composerSuite(scheme) {
   await withApp(scheme, async (ui) => {
     await ui.ready()
     await ui.viewport(760)
-    const home = await ui.ev(`(() => {
-      const composer = document.querySelector('.composer').getBoundingClientRect()
-      const send = ${ui.$('send')}.getBoundingClientRect()
-      const context = ${ui.$('composer-context')}.getBoundingClientRect()
-      const suggestions = [...document.querySelectorAll('[data-testid="suggestion"]')]
-      return {
-        composer: Math.round(composer.right),
-        send: send.right,
-        below: context.top >= composer.bottom,
-        suggestions: Math.max(...suggestions.map((s) => s.getBoundingClientRect().right)),
-        width: innerWidth
-      }
-    })()`)
-    check(
-      home.composer <= home.width && home.send <= home.composer,
-      `accueil à 760 px : zone de saisie (bord droit ${home.composer} px) et envoi dans la fenêtre`
+    // Saisie, envoi et suggestions dans la fenêtre à 760 px : `parcours-premier-lancement`.
+    const below = await ui.ev(
+      `${ui.$('composer-context')}.getBoundingClientRect().top >= document.querySelector('.composer').getBoundingClientRect().bottom`
     )
-    check(home.suggestions <= home.width, 'accueil à 760 px : suggestions dans la fenêtre')
-    check(home.below, 'accueil : dossier et branche sous la zone de saisie')
+    check(below, 'accueil : dossier et branche sous la zone de saisie')
     await ui.shot('composer-9-accueil-760')
     await ui.click(ui.$('composer-input'))
     await ui.type('Explique ce projet')

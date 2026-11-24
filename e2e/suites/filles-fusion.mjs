@@ -84,7 +84,9 @@ export async function fillesFusionSuite(scheme) {
           ).map(([title, folder]) => [title, folder])
         )
         const [csv, help, notes] = CHILDREN.map((c) => folders[c.title])
-        check(!!csv && !!help && !!notes, 'trois filles, chacune dans son worktree')
+        // Un worktree par fille : vérifié dans `parcours-deleguer` ; ici, une garde, pour ne
+        // jamais committer hors d'un dossier d'essai.
+        if (!csv || !help || !notes) throw new Error(`worktrees des filles introuvables`)
         // Ce que l'utilisateur ferait depuis la vue Git de chaque fille (fiche 110).
         await commitAll(csv, 'feat: import CSV')
         writeFileSync(join(help, 'README.md'), '# Démo\n\nVersion 3\n\n## Utilisation\n')

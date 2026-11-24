@@ -731,25 +731,6 @@ export const SUITES = [
     ]
   },
   {
-    name: 'acp',
-    file: 'acp.mjs',
-    run: 'acpSuite',
-    themes: BOTH,
-    sources: [
-      `${C}panel/AcpTab.tsx`,
-      `${C}common/CopyButton.tsx`,
-      ...PANEL,
-      `${R}acp-view.ts`,
-      `${R}useAcpExchanges.ts`,
-      'src/main/agent/acp-exchanges.ts',
-      'src/main/agent/acp-exchanges-ipc.ts',
-      'src/main/agent/acp-log.ts',
-      'src/main/log-redact.ts',
-      'src/shared/acp-exchanges.ts',
-      'src/shared/panel.ts'
-    ]
-  },
-  {
     name: 'terminal',
     file: 'terminal.mjs',
     run: 'terminalPanelSuite',
@@ -1185,36 +1166,6 @@ export const SUITES = [
       'src/main/conversations/commit-draft.ts',
       'src/main/conversations/commit-draft-setup.ts',
       'src/mock-agent/scenarios-commit.mts'
-    ]
-  },
-  {
-    // Filles en worktree et non commité de la mère (fiches 240, 262) : ligne discrète et
-    // « Changer… » (rôle, Tâches proposées), Entrée envoie sans elles, juste un avis, rappel.
-    name: 'filles-non-commite',
-    file: 'filles-non-commite.mjs',
-    run: 'fillesNonCommiteSuite',
-    themes: BOTH,
-    sources: [
-      `${C}thread/LaunchLine.tsx`,
-      `${R}launch-choice.ts`,
-      `${C}panel/CommitChooser.tsx`,
-      `${C}panel/CommitForm.tsx`,
-      `${R}commit-chooser.css`,
-      `${C}thread/ChildProposals.tsx`,
-      `${C}thread/Subtasks.tsx`,
-      `${C}thread/WorkGroup.tsx`,
-      `${C}thread/WorkCard.tsx`,
-      `${C}roles/`,
-      `${C}sidebar/ChildDialog.tsx`,
-      `${C}composer/Composer.tsx`,
-      `${R}useComposerRoles.ts`,
-      'src/shared/launch-folder.ts',
-      'src/shared/children.ts',
-      'src/main/conversations/children.ts',
-      'src/main/conversations/launch-folder.ts',
-      'src/main/roles/invoke.ts',
-      'src/main/mcp/children-tools.ts',
-      'src/mock-agent/scenarios-filles.mts'
     ]
   },
   {
@@ -1894,24 +1845,6 @@ export const SUITES = [
     ]
   },
   {
-    name: 'mentions',
-    file: 'mentions.mjs',
-    run: 'mentionsSuite',
-    themes: BOTH,
-    sources: [
-      `${C}composer/FileMenu.tsx`,
-      `${C}composer/ComposerAttachments.tsx`,
-      `${R}useMentions.ts`,
-      'src/shared/context-mentions.ts',
-      'src/main/terminal/terminal-context.ts',
-      'src/main/changes/git-context.ts',
-      'src/main/agent/prompt-content.ts',
-      'src/main/workspace-files.ts',
-      'src/main/agent-config/exclusions.ts',
-      'src/main/agent-config/bob-exclusions.ts'
-    ]
-  },
-  {
     name: 'diagnostic',
     file: 'diagnostic.mjs',
     run: 'diagnosticSuite',
@@ -2152,6 +2085,11 @@ export const SUITES = [
       ...TOOLS,
       `${C}panel/`,
       `${C}composer/`,
+      // Rôle qui écrit, dossier modifié (étape 16, ancienne suite `filles-non-commite`).
+      `${R}launch-choice.ts`,
+      `${R}useComposerRoles.ts`,
+      'src/shared/launch-folder.ts',
+      'src/main/roles/invoke.ts',
       'src/main/approvals.ts',
       'src/main/conversations/'
     ]
@@ -2198,6 +2136,14 @@ export const SUITES = [
       ...PANEL,
       ...APP_TOOLS,
       `${C}panel/`,
+      // `@terminal` (étape 1, ancienne suite `mentions`) et échanges ACP (étape 9, ancienne `acp`).
+      `${R}useMentions.ts`,
+      'src/shared/context-mentions.ts',
+      'src/main/agent/prompt-content.ts',
+      `${R}acp-view.ts`,
+      `${R}useAcpExchanges.ts`,
+      'src/main/agent/acp-exchanges*.ts',
+      'src/shared/acp-exchanges.ts',
       'src/main/quick-entry*.ts',
       'src/main/browser/',
       'src/main/terminal/',

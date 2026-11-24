@@ -49,10 +49,7 @@ export async function outlineSuite(scheme) {
       }
       const bottom = await state()
       check(bottom.items === MESSAGES, `la liste au survol garde les ${MESSAGES} messages`)
-      check(
-        bottom.current?.[1] === MESSAGES - 1 && bottom.currentRank === bottom.bars - 1,
-        `en bas du fil, le dernier trait est le courant (${bottom.current})`
-      )
+      // En bas du fil, le dernier trait est le courant : vérifié dans `parcours-longue`.
       await ui.shot('173-sommaire-bas')
       const top = await at(0)
       check(
@@ -73,12 +70,7 @@ export async function outlineSuite(scheme) {
       await ui.waitFor(
         `getComputedStyle(document.querySelector('[data-testid=outline-list]')).display === 'block'`
       )
-      check(
-        await ui.ev(
-          `(() => { const list = document.querySelector('[data-testid=outline-list]'); const b = list.querySelector('.current').getBoundingClientRect(); const l = list.getBoundingClientRect(); return b.top >= l.top && b.bottom <= l.bottom })()`
-        ),
-        'la liste s’ouvre sur le message lu'
-      )
+      // La liste s'ouvre sur le message lu : mesuré dans `parcours-longue`.
       await ui.shot('173-sommaire-liste')
       // Fenêtre basse : la colonne raccourcit avec le fil (30 %).
       await ui.hover({ x: 900, y: 400 })

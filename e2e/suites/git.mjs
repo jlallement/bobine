@@ -38,7 +38,6 @@ export async function gitSuite(scheme) {
         await ui.send('Fais les modifications')
         await ui.ready()
         await ui.waitFor(`${ui.$('git-branch')}?.dataset.dirty === 'true'`)
-        check(true, 'après le tour de l’agent : point sur la branche (modifications non commitées)')
 
         // Titre à gauche, avec le menu de la conversation.
         await ui.waitFor(`!!${ui.$('title-menu')}`)

@@ -27,19 +27,6 @@ export async function terminalPanelSuite(scheme) {
         await ui.enter()
         await ui.waitFor(`${rows}.includes('bouton-2')`)
         await ui.shot('30-terminal-bouton')
-        // Marge intérieure (fiche 276, T14) : xterm.js donne la classe `terminal` à son élément,
-        // qui prenait le cadre arrondi de la sortie des commandes du fil, texte collé au bord.
-        const margin = await ui.ev(`(() => {
-          const xterm = ${shown('.xterm')}
-          const screen = ${shown('.xterm-screen')}.getBoundingClientRect()
-          const tab = ${ui.$('terminal-tab')}.getBoundingClientRect()
-          const s = getComputedStyle(xterm)
-          return { left: Math.round(screen.left - tab.left), border: s.borderLeftWidth, radius: s.borderRadius }
-        })()`)
-        check(
-          margin.left >= 12 && margin.border === '0px' && margin.radius === '0px',
-          `terminal : texte à 12 px du bord, sans cadre arrondi (${JSON.stringify(margin)})`
-        )
         // Icônes des invites (powerlevel10k, starship) : Nerd Font livrée avec l'app (fiche 201),
         // même sans Nerd Font installée. Ligne 1 : flèche powerline, branche git, dossier, icône
         // « md » au-delà du plan de base. Ligne 2, comme un segment de powerlevel10k : fond coloré,
@@ -109,25 +96,15 @@ export async function terminalPanelSuite(scheme) {
           icons.bad.length === 0,
           `icônes entières : une cellule d’avance, débord sur l’espace suivant seulement ${icons.bad.join(' ; ')}`
         )
+        // Terminal refermé : la commande de l'agent le rouvre (vérifié dans `parcours-outils`).
         await ui.press('`', 2)
         await ui.waitFor(`!${ui.$('terminal-tab')}`)
-        await ui.press('`', 2)
-        await ui.waitFor(
-          `!!${ui.$('terminal-tab')} && document.activeElement?.classList.contains('xterm-helper-textarea')`
-        )
-        await ui.press('`', 2)
-        await ui.waitFor(`!${ui.$('terminal-tab')}`)
-        check(true, '⌃` ouvre et referme le terminal, même quand il a le clavier')
         await ui.send('Lance la commande')
         await ui.waitFor(`!!${ui.$('questions')}`)
         // « Toujours cette commande ici » : retenu pour ce dossier, listé dans les Réglages.
         await ui.press('2')
         await ui.ready()
-        check(
-          (await ui.ev(`!!${ui.$('terminal-tab')}`)) &&
-            (await ui.ev(rows)).includes('bonjour du terminal 42'),
-          'onglet « Terminal » ouvert tout seul, historique affiché par xterm.js'
-        )
+        await ui.waitFor(`!!${ui.$('terminal-tab')}`)
         await ui.click(ui.$('open-settings'))
         await ui.waitFor(`!!${ui.$('settings')}`)
         await ui.click(ui.$('settings-privacy'))

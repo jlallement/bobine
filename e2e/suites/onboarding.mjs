@@ -175,12 +175,7 @@ async function noAgentBeforeChoice(scheme) {
       await stubFolderDialog(project)
       await ui.click(ui.$('onboarding-choose-folder'))
       await ui.waitFor(`!!${ui.$('onboarding-send')}`)
-      for (let i = 0; i < 100 && conversationAgents().length === 0; i++) await sleep(100)
-      const launched = conversationAgents()
-      check(
-        launched.length === 1 && launched[0].includes(project),
-        `dossier choisi : l’agent de la conversation démarre, dans ce dossier (${launched})`
-      )
+      // L'agent démarre alors, dans ce dossier : vérifié dans `parcours-premier-lancement`.
       await ui.click(ui.$('onboarding-skip-all'))
       await ui.waitFor(`!${ui.$('onboarding')}`)
     },
@@ -212,11 +207,6 @@ async function fullJourney(scheme) {
 
       await ui.click(ui.$('onboarding-continue'))
       await ui.waitFor(`!!${ui.$('onboarding-ready')}`)
-      check(
-        (await ui.ev(`document.querySelector('.sidebar-footer .name')?.innerText ?? ''`)) ===
-          L('profiles.mock.label'),
-        'barre latérale : l’agent choisi'
-      )
       await ui.shot('188-2-connecte')
 
       await ui.click(ui.$('onboarding-continue'))
@@ -229,8 +219,6 @@ async function fullJourney(scheme) {
 
       await ui.click(ui.$('onboarding-send'))
       await ui.waitFor(`!!${ui.$('onboarding-replied')}`, 30000)
-      const replied = await ui.ev(`${ui.$('onboarding-replied')}.innerText`)
-      check(replied.includes('OK'), `essai : la réponse de l’agent (${replied.split('\n')[1]})`)
       await ui.shot('188-5-repondu')
 
       await ui.click(ui.$('onboarding-start'))
@@ -245,18 +233,7 @@ async function fullJourney(scheme) {
     env(trial),
     args
   )
-  // Relancée : plus jamais l'accueil.
-  await withApp(
-    scheme,
-    async (ui) => {
-      await ui.waitFor(`!!${ui.$('welcome')} || !!document.querySelector('.msg-user')`)
-      await sleep(800)
-      check(!(await ui.ev(`!!${ui.$('onboarding')}`)), 'relancée : l’accueil ne revient pas')
-    },
-    userData,
-    'premier-essai',
-    env(trial)
-  )
+  // Relancée, l'accueil ne revient pas : vérifié dans `parcours-premier-lancement`.
 }
 
 async function terminalLogin(scheme) {

@@ -133,12 +133,12 @@ export async function fillesSuite(scheme) {
         await ui.send('/scenario echo')
         await ui.ready()
 
-        // « Ouvrir » : la fille qui attend son accord.
+        // « Ouvrir » : la fille qui attend son accord ; « ↳ depuis » ramène à la mère (vérifiés dans
+        // `parcours-deleguer`).
         await ui.click(
           `document.querySelector('[data-testid=work-card][data-state=waiting] [data-testid=work-open]')`
         )
         await ui.waitFor(`!!document.querySelector('[data-testid=permission]')`, 30000)
-        check((await activeId()) !== mother, '« Ouvrir » affiche la fille')
         await ui.shot('filles-3-fille-ouverte')
         await ui.click(
           `document.querySelector('[data-testid=permission] button[data-kind=allow_once]')`
@@ -148,7 +148,6 @@ export async function fillesSuite(scheme) {
         await ui.waitFor(
           `document.querySelector('.history-item.active')?.dataset.id === '${mother}'`
         )
-        check(!(await ui.ev(`!!${ui.$('title-origin')}`)), '« ↳ depuis » ramène à la mère')
 
         // Dossier = projet (fiche 131) : les deux filles, chacune dans son worktree, restent sous
         // leur mère, dans le dossier du dépôt ; aucun dossier ne porte le nom d'un worktree.

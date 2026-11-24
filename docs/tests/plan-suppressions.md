@@ -10,7 +10,7 @@ vérification y a sa ligne, avec son numéro d'inventaire.
 | Étape | État | Réel |
 |---|---|---|
 | 1 — remplaçants Vitest verts | **faite** (2026-11-24, fiche 279) | 118 suites (catalogue : 127 → 118 entrées), 768 lignes d'inventaire restent (1 219 retirées), `check(…)` : 1 970 → 754 |
-| 2 — journées à confirmer | en attente d'une campagne `e2e.yml` verte | 35 vérifications |
+| 2 — remplaçants dans les journées | **faite** (2026-11-24, fiche 279) | 115 suites (catalogue : 118 → 115 entrées), 733 lignes d'inventaire restent (35 retirées), `check(…)` : 754 → 719 |
 
 Écarts de l'étape 1 au tableau ci-dessous (détail : fiche 279) : 13 lignes « attente » gardent
 leur `waitFor` (pas de `check` à elles) ; l'entrée `usage` du catalogue est partie aussi (sa
@@ -18,6 +18,16 @@ fonction ne vérifiait plus rien) ; les rendus du risque 2 sont mesurés par `af
 la suite complète, estimée d'après les durées du 2026-11-23 : 74 min de temps machine avant,
 ≈ 39 à 62 min après (les étapes qui mènent aux vérifications gardées restent), soit ≈ 13 à
 21 min à trois tâches ; à remesurer par la prochaine campagne.
+
+Étape 2 : les 35 « à confirmer » sont parties, chacune après une campagne `e2e.yml` verte de sa
+journée (macOS et Linux, clair et sombre), le 2026-11-24 : `parcours-deleguer` 3 fois sur 3
+(passages 45352665736, 45352675204, 45352684067) ; `parcours-premier-lancement` et
+`parcours-longue` (45345873473) ; `parcours-matinee`, `parcours-reglages`, `parcours-pannes`,
+`parcours-outils` (45342287255, puis toutes vertes sous Linux dans la campagne complète
+45373764336 de `main` ; `parcours-reglages`, retouchée ensuite à son étape 6, revue verte sur
+les deux systèmes dans 45361829816 ; `parcours-outils`, indicative sur le Mac de GitHub depuis,
+reste bloquante sous Linux et en local). Le passage cité dans la colonne « État » de chaque
+ligne a la journée verte sur les deux systèmes, en clair et en sombre. Écarts au tableau : voir la fiche 279 (journal).
 
 ## Règle
 
@@ -31,6 +41,7 @@ la suite complète, estimée d'après les durées du 2026-11-23 : 74 min de temp
   une campagne `e2e.yml` verte (macOS + Linux, clair et sombre) de la journée.
 - Étapes des journées jouées vertes le 2026-11-23 (matinée, réglages, outils, longue, pannes) →
   **vert**.
+- Les « à confirmer » sont devenues **vert** à l'étape 2, avec le passage GitHub qui l'atteste.
 - Une vérification `parcours` reste e2e, sauf si une étape de journée la reprend. Une `capture`
   reste dans sa suite réduite avec sa mesure (`affirm`, fiche 277), sauf si une journée la mesure.
   Une vérification dont le remplaçant dit « reste e2e » pour une partie du contrat reste.
@@ -40,17 +51,17 @@ la suite complète, estimée d'après les durées du 2026-11-23 : 74 min de temp
 | | Avant | Après étape 1 (remplaçants verts) | Après étape 2 (+ journées confirmées) |
 |---|---:|---:|---:|
 | Suites e2e | 126 | 118 | 115 |
-| Vérifications e2e inventoriées | 1987 | 755 | 720 |
+| Vérifications e2e inventoriées | 1987 | 755 (réel : 768 lignes, 754 `check`) | 720 (réel : 733 lignes, 719 `check`) |
 | Durée de la suite complète, temps machine (clair + sombre) | 75 min | ≈ 38 min | ≈ 36 min |
 | Durée murale estimée (`--jobs 3`) | ≈ 25 min | ≈ 13 min | ≈ 12 min |
 
 - Vérifications retirées : **1231** à l'étape 1 (remplaçant vert),
-  **35** de plus à l'étape 2 (journée à confirmer), **1** creuse
+  **35** de plus à l'étape 2 (journée verte sur GitHub), **1** creuse
   sans remplaçant. Restent : **720** (dont 394 `parcours`,
   113 `capture` à mesurer, et
   213 sans remplaçant complet : section
   « Pas encore remplaçable »).
-- Suites : **8** supprimées entièrement à l'étape 1, **11** à l'étape 2 ;
+- Suites : **8** supprimées entièrement à l'étape 1, **3** de plus à l'étape 2 (11 en tout) ;
   **107** réduites ; **8** gardées telles quelles : `degrade-haut`, `parcours-matinee`, `parcours-reglages`, `parcours-deleguer`, `parcours-outils`, `parcours-longue`, `parcours-pannes`, `parcours-premier-lancement`.
 - Hors inventaire : `parcours-premier-lancement` (journée ajoutée le 2026-11-24, 11
   `check`, gardée ; sa durée est estimée à la moyenne des autres journées).
@@ -62,7 +73,7 @@ la suite complète, estimée d'après les durées du 2026-11-23 : 74 min de temp
 
 **Supprimées entièrement à l'étape 1** (8) : `fil`, `astuces`, `export`, `providers`, `roles-meme-icone`, `textes-plateforme`, `reprise`, `touches`.
 
-**Supprimées entièrement à l'étape 2 seulement** (3) : `acp`, `filles-non-commite`, `mentions`.
+**Supprimées entièrement à l'étape 2** (3, faites) : `acp`, `filles-non-commite`, `mentions`.
 
 ## Vérifications creuses (supprimées sans remplaçant)
 
@@ -88,7 +99,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `queue` — réduire
 
-9 vérifications : 8 retirées (dont 0 à confirmer), 0 creuse(s), 1 restent. Durée (clair + sombre) : 11 s → ≈ 6 s.
+9 vérifications : 8 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 1 restent. Durée (clair + sombre) : 11 s → ≈ 6 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -104,7 +115,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `rules` — réduire
 
-3 vérifications : 1 retirées (dont 0 à confirmer), 0 creuse(s), 2 restent. Durée (clair + sombre) : 5 s → ≈ 5 s.
+3 vérifications : 1 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 2 restent. Durée (clair + sombre) : 5 s → ≈ 5 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -114,7 +125,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `parallel` — réduire
 
-5 vérifications : 3 retirées (dont 0 à confirmer), 0 creuse(s), 2 restent. Durée (clair + sombre) : 23 s → ≈ 12 s.
+5 vérifications : 3 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 2 restent. Durée (clair + sombre) : 23 s → ≈ 12 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -126,7 +137,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `repere` — réduire
 
-8 vérifications : 5 retirées (dont 0 à confirmer), 0 creuse(s), 3 restent. Durée (clair + sombre) : 42 s → ≈ 19 s.
+8 vérifications : 5 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 3 restent. Durée (clair + sombre) : 42 s → ≈ 19 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -141,7 +152,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `profil` — réduire
 
-42 vérifications : 27 retirées (dont 1 à confirmer), 0 creuse(s), 15 restent. Durée (clair + sombre) : 65 s → ≈ 26 s.
+42 vérifications : 27 retirées (dont 1 par une journée, étape 2), 0 creuse(s), 15 restent. Durée (clair + sombre) : 65 s → ≈ 26 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -161,7 +172,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 | 14 | index réécrit avec les trois conversations | doublon | retirée | `store.test.ts › copie de l’enregistrement dans le fil ; index perdu : liste refaite (fiche 197)` | vert |
 | 15 | supprimer : « Mettre à la corbeille », case agent jamais cochée | doublon | retirée | `DeleteDialog.test.tsx › « aussi chez l’agent » proposé seulement s’il sait le faire, jamais coché d’office` | vert |
 | 16 | la conversation est dans la corbeille de Réglages › Données | doublon | retirée | `parcours-deleguer` étape 7 ; `manager.test.ts › supprimer : à la corbeille avec son fil à jour, restaurée telle quelle (fiche 196)` | vert |
-| 17 | restaurée : de retour dans la liste, corbeille vide | doublon | retirée | `parcours-deleguer` étape 7 (« restaurée : de retour dans la barre latérale ») | à confirmer |
+| 17 | restaurée : de retour dans la liste, corbeille vide | doublon | retirée | `parcours-deleguer` étape 7 (« restaurée : de retour dans la barre latérale ») | vert (étape 2 : `parcours-deleguer` vert sur GitHub, passage 45352675204) |
 | 18 | un dossier qui n'est pas une sauvegarde est refusé, en clair | composant | retirée | **oui, remplaçant créé** (2026-11-24) : `R/components/settings/ProfileData.test.tsx` › « un dossier qui n’est pas une sauvegarde : refusé, en clair, sans confirmation » | vert |
 | 19 | restauration : confirmation dans la carte (ce qui sera remplacé, clés à ressaisir) | composant | retirée | **oui, remplaçant créé** (2026-11-24) : `R/components/settings/ProfileData.test.tsx` › « confirmation dans la carte : ce qui sera remplacé, gardé à côté, clés à ressaisir » | vert |
 | 20 | Échap ferme la confirmation, pas les réglages | composant | retirée | **oui, remplaçant créé** (2026-11-24) : `R/components/settings/SettingsPages.test.tsx` › « Échap ferme la confirmation de la restauration, pas les réglages » | vert |
@@ -190,7 +201,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `settings` — réduire
 
-43 vérifications : 31 retirées (dont 0 à confirmer), 0 creuse(s), 12 restent. Durée (clair + sombre) : 23 s → ≈ 10 s.
+43 vérifications : 31 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 12 restent. Durée (clair + sombre) : 23 s → ≈ 10 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -240,7 +251,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `mcp` — réduire
 
-37 vérifications : 13 retirées (dont 0 à confirmer), 0 creuse(s), 24 restent. Durée (clair + sombre) : 25 s → ≈ 18 s.
+37 vérifications : 13 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 24 restent. Durée (clair + sombre) : 25 s → ≈ 18 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -284,7 +295,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `regles-approbation` — réduire
 
-31 vérifications : 29 retirées (dont 0 à confirmer), 0 creuse(s), 2 restent. Durée (clair + sombre) : 20 s → ≈ 6 s.
+31 vérifications : 29 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 2 restent. Durée (clair + sombre) : 20 s → ≈ 6 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -322,7 +333,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `pr-ci-sans-ci` — réduire
 
-4 vérifications : 3 retirées (dont 0 à confirmer), 0 creuse(s), 1 restent. Durée (clair + sombre) : 14 s → ≈ 7 s.
+4 vérifications : 3 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 1 restent. Durée (clair + sombre) : 14 s → ≈ 7 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -333,19 +344,19 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `restart` — réduire
 
-5 vérifications : 4 retirées (dont 1 à confirmer), 0 creuse(s), 1 restent. Durée (clair + sombre) : 12 s → ≈ 4 s.
+5 vérifications : 4 retirées (dont 1 par une journée, étape 2), 0 creuse(s), 1 restent. Durée (clair + sombre) : 12 s → ≈ 4 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
 | 1 | Après redémarrage : la conversation est dans « Récents » | doublon | retirée | `e2e/suites/parcours-matinee.mjs › relance : la conversation affichée, son fil (relecture comprise), son modèle et son mode` (les deux conversations dans la barre) | vert |
 | 2 | Après redémarrage : la consommation de la conversation est conservée | parcours | reste | parcours : vraie app nécessaire | — |
 | 3 | Conversation rechargée (session/load) puis continuée | doublon | retirée | `parcours-matinee.mjs › agent relancé : il répond dans le même fil, avec les réglages de la conversation` | vert |
-| 4 | Suppression confirmée dans l'app : historique vide, accueil, aucune boîte native | parcours | retirée | **parcours-deleguer › étape 6** (`ui.dialogs.length === 0` ; journée rouge plus loin (fiche 277, défauts 1-2)) — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 4 | Suppression confirmée dans l'app : historique vide, accueil, aucune boîte native | parcours | retirée | **parcours-deleguer › étape 6** (`ui.dialogs.length === 0`) | vert (étape 2 : `parcours-deleguer` vert sur GitHub, passage 45352675204) |
 | 5 | Après redémarrage : « Épinglées » et dossier repliés, mode Dossiers gardé | composant | retirée | `src/renderer/src/components/sidebar/Sidebar.test.tsx › chaque section se replie, et le reste au redémarrage` ; `› un dossier se replie (seul son nom reste), et le reste au redémarrage` (regroupement lu de `localStorage`) | vert |
 
 ### `cout-connexion` — réduire
 
-6 vérifications : 5 retirées (dont 0 à confirmer), 0 creuse(s), 1 restent. Durée (clair + sombre) : 18 s → ≈ 7 s.
+6 vérifications : 5 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 1 restent. Durée (clair + sombre) : 18 s → ≈ 7 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -358,7 +369,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `degrade-haut` — garder
 
-28 vérifications : 0 retirées (dont 0 à confirmer), 0 creuse(s), 28 restent. Durée (clair + sombre) : 111 s → ≈ 111 s.
+28 vérifications : 0 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 28 restent. Durée (clair + sombre) : 111 s → ≈ 111 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -393,7 +404,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `browser-annotate` — réduire
 
-26 vérifications : 12 retirées (dont 0 à confirmer), 0 creuse(s), 14 restent. Durée (clair + sombre) : 18 s → ≈ 12 s.
+26 vérifications : 12 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 14 restent. Durée (clair + sombre) : 18 s → ≈ 12 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -426,7 +437,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `certificats` — réduire
 
-24 vérifications : 9 retirées (dont 0 à confirmer), 0 creuse(s), 15 restent. Durée (clair + sombre) : 22 s → ≈ 16 s.
+24 vérifications : 9 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 15 restent. Durée (clair + sombre) : 22 s → ≈ 16 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -457,7 +468,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `roles-gestion` — réduire
 
-23 vérifications : 17 retirées (dont 0 à confirmer), 0 creuse(s), 6 restent. Durée (clair + sombre) : 24 s → ≈ 10 s.
+23 vérifications : 17 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 6 restent. Durée (clair + sombre) : 24 s → ≈ 10 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -487,7 +498,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `limite-etapes` — réduire
 
-7 vérifications : 6 retirées (dont 0 à confirmer), 0 creuse(s), 1 restent. Durée (clair + sombre) : 12 s → ≈ 6 s.
+7 vérifications : 6 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 1 restent. Durée (clair + sombre) : 12 s → ≈ 6 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -501,12 +512,12 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `mermaid` — réduire
 
-7 vérifications : 5 retirées (dont 2 à confirmer), 0 creuse(s), 2 restent. Durée (clair + sombre) : 12 s → ≈ 7 s.
+7 vérifications : 5 retirées (dont 2 par une journée, étape 2), 0 creuse(s), 2 restent. Durée (clair + sombre) : 12 s → ≈ 7 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
-| 1 | Mermaid pas chargé tant qu'aucun diagramme | parcours | retirée | **parcours-longue › étape 1** (`modulepreload` relu avant le premier diagramme) — remplaçant écrit, à jouer sur GitHub | à confirmer |
-| 2 | organigramme et séquence dessinés | parcours | retirée | **parcours-longue › étape 1** (états `drawn drawn error`, sans relire les libellés) — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 1 | Mermaid pas chargé tant qu'aucun diagramme | parcours | retirée | **parcours-longue › étape 1** (`modulepreload` relu avant le premier diagramme) | vert (étape 2 : `parcours-longue` vert sur GitHub, passage 45345873473) |
+| 2 | organigramme et séquence dessinés | parcours | retirée | **parcours-longue › étape 1** (états `drawn drawn error`, sans relire les libellés) | vert (étape 2 : `parcours-longue` vert sur GitHub, passage 45345873473) |
 | 3 | Mermaid chargé à l'arrivée du diagramme | doublon | reste | aucun remplaçant écrit | — |
 | 4 | bloc invalide : le code reste, avec l'erreur | doublon | retirée | `MermaidBlock.test.tsx` › « invalide : le code reste, avec l'erreur de Mermaid en une ligne » | vert |
 | 5 | redessiné aux couleurs de la variante | capture | reste | capture : mesure (`affirm`) à garder dans la suite réduite | — |
@@ -515,7 +526,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `dossiers` — réduire
 
-8 vérifications : 6 retirées (dont 0 à confirmer), 0 creuse(s), 2 restent. Durée (clair + sombre) : 12 s → ≈ 7 s.
+8 vérifications : 6 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 2 restent. Durée (clair + sombre) : 12 s → ≈ 7 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -530,7 +541,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `historique-saisie` — réduire
 
-23 vérifications : 17 retirées (dont 0 à confirmer), 0 creuse(s), 6 restent. Durée (clair + sombre) : 14 s → ≈ 7 s.
+23 vérifications : 17 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 6 restent. Durée (clair + sombre) : 14 s → ≈ 7 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -560,12 +571,12 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `git` — réduire
 
-19 vérifications : 11 retirées (dont 1 à confirmer), 0 creuse(s), 8 restent. Durée (clair + sombre) : 54 s → ≈ 26 s.
+19 vérifications : 11 retirées (dont 1 par une journée, étape 2), 0 creuse(s), 8 restent. Durée (clair + sombre) : 54 s → ≈ 26 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
 | 1 | branche sous la saisie ; ni bouton terminal ni titre (brouillon) | composant | retirée | **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/composer/Composer.test.tsx` › dossier et branche sur la ligne sous la saisie… (branche) ; en-tête sans terminal ni titre : voir ConversationTitle | vert |
-| 2 | (attente) après le tour de l’agent : point sur la branche | parcours | retirée | **parcours-matinee › étape 5** — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 2 | (attente) après le tour de l’agent : point sur la branche | parcours | retirée | **parcours-matinee › étape 5** | vert (étape 2 : `parcours-matinee` vert sur GitHub, passage 45342287255) |
 | 3 | titre de la conversation aligné à gauche (< 40 px) | capture | reste | capture : mesure (`affirm`) à garder dans la suite réduite | — |
 | 4 | « Renommer » depuis le titre : en place et dans la barre latérale | composant | retirée | **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/sidebar/ConversationTitle.test.tsx` › « Renommer » édite le titre en place ; Entrée enregistre le nouveau titre (git n° 4) (reprise dans la barre latérale : `src/main/conversations/manager.test.ts`) | vert |
 | 5 | « Supprimer » depuis le titre : même confirmation, page de nouveau cliquable | composant | retirée | **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/sidebar/ConversationTitle.test.tsx` › « Supprimer » demande la confirmation, la page reste cliquable (menu non modal) (git n° 5) | vert |
@@ -586,7 +597,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `worktree-cycle` — réduire
 
-19 vérifications : 14 retirées (dont 0 à confirmer), 0 creuse(s), 5 restent. Durée (clair + sombre) : 27 s → ≈ 11 s.
+19 vérifications : 14 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 5 restent. Durée (clair + sombre) : 27 s → ≈ 11 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -612,19 +623,19 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `terminal` — réduire
 
-18 vérifications : 15 retirées (dont 3 à confirmer), 0 creuse(s), 3 restent. Durée (clair + sombre) : 14 s → ≈ 6 s.
+18 vérifications : 15 retirées (dont 3 par une journée, étape 2), 0 creuse(s), 3 restent. Durée (clair + sombre) : 14 s → ≈ 6 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
 | 1 | ⌃` : un terminal s’ouvre à droite et prend le clavier | doublon | retirée | oui : `parcours-outils` étape 1 (même raccourci, commande à la main) | vert |
-| 2 | texte à 12 px du bord, sans cadre arrondi | capture | retirée | **parcours-outils › étape 1** (capture qui affirme `277-outils-terminal`) — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 2 | texte à 12 px du bord, sans cadre arrondi | capture | retirée | **parcours-outils › étape 1** (capture qui affirme `277-outils-terminal`) | vert (étape 2 : `parcours-outils` vert sur GitHub, passage 45342287255) |
 | 3 | Nerd Font livrée chargée, dans la police du terminal | parcours | reste | parcours : vraie app nécessaire | — |
 | 4 | icônes entières : une cellule d’avance, débord sur l’espace suivant seulement | parcours | reste | parcours : vraie app nécessaire | — |
-| 5 | ⌃` ouvre et referme, même quand le terminal a le clavier | parcours | retirée | **parcours-outils › étape 1** — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 5 | ⌃` ouvre et referme, même quand le terminal a le clavier | parcours | retirée | **parcours-outils › étape 1** | vert (étape 2 : `parcours-outils` vert sur GitHub, passage 45342287255) |
 | 6 | commande montrée avant de partir dans le terminal | doublon | retirée | oui : `parcours-outils` étape 2 ; `terminal-tools.test.ts › commande montrée une fois, lancée dans un onglet neuf, puis lue` | vert |
 | 7 | trois choix (Lancer, Toujours cette commande ici, Refuser) | doublon | retirée | oui : `command-approval.test.ts › trois choix ; « Toujours cette commande ici » retenu pour ce dossier seulement` | vert |
 | 8 | commande lancée dans un onglet de l’agent (onglet 2), écran lu | doublon | retirée | oui : `parcours-outils` étape 2 ; `terminal-manager.test.ts › onglet dans le dossier, commande lancée, écran lu comme l’utilisateur le voit` | vert |
-| 9 | onglet « Terminal » ouvert tout seul, historique affiché | parcours | retirée | **parcours-outils › étape 2** (terminal refermé à l’étape 1, rouvert par la commande de l’agent) — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 9 | onglet « Terminal » ouvert tout seul, historique affiché | parcours | retirée | **parcours-outils › étape 2** (terminal refermé à l’étape 1, rouvert par la commande de l’agent) | vert (étape 2 : `parcours-outils` vert sur GitHub, passage 45342287255) |
 | 10 | Réglages › Confidentialité : commande retenue listée sous son dossier | composant | retirée | **oui, remplaçant créé** (2026-11-24) : `R/components/settings/PrivacySettings.test.tsx` › « commande retenue listée sous son dossier, en chasse fixe » | vert |
 | 11 | commande retenue oubliée depuis les Réglages | composant | retirée | **oui, remplaçant créé** (2026-11-24) : `R/components/settings/PrivacySettings.test.tsx` › « commande retenue oubliée : rien avant la confirmation, puis dossier et commande au main » | vert |
 | 12 | saisie au clavier dans le terminal | doublon | retirée | oui : `parcours-outils` étape 1 | vert |
@@ -637,7 +648,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `base` — réduire
 
-18 vérifications : 15 retirées (dont 0 à confirmer), 0 creuse(s), 3 restent. Durée (clair + sombre) : 18 s → ≈ 7 s.
+18 vérifications : 15 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 3 restent. Durée (clair + sombre) : 18 s → ≈ 7 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -662,7 +673,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `language` — réduire
 
-8 vérifications : 3 retirées (dont 0 à confirmer), 0 creuse(s), 5 restent. Durée (clair + sombre) : 6 s → ≈ 6 s.
+8 vérifications : 3 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 5 restent. Durée (clair + sombre) : 6 s → ≈ 6 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -677,7 +688,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `parcours-matinee` — garder (journée type)
 
-17 vérifications : 0 retirées (dont 0 à confirmer), 0 creuse(s), 17 restent. Durée (clair + sombre) : 90 s → ≈ 90 s.
+17 vérifications : 0 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 17 restent. Durée (clair + sombre) : 90 s → ≈ 90 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -701,7 +712,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `fil` — supprimer entièrement
 
-17 vérifications : 17 retirées (dont 0 à confirmer), 0 creuse(s), 0 restent. Durée (clair + sombre) : 24 s → ≈ 0 s.
+17 vérifications : 17 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 0 restent. Durée (clair + sombre) : 24 s → ≈ 0 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -725,7 +736,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `commit-redige` — réduire
 
-15 vérifications : 14 retirées (dont 0 à confirmer), 0 creuse(s), 1 restent. Durée (clair + sombre) : 106 s → ≈ 12 s.
+15 vérifications : 14 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 1 restent. Durée (clair + sombre) : 106 s → ≈ 12 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -747,7 +758,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `aide` — réduire
 
-15 vérifications : 4 retirées (dont 0 à confirmer), 0 creuse(s), 11 restent. Durée (clair + sombre) : 11 s → ≈ 9 s.
+15 vérifications : 4 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 11 restent. Durée (clair + sombre) : 11 s → ≈ 9 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -769,7 +780,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `usage` — réduire
 
-15 vérifications : 13 retirées (dont 0 à confirmer), 1 creuse(s), 1 restent. Durée (clair + sombre) : 9 s → ≈ 5 s.
+15 vérifications : 13 retirées (dont 0 par une journée, étape 2), 1 creuse(s), 1 restent. Durée (clair + sombre) : 9 s → ≈ 5 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -791,7 +802,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `command` — réduire
 
-14 vérifications : 10 retirées (dont 0 à confirmer), 0 creuse(s), 4 restent. Durée (clair + sombre) : 15 s → ≈ 8 s.
+14 vérifications : 10 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 4 restent. Durée (clair + sombre) : 15 s → ≈ 8 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -812,7 +823,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `outils-projet` — réduire
 
-8 vérifications : 6 retirées (dont 0 à confirmer), 0 creuse(s), 2 restent. Durée (clair + sombre) : 14 s → ≈ 7 s.
+8 vérifications : 6 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 2 restent. Durée (clair + sombre) : 14 s → ≈ 7 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -827,7 +838,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `permissions` — réduire
 
-12 vérifications : 11 retirées (dont 0 à confirmer), 0 creuse(s), 1 restent. Durée (clair + sombre) : 19 s → ≈ 6 s.
+12 vérifications : 11 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 1 restent. Durée (clair + sombre) : 19 s → ≈ 6 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -846,7 +857,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `nouvelle-version` — réduire
 
-13 vérifications : 11 retirées (dont 0 à confirmer), 0 creuse(s), 2 restent. Durée (clair + sombre) : 67 s → ≈ 15 s.
+13 vérifications : 11 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 2 restent. Durée (clair + sombre) : 67 s → ≈ 15 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -866,7 +877,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `aparte` — réduire
 
-12 vérifications : 11 retirées (dont 2 à confirmer), 0 creuse(s), 1 restent. Durée (clair + sombre) : 12 s → ≈ 6 s.
+12 vérifications : 11 retirées (dont 2 par une journée, étape 2), 0 creuse(s), 1 restent. Durée (clair + sombre) : 12 s → ≈ 6 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -874,9 +885,9 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 | 2 | `/btw` proposée dans le menu « / » | composant | retirée | **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/composer/Composer.test.tsx` › « / » : `/btw` (aparté) proposée parmi les commandes de l’app (aparte n° 2) | vert |
 | 3 | l'aparté reçoit la consigne de lecture seule | doublon | retirée | `src/main/conversations/aside.test.ts › question sans le fil : session à part en mode plan, consigne de lecture seule, coût compté, session supprimée` ; `src/shared/aside.test.ts › consigne de lecture seule, après la question ; fin du fil seulement si demandée` | vert |
 | 4 | par défaut, rien du fil principal | doublon | retirée | `src/shared/aside.test.ts › consigne de lecture seule, après la question ; fin du fil seulement si demandée` | vert |
-| 5 | carte au-dessus de la zone de saisie, saisie vide | capture | retirée | **parcours-matinee › étape 9** (capture qui affirme `277-matinee-aparte`) — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 5 | carte au-dessus de la zone de saisie, saisie vide | capture | retirée | **parcours-matinee › étape 9** (capture qui affirme `277-matinee-aparte`) | vert (étape 2 : `parcours-matinee` vert sur GitHub, passage 45342287255) |
 | 6 | coût de l'aparté affiché | doublon | retirée | `AsideCard.test.tsx › réponse, refus d'office, coût ; « Ajouter au fil » met la citation dans la saisie` | vert |
-| 7 | rien dans le fil, le tour principal attend toujours sa permission | parcours | retirée | **parcours-matinee › étape 9** (pendant un tour `attend-stop` (pas une permission), file comprise) — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 7 | rien dans le fil, le tour principal attend toujours sa permission | parcours | retirée | **parcours-matinee › étape 9** (pendant un tour `attend-stop` (pas une permission), file comprise) | vert (étape 2 : `parcours-matinee` vert sur GitHub, passage 45342287255) |
 | 8 | case cochée : la fin du fil part avec la question | doublon | retirée | `aside.test.ts › avec le fil : la fin de la conversation part avec la question ; une deuxième question dans la même session` | vert |
 | 9 | demande d'autorisation de l'aparté refusée d'office, et dite | doublon | retirée | `aside.test.ts › lecture seule : une demande d'autorisation est refusée d'office` ; `AsideCard.test.tsx › réponse, refus d'office, coût…` | vert |
 | 10 | question et réponse en citation dans la saisie, jamais envoyées | doublon | retirée | `AsideCard.test.tsx › réponse, refus d'office, coût ; « Ajouter au fil » met la citation dans la saisie` ; `src/shared/aside.test.ts › « Ajouter au fil » : question et réponse en citation` | vert |
@@ -885,7 +896,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `startup` — réduire
 
-11 vérifications : 6 retirées (dont 0 à confirmer), 0 creuse(s), 5 restent. Durée (clair + sombre) : 8 s → ≈ 6 s.
+11 vérifications : 6 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 5 restent. Durée (clair + sombre) : 8 s → ≈ 6 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -903,7 +914,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `plan` — réduire
 
-11 vérifications : 7 retirées (dont 0 à confirmer), 0 creuse(s), 4 restent. Durée (clair + sombre) : 11 s → ≈ 7 s.
+11 vérifications : 7 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 4 restent. Durée (clair + sombre) : 11 s → ≈ 7 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -921,7 +932,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `parcours-reglages` — garder (journée type)
 
-11 vérifications : 0 retirées (dont 0 à confirmer), 0 creuse(s), 11 restent. Durée (clair + sombre) : 77 s → ≈ 77 s.
+11 vérifications : 0 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 11 restent. Durée (clair + sombre) : 77 s → ≈ 77 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -939,7 +950,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `filles-tech-lead` — réduire
 
-11 vérifications : 9 retirées (dont 0 à confirmer), 0 creuse(s), 2 restent. Durée (clair + sombre) : 50 s → ≈ 13 s.
+11 vérifications : 9 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 2 restent. Durée (clair + sombre) : 50 s → ≈ 13 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -957,7 +968,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `aurore` — réduire
 
-11 vérifications : 1 retirées (dont 0 à confirmer), 0 creuse(s), 10 restent. Durée (clair + sombre) : 8 s → ≈ 8 s.
+11 vérifications : 1 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 10 restent. Durée (clair + sombre) : 8 s → ≈ 8 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -975,7 +986,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `finitions` — réduire
 
-10 vérifications : 4 retirées (dont 0 à confirmer), 0 creuse(s), 6 restent. Durée (clair + sombre) : 22 s → ≈ 15 s.
+10 vérifications : 4 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 6 restent. Durée (clair + sombre) : 22 s → ≈ 15 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -992,7 +1003,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `about` — réduire
 
-10 vérifications : 3 retirées (dont 0 à confirmer), 0 creuse(s), 7 restent. Durée (clair + sombre) : 11 s → ≈ 9 s.
+10 vérifications : 3 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 7 restent. Durée (clair + sombre) : 11 s → ≈ 9 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1009,7 +1020,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `travail-recette` — réduire
 
-9 vérifications : 7 retirées (dont 0 à confirmer), 0 creuse(s), 2 restent. Durée (clair + sombre) : 45 s → ≈ 14 s.
+9 vérifications : 7 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 2 restent. Durée (clair + sombre) : 45 s → ≈ 14 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1025,13 +1036,13 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ## Suites du groupe B (`inventaire-e2e-B.md`)
 
-### `acp` — supprimer entièrement (étape 1 : réduire)
+### `acp` — supprimer entièrement (fait à l'étape 2)
 
-14 vérifications : 14 retirées (dont 1 à confirmer), 0 creuse(s), 0 restent. Durée (clair + sombre) : 14 s → ≈ 0 s.
+14 vérifications : 14 retirées (dont 1 par une journée, étape 2), 0 creuse(s), 0 restent. Durée (clair + sombre) : 14 s → ≈ 0 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
-| 1 | onglet ouvert par le « + », démarrage de l'agent déjà là | parcours | retirée | **parcours-outils › étape 9** (dans une nouvelle conversation) — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 1 | onglet ouvert par le « + », démarrage de l'agent déjà là | parcours | retirée | **parcours-outils › étape 9** (dans une nouvelle conversation) | vert (étape 2 : `parcours-outils` vert sur GitHub, passage 45342287255) |
 | 2 | pied : clés et jetons masqués, messages en mémoire seulement | composant | retirée | oui : `src/renderer/src/components/panel/AcpTab.test.tsx › onglet « Échanges ACP » (fiche 135) › pied : clés et jetons masqués, messages en mémoire seulement` | vert |
 | 3 | → session/prompt avec son identifiant | doublon | retirée | `src/renderer/src/acp-view.test.ts › méthode ou type de mise à jour, détail, durée de la réponse depuis sa requête` | vert |
 | 4 | ← session/request_permission | doublon | retirée | comme n° 3 : `src/renderer/src/acp-view.test.ts › méthode ou type de mise à jour, détail, durée de la réponse depuis sa requête` | vert |
@@ -1048,7 +1059,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `android` — réduire
 
-29 vérifications : 16 retirées (dont 0 à confirmer), 0 creuse(s), 13 restent. Durée (clair + sombre) : 32 s → ≈ 17 s.
+29 vérifications : 16 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 13 restent. Durée (clair + sombre) : 32 s → ≈ 17 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1084,7 +1095,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `astuces` — supprimer entièrement
 
-12 vérifications : 12 retirées (dont 0 à confirmer), 0 creuse(s), 0 restent. Durée (clair + sombre) : 57 s → ≈ 0 s.
+12 vérifications : 12 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 0 restent. Durée (clair + sombre) : 57 s → ≈ 0 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1103,7 +1114,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `auth` — réduire
 
-30 vérifications : 17 retirées (dont 0 à confirmer), 0 creuse(s), 13 restent. Durée (clair + sombre) : 55 s → ≈ 27 s.
+30 vérifications : 17 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 13 restent. Durée (clair + sombre) : 55 s → ≈ 27 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1140,7 +1151,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `bob` — réduire
 
-9 vérifications : 5 retirées (dont 0 à confirmer), 0 creuse(s), 4 restent. Durée (clair + sombre) : 8 s → ≈ 6 s.
+9 vérifications : 5 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 4 restent. Durée (clair + sombre) : 8 s → ≈ 6 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1156,7 +1167,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `browser-view` — réduire
 
-21 vérifications : 2 retirées (dont 0 à confirmer), 0 creuse(s), 19 restent. Durée (clair + sombre) : 24 s → ≈ 22 s.
+21 vérifications : 2 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 19 restent. Durée (clair + sombre) : 24 s → ≈ 22 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1184,7 +1195,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `changes` — réduire
 
-14 vérifications : 12 retirées (dont 0 à confirmer), 0 creuse(s), 2 restent. Durée (clair + sombre) : 12 s → ≈ 6 s.
+14 vérifications : 12 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 2 restent. Durée (clair + sombre) : 12 s → ≈ 6 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1205,7 +1216,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `commands` — réduire
 
-17 vérifications : 15 retirées (dont 0 à confirmer), 0 creuse(s), 2 restent. Durée (clair + sombre) : 8 s → ≈ 5 s.
+17 vérifications : 15 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 2 restent. Durée (clair + sombre) : 8 s → ≈ 5 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1229,7 +1240,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `composer` — réduire
 
-53 vérifications : 35 retirées (dont 2 à confirmer), 0 creuse(s), 18 restent. Durée (clair + sombre) : 112 s → ≈ 41 s.
+53 vérifications : 35 retirées (dont 2 par une journée, étape 2), 0 creuse(s), 18 restent. Durée (clair + sombre) : 112 s → ≈ 41 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1263,8 +1274,8 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 | 28 | 500 px, Plan : invite entière | composant | reste | partiel : `useTextareaLayout.test.tsx › suit la largeur : une ligne de plus quand la zone rétrécit, sans attendre le texte` — **Reste e2e ou capture (lot dialogues)** : e2e/capture : hauteur réelle de l’invite à 500 px (police, `scrollHeight` du navigateur) ; le mécanisme est à `src/renderer/src/useTextareaLayout.test.tsx` › suit la largeur… | — |
 | 29 | 500 px, Code : invite entière | doublon | reste | partiel : comme n° 28 : partiel : `useTextareaLayout.test.tsx › suit la largeur : une ligne de plus quand la zone rétrécit, sans attendre le texte` — **Reste e2e ou capture (lot dialogues)** : e2e/capture : hauteur réelle de l’invite à 500 px (police, `scrollHeight` du navigateur) ; le mécanisme est à `src/renderer/src/useTextareaLayout.test.tsx` › suit la largeur… | — |
 | 30 | 500 px : texte tapé entier, sans défilement | composant | reste | partiel : comme n° 28 : partiel : `useTextareaLayout.test.tsx › suit la largeur : une ligne de plus quand la zone rétrécit, sans attendre le texte` — **Reste e2e ou capture (lot dialogues)** : e2e/capture : hauteur réelle de l’invite à 500 px (police, `scrollHeight` du navigateur) ; le mécanisme est à `src/renderer/src/useTextareaLayout.test.tsx` › suit la largeur… | — |
-| 31 | accueil à 760 px : saisie et envoi dans la fenêtre | capture | retirée | **parcours-premier-lancement › étape 5** (capture qui affirme `277-premier-accueil-760`) — remplaçant écrit, à jouer sur GitHub | à confirmer |
-| 32 | accueil à 760 px : suggestions dans la fenêtre | capture | retirée | **parcours-premier-lancement › étape 5** (capture qui affirme `277-premier-accueil-760`) — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 31 | accueil à 760 px : saisie et envoi dans la fenêtre | capture | retirée | **parcours-premier-lancement › étape 5** (capture qui affirme `277-premier-accueil-760`) | vert (étape 2 : `parcours-premier-lancement` vert sur GitHub, passage 45345873473) |
+| 32 | accueil à 760 px : suggestions dans la fenêtre | capture | retirée | **parcours-premier-lancement › étape 5** (capture qui affirme `277-premier-accueil-760`) | vert (étape 2 : `parcours-premier-lancement` vert sur GitHub, passage 45345873473) |
 | 33 | accueil : dossier et branche sous la saisie | doublon | reste | partiel : même contrat que #1 | — |
 | 34 | accueil à 760 px : le bouton d'envoi se clique | composant | retirée | **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/composer/Composer.test.tsx` › accueil : un clic sur Envoyer envoie le message (composer n° 34) (bouton dans la fenêtre à 760 px : capture) | vert |
 | 35 | mode Code : saisie habituelle, sans rappel (transitions 150 ms) | doublon | retirée | `Composer.test.tsx › hors mode Plan : ni teinte, ni ligne de rappel, invite habituelle` | vert |
@@ -1289,7 +1300,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `custom-agent` — réduire
 
-9 vérifications : 6 retirées (dont 0 à confirmer), 0 creuse(s), 3 restent. Durée (clair + sombre) : 13 s → ≈ 8 s.
+9 vérifications : 6 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 3 restent. Durée (clair + sombre) : 13 s → ≈ 8 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1305,7 +1316,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `diagnostic` — réduire
 
-28 vérifications : 18 retirées (dont 0 à confirmer), 0 creuse(s), 10 restent. Durée (clair + sombre) : 47 s → ≈ 20 s.
+28 vérifications : 18 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 10 restent. Durée (clair + sombre) : 47 s → ≈ 20 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1340,7 +1351,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `export` — supprimer entièrement
 
-5 vérifications : 5 retirées (dont 0 à confirmer), 0 creuse(s), 0 restent. Durée (clair + sombre) : 3 s → ≈ 0 s.
+5 vérifications : 5 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 0 restent. Durée (clair + sombre) : 3 s → ≈ 0 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1352,12 +1363,12 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `filles-fusion` — réduire
 
-14 vérifications : 10 retirées (dont 1 à confirmer), 0 creuse(s), 4 restent. Durée (clair + sombre) : 56 s → ≈ 20 s.
+14 vérifications : 10 retirées (dont 1 par une journée, étape 2), 0 creuse(s), 4 restent. Durée (clair + sombre) : 56 s → ≈ 20 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
 | 1 | trois travaux sur les lignes de leur carte : ni « Sous-tâches » ni compte rendu séparé | doublon | retirée | `src/renderer/src/components/thread/WorkGroup.test.tsx › « 3 travaux · 1 en cours, 1 a répondu », à la place des propositions ; rien de séparé` | vert |
-| 2 | trois filles, chacune dans son worktree | doublon | retirée | `e2e/suites/parcours-deleguer.mjs` étape 1 (« trois travaux finis, chacun dans son worktree ») | à confirmer |
+| 2 | trois filles, chacune dans son worktree | doublon | retirée | `e2e/suites/parcours-deleguer.mjs` étape 1 (« trois travaux finis, chacun dans son worktree ») | vert (étape 2 : `parcours-deleguer` vert sur GitHub, passage 45352675204) |
 | 3 | pied de carte : deux prêtes, recouvrement sur README.md, la troisième non commitée et dite | doublon | retirée | `SubtasksMerge.test.tsx › pied de carte : phrase d'état, « Fusionner les N »…` ; `src/main/conversations/children-merge.test.ts › recouvrement détecté…` et `› fille avec des modifications non commitées : exclue du plan, sautée si demandée` | vert |
 | 4 | « Fusionner les 3 dans main », « Puis nettoyer » décoché par défaut | doublon | retirée | `SubtasksMerge.test.tsx › pied de carte : … « Puis nettoyer » en bascule` ; `parcours-deleguer.mjs` étape 3 | vert |
 | 5 | fusion refusée d'avance : dossier principal non commité (fichiers) | doublon | retirée | `SubtasksMerge.test.tsx › dit pourquoi avec les fichiers ; pas de « Fusionner »…` ; `children-merge.test.ts › plan refusé avec les fichiers ; départ refusé ; rien n'avance` | vert |
@@ -1373,7 +1384,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `filles-visibilite` — réduire
 
-7 vérifications : 5 retirées (dont 0 à confirmer), 0 creuse(s), 2 restent. Durée (clair + sombre) : 22 s → ≈ 10 s.
+7 vérifications : 5 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 2 restent. Durée (clair + sombre) : 22 s → ≈ 10 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1387,7 +1398,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `fresh-start` — réduire
 
-11 vérifications : 7 retirées (dont 0 à confirmer), 0 creuse(s), 4 restent. Durée (clair + sombre) : 20 s → ≈ 11 s.
+11 vérifications : 7 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 4 restent. Durée (clair + sombre) : 20 s → ≈ 11 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1405,7 +1416,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `gitlab` — réduire
 
-16 vérifications : 10 retirées (dont 0 à confirmer), 0 creuse(s), 6 restent. Durée (clair + sombre) : 18 s → ≈ 10 s.
+16 vérifications : 10 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 6 restent. Durée (clair + sombre) : 18 s → ≈ 10 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1428,7 +1439,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `history` — réduire
 
-17 vérifications : 13 retirées (dont 0 à confirmer), 0 creuse(s), 4 restent. Durée (clair + sombre) : 21 s → ≈ 9 s.
+17 vérifications : 13 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 4 restent. Durée (clair + sombre) : 21 s → ≈ 9 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1452,7 +1463,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `launch` — réduire
 
-5 vérifications : 1 retirées (dont 0 à confirmer), 0 creuse(s), 4 restent. Durée (clair + sombre) : 7 s → ≈ 6 s.
+5 vérifications : 1 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 4 restent. Durée (clair + sombre) : 7 s → ≈ 6 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1464,7 +1475,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `links` — réduire
 
-17 vérifications : 6 retirées (dont 0 à confirmer), 0 creuse(s), 11 restent. Durée (clair + sombre) : 15 s → ≈ 12 s.
+17 vérifications : 6 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 11 restent. Durée (clair + sombre) : 15 s → ≈ 12 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1488,7 +1499,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `memoire` — réduire
 
-17 vérifications : 16 retirées (dont 0 à confirmer), 0 creuse(s), 1 restent. Durée (clair + sombre) : 26 s → ≈ 6 s.
+17 vérifications : 16 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 1 restent. Durée (clair + sombre) : 26 s → ≈ 6 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1512,20 +1523,20 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `network` — réduire
 
-6 vérifications : 5 retirées (dont 1 à confirmer), 0 creuse(s), 1 restent. Durée (clair + sombre) : 24 s → ≈ 8 s.
+6 vérifications : 5 retirées (dont 1 par une journée, étape 2), 0 creuse(s), 1 restent. Durée (clair + sombre) : 24 s → ≈ 8 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
 | 1 | bandeau « Connexion perdue » à la place de l'indicateur, Stop proposé | composant | reste | partiel : `TurnRetryBanner.test.tsx › décompte la prochaine tentative, et « Réessayer maintenant »` | — |
 | 2 | décompte de la deuxième tentative | doublon | retirée | `TurnRetryBanner.test.tsx › décompte la prochaine tentative…` ; `src/main/agent/turn-retry.test.ts › cinq tentatives après 2, 4, 8, 16 puis 32 s, puis plus rien` | vert |
-| 3 | réseau revenu : le message part, sans nouvelle bulle ni erreur | parcours | retirée | **parcours-pannes › étape 10** — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 3 | réseau revenu : le message part, sans nouvelle bulle ni erreur | parcours | retirée | **parcours-pannes › étape 10** | vert (étape 2 : `parcours-pannes` vert sur GitHub, passage 45342287255) |
 | 4 | cinq échecs : « Connexion impossible », seul « Réessayer » | doublon | retirée | `TurnRetryBanner.test.tsx › limite de débit, puis tentatives épuisées : « Réessayer » seul` | vert |
 | 5 | cinq échecs : une seule bulle, un seul avis d'erreur | doublon | retirée | `agent-host-retry.test.ts › cinq échecs : « Connexion impossible », une seule erreur, puis « Réessayer » repart` | vert |
 | 6 | Échap pendant l'attente : plus de tentative, tour arrêté | doublon | retirée | `turn-retry.test.ts › Échap ou Stop annule les tentatives` ; `src/renderer/src/composer-keys.test.ts › Échap arrête la réponse…` | vert |
 
 ### `onboarding` — réduire
 
-43 vérifications : 27 retirées (dont 4 à confirmer), 0 creuse(s), 16 restent. Durée (clair + sombre) : 76 s → ≈ 31 s.
+43 vérifications : 27 retirées (dont 4 par une journée, étape 2), 0 creuse(s), 16 restent. Durée (clair + sombre) : 76 s → ≈ 31 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1534,19 +1545,19 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 | 3 | étape Agent : pas de « Passer cette étape » | doublon | retirée | comme n° 2 : même test (`Onboarding.test.tsx › agent trouvé présélectionné…`) | vert |
 | 4 | connexion : « {agent} est prêt », sans message au modèle | composant | retirée | **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/onboarding/Onboarding.test.tsx` › connexion vérifiée : « Agent factice est prêt », le focus sur « Continuer » (onboarding n° 4, 5) (aucun message au modèle : `src/main/onboarding/agent-readiness.test.ts`) | vert |
 | 5 | focus sur le bouton principal du nouvel état | composant | retirée | **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/onboarding/Onboarding.test.tsx` › connexion vérifiée : « Agent factice est prêt », le focus sur « Continuer » (onboarding n° 4, 5) | vert |
-| 6 | barre latérale : l'agent choisi | parcours | retirée | **parcours-premier-lancement › étape 2** — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 6 | barre latérale : l'agent choisi | parcours | retirée | **parcours-premier-lancement › étape 2** | vert (étape 2 : `parcours-premier-lancement` vert sur GitHub, passage 45345873473) |
 | 7 | essai : le message à envoyer montré tel quel | composant | retirée | **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/onboarding/Onboarding.test.tsx` › essai : le message qui partira, montré tel quel (onboarding n° 7) | vert |
-| 8 | essai : la réponse de l'agent | parcours | retirée | **parcours-premier-lancement › étape 4** — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 8 | essai : la réponse de l'agent | parcours | retirée | **parcours-premier-lancement › étape 4** | vert (étape 2 : `parcours-premier-lancement` vert sur GitHub, passage 45345873473) |
 | 9 | essai réussi : « Commencer » a le focus | composant | retirée | **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/onboarding/Onboarding.test.tsx` › essai réussi : « Commencer » a le focus, et finit l’accueil (onboarding n° 9) | vert |
 | 10 | première conversation : « Lance les tests » avec pnpm | composant | retirée | **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/Welcome.test.tsx` › première conversation : « Lance les tests (pnpm test) » à la place de la suggestion générique (onboarding n° 10) | vert |
 | 11 | première conversation : liens vers l'aide | composant | retirée | **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/Welcome.test.tsx` › première conversation : liens vers « Premiers pas » et « Autorisations » de l’aide (onboarding n° 11) | vert |
 | 12 | la suggestion remplit la saisie sans l'envoyer | composant | retirée | **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/Welcome.test.tsx` › une suggestion remplit la saisie, sans rien envoyer (onboarding n° 12) | vert |
 | 13 | marque « fini » enregistrée | unitaire-main | reste | partiel : `onboarding-state.test.ts › fini ou passé : posé une fois, jamais défait` ; `Onboarding.test.tsx › « Passer l'accueil » : marqué passé` (côté skipped seulement) | — |
-| 14 | relancée : l'accueil ne revient pas | parcours | retirée | **parcours-premier-lancement › étape 8** — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 14 | relancée : l'accueil ne revient pas | parcours | retirée | **parcours-premier-lancement › étape 8** | vert (étape 2 : `parcours-premier-lancement` vert sur GitHub, passage 45345873473) |
 | 15 | accueil ouvert, rien choisi : aucun agent de conversation lancé | parcours | reste | parcours : vraie app nécessaire | — |
 | 16 | accueil ouvert, rien choisi : aucun quota lu | unitaire-main | reste | partiel : `quota-setup.test.ts › agent installé mais pas utilisé : son quota n'est pas lu au lancement` | — |
 | 17 | agent choisi et essayé, pas de dossier : l'agent attend | parcours | reste | parcours : vraie app nécessaire | — |
-| 18 | dossier choisi : l'agent démarre, dans ce dossier | parcours | retirée | **parcours-premier-lancement › étape 5** (dossier lu dans le menu du dossier, pas dans `ps`) — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 18 | dossier choisi : l'agent démarre, dans ce dossier | parcours | retirée | **parcours-premier-lancement › étape 5** (dossier lu dans le menu du dossier, pas dans `ps`) | vert (étape 2 : `parcours-premier-lancement` vert sur GitHub, passage 45345873473) |
 | 19 | aucun agent : sous-titre et conseils des profils | composant | retirée | **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/onboarding/Onboarding.test.tsx` › aucun agent : le sous-titre, et ce que chaque profil dit d’installer, sans alerte (onboarding n° 19) | vert |
 | 20 | « Chercher à nouveau » sans résultat | doublon | retirée | `Onboarding.test.tsx › aucun agent : « Chercher à nouveau » sans résultat le dit` | vert |
 | 21 | explorer sans agent : marqué passé | composant | retirée | **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/onboarding/Onboarding.test.tsx` › aucun agent : « Explorer » marque l’accueil passé (onboarding n° 21) | vert |
@@ -1575,7 +1586,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `panel` — réduire
 
-25 vérifications : 20 retirées (dont 0 à confirmer), 0 creuse(s), 5 restent. Durée (clair + sombre) : 23 s → ≈ 9 s.
+25 vérifications : 20 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 5 restent. Durée (clair + sombre) : 23 s → ≈ 9 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1607,7 +1618,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `parcours-deleguer` — garder (journée type)
 
-11 vérifications : 0 retirées (dont 0 à confirmer), 0 creuse(s), 11 restent. Durée (clair + sombre) : 76 s → ≈ 76 s.
+11 vérifications : 0 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 11 restent. Durée (clair + sombre) : 76 s → ≈ 76 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1625,7 +1636,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `parcours-outils` — garder (journée type)
 
-9 vérifications : 0 retirées (dont 0 à confirmer), 0 creuse(s), 9 restent. Durée (clair + sombre) : 79 s → ≈ 79 s.
+9 vérifications : 0 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 9 restent. Durée (clair + sombre) : 79 s → ≈ 79 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1641,7 +1652,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `pendant-tour` — réduire
 
-9 vérifications : 6 retirées (dont 0 à confirmer), 0 creuse(s), 3 restent. Durée (clair + sombre) : 0 s → ≈ 0 s.
+9 vérifications : 6 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 3 restent. Durée (clair + sombre) : 0 s → ≈ 0 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1657,7 +1668,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `pilote` — réduire
 
-43 vérifications : 10 retirées (dont 0 à confirmer), 0 creuse(s), 33 restent. Durée (clair + sombre) : 57 s → ≈ 44 s.
+43 vérifications : 10 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 33 restent. Durée (clair + sombre) : 57 s → ≈ 44 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1707,7 +1718,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `platform` — réduire
 
-5 vérifications : 2 retirées (dont 0 à confirmer), 0 creuse(s), 3 restent. Durée (clair + sombre) : 10 s → ≈ 7 s.
+5 vérifications : 2 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 3 restent. Durée (clair + sombre) : 10 s → ≈ 7 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1719,7 +1730,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `pr-ci` — réduire
 
-19 vérifications : 13 retirées (dont 0 à confirmer), 0 creuse(s), 6 restent. Durée (clair + sombre) : 29 s → ≈ 13 s.
+19 vérifications : 13 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 6 restent. Durée (clair + sombre) : 29 s → ≈ 13 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1745,7 +1756,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `providers` — supprimer entièrement
 
-13 vérifications : 13 retirées (dont 0 à confirmer), 0 creuse(s), 0 restent. Durée (clair + sombre) : 10 s → ≈ 0 s.
+13 vérifications : 13 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 0 restent. Durée (clair + sombre) : 10 s → ≈ 0 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1765,7 +1776,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `quick` — réduire
 
-17 vérifications : 11 retirées (dont 0 à confirmer), 0 creuse(s), 6 restent. Durée (clair + sombre) : 14 s → ≈ 8 s.
+17 vérifications : 11 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 6 restent. Durée (clair + sombre) : 14 s → ≈ 8 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1789,7 +1800,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `relecture-commits` — réduire
 
-7 vérifications : 6 retirées (dont 0 à confirmer), 0 creuse(s), 1 restent. Durée (clair + sombre) : 36 s → ≈ 9 s.
+7 vérifications : 6 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 1 restent. Durée (clair + sombre) : 36 s → ≈ 9 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1803,7 +1814,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `replay-changes` — réduire
 
-12 vérifications : 11 retirées (dont 0 à confirmer), 0 creuse(s), 1 restent. Durée (clair + sombre) : 37 s → ≈ 8 s.
+12 vérifications : 11 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 1 restent. Durée (clair + sombre) : 37 s → ≈ 8 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1822,7 +1833,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `resume` — réduire
 
-7 vérifications : 5 retirées (dont 0 à confirmer), 0 creuse(s), 2 restent. Durée (clair + sombre) : 9 s → ≈ 6 s.
+7 vérifications : 5 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 2 restent. Durée (clair + sombre) : 9 s → ≈ 6 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1836,7 +1847,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `roles-meme-icone` — supprimer entièrement
 
-4 vérifications : 4 retirées (dont 0 à confirmer), 0 creuse(s), 0 restent. Durée (clair + sombre) : 6 s → ≈ 0 s.
+4 vérifications : 4 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 0 restent. Durée (clair + sombre) : 6 s → ≈ 0 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1847,7 +1858,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `scheduled` — réduire
 
-18 vérifications : 7 retirées (dont 0 à confirmer), 0 creuse(s), 11 restent. Durée (clair + sombre) : 11 s → ≈ 9 s.
+18 vérifications : 7 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 11 restent. Durée (clair + sombre) : 11 s → ≈ 9 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1872,7 +1883,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `simulator` — réduire
 
-24 vérifications : 17 retirées (dont 0 à confirmer), 0 creuse(s), 7 restent. Durée (clair + sombre) : 24 s → ≈ 11 s.
+24 vérifications : 17 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 7 restent. Durée (clair + sombre) : 24 s → ≈ 11 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1903,7 +1914,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `subagents` — réduire
 
-29 vérifications : 22 retirées (dont 0 à confirmer), 0 creuse(s), 7 restent. Durée (clair + sombre) : 156 s → ≈ 41 s.
+29 vérifications : 22 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 7 restent. Durée (clair + sombre) : 156 s → ≈ 41 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1939,7 +1950,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `textes-plateforme` — supprimer entièrement
 
-9 vérifications : 9 retirées (dont 0 à confirmer), 0 creuse(s), 0 restent. Durée (clair + sombre) : 9 s → ≈ 0 s.
+9 vérifications : 9 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 0 restent. Durée (clair + sombre) : 9 s → ≈ 0 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1955,7 +1966,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `travaux-groupe` — réduire
 
-12 vérifications : 9 retirées (dont 0 à confirmer), 0 creuse(s), 3 restent. Durée (clair + sombre) : 115 s → ≈ 32 s.
+12 vérifications : 9 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 3 restent. Durée (clair + sombre) : 115 s → ≈ 32 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1974,7 +1985,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `user-commands` — réduire
 
-6 vérifications : 5 retirées (dont 0 à confirmer), 0 creuse(s), 1 restent. Durée (clair + sombre) : 13 s → ≈ 6 s.
+6 vérifications : 5 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 1 restent. Durée (clair + sombre) : 13 s → ≈ 6 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -1987,7 +1998,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `worktree-setup` — réduire
 
-15 vérifications : 12 retirées (dont 0 à confirmer), 0 creuse(s), 3 restent. Durée (clair + sombre) : 48 s → ≈ 14 s.
+15 vérifications : 12 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 3 restent. Durée (clair + sombre) : 48 s → ≈ 14 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2011,7 +2022,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `filles` — réduire
 
-51 vérifications : 42 retirées (dont 2 à confirmer), 0 creuse(s), 9 restent. Durée (clair + sombre) : 158 s → ≈ 32 s.
+51 vérifications : 42 retirées (dont 2 par une journée, étape 2), 0 creuse(s), 9 restent. Durée (clair + sombre) : 158 s → ≈ 32 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2027,9 +2038,9 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 | 10 | Vue « Filles » : « Faire relire » ouvre la relecture sur sa branche | composant | reste | partiel : `C/panel/ChildrenView.test.tsx` › « une ligne par fille : branche, compte rendu, recommandation, actions » | — |
 | 11 | Le compte rendu part avec le prochain message | doublon | retirée | `M/conversations/children.test.ts` › « lancée depuis la mère : worktree, consigne, compte rendu, nouvelles transmises une fois » ; `C/thread/WorkCard.test.tsx` › « transmise : action principale retirée, réponse discrète ; pas « transmise » si le tour a échoué » | vert |
 | 12 | … et une seule fois | doublon | retirée | `M/conversations/children-wake.test.ts` › « un message de la mère emporte les comptes rendus : pas de réveil pour eux » | vert |
-| 13 | « Ouvrir » affiche la fille | doublon | retirée | `parcours-deleguer.mjs` › « le travail répond dans sa conversation, le lien vers la mère est là » | à confirmer |
+| 13 | « Ouvrir » affiche la fille | doublon | retirée | `parcours-deleguer.mjs` › « le travail répond dans sa conversation, le lien vers la mère est là » | vert (étape 2 : `parcours-deleguer` vert sur GitHub, passage 45352675204) |
 | 14 | Fille : « ↳ depuis « mère » » en en-tête, départ en tête du fil | composant | retirée | **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/sidebar/ConversationTitle.test.tsx` › fille : « ↳ depuis « mère » », qui ramène à la mère (filles n° 14) ; départ en tête du fil : `src/renderer/src/components/thread/WorktreeStart.test.tsx` | vert |
-| 15 | « ↳ depuis » ramène à la mère | doublon | retirée | `parcours-deleguer.mjs` étape « ouvrir un travail, lui répondre, revenir à la mère » | à confirmer |
+| 15 | « ↳ depuis » ramène à la mère | doublon | retirée | `parcours-deleguer.mjs` étape « ouvrir un travail, lui répondre, revenir à la mère » | vert (étape 2 : `parcours-deleguer` vert sur GitHub, passage 45352675204) |
 | 16 | Dossiers : deux filles sous leur mère, dossier du dépôt | doublon | retirée | `C/sidebar/Sidebar.test.tsx` › « deux filles en worktree sous leur mère, dans son dossier ; pas de compteur » ; `C/sidebar/history-order.test.ts` › « par projet, pas par dossier de worktree ; une fille dans le dossier de sa mère » | vert |
 | 17 | Suppression : 3 filles nommées, case cochée, celle au travail signalée | composant | retirée | **Déjà couvert, vérifié (lot dialogues)** : `src/renderer/src/components/sidebar/DeleteDialog.test.tsx` › nomme la descendance sous ses mères, case cochée : la famille part avec la mère (3 travaux nommés, « en cours, sera arrêté ») | vert |
 | 18 | Case décochée : la fille au travail le reste | doublon | retirée | `C/sidebar/DeleteDialog.test.tsx` › « case décochée : les filles restent, la note le dit » | vert |
@@ -2067,15 +2078,15 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 | 50 | `/split` : le message tapé part, sans la commande | doublon | retirée | `R/app-commands.test.ts` › « /split envoie le message avec la demande de découpage ; seul, il explique (fiche 118) » ; `M/agent/message-queue.test.ts` › « /split (fiche 118) : la demande reste attachée au message, tapé avec la commande » | vert |
 | 51 | `/split` : carte sur demande même réglé « Jamais » | doublon | retirée | `M/conversations/children.test.ts` › « `chantiers` (fiche 118) : « Jamais » : il fait le travail lui-même ; `/split` : il propose » | vert |
 
-### `filles-non-commite` — supprimer entièrement (étape 1 : réduire)
+### `filles-non-commite` — supprimer entièrement (fait à l'étape 2)
 
-15 vérifications : 15 retirées (dont 1 à confirmer), 0 creuse(s), 0 restent. Durée (clair + sombre) : 68 s → ≈ 0 s.
+15 vérifications : 15 retirées (dont 1 par une journée, étape 2), 0 creuse(s), 0 restent. Durée (clair + sombre) : 68 s → ≈ 0 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
 | 1 | Rôle : une ligne orange sous la saisie, aucun encadré | doublon | retirée | `C/roles/RoleComposerUncommitted.test.tsx` › « rôle qui écrit, dossier modifié : ni encadré ni bouton, la ligne en orange ; Entrée envoie » | vert |
 | 2 | « Changer… › Voir la modification » liste le fichier | doublon | retirée | `C/roles/RoleComposerUncommitted.test.tsx` › « « Voir les N modifications » : la liste sous la ligne, les autres comptées » | vert |
-| 3 | Entrée : la fille ne voit pas le non commité | parcours | retirée | **parcours-matinee › étape 16** (rôle `@front-architect`, `plan.md` non commité) — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 3 | Entrée : la fille ne voit pas le non commité | parcours | retirée | **parcours-matinee › étape 16** (rôle `@front-architect`, `plan.md` non commité) | vert (étape 2 : `parcours-matinee` vert sur GitHub, passage 45342287255) |
 | 4 | Partie sans elles : rappel sur sa carte-réponse | doublon | retirée | `C/thread/ChildReportLeftBehind.test.tsx` › « la ligne dit le commit de départ et ce qui manquait » | vert |
 | 5 | Avis : la ligne dit « dans ce dossier » | doublon | retirée | `C/roles/RoleComposerUncommitted.test.tsx` › « « Juste un avis » : appliqué tout de suite, la ligne le dit, Entrée l’envoie ainsi » | vert |
 | 6 | Avis en lecture seule : les deux filles voient le plan | doublon | retirée | `M/conversations/children-uncommitted.test.ts` › « avis en lecture seule : dans le dossier de la mère, sans worktree, il voit le non commité » | vert |
@@ -2091,7 +2102,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `handover` — réduire
 
-8 vérifications : 6 retirées (dont 0 à confirmer), 0 creuse(s), 2 restent. Durée (clair + sombre) : 9 s → ≈ 6 s.
+8 vérifications : 6 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 2 restent. Durée (clair + sombre) : 9 s → ≈ 6 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2106,7 +2117,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `inbox` — réduire
 
-25 vérifications : 17 retirées (dont 0 à confirmer), 0 creuse(s), 8 restent. Durée (clair + sombre) : 132 s → ≈ 46 s.
+25 vérifications : 17 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 8 restent. Durée (clair + sombre) : 132 s → ≈ 46 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2138,7 +2149,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `roles-export` — réduire
 
-17 vérifications : 14 retirées (dont 0 à confirmer), 0 creuse(s), 3 restent. Durée (clair + sombre) : 36 s → ≈ 10 s.
+17 vérifications : 14 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 3 restent. Durée (clair + sombre) : 36 s → ≈ 10 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2162,7 +2173,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `autorisation-commande` — réduire
 
-48 vérifications : 36 retirées (dont 0 à confirmer), 0 creuse(s), 12 restent. Durée (clair + sombre) : 45 s → ≈ 15 s.
+48 vérifications : 36 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 12 restent. Durée (clair + sombre) : 45 s → ≈ 15 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2217,7 +2228,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `browser` — réduire
 
-48 vérifications : 25 retirées (dont 2 à confirmer), 0 creuse(s), 23 restent. Durée (clair + sombre) : 75 s → ≈ 38 s.
+48 vérifications : 25 retirées (dont 2 par une journée, étape 2), 0 creuse(s), 23 restent. Durée (clair + sombre) : 75 s → ≈ 38 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2244,8 +2255,8 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 | 21 | popup par action de l'agent : bloquée, l'agent prié de demander | unitaire-main | retirée | `src/main/browser/browser-tools.test.ts` › « popup bloquée pendant une action de l'agent : il est prié de demander à l'utilisateur (fiche 072) » | vert |
 | 22 | aucune fenêtre ouverte par l'action de l'agent | parcours | reste | parcours : vraie app nécessaire | — |
 | 23 | popup par clic de l'utilisateur : vraie fenêtre, `opener` | parcours | reste | parcours : vraie app nécessaire | — |
-| 24 | `location = …` vers un site non accordé : arrêté, agent prévenu | parcours | retirée | **parcours-outils › étape 8** (garde de navigation (SEC-1)) — remplaçant écrit, à jouer sur GitHub | à confirmer |
-| 25 | la page n'est jamais allée sur le site non accordé (après 2 s) | parcours | retirée | **parcours-outils › étape 8** — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 24 | `location = …` vers un site non accordé : arrêté, agent prévenu | parcours | retirée | **parcours-outils › étape 8** (garde de navigation (SEC-1)) | vert (étape 2 : `parcours-outils` vert sur GitHub, passage 45342287255) |
+| 25 | la page n'est jamais allée sur le site non accordé (après 2 s) | parcours | retirée | **parcours-outils › étape 8** | vert (étape 2 : `parcours-outils` vert sur GitHub, passage 45342287255) |
 | 26 | navigation hors action de l'agent : la page part | unitaire-main | retirée | `src/main/browser/navigation-guard.test.ts` › « hors d'une action de l'agent : l'utilisateur navigue librement » | vert |
 | 27 | page sur site non accordé : carte d'accord avant lecture | parcours | reste | parcours : vraie app nécessaire | — |
 | 28 | carte « Site web » : rien de choisi, « Envoyer » inactif | composant | retirée | `thread/QuestionCard.test.tsx` › « carte « Site web » (fiche 254, D2) : rien ne paraît choisi, « Envoyer » inactif, aucune réponse vide » | vert |
@@ -2272,7 +2283,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `annotate` — réduire
 
-7 vérifications : 2 retirées (dont 0 à confirmer), 0 creuse(s), 5 restent. Durée (clair + sombre) : 9 s → ≈ 8 s.
+7 vérifications : 2 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 5 restent. Durée (clair + sombre) : 9 s → ≈ 8 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2286,19 +2297,19 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `command-output` — réduire
 
-5 vérifications : 4 retirées (dont 2 à confirmer), 0 creuse(s), 1 restent. Durée (clair + sombre) : 5 s → ≈ 5 s.
+5 vérifications : 4 retirées (dont 2 par une journée, étape 2), 0 creuse(s), 1 restent. Durée (clair + sombre) : 5 s → ≈ 5 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
-| 1 | sortie reçue en morceaux, couleurs ANSI rendues | parcours | retirée | **parcours-outils › étape 2** — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 1 | sortie reçue en morceaux, couleurs ANSI rendues | parcours | retirée | **parcours-outils › étape 2** | vert (étape 2 : `parcours-outils` vert sur GitHub, passage 45342287255) |
 | 2 | code de sortie affiché | composant | retirée | **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/thread/TerminalView.test.tsx` › commande finie : la sortie, couleurs ANSI rendues, puis « code 0 » (command-output n° 2) | vert |
-| 3 | fond et vert ANSI de la palette | capture | retirée | **parcours-outils › étape 2** (capture qui affirme `277-outils-sortie-commande` (palette du mode, pas sa variante)) — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 3 | fond et vert ANSI de la palette | capture | retirée | **parcours-outils › étape 2** (capture qui affirme `277-outils-sortie-commande` (palette du mode, pas sa variante)) | vert (étape 2 : `parcours-outils` vert sur GitHub, passage 45342287255) |
 | 4 | variante de palette : ses propres couleurs | capture | reste | capture : mesure (`affirm`) à garder dans la suite réduite | — |
 | 5 | commande en échec : code 2 signalé (`failed`) | composant | retirée | **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/thread/TerminalView.test.tsx` › commande en échec : « code 2 », signalée en échec (command-output n° 5) | vert |
 
 ### `commit-choisi` — réduire
 
-8 vérifications : 7 retirées (dont 0 à confirmer), 0 creuse(s), 1 restent. Durée (clair + sombre) : 16 s → ≈ 6 s.
+8 vérifications : 7 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 1 restent. Durée (clair + sombre) : 16 s → ≈ 6 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2313,7 +2324,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `branch` — réduire
 
-12 vérifications : 9 retirées (dont 0 à confirmer), 0 creuse(s), 3 restent. Durée (clair + sombre) : 21 s → ≈ 9 s.
+12 vérifications : 9 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 3 restent. Durée (clair + sombre) : 21 s → ≈ 9 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2332,13 +2343,13 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `roles-travail` — réduire
 
-37 vérifications : 28 retirées (dont 2 à confirmer), 0 creuse(s), 9 restent. Durée (clair + sombre) : 55 s → ≈ 17 s.
+37 vérifications : 28 retirées (dont 2 par une journée, étape 2), 0 creuse(s), 9 restent. Durée (clair + sombre) : 55 s → ≈ 17 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
 | 1 | conversation neuve : historique vide (L134) | composant | retirée | `main/conversations/manager.test.ts` › « au lancement : une conversation vide active, hors historique » | vert |
-| 2 | premier message `@rôle` : parti, saisie vidée, une bulle, une carte de groupe à 2 lignes (L143) | parcours | retirée | **parcours-matinee › étape 15** (`@code-reviewer @ux-ui-expert`) — remplaçant écrit, à jouer sur GitHub | à confirmer |
-| 3 | historique titré d'après la demande, deux filles dessous (waitFor L149-155) | parcours | retirée | **parcours-matinee › étape 15** — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 2 | premier message `@rôle` : parti, saisie vidée, une bulle, une carte de groupe à 2 lignes (L143) | parcours | retirée | **parcours-matinee › étape 15** (`@code-reviewer @ux-ui-expert`) | vert (étape 2 : `parcours-matinee` vert sur GitHub, passage 45342287255) |
+| 3 | historique titré d'après la demande, deux filles dessous (waitFor L149-155) | parcours | retirée | **parcours-matinee › étape 15** | vert (étape 2 : `parcours-matinee` vert sur GitHub, passage 45342287255) |
 | 4 | menu @ : cinq rôles, puis « Tous les rôles » (L176) | composant | retirée | `renderer/src/components/roles/RoleComposer.test.tsx` › « cinq rôles, « Tous les rôles (7) », puis les fichiers ; marque d'un rôle du projet » | vert |
 | 5 | menu @ : section « Rôles », marque du rôle du projet (L179) | composant | retirée | **Déjà couvert, vérifié (lot dialogues)** : `src/renderer/src/components/roles/RoleComposer.test.tsx` › cinq rôles, « Tous les rôles (7) », puis les fichiers ; marque d’un rôle du projet (le titre « Rôles » y est lu : `getByText('Rôles')`) | vert |
 | 6 | filtre « secu » : `security-expert` en tête (waitFor L192) | composant | retirée | `renderer/src/components/roles/RoleComposer.test.tsx` › « filtre : nom d'abord, puis la description ; accents ignorés » | vert |
@@ -2376,7 +2387,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `session` — réduire
 
-31 vérifications : 26 retirées (dont 0 à confirmer), 0 creuse(s), 5 restent. Durée (clair + sombre) : 181 s → ≈ 33 s.
+31 vérifications : 26 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 5 restent. Durée (clair + sombre) : 181 s → ≈ 33 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2414,7 +2425,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `connexion-expiree` — réduire
 
-22 vérifications : 19 retirées (dont 0 à confirmer), 0 creuse(s), 3 restent. Durée (clair + sombre) : 46 s → ≈ 11 s.
+22 vérifications : 19 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 3 restent. Durée (clair + sombre) : 46 s → ≈ 11 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2443,7 +2454,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `pannes-visibles` — réduire
 
-24 vérifications : 15 retirées (dont 2 à confirmer), 0 creuse(s), 9 restent. Durée (clair + sombre) : 76 s → ≈ 32 s.
+24 vérifications : 15 retirées (dont 2 par une journée, étape 2), 0 creuse(s), 9 restent. Durée (clair + sombre) : 76 s → ≈ 32 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2455,9 +2466,9 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 | 6 | silence : « Réponse en cours » sans verbe ; boutons sous le texte et alignés (L109) | composant | retirée | **Déjà couvert, vérifié (lot dialogues)** : pour le texte : `src/renderer/src/components/thread/TurnFooter.test.tsx` › silence : l’indicateur dit « Réponse en cours », sans verbe ; l’alignement des boutons reste à la capture | vert |
 | 7 | « Attendre » masque le bandeau (waitFor L118, check L119) | composant | retirée | `renderer/src/components/thread/SilenceBanner.test.tsx` › « « Arrêter » arrête la réponse ; « Attendre » masque jusqu'au prochain silence » | vert |
 | 8 | agent figé qui ignore Stop **et SIGTERM** : arrêté, un seul avis clair (L126) | parcours | reste | parcours : vraie app nécessaire | — |
-| 9 | silence avec un proxy : cité masqué, jamais en clair dans la page (L139) | composant | retirée | **parcours-reglages › étape 5** (contrôle global : mot de passe du proxy absent du DOM, du texte, du titre et des champs) — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 9 | silence avec un proxy : cité masqué, jamais en clair dans la page (L139) | composant | retirée | **parcours-reglages › étape 5** (contrôle global : mot de passe du proxy absent du DOM, du texte, du titre et des champs) | vert (étape 2 : `parcours-reglages` vert sur GitHub, passage 45342287255) |
 | 10 | adresse du proxy insécable, parenthèses comprises, en infobulle (L147) | composant | retirée | `renderer/src/components/thread/SilenceBanner.test.tsx` › « l'adresse du proxy d'une seule pièce avec ses parenthèses, entière en infobulle (fiche 276) » | vert |
-| 11 | modèle injoignable avec un proxy : cité masqué (L159) | composant | retirée | **parcours-reglages › étape 5** (contrôle global : mot de passe du proxy absent du DOM, du texte, du titre et des champs) — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 11 | modèle injoignable avec un proxy : cité masqué (L159) | composant | retirée | **parcours-reglages › étape 5** (contrôle global : mot de passe du proxy absent du DOM, du texte, du titre et des champs) | vert (étape 2 : `parcours-reglages` vert sur GitHub, passage 45342287255) |
 | 12 | agent tué par kill -9 : sa commande (`sleep 31.7`) ne survit pas (L178) | parcours | reste | parcours : vraie app nécessaire | — |
 | 13 | commande en arrière-plan : elle continue après le tour (L188) | parcours | reste | parcours : vraie app nécessaire | — |
 | 14 | …et ne survit pas à la fermeture de Bobine (L203) | parcours | reste | parcours : vraie app nécessaire | — |
@@ -2474,7 +2485,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `reprise` — supprimer entièrement
 
-4 vérifications : 4 retirées (dont 0 à confirmer), 0 creuse(s), 0 restent. Durée (clair + sombre) : 9 s → ≈ 0 s.
+4 vérifications : 4 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 0 restent. Durée (clair + sombre) : 9 s → ≈ 0 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2485,7 +2496,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `failures` — réduire
 
-11 vérifications : 10 retirées (dont 0 à confirmer), 0 creuse(s), 1 restent. Durée (clair + sombre) : 31 s → ≈ 7 s.
+11 vérifications : 10 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 1 restent. Durée (clair + sombre) : 31 s → ≈ 7 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2503,7 +2514,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `perf` — réduire
 
-25 vérifications : 7 retirées (dont 0 à confirmer), 0 creuse(s), 18 restent. Durée (clair + sombre) : 60 s → ≈ 44 s.
+25 vérifications : 7 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 18 restent. Durée (clair + sombre) : 60 s → ≈ 44 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2535,7 +2546,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `usage-board` — réduire
 
-29 vérifications : 17 retirées (dont 0 à confirmer), 0 creuse(s), 12 restent. Durée (clair + sombre) : 34 s → ≈ 17 s.
+29 vérifications : 17 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 12 restent. Durée (clair + sombre) : 34 s → ≈ 17 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2571,7 +2582,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `quota` — réduire
 
-13 vérifications : 7 retirées (dont 0 à confirmer), 0 creuse(s), 6 restent. Durée (clair + sombre) : 39 s → ≈ 21 s.
+13 vérifications : 7 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 6 restent. Durée (clair + sombre) : 39 s → ≈ 21 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2591,7 +2602,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `versions` — réduire
 
-10 vérifications : 4 retirées (dont 0 à confirmer), 0 creuse(s), 6 restent. Durée (clair + sombre) : 18 s → ≈ 13 s.
+10 vérifications : 4 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 6 restent. Durée (clair + sombre) : 18 s → ≈ 13 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2608,7 +2619,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `debordements` — réduire
 
-11 vérifications : 5 retirées (dont 0 à confirmer), 0 creuse(s), 6 restent. Durée (clair + sombre) : 36 s → ≈ 22 s.
+11 vérifications : 5 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 6 restent. Durée (clair + sombre) : 36 s → ≈ 22 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2626,7 +2637,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `onglets-etroits` — réduire
 
-10 vérifications : 6 retirées (dont 0 à confirmer), 0 creuse(s), 4 restent. Durée (clair + sombre) : 22 s → ≈ 12 s.
+10 vérifications : 6 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 4 restent. Durée (clair + sombre) : 22 s → ≈ 12 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2643,7 +2654,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `polices` — réduire
 
-7 vérifications : 5 retirées (dont 0 à confirmer), 0 creuse(s), 2 restent. Durée (clair + sombre) : 10 s → ≈ 7 s.
+7 vérifications : 5 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 2 restent. Durée (clair + sombre) : 10 s → ≈ 7 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2657,7 +2668,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `libelles` — réduire
 
-4 vérifications : 3 retirées (dont 0 à confirmer), 0 creuse(s), 1 restent. Durée (clair + sombre) : 11 s → ≈ 6 s.
+4 vérifications : 3 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 1 restent. Durée (clair + sombre) : 11 s → ≈ 6 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2668,7 +2679,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `long-thread` — réduire
 
-4 vérifications : 3 retirées (dont 0 à confirmer), 0 creuse(s), 1 restent. Durée (clair + sombre) : 43 s → ≈ 15 s.
+4 vérifications : 3 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 1 restent. Durée (clair + sombre) : 43 s → ≈ 15 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2679,7 +2690,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `activity` — réduire
 
-14 vérifications : 12 retirées (dont 0 à confirmer), 0 creuse(s), 2 restent. Durée (clair + sombre) : 45 s → ≈ 11 s.
+14 vérifications : 12 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 2 restent. Durée (clair + sombre) : 45 s → ≈ 11 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2700,7 +2711,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `attachments` — réduire
 
-17 vérifications : 14 retirées (dont 0 à confirmer), 0 creuse(s), 3 restent. Durée (clair + sombre) : 19 s → ≈ 8 s.
+17 vérifications : 14 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 3 restent. Durée (clair + sombre) : 19 s → ≈ 8 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2724,7 +2735,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `discussion` — réduire
 
-16 vérifications : 10 retirées (dont 0 à confirmer), 0 creuse(s), 6 restent. Durée (clair + sombre) : 12 s → ≈ 7 s.
+16 vérifications : 10 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 6 restent. Durée (clair + sombre) : 12 s → ≈ 7 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2747,7 +2758,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `fun` — réduire
 
-10 vérifications : 6 retirées (dont 0 à confirmer), 0 creuse(s), 4 restent. Durée (clair + sombre) : 15 s → ≈ 9 s.
+10 vérifications : 6 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 4 restent. Durée (clair + sombre) : 15 s → ≈ 9 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2762,9 +2773,9 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 | 9 | Bobcoins aujourd'hui / 7 jours / mois dans « Mon activité » | unitaire-main | retirée | `src/main/agent/bob-costs.test.ts` › « tâches utilisées aujourd'hui, sur sept jours, ce mois-ci ; lignes douteuses ignorées » ; `ActivityPage.test.tsx` › « IBM Bob sur ce Mac : quota du mois et dépense, venus des canaux génériques » | vert |
 | 10 | budget dépassé : titre et description de Bob | unitaire-main | retirée | `src/main/agent/process-utils.test.ts` › « erreur de budget de Bob : titre et description au lieu de « Internal error » » | vert |
 
-### `mentions` — supprimer entièrement (étape 1 : réduire)
+### `mentions` — supprimer entièrement (fait à l'étape 2)
 
-6 vérifications : 6 retirées (dont 1 à confirmer), 0 creuse(s), 0 restent. Durée (clair + sombre) : 29 s → ≈ 0 s.
+6 vérifications : 6 retirées (dont 1 par une journée, étape 2), 0 creuse(s), 0 restent. Durée (clair + sombre) : 29 s → ≈ 0 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2772,12 +2783,12 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 | 2 | @git-changes et @terminal en pièces jointes | composant | retirée | **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/composer/Composer.test.tsx` › `@git-changes` et `@terminal` : proposés, joints en pièces jointes de contexte (mentions n° 2) | vert |
 | 3 | à l'envoi : état et diff git joints | unitaire-main | retirée | `src/main/changes/git-context.test.ts` › « état et diff depuis le dernier commit, fichiers non suivis listés » ; `prompt-content.test.ts` › « @git-changes, @terminal (fiche 057) : contenu lu à l'envoi, joint en texte » | vert |
 | 4 | @git-changes : fichier exclu sauté, et dit | unitaire-main | retirée | `git-context.test.ts` › « saute les fichiers exclus, dans l'état et le diff, et le dit » | vert |
-| 5 | à l'envoi : dernières lignes du terminal jointes | parcours | retirée | **parcours-outils › étape 1** — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 5 | à l'envoi : dernières lignes du terminal jointes | parcours | retirée | **parcours-outils › étape 1** | vert (étape 2 : `parcours-outils` vert sur GitHub, passage 45342287255) |
 | 6 | fil : pièces jointes montrées | composant | retirée | **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/thread/Transcript.test.tsx` › message envoyé avec pièces jointes : fichier, mention de contexte et image montrés (attachments n° 6, mentions n° 6) | vert |
 
 ### `notifications` — réduire
 
-15 vérifications : 12 retirées (dont 0 à confirmer), 0 creuse(s), 3 restent. Durée (clair + sombre) : 12 s → ≈ 6 s.
+15 vérifications : 12 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 3 restent. Durée (clair + sombre) : 12 s → ≈ 6 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2799,7 +2810,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `parcours-longue` — garder (journée type)
 
-10 vérifications : 0 retirées (dont 0 à confirmer), 0 creuse(s), 10 restent. Durée (clair + sombre) : 116 s → ≈ 116 s.
+10 vérifications : 0 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 10 restent. Durée (clair + sombre) : 116 s → ≈ 116 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2816,7 +2827,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `parcours-pannes` — garder (journée type)
 
-9 vérifications : 0 retirées (dont 0 à confirmer), 0 creuse(s), 9 restent. Durée (clair + sombre) : 98 s → ≈ 98 s.
+9 vérifications : 0 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 9 restent. Durée (clair + sombre) : 98 s → ≈ 98 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2832,7 +2843,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `pinned-plan` — réduire
 
-9 vérifications : 4 retirées (dont 0 à confirmer), 0 creuse(s), 5 restent. Durée (clair + sombre) : 14 s → ≈ 10 s.
+9 vérifications : 4 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 5 restent. Durée (clair + sombre) : 14 s → ≈ 10 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2848,7 +2859,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `presentation` — réduire
 
-13 vérifications : 2 retirées (dont 0 à confirmer), 0 creuse(s), 11 restent. Durée (clair + sombre) : 10 s → ≈ 9 s.
+13 vérifications : 2 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 11 restent. Durée (clair + sombre) : 10 s → ≈ 9 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2868,7 +2879,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `questions` — réduire
 
-15 vérifications : 10 retirées (dont 0 à confirmer), 0 creuse(s), 5 restent. Durée (clair + sombre) : 11 s → ≈ 7 s.
+15 vérifications : 10 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 5 restent. Durée (clair + sombre) : 11 s → ≈ 7 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2890,7 +2901,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `relecture` — réduire
 
-10 vérifications : 7 retirées (dont 0 à confirmer), 0 creuse(s), 3 restent. Durée (clair + sombre) : 17 s → ≈ 9 s.
+10 vérifications : 7 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 3 restent. Durée (clair + sombre) : 17 s → ≈ 9 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -2907,28 +2918,28 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `sommaire` — réduire
 
-8 vérifications : 4 retirées (dont 2 à confirmer), 0 creuse(s), 4 restent. Durée (clair + sombre) : 104 s → ≈ 54 s.
+8 vérifications : 4 retirées (dont 2 par une journée, étape 2), 0 creuse(s), 4 restent. Durée (clair + sombre) : 104 s → ≈ 54 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
 | 1 | colonne de traits dans sa hauteur max | composant | retirée | `outline-layout.test.ts` › « hauteur maximale : 30 % du fil, 240 px au plus » | vert |
 | 2 | 80 messages, 20 à 79 traits | composant | retirée | `outline-layout.test.ts` › « beaucoup : un trait pour plusieurs messages, tous couverts une fois, dans la hauteur » | vert |
 | 3 | la liste au survol garde les 80 messages | composant | reste | aucun remplaçant écrit | — |
-| 4 | en bas : le dernier trait est le courant | parcours | retirée | **parcours-longue › étape 2** — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 4 | en bas : le dernier trait est le courant | parcours | retirée | **parcours-longue › étape 2** | vert (étape 2 : `parcours-longue` vert sur GitHub, passage 45345873473) |
 | 5 | en haut : le premier trait est le courant | parcours | reste | parcours : vraie app nécessaire | — |
 | 6 | au 41ᵉ message : le trait courant le couvre | parcours | reste | parcours : vraie app nécessaire | — |
-| 7 | la liste s'ouvre sur le message lu | capture | retirée | **parcours-longue › étape 2** (capture qui affirme `277-longue-sommaire-liste`) — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 7 | la liste s'ouvre sur le message lu | capture | retirée | **parcours-longue › étape 2** (capture qui affirme `277-longue-sommaire-liste`) | vert (étape 2 : `parcours-longue` vert sur GitHub, passage 45345873473) |
 | 8 | fenêtre basse : la colonne raccourcit | composant | reste | partiel : `outline-layout.test.ts` › « hauteur maximale : 30 % du fil, 240 px au plus » | — |
 
 ### `tables` — réduire
 
-10 vérifications : 3 retirées (dont 2 à confirmer), 0 creuse(s), 7 restent. Durée (clair + sombre) : 17 s → ≈ 13 s.
+10 vérifications : 3 retirées (dont 2 par une journée, étape 2), 0 creuse(s), 7 restent. Durée (clair + sombre) : 17 s → ≈ 13 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
 | 1 | alignements Markdown respectés, gauche par défaut | composant | retirée | **Remplaçant écrit (lot dialogues)** : `src/renderer/src/components/thread/Markdown.test.tsx` › tableau : alignements Markdown respectés, rien d’imposé sans alignement | vert |
-| 2 | pas de grille : lignes horizontales seules | capture | retirée | **parcours-longue › étape 4** (capture qui affirme `276-longue-etroite`) — remplaçant écrit, à jouer sur GitHub | à confirmer |
-| 3 | tableau large : reste dans le fil, défile | capture | retirée | **parcours-longue › étape 4** (capture qui affirme `276-longue-etroite`) — remplaçant écrit, à jouer sur GitHub | à confirmer |
+| 2 | pas de grille : lignes horizontales seules | capture | retirée | **parcours-longue › étape 4** (capture qui affirme `276-longue-etroite`) | vert (étape 2 : `parcours-longue` vert sur GitHub, passage 45345873473) |
+| 3 | tableau large : reste dans le fil, défile | capture | retirée | **parcours-longue › étape 4** (capture qui affirme `276-longue-etroite`) | vert (étape 2 : `parcours-longue` vert sur GitHub, passage 45345873473) |
 | 4 | police du fil : celle de l'app | capture | reste | capture : mesure (`affirm`) à garder dans la suite réduite | — |
 | 5 | titres proportionnés au texte | capture | reste | capture : mesure (`affirm`) à garder dans la suite réduite | — |
 | 6 | trait « --- » fin | capture | reste | capture : mesure (`affirm`) à garder dans la suite réduite | — |
@@ -2939,7 +2950,7 @@ ou **à confirmer** (voir la règle). Le remplaçant est recopié de l'inventair
 
 ### `touches` — supprimer entièrement
 
-8 vérifications : 8 retirées (dont 0 à confirmer), 0 creuse(s), 0 restent. Durée (clair + sombre) : 21 s → ≈ 0 s.
+8 vérifications : 8 retirées (dont 0 par une journée, étape 2), 0 creuse(s), 0 restent. Durée (clair + sombre) : 21 s → ≈ 0 s.
 
 | # | Vérification | Classe | Sort | Remplaçant exact, ou raison | État |
 |---|---|---|---|---|---|
@@ -3193,10 +3204,14 @@ photo seule) : `repere` 7, 8 ; `settings` 22, 43 ; `mcp` 5, 33 ; `browser-annota
    l'inventaire C, risques de l'inventaire A).
 5. **`parcours-deleguer`** : rouge le 2026-11-23 à l'étape 6 (défauts 1-2 de la fiche 277). Les
    correctifs sont sur `main` (`fix/restauration`, `fix/chasse2-correctifs`) mais la journée n'a
-   pas été rejouée : tout ce qui repose sur ses étapes 6-10 reste « à confirmer ».
+   pas été rejouée : tout ce qui repose sur ses étapes 6-10 reste « à confirmer ». **Levé** le
+   2026-11-24 : verte 3 fois sur 3, macOS et Linux (passages 45352665736, 45352675204,
+   45352684067).
 6. **Étapes ajoutées le 2026-11-24 jamais jouées** (y compris `parcours-premier-lancement` et
    `e2e/affirm.mjs`) : une première campagne `e2e.yml` (macOS + Linux, `--lang en` compris) doit
-   être verte avant l'étape 2.
+   être verte avant l'étape 2. **Levé** le 2026-11-24 pour les campagnes en français (passages
+   cités dans « État ») ; aucune campagne `--lang en` des journées n'a été regardée pour
+   l'étape 2.
 7. **Plateformes** : un remplaçant Vitest simule la plateforme (Electron et `process.platform`
    simulés) ; il tourne sur Linux en CI (`ci.yml`) et sur Mac dans `verify`. Ce qui dépend du vrai
    système (menu natif, Dock, trousseau, disque plein `ENOSPC`) est à garder dans une suite
@@ -3207,5 +3222,6 @@ photo seule) : `repere` 7, 8 ; `settings` 22, 43 ; `mcp` 5, 33 ; `browser-annota
 1. Étape 1 (**faite**) : supprimer les vérifications « vert » et les creuses, retirer les suites
    vidées de `e2e/catalog.mjs`, mesurer par `affirm` les rendus du risque 2 ; `verify` puis
    `pnpm e2e --changed` sur GitHub.
-2. Campagne `e2e.yml` complète (macOS + Linux) : les journées vertes valident les « à confirmer ».
-3. Étape 2 : supprimer les vérifications « à confirmer » dont la journée est verte.
+2. Campagne `e2e.yml` (macOS + Linux) : les journées vertes valident les « à confirmer »
+   (**faite** le 2026-11-24, passages cités dans « État »).
+3. Étape 2 (**faite**) : supprimer les vérifications « à confirmer » dont la journée est verte.

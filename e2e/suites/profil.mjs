@@ -135,7 +135,6 @@ async function trashAndRestoreConfirm(scheme) {
           await ui.click(ui.$('trash-restore'))
           await ui.waitFor(`!!${ui.$('trash-empty')}`)
           await ui.waitFor(`${HISTORY}.length === 3`)
-          check(true, 'restaurée : de retour dans la liste, corbeille vide')
 
           // Restauration d'une sauvegarde : refusée pour un dossier quelconque, confirmée sinon.
           const choose = (folder) =>

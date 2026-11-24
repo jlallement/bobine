@@ -1,6 +1,6 @@
 # 279 — Pyramide des essais remise à l'endroit
 
-- **Statut** : en cours — étape 1 faite (2026-11-24), étape 2 en attente d'une campagne `e2e.yml` verte
+- **Statut** : en cours — étapes 1 et 2 faites (2026-11-24) ; reste la campagne `e2e.yml` complète sur les suites réduites
 - **Dépend de** : 115 (lanceur e2e), 277 (journées types, `e2e/affirm.mjs`), ADR-0069
 - **Agents** : les deux — rien de propre à un agent ; essais contre l'agent factice seulement
 
@@ -23,7 +23,7 @@ ne garde en e2e que ce qui a besoin de la vraie app.
 - [x] Étape 1 : vérifications dont le remplaçant Vitest est vert retirées, suites vidées
   supprimées, `verify` vert, `pnpm e2e --list` cohérent.
 - [ ] Campagne `e2e.yml` complète (macOS + Linux, clair et sombre) verte sur les suites réduites.
-- [ ] Étape 2 : les 35 vérifications « à confirmer » (étapes de journées) retirées une fois leur
+- [x] Étape 2 : les 35 vérifications « à confirmer » (étapes de journées) retirées une fois leur
   journée verte.
 
 ## Plan
@@ -71,3 +71,42 @@ guidé par ESLint.
     machine avant ; après, entre ≈ 39 min (au prorata des vérifications gardées) et ≈ 62 min
     (seulement les suites et lancements retirés) ; à trois tâches, ≈ 25 min → ≈ 13 à 21 min.
   - Reste : campagne `e2e.yml` sur la branche, regard sur les captures, puis étape 2.
+- 2026-11-24 — **Étape 2 faite** (branche `test/pyramide-etape2`, rien poussé, aucune e2e jouée
+  en local) :
+  - Condition vérifiée sur GitHub (`gh run view`, résultat par suite et par thème) : chaque
+    journée-remplaçant est verte sur macOS et Linux, en clair et en sombre — `parcours-deleguer`
+    3 fois sur 3 (45352665736, 45352675204, 45352684067 ; le job Linux de 45352665736 est rouge
+    sur `filles` sombre, pas sur la journée) ; `parcours-premier-lancement`, `parcours-longue`
+    (45345873473 ; le Mac y est rouge sur `parcours-deleguer` sombre seulement) ;
+    `parcours-matinee`, `parcours-reglages`, `parcours-pannes`, `parcours-outils` (45342287255 ;
+    rouges dans ce passage : `parcours-longue`, `parcours-premier-lancement` et une fois
+    `parcours-deleguer`, vertes ensuite). `parcours-reglages`, retouchée après (étape 6, réseau
+    rendu au signal), est revue verte sur les deux systèmes dans 45361829816 ; toutes les
+    journées vertes sous Linux dans la campagne complète 45373764336 de `main`. Les numéros
+    d'étape du plan ont été recomptés sur les `journee.step(…)` actuels : ils correspondent.
+    Aucune vérification gardée faute de journée verte.
+  - 35 `check` retirés (`check(…)` : 754 → 719), dans 20 suites. Supprimées entièrement : `acp`,
+    `filles-non-commite`, `mentions` (catalogue : 118 → 115 entrées) ; leurs sources propres à la
+    journée qui les remplace sont ajoutées aux sources de `parcours-outils` (`@terminal`, échanges
+    ACP) et de `parcours-matinee` (rôle qui écrit sur un dossier modifié), pour que
+    `pnpm e2e --changed` lance la journée quand elles changent.
+  - Réduites : `profil`, `restart`, `mermaid`, `git`, `terminal`, `aparte`, `composer`,
+    `filles-fusion`, `network`, `onboarding`, `filles`, `browser`, `command-output`,
+    `roles-travail`, `pannes-visibles`, `sommaire`, `tables`.
+  - Actions gardées parce qu'elles préparent une vérification gardée (leçon de `discussion`) :
+    `profil` (restauration : la suite efface ensuite une conversation de la liste rétablie),
+    `terminal` (terminal refermé avant la commande de l'agent ; attente de l'onglet rouvert avant
+    la saisie), `browser` (scénario `changement-de-site` et attente de 2 s : la navigation qui
+    suit doit être hors d'une action de l'agent), `git` (attente de la branche modifiée),
+    `filles` (accord de la fille, retour à la mère : la suppression qui suit en dépend),
+    `aparte`, `sommaire`, `network`, `command-output`, `tables`, `pannes-visibles` (les tours
+    sont menus à leur fin, captures comprises).
+  - Actions retirées, devenues sans objet : `restart` (suppression finale de la conversation,
+    rien après), `onboarding` (relance de l'app qui ne vérifiait que l'absence d'accueil ; attente
+    de l'agent lancé), `roles-travail` (lancement `freshRun` entier : profil neuf, rôles en
+    lecture seule, rien dans le dépôt dont dépendent les lancements suivants), `mermaid`,
+    `composer`, `pannes-visibles` (relevés qui ne servaient qu'aux `check` retirés).
+    `filles-fusion` : le `check` des worktrees devient une garde (`throw`) — sans elle, un
+    worktree introuvable ferait committer `git` hors du dossier d'essai.
+  - Écart au plan : aucun. Non fait : campagne `--lang en` des journées (risque 6 du plan) ;
+    campagne `e2e.yml` des suites réduites (étapes 1 et 2), à lancer avant fusion.
