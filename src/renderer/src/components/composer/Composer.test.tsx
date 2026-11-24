@@ -522,6 +522,37 @@ describe('Composer — remplaçants des e2e', () => {
     expect(item?.textContent).not.toContain('Bobine')
   })
 
+  it('« / » : `/btw` (aparté) proposée parmi les commandes de l’app (aparte n° 2)', () => {
+    const t = setup()
+    t.type('/bt')
+    const names = screen
+      .getAllByTestId('command-item')
+      .map((el) => el.querySelector('.command-name')?.textContent)
+    expect(names).toEqual(['/btw [question]'])
+  })
+
+  it('« / » : commandes de l’agent et de l’app, chacune avec son origine (commands n° 1)', () => {
+    const t = setup()
+    t.type('/')
+    const items = screen.getAllByTestId('command-item')
+    const source = (name: string) =>
+      items
+        .find((el) => el.querySelector('.command-name')?.textContent?.startsWith(name))
+        ?.querySelector('.command-source')
+    expect(source('/scenario')?.classList.contains('from-app')).toBe(false)
+    expect(source('/help')?.classList.contains('from-app')).toBe(true)
+    expect(source('/revue')?.textContent).toBe('Projet')
+  })
+
+  it('commande avec son argument : envoyée telle quelle, saisie vidée (commands n° 6)', () => {
+    const t = setup()
+    t.type('/scenario refus')
+    fireEvent.keyDown(t.input, { key: 'Escape' })
+    t.enter()
+    expect(t.onSend).toHaveBeenCalledWith('/scenario refus', [])
+    expect(t.input.value).toBe('')
+  })
+
   it('« / » sans correspondance : le menu le dit (commands n° 8)', () => {
     const t = setup()
     t.type('/zzzz')

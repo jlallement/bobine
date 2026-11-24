@@ -28,7 +28,7 @@ function setup(options: { testCommand?: string; welcomeHint?: string; discussion
   render(
     <Welcome
       userName=""
-      asideCard={null}
+      asideCard={options.asideCard ?? null}
       composer={<textarea data-testid="composer-input" />}
       welcomeHint={options.welcomeHint}
       fill={fill}
@@ -114,5 +114,17 @@ describe('accueil d’une conversation vide', () => {
     fireEvent.click(first)
     expect(fill).toHaveBeenCalledTimes(1)
     expect(fill).toHaveBeenCalledWith(i18next.t('home.suggestions.explain.text'))
+  })
+
+  // Remplace `e2e/suites/aparte.mjs` n° 1 : un aparté avant tout message, sur l'accueil.
+  it('conversation vide : la carte de l’aparté sur l’accueil, au-dessus de la saisie (aparte n° 1)', () => {
+    setup({ asideCard: <section data-testid="aside-card">Aparté</section> })
+    const welcome = screen.getByTestId('welcome')
+    const card = screen.getByTestId('aside-card')
+    expect(welcome.contains(card)).toBe(true)
+    expect(
+      card.compareDocumentPosition(screen.getByTestId('composer-input')) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
   })
 })
