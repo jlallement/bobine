@@ -9,6 +9,9 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 - Navigateur intégré : un onglet neuf qui ne finit pas de s’ouvrir ne bloque plus l’agent sans fin ;
   au bout de 20 secondes, l’agent apprend que la page n’a pas fini de se charger et continue son
   travail ; l’onglet reste utilisable et peut être rechargé.
+- Navigateur intégré : un clic ou une saisie de l’agent juste après l’ouverture d’une page, ou dans
+  un onglet que le panneau ne montre pas, n’est plus perdu sans erreur ; l’agent attend que la page
+  soit affichée.
 - Plusieurs travaux proposés d’un coup : la carte les range toujours dans l’ordre où l’agent les a
   proposés, le même d’une fois à l’autre, et une ligne affichée ne change plus de place.
 - Sommaire d’une longue conversation : tout en bas du fil, le dernier message est bien celui mis en

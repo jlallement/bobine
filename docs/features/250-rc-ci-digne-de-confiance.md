@@ -609,3 +609,43 @@ Dependabot comme les autres.
     masqueraient le constat avant que le diagnostic réparé ne parle. Étape suivante : lire les
     captures `.txt` du prochain échec ; si le rendu de l'onglet y est en arrière-plan et la page
     `about:blank` en chargement, épreuve A/B de ces options dans `e2e/lib.mjs` (branche jetable).
+- 2026-11-24 — Passages macOS 45375547896, 45375561141, 45375571622 de cette branche : `browser`
+  rouge trois fois, sous trois formes. Le diagnostic réparé parle : à chaque échec, l'onglet est
+  chargé (`loading: false`), visible, débogueur attaché, son rendu à la même priorité que la
+  fenêtre (`pri 20`). **La piste du rendu en arrière-plan est écartée**, pas d'épreuve A/B des
+  options d'automatisation. Le symptôme « onglet neuf resté en chargement » ne s'est pas montré.
+  | Échec | Cause |
+  |---|---|
+  | `browser` clair (en) : « Bonjour, ! », 1 action en échec | **Défaut de l'app.** Le clic de l'agent sur le champ n'est pas arrivé ; la saisie qui suit échoue (« No text field has focus »). Déjà vu en local sous charge (fiche 094, 2 sur 7). |
+  | `browser` sombre (en) : fichier non enregistré, bandeau « File saved » jamais affiché | **Même défaut.** `telechargement` clique sur « Exporter » aussitôt `browser_navigate` rendu ; le CDP répond « Clic en (60, 60) », la page ne reçoit rien. |
+  | `browser` sombre (fr) : agent pas « Prêt » en 15 s | **Lenteur, pas un blocage** : toutes les actions réussies, tour fini en 18,6 s, 3 s après la capture. Cause de la lenteur non établie ; borne d'essai non touchée. |
+  Mécanisme, lu dans Chromium (`WidgetInputHandlerManager::DispatchEvent`) puis reproduit en local
+  (Electron 45.4.1, script hors dépôt) : tant que le rendu d'une page est suspendu, juste après une
+  navigation et jusqu'à sa première peinture, Chromium jette clics, touches et molette en les
+  acquittant « non consommés » ; le CDP ne dit rien. Clic par le CDP aussitôt `loadURL` rendu :
+  perdu à chaque fois, même sur une page au contenu immédiat ; dans une vue cachée jamais montrée :
+  toujours perdu. Sur un Mac rapide, l'aller-retour MCP entre deux outils suffit d'ordinaire ; sur
+  la VM sans GPU, non. Pour un utilisateur, même défaut : un clic de l'agent juste après une
+  navigation sur une machine chargée, ou dans un onglet que le panneau ne montre pas, est perdu
+  sans erreur.
+  **Décision de l'utilisateur** : pas d'option globale de Chromium. `allow-pre-commit-input` (essayé
+  en `4c7585b`, retiré par `git revert`) règle tout, mais ôte aussi à l'utilisateur la protection de
+  Chromium contre un clic qui tombe sur une page pas encore vue. Correctif ciblé sur les entrées de
+  l'agent (`paint-gate.ts`, `CdpTab`, `BrowserManager.paintHidden`) : avant le premier appui,
+  touche, molette ou saisie de l'agent dans un document, on attend sa première peinture (entrée
+  `paint` de la page, lue dans le monde isolé ; une fois par document, refaite à chaque
+  `did-navigate`). Un onglet caché est peint le temps de l'attente : montré à sa taille, hors de la
+  fenêtre sauf un point (son coin haut-gauche au coin bas-droit de la fenêtre), puis remis par
+  `layout`. Relevé : une vue entièrement hors de la fenêtre n'est pas peinte ; réduite à 1 × 1, elle
+  est peinte mais garde cette taille une fois cachée et le clic tombe à côté. Borne 5 s
+  (`PAINT_TIMEOUT_MS`) : au-delà, l'outil rend « The page has not been rendered yet… Nothing was
+  sent » et l'attente n'est pas refaite pour ce document (page sans rien à peindre : Chromium la
+  libère seul, relevé ≈ 3 s). Les déplacements du pointeur ne sont jamais retenus (Chromium les
+  laisse passer). Écartés : `rAF` × 2 (non essayé : les images de la page peuvent tourner pendant la
+  retenue des commits, il ne prouverait pas la peinture) ; `incrementCapturerCount` et
+  `capturePage` sur la vue cachée (sans réponse en 30 à 60 s, relevé). Rejoué hors dépôt avec le script de `firstPaintScript` et le placement de
+  `paintHidden` : clic aussitôt après `loadURL`, page visible ou cachée, contenu immédiat ou peint
+  après 1,5 s : reçu 6 fois sur 6 (attente 23 à 27 ms, 1,5 s pour la page tardive), contre 0 sur 2
+  sans. Essais unitaires `paint-gate.test.ts` (logique d'attente) et `cdp-tab.test.ts` (appui
+  retenu, erreur sans appui envoyé, déplacement libre, onglet caché peint puis remis), rouges sans
+  le branchement dans `CdpTab`. À relancer sur GitHub macOS : `browser parcours-outils`, trois fois.

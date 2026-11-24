@@ -15,6 +15,7 @@ import { DialogWatch } from './page-dialogs'
 import { cdpMethodAllowed } from './certificate-exceptions'
 import type { FilmFrame } from '../filmstrip/sheet'
 import { delay } from '../delay'
+import { firstPaintScript, PaintGate } from './paint-gate'
 
 const MAX_CONSOLE = 300
 const MAX_REQUESTS = 300
@@ -110,11 +111,19 @@ export class CdpTab {
    * connexion réutilisée sans nouvel évènement `certificate-error` (fiche 269).
    */
   onInsecureResponse: ((url: string) => void) | undefined
+  /** Entrées de l'agent retenues jusqu'à la première peinture du document (`paint-gate.ts`). */
+  private readonly paint: PaintGate
 
-  constructor(contents: WebContents) {
+  /** `reveal` : fait peindre la page si le panneau ne la montre pas (voir `PaintGate`). */
+  constructor(contents: WebContents, options: { reveal?: () => (() => void) | undefined } = {}) {
     this.contents = contents
     this.ready = this.start()
+    this.paint = new PaintGate({
+      probe: (ms) => this.evaluateIsolated<boolean>(firstPaintScript(ms)),
+      ...(options.reveal ? { reveal: options.reveal } : {})
+    })
     contents.on('did-navigate', (_event, url) => {
+      this.paint.navigated()
       this.pushConsole({ level: 'info', text: `— Navigation : ${url}` })
       this.refs = new Map()
       this.refOfNode = new Map()
@@ -269,6 +278,8 @@ export class CdpTab {
     clickCount = 0
   ): Promise<void> {
     const at = this.inputPoint({ x, y })
+    // Un déplacement passe toujours ; un appui serait jeté avant la première peinture.
+    if (type !== 'mouseMoved') await this.paint.beforeInput()
     await this.send('Input.dispatchMouseEvent', {
       type,
       ...at,
@@ -279,6 +290,7 @@ export class CdpTab {
   }
 
   async wheel(point: Point, deltaX: number, deltaY: number): Promise<void> {
+    await this.paint.beforeInput()
     await this.send('Input.dispatchMouseEvent', {
       type: 'mouseWheel',
       ...this.inputPoint(point),
@@ -310,10 +322,12 @@ export class CdpTab {
         'No text field has focus: click the field first (browser_click), or set its value with browser_form_input.'
       )
     }
+    await this.paint.beforeInput()
     await this.send('Input.insertText', { text })
   }
 
   async key(name: string, modifiers: string[]): Promise<void> {
+    await this.paint.beforeInput()
     const bits = modifiers.reduce((sum, m) => sum | (MODIFIER_BITS[m] ?? 0), 0)
     const named = NAMED_KEYS[name.toLowerCase()]
     const single = !named && name.length === 1

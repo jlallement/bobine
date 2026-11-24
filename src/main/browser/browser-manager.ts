@@ -442,7 +442,7 @@ export class BrowserManager {
     view.setVisible(false)
     view.setBackgroundColor('#ffffff')
     this.window.contentView.addChildView(view)
-    const cdp = new CdpTab(view.webContents)
+    const cdp = new CdpTab(view.webContents, { reveal: () => this.paintHidden(view) })
     const tab: Tab = {
       id: `onglet-${this.nextTab++}`,
       view,
@@ -610,6 +610,30 @@ export class BrowserManager {
       const shown = !!browser.bounds && tab.id === browser.active && !tab.certificate
       if (browser.bounds) tab.view.setBounds(this.frameOf(tab, browser.bounds))
       tab.view.setVisible(shown)
+    }
+  }
+
+  /**
+   * Onglet que le panneau ne montre pas, à faire peindre avant une entrée de l'agent
+   * (`paint-gate.ts`) : montré à sa taille, mais hors de la fenêtre sauf un point, son coin
+   * haut-gauche, posé dans le coin bas-droit de la fenêtre. Relevé sur Electron 45.4.1 : une vue
+   * entièrement hors de la fenêtre n'est pas peinte ; réduite (1 × 1), elle est peinte mais garde
+   * cette taille une fois cachée et les clics tombent à côté. Remis ensuite par `layout`.
+   */
+  private paintHidden(view: WebContentsView): (() => void) | undefined {
+    const window = this.window
+    if (view.getVisible() || !window || window.isDestroyed()) return undefined
+    const saved = view.getBounds()
+    const content = window.getContentBounds()
+    view.setBounds({ ...saved, x: content.width - 1, y: content.height - 1 })
+    view.setVisible(true)
+    return () => {
+      if (view.webContents.isDestroyed()) return
+      view.setBounds(saved)
+      view.setVisible(false)
+      const owner = this.ownerOf(view.webContents)?.conversationId
+      const browser = owner ? this.browsers.get(owner) : undefined
+      if (browser) this.layout(browser)
     }
   }
 

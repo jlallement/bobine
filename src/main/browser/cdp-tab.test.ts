@@ -96,3 +96,64 @@ describe('mise en route d’un onglet (fiche 250)', () => {
     expect(loads).toEqual(['about:blank'])
   })
 })
+
+describe('entrées de l’agent retenues jusqu’à la première peinture (fiche 250)', () => {
+  function paintedContents(painted: boolean[]) {
+    const handlers = new Map<string, (...args: unknown[]) => void>()
+    const sent: string[] = []
+    const contents = {
+      on: (event: string, handler: (...args: unknown[]) => void) => handlers.set(event, handler),
+      loadURL: async () => {},
+      executeJavaScriptInIsolatedWorld: vi.fn(async () => painted.shift() ?? true),
+      debugger: {
+        isAttached: () => true,
+        attach: () => {},
+        on: () => {},
+        sendCommand: async (method: string, params: { type?: string } = {}) => {
+          if (method.startsWith('Input.')) sent.push(params.type ?? method)
+          return {}
+        }
+      }
+    }
+    return { contents: contents as unknown as WebContents, sent, handlers }
+  }
+
+  it('clic aussitôt la page chargée : envoyé après sa peinture, une fois par document', async () => {
+    const { contents, sent, handlers } = paintedContents([true, true])
+    const tab = new CdpTab(contents)
+    await tab.mouse('mousePressed', { x: 1, y: 1 }, 'left', 1)
+    await tab.mouse('mouseReleased', { x: 1, y: 1 }, 'left', 1)
+    expect(sent).toEqual(['mousePressed', 'mouseReleased'])
+    expect(contents.executeJavaScriptInIsolatedWorld).toHaveBeenCalledTimes(1)
+    handlers.get('did-navigate')?.({}, 'http://localhost/deux')
+    await tab.key('enter', [])
+    expect(contents.executeJavaScriptInIsolatedWorld).toHaveBeenCalledTimes(2)
+  })
+
+  it('page jamais peinte : erreur claire, aucun appui envoyé (au lieu d’un clic perdu)', async () => {
+    const { contents, sent } = paintedContents([false])
+    const tab = new CdpTab(contents)
+    await expect(tab.mouse('mousePressed', { x: 1, y: 1 }, 'left', 1)).rejects.toThrow(
+      'has not been rendered'
+    )
+    expect(sent).toEqual([])
+  })
+
+  it('déplacement du pointeur : jamais retenu (Chromium le laisse passer)', async () => {
+    const { contents, sent } = paintedContents([false])
+    const tab = new CdpTab(contents)
+    await tab.mouse('mouseMoved', { x: 1, y: 1 })
+    expect(sent).toEqual(['mouseMoved'])
+    expect(contents.executeJavaScriptInIsolatedWorld).not.toHaveBeenCalled()
+  })
+
+  it('onglet caché : peint le temps de l’attente, puis remis', async () => {
+    const { contents } = paintedContents([true])
+    const restore = vi.fn()
+    const reveal = vi.fn(() => restore)
+    const tab = new CdpTab(contents, { reveal })
+    await tab.wheel({ x: 1, y: 1 }, 0, 100)
+    expect(reveal).toHaveBeenCalledTimes(1)
+    expect(restore).toHaveBeenCalledTimes(1)
+  })
+})
