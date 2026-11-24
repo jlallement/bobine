@@ -2,6 +2,13 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- Linux and Windows: the ☰ menu reopened with Alt right after closing it stays open; it closed
+  again at once, or stayed on screen after the next Alt press.
+
 ## 1.0.0-rc.5 — November 24, 2026
 
 ### Fixes

@@ -2,6 +2,13 @@
 
 Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrections
+
+- Linux et Windows : le menu ☰ rouvert par Alt juste après l’avoir fermé reste ouvert ; il se
+  refermait aussitôt, ou restait affiché après un nouvel appui sur Alt.
+
 ## 1.0.0-rc.5 — 24 novembre 2026
 
 ### Corrections

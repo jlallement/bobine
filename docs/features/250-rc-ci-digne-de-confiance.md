@@ -167,6 +167,22 @@ Dependabot comme les autres.
   rouge 3/3 sans le correctif, vert 3/3 avec. Les autres écritures vers un enfant
   (`mcp-probe.ts`) avaient déjà leur écouteur.
 
+- 2026-11-24 — `settings` sous Linux (CI `main`, run 45412768605) : « délai dépassé :
+  !…app-menu-content », le menu ☰ ne se refermait pas après Alt. **Pas les lots de vitesse** : même
+  échec avant eux (run 45373764336, `482405f4`), intermittent (vert sur `b83c6f64`). **Défaut de
+  l'app** (`AppMenu.tsx`), rejoué sur Mac avec `BOBINE_PLATFORM=linux` : quand Alt rouvre le menu
+  juste après Échap, Radix rend le focus au bouton ☰ *après coup* (minuterie du `FocusScope`) ; ce
+  focus, hors du menu non modal rouvert, le refermait aussitôt (relevé 2 fois sur 3 sans animation).
+  Capture de la CI conforme : menu affiché, focus et infobulle sur ☰, aucune entrée active — le menu
+  refermé encore à l'écran (sortie de `Presence`), puis l'Alt suivant le rouvrait d'après un état
+  périmé. Corrigé à la cause : état demandé tenu dans une référence (`wanted`) à jour dès l'appel —
+  Alt bascule d'après lui, le modèle lu après une fermeture n'ouvre plus rien, et le focus rendu par
+  une fermeture est ignoré si le menu a été rouvert entre-temps. Essais unitaires `AppMenu.test.tsx`
+  (Alt aussitôt après Échap ; Alt deux fois avant la lecture du modèle), rouges sans le correctif.
+  `settings` (`BOBINE_PLATFORM=linux`, 4 × 2 passages) : fermetures, sous-menus, Aurore nuit verts ;
+  seules restent les vérifications de la barre d'Electron, propres au Mac. À relancer : `settings`
+  sur GitHub Linux.
+
 ## Reste à vérifier sur GitHub (après la poussée)
 
 1. `e2e.yml` lancé à la main sur la branche, `systeme: linux`, trois fois. Chaque passage doit

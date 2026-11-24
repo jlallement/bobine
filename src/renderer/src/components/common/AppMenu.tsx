@@ -66,16 +66,23 @@ export function AppMenuButton() {
     space: t('keys.space')
   }
 
+  /**
+   * État demandé, à jour dès l'appel (fiche 250) : `open` ne suit qu'après la lecture du modèle et
+   * le rendu suivant ; Alt pressé entre-temps basculait d'après un état périmé.
+   */
+  const wanted = useRef(false)
   const show = (next: boolean) => {
+    wanted.current = next
     if (!next) return setOpen(false)
     previous.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
     // Le modèle est relu à chaque ouverture : cases cochées (présentation), plein écran, langue.
     void window.api.app.menu().then((model) => {
+      if (!wanted.current) return
       setItems(model ?? [])
       setOpen(true)
     })
   }
-  useAltAlone(() => show(!open))
+  useAltAlone(() => show(!wanted.current))
 
   const render = (list: AppMenuItem[]) =>
     list.map((item, i) => {
@@ -161,8 +168,11 @@ export function AppMenuButton() {
           onCloseAutoFocus={(event) => {
             const id = chosen.current
             chosen.current = null
+            // Rouvert entre-temps (Alt juste après Échap, fiche 250) : Radix rend le focus après
+            // coup ; posé sur ☰, hors du menu rouvert, il le refermait aussitôt.
+            if (wanted.current) event.preventDefault()
             // Copier, Coller… : le clavier revient d'abord là où il était.
-            if (id?.startsWith('role:') && previous.current?.isConnected) {
+            else if (id?.startsWith('role:') && previous.current?.isConnected) {
               event.preventDefault()
               previous.current.focus()
             }
