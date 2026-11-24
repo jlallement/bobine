@@ -17,8 +17,13 @@ import {
 
 const FIRST = '/scenario echo Prépare la démo'
 const BUSY = '/scenario attend-stop'
-/** Proxy injoignable (port fermé), sans identifiants : cité tel quel. */
-const PROXY = 'http://127.0.0.1:9'
+/**
+ * Proxy injoignable (port fermé), avec des identifiants : cité masqué, et son mot de passe nulle part
+ * dans la page (inventaire C, risque « sécurité » : contrôle global, pas composant par composant).
+ */
+const SECRET = 's3cr3t-parcours'
+const PROXY = `http://jean:${SECRET}@127.0.0.1:9`
+const MASKED = 'http://•••@127.0.0.1:9'
 const memoryEntry = `document.querySelector('[data-testid=memory-entry][data-name=tests-e2e]')`
 const memoryCards = `[...document.querySelectorAll('[data-testid=memory-card]')]`
 const navItem = (key) =>
@@ -144,8 +149,21 @@ export async function parcoursReglagesSuite(scheme) {
             await ui.waitFor(`!!${ui.$('agent-unreachable')}`, 15000)
             const hint = await ui.ev(`${ui.$('agent-unreachable-hint')}.innerText`)
             check(
-              hint === L('agentRetry.proxy', { proxy: PROXY }),
-              `modèle injoignable : le proxy réglé est cité (${hint})`
+              hint === L('agentRetry.proxy', { proxy: MASKED }),
+              `modèle injoignable : le proxy réglé est cité, identifiants masqués (${hint})`
+            )
+            const leaks = await ui.ev(`(() => {
+              const secret = ${JSON.stringify(SECRET)}
+              const where = []
+              if (document.documentElement.outerHTML.includes(secret)) where.push('DOM')
+              if (document.body.innerText.includes(secret)) where.push('texte')
+              if (document.title.includes(secret)) where.push('titre')
+              for (const field of document.querySelectorAll('input, textarea')) if (field.value.includes(secret)) where.push(field.dataset.testid ?? field.tagName)
+              return where
+            })()`)
+            check(
+              leaks.length === 0,
+              `le mot de passe du proxy n’est nulle part dans la page (${leaks.join(', ') || 'rien'})`
             )
             await ui.shot('276-reglages-proxy')
             await ui.click(ui.$('agent-unreachable-stop'))

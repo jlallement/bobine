@@ -151,6 +151,16 @@ export function project(prefix) {
   return dir
 }
 
+/**
+ * L'état attendu arrive-t-il dans le délai ? `true` ou `false`, sans lever : la vérification qui suit
+ * dit alors ce qui manque (au lieu d'une attente échouée sans rapport avec ce que l'étape garantit).
+ */
+export const eventually = (ui, expression, ms = 10000) =>
+  ui.waitFor(expression, ms).then(
+    () => true,
+    () => false
+  )
+
 /** Lignes de la barre latérale. */
 export const ROWS = `[...document.querySelectorAll('[data-testid=history-item]')]`
 /** La ligne dont le titre commence par `title`. */
