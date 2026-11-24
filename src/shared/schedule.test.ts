@@ -130,9 +130,17 @@ describe('parseTaskInput', () => {
     })
   })
 
+  it('dossier Windows absolu accepté (sinon la tâche est ignorée à la lecture du fichier)', () => {
+    expect(parseTaskInput({ ...input, folder: 'C:\\Users\\moi\\projet' }).folder).toBe(
+      'C:\\Users\\moi\\projet'
+    )
+    expect(parseTaskInput({ ...input, folder: 'd:/projet' }).folder).toBe('d:/projet')
+  })
+
   it('refuse ce qui est mal formé', () => {
     expect(() => parseTaskInput({ ...input, instruction: ' ' })).toThrow()
     expect(() => parseTaskInput({ ...input, folder: 'relatif' })).toThrow()
+    expect(() => parseTaskInput({ ...input, folder: 'C:projet' })).toThrow()
     expect(() => parseTaskInput({ ...input, schedule: { kind: 'daily', time: '25:00' } })).toThrow()
     expect(() => parseTaskInput({ ...input, schedule: { kind: 'interval', hours: 0 } })).toThrow()
     expect(() =>

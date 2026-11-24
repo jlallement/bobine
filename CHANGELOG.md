@@ -6,6 +6,8 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ### Corrections
 
+- Windows : une tâche planifiée dans un dossier comme `C:\Users\…\projet` s’enregistre et se
+  lance ; elle était refusée, ou oubliée à la relecture de la liste.
 - Plusieurs travaux proposés d’un coup : la carte les range toujours dans l’ordre où l’agent les a
   proposés, le même d’une fois à l’autre, et une ligne affichée ne change plus de place.
 - Sommaire d’une longue conversation : tout en bas du fil, le dernier message est bien celui mis en

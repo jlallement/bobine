@@ -13,6 +13,7 @@ import { NETWORK_BACK_MARKER } from '../../mock-agent/scenarios-opencode-2-3.mts
 import { AgentHost, type AgentHostOptions } from './agent-host'
 import { OPENCODE_RETRY_STATUS } from './opencode-retry'
 import { eventLog } from './test-events'
+import { settleStoppedTrees } from '../process-tree'
 
 function createHost(scenario: string, options: Partial<AgentHostOptions> = {}) {
   const { events, emit, until } = eventLog<AgentEvent>()
@@ -142,11 +143,11 @@ describe('AgentHost : modèle injoignable annoncé par l’agent (fiche 275)', (
 
   it('réseau revenu au signal (e2e `parcours-reglages`, fiche 278) : reprises jusqu’au fichier', async () => {
     const workspace = mkdtempSync(join(tmpdir(), 'reseau-signal-'))
+    const { host, until, snapshots } = createHost('reseau-revenu-au-signal-2-3', {
+      profile: profile('reseau-revenu-au-signal-2-3'),
+      workspace
+    })
     try {
-      const { host, until, snapshots } = createHost('reseau-revenu-au-signal-2-3', {
-        profile: profile('reseau-revenu-au-signal-2-3'),
-        workspace
-      })
       await host.start()
       const turn = host.prompt('Bonjour')
       // Bien au-delà des deux reprises de `reseau-revenu-2-3` : le bandeau reste.
@@ -156,9 +157,13 @@ describe('AgentHost : modèle injoignable annoncé par l’agent (fiche 275)', (
       await turn
       expect(host.snapshot().unreachable).toBeUndefined()
       expect(snapshots().some((s) => s.unreachable !== undefined)).toBe(true)
-      host.stop()
     } finally {
-      rmSync(workspace, { recursive: true, force: true })
+      // L'agent tourne dans `workspace` : sous Windows, le dossier courant d'un processus vivant ne
+      // se supprime pas (EPERM). `stop()` n'attend pas sa sortie : on l'attend, et un agent encore
+      // là au bout du délai est une vraie anomalie, dite ici.
+      host.stop()
+      expect(await settleStoppedTrees()).toBe(0)
+      rmSync(workspace, { recursive: true })
     }
   }, 20_000)
 })
