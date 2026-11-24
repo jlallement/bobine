@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import i18next from 'i18next'
+import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Welcome } from './Welcome'
 import type { OnboardingController } from './onboarding/useOnboarding'
@@ -16,7 +17,14 @@ afterEach(() => {
   delete api.help
 })
 
-function setup(options: { testCommand?: string; welcomeHint?: string; discussion?: boolean } = {}) {
+function setup(
+  options: {
+    testCommand?: string
+    welcomeHint?: string
+    discussion?: boolean
+    asideCard?: ReactNode
+  } = {}
+) {
   const open = vi.fn()
   api.help = { open }
   const fill = vi.fn()

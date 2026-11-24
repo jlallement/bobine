@@ -18,7 +18,10 @@ const widths = { line: 200, name: 180, text: 40 }
 beforeAll(() => {
   // Un observateur qui mesure tout de suite (dans l'app : après la mise en page).
   globalThis.ResizeObserver = class {
-    constructor(private readonly callback: ResizeObserverCallback) {}
+    private readonly callback: ResizeObserverCallback
+    constructor(callback: ResizeObserverCallback) {
+      this.callback = callback
+    }
     observe(target: Element) {
       this.callback([{ target } as ResizeObserverEntry], this as unknown as ResizeObserver)
     }

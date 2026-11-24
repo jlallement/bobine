@@ -136,7 +136,7 @@ describe('MemoryProposalCard (fiche 182)', () => {
     const { decide } = renderCard(item())
     fireEvent.click(screen.getByTestId('memory-decline'))
     await waitFor(() => expect(decide).toHaveBeenCalledTimes(1))
-    expect(decide.mock.calls[0]?.slice(0, 2)).toEqual(['mem-1', false])
+    expect(decide).toHaveBeenCalledWith('mem-1', false, false)
     cleanup()
     renderCard(item({ status: 'declined', decidedAt: 1 }))
     expect(screen.getByTestId('memory-decided').textContent).toContain('Non retenu')

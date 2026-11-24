@@ -38,7 +38,7 @@ beforeAll(() => {
     disconnect() {}
   } as unknown as typeof ResizeObserver
   // Contexte 2D qui retient le nom de chaque appel.
-  HTMLCanvasElement.prototype.getContext = function () {
+  HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement) {
     return new Proxy(
       {},
       {
