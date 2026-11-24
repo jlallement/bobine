@@ -187,6 +187,8 @@ async function heldSynthesis(scheme) {
           label === L('roundtable.synthesis.label', { model }),
           `étiquette de la synthèse : le modèle qui l’a écrite (${label})`
         )
+        // L'étiquette en vue : le fil a défilé jusqu'à la carte du plafond suivante.
+        await ui.ev(`${ui.$('roundtable-answer-label')}.scrollIntoView({ block: 'start' }), true`)
         await affirm(ui, '285-etiquette-synthese', [probes.threadFits()])
       },
       undefined,

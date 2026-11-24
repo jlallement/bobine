@@ -175,6 +175,10 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | modèle introuvable ; modèle non appliqué | model not found ; model not applied | Jamais de repli silencieux sur un autre modèle. |
 | arrêté : plafond de la conversation atteint | stopped: conversation cost cap reached | Reprend « plafond par conversation ». |
 | lecture seule demandée, non vérifiée (dossier hors git) | read-only requested, not verified (folder outside git) | |
+| arrêt en cours | stopping | Arrêt du tour demandé, les participants s'arrêtent d'abord. |
+| retenu par le plafond de sa conversation | held by its conversation cost cap | Question d'un participant retenue ; « Continuer » se donne dans sa conversation. |
+| conversation à la corbeille ; conversation supprimée | conversation in the trash ; conversation deleted | Ligne d'un participant, lue de l'existence de sa conversation. |
+| Demande de synthèse / de décision du tour de table ; Question / Réplique du tour de table | Roundtable synthesis / decision request ; Roundtable question / rebuttal | Message retenu sur la carte « Plafond atteint », jamais la consigne envoyée. |
 
 ### La conversation
 

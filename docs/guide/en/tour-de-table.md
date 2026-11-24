@@ -59,6 +59,15 @@ model offers **Choose another model**, for the next roundtables.
 **Synthesize now** appears from two opinions: the participants still working stop. **Stop** stops
 one participant, or the whole roundtable.
 
+Stopping the whole roundtable waits for each participant to finish stopping: the card says
+"stopping", then "stopped". A participant whose conversation reached its cost cap is "held by its
+conversation cost cap": **Open its conversation** to choose **Continue**.
+
+During the roundtable, the participants' conversations are in the sidebar, under yours; once it is
+over, they leave it, and you find them from the card (**Open its conversation**) or the search. Moved
+to the trash, a participant's conversation keeps its opinion readable on the card ("conversation in
+the trash"); restored, its row is back as it was.
+
 <a id="synthese"></a>
 
 ## Read the synthesis

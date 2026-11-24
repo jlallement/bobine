@@ -62,6 +62,15 @@ un modèle refusé propose **Choisir un autre modèle**, pour les tours suivants
 **Synthétiser sans attendre** apparaît dès deux avis : les participants encore au travail
 s'arrêtent. **Arrêter** arrête un participant, ou tout le tour.
 
+Arrêter tout le tour attend que chaque participant ait fini de s'arrêter : la carte dit « arrêt en
+cours », puis « arrêté ». Un participant dont la conversation a atteint son plafond est « retenu
+par le plafond de sa conversation » : **Ouvrir sa conversation** pour choisir **Continuer**.
+
+Pendant le tour, les conversations des participants sont dans la barre latérale, sous la vôtre ;
+le tour fini, elles en sortent, et on les retrouve par la carte (**Ouvrir sa conversation**) ou la
+recherche. Mise à la corbeille, la conversation d'un participant garde son avis lisible sur la
+carte (« conversation à la corbeille ») ; restaurée, sa ligne redevient ce qu'elle était.
+
 <a id="synthese"></a>
 
 ## Lire la synthèse

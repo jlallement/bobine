@@ -1124,3 +1124,23 @@ le main n'a pas livré l'étape 1) :
   ligne de la largeur d'une pastille posée par-dessus casse la sélection à la souris en tête de
   texte, le placement du curseur et la composition (IME) sur la première ligne, et dépend de la
   police chargée : l'étiquette reste sur sa ligne, comme les jetons de rôle.
+
+- 2026-11-25 : interface sur le contrat de `1.2-rt-engine-fix2` (branche `1.2-rt-engine-fix`).
+  Fait : « arrêt en cours » (`Roundtable.stopping`) dans l'en-tête et sur le bouton, qui attend la
+  fin de `roundtable:stop`, aucun geste de ligne pendant l'arrêt ; place retenue par le plafond
+  (`RoundtableSeat.held`, S5) avec « Ouvrir sa conversation » ; étiquettes de la synthèse et de la
+  décision lues de `RoundtableStep.by` (S3) ; `roundtableTotal` reçoit `null` pour un participant
+  au travail (M5) ; corbeille et suppression lues de l'existence de la conversation (liste, puis
+  corbeille par `trash:list` quand elle manque, `useTrashedIds`) : à la corbeille, l'avis se lit
+  sans « Ouvrir », restaurée la ligne revient (S1, S2) ; barre latérale : un participant n'y est que
+  pendant son tour, ou quand il est affiché (`ConversationSummary.roundtable.active`, M7) ; état
+  d'une place en erreur ou arrêtée jamais « fini » dans la barre (B5b) ; icône et marqueur par
+  `summary.roundtable`, barre Équipe et mentions par `Role.internal` ; dialogue de suppression de
+  la famille sans « worktree gardé » pour des participants (M8). B17 : le bouclier, montré quand les
+  niveaux diffèrent, est focalisable et porte son niveau en nom accessible. B5 : vérifié en e2e
+  (participant lent, arrêt lent de l'agent factice `MOCK_AGENT_SLOW_CANCEL_MS`) : carte, panneau
+  Session et barre latérale disent la même chose pendant et après l'arrêt. Libellés `roundtable.held.*`
+  et `roundtable.error.archivedGesture` relus, gardés, ajoutés au glossaire ; `readOnly.requested`
+  dit déjà « vérifiée dans le dépôt seulement ». E2e : section « vie des participants »
+  (`tour-de-table-vie.mjs`) : arrêt, barre latérale pendant et après, « Ouvrir sa conversation »,
+  corbeille puis restauration, synthèse retenue par le plafond puis « Continuer ».
