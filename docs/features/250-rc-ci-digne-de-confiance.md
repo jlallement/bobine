@@ -154,6 +154,18 @@ Dependabot comme les autres.
   relâché. `measureBottom` traite l'appui comme le maintien : il mesure `atBottom` (la flèche),
   sans toucher au suivi ni défiler. Preuve : `useThreadScroll.test.ts` (« près du bas sans y
   être… » : flèche pendant l'appui, partie au relâché), rouge sans le correctif.
+- 2026-11-24 — Release 1.1.0-rc.1 (run 45289731873, job « .deb (Linux x64) », 1ʳᵉ tentative) :
+  tests unitaires tous verts, mais Vitest a attrapé « write EPIPE » non géré
+  (`src/main/simulator/run.ts:67`, pendant `file-tree.test.ts` « hors dépôt : `null` »).
+  `gitIgnored` passe la liste à `git check-ignore --stdin` par `runCommand` ; hors dépôt, git sort
+  aussitôt (128) sans lire son entrée, et l'écriture dans le tube fermé levait une erreur sur
+  `child.stdin` sans écouteur : exception non gérée du main (l'app aussi, pas seulement l'essai),
+  selon la course entre la sortie de git et l'écriture. **Défaut de l'app** : `runCommand` écoute
+  désormais `error` sur l'entrée de l'enfant (sans objet, le code de sortie est rendu par le
+  rappel) et n'écrit que dans un flux encore `writable`. Preuve : `src/main/simulator/run.test.ts`
+  (vrai enfant Node qui sort sans lire 8 Mio d'entrée : code rendu, aucune `uncaughtException`),
+  rouge 3/3 sans le correctif, vert 3/3 avec. Les autres écritures vers un enfant
+  (`mcp-probe.ts`) avaient déjà leur écouteur.
 
 ## Reste à vérifier sur GitHub (après la poussée)
 
