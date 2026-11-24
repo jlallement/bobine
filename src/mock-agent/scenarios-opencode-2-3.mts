@@ -313,6 +313,28 @@ const RETRY_FOREVER: Step[] = Array.from({ length: 1500 }, (_, i): Step[] => [
   { kind: 'pause', ticks: 10 }
 ]).flat()
 
+/**
+ * Fichier qui ramène le réseau de `reseau-revenu-au-signal-2-3` : l'essai le pose quand il a vu
+ * le bandeau, au lieu de compter sur un bandeau de quelques centaines de millisecondes.
+ */
+export const NETWORK_BACK_MARKER = '.mock-reseau-revenu'
+
+/** Une reprise (null, tentative, pause) par tour de boucle, jusqu'au fichier ; 5 min au plus. */
+const retryUntilNetworkBack = (round: number): Step[] =>
+  round >= 750
+    ? []
+    : [
+        {
+          kind: 'when-file',
+          path: NETWORK_BACK_MARKER,
+          then: [{ kind: 'text', text: 'Réseau revenu : voici la réponse.' }],
+          else: [
+            ...RETRY_FOREVER.slice(round * 3, round * 3 + 3),
+            ...retryUntilNetworkBack(round + 1)
+          ]
+        }
+      ]
+
 export const openCode23Scenarios: Record<string, Scenario> = {
   'reseau-injoignable-2-3': {
     description:
@@ -326,6 +348,10 @@ export const openCode23Scenarios: Record<string, Scenario> = {
       ...RETRY_FOREVER.slice(0, 6),
       { kind: 'text', text: 'Réseau revenu : voici la réponse.' }
     ]
+  },
+  'reseau-revenu-au-signal-2-3': {
+    description: `Comme \`reseau-injoignable-2-3\`, mais le réseau revient dès que le fichier \`${NETWORK_BACK_MARKER}\` est dans le dossier (vu à chaque reprise) : la réponse arrive`,
+    steps: retryUntilNetworkBack(0)
   },
   'sous-agent-hors-tour-explo-2-3': {
     description:
