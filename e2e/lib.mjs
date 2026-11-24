@@ -561,15 +561,48 @@ export async function withApp(
     /**
      * État réel des pages du navigateur intégré, joint aux échecs (macOS CI 2026-11-24 : onglet neuf
      * resté « en chargement », cause non établie) : processus de rendu lancé (`pid`), page validée
-     * ou non (`url`), réponse attendue, débogueur attaché (`cdp-tab.ts`, `whenReady`).
+     * ou non (`url`), réponse attendue, débogueur attaché (`cdp-tab.ts`, `whenReady`). Les pages
+     * des fenêtres sont écartées par leur `id` : celles d'un `WebContentsView` (onglets) ont aussi le
+     * type `window` (relevé sur Electron 45, fiche 250), le filtre par type les cachait toutes.
      */
     const mainPages = async () => {
       try {
         main ??= await mainProcess()
-        const pages = await main.evaluate(
-          `require('electron').webContents.getAllWebContents().filter((w) => w.getType() !== 'window').map((w) => ({ id: w.id, type: w.getType(), url: w.getURL(), title: w.getTitle(), loading: w.isLoading(), waitingForResponse: w.isWaitingForResponse(), crashed: w.isCrashed(), pid: w.getOSProcessId(), debugger: w.debugger.isAttached() }))`
+        const found = await main.evaluate(`(() => {
+          const { BrowserWindow, webContents } = require('electron')
+          const windows = BrowserWindow.getAllWindows()
+          const own = new Set(windows.map((w) => w.webContents.id))
+          const shown = new Map()
+          for (const w of windows) {
+            for (const v of w.contentView.children) if (v.webContents) shown.set(v.webContents.id, v.getVisible())
+          }
+          const pages = webContents.getAllWebContents().filter((w) => !own.has(w.id)).map((w) => ({ id: w.id, type: w.getType(), url: w.getURL(), title: w.getTitle(), loading: w.isLoading(), waitingForResponse: w.isWaitingForResponse(), crashed: w.isCrashed(), pid: w.getOSProcessId(), debugger: w.debugger.isAttached(), viewVisible: shown.get(w.id), backgroundThrottling: w.getBackgroundThrottling() }))
+          return { pages, windowPids: windows.map((w) => w.webContents.getOSProcessId()) }
+        })()`)
+        const pages = found?.pages ?? []
+        if (!pages.length) return '(aucune)'
+        // Priorité des processus de rendu des onglets, à côté de celle des fenêtres (macOS : un
+        // rendu caché peut passer en arrière-plan, CPU et disque bridés) : piste de la page cachée
+        // qui ne finit pas de charger sur une VM chargée (fiche 250).
+        const pids = [...pages.map((p) => p.pid), ...(found?.windowPids ?? [])].filter(
+          (pid) => pid > 0
         )
-        return (pages ?? []).map((p) => JSON.stringify(p)).join('\n') || '(aucune)'
+        let priorities = ''
+        try {
+          if (pids.length) {
+            priorities = execFileSync('ps', ['-o', 'pid=,pri=,stat=,%cpu=', '-p', pids.join(',')], {
+              encoding: 'utf8'
+            })
+          }
+        } catch (error) {
+          priorities = `(ps illisible : ${error.message})`
+        }
+        return [
+          ...pages.map((p) => JSON.stringify(p)),
+          priorities.trim() && `ps (pid pri stat %cpu) :\n${priorities.trim()}`
+        ]
+          .filter(Boolean)
+          .join('\n')
       } catch (error) {
         return `(illisible : ${error.message})`
       }

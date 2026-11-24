@@ -572,3 +572,40 @@ Dependabot comme les autres.
 
   `./scripts/verify` vert. Rien joué en local (ADR-0069). À relancer sur GitHub (macOS, clair et
   sombre) : `session`, `filles`, `subagents`, `worktree-setup`, `browser`, `parcours-outils`.
+
+- 2026-11-24 — Onglet neuf resté « en chargement » sur le runner macOS (`browser`,
+  `parcours-outils`), passages 45371706236, 45371718099 (SDK 2.7.0, épreuve A/B : échoue aussi, ce
+  n'est donc pas le SDK), 45371749951, 45361829816. Linux et Mac local verts.
+  - **Défaut de l'app corrigé : `CdpTab.whenReady` sans borne.** `LOAD_TIMEOUT_MS` ne couvrait que
+    `loadURL` ; la mise en route d'un onglet (`about:blank`, puis débogueur) restée en plan figeait
+    le tour de l'agent sans fin (`browser_navigate`, `browser_tabs new`, et toute commande CDP).
+    Bornée à `READY_TIMEOUT_MS` = 20 s (quelques dizaines de ms d'ordinaire, jusqu'à ≈ 10 s relevé
+    sur le runner chargé) : l'outil rend une erreur claire à l'agent (« The page did not finish
+    loading… »), le tour continue ; un échec ou un délai dépassé n'est pas définitif, l'appel
+    suivant relance la mise en route (`about:blank` interrompt celle restée en plan). Essai
+    unitaire `cdp-tab.test.ts`, rouge (4/5 en délai dépassé) avant le correctif, vert après. Ne
+    rend pas l'e2e verte : elle attend l'agent 15 s, la borne est au-delà, exprès.
+  - **Diagnostic d'échec aveugle (`914050f`) corrigé.** Les captures `.txt` de ces passages disent
+    « Pages du main : (aucune) » alors que l'onglet existe : le filtre `getType() !== 'window'`
+    écartait aussi les onglets, une page de `WebContentsView` ayant le type `window` (relevé en
+    local sur Electron 45.4.1). Les pages des fenêtres sont désormais écartées par leur `id` ;
+    s'ajoutent la visibilité de la vue, `backgroundThrottling`, et `ps` (pid, priorité, état,
+    %CPU) des rendus des onglets et des fenêtres. Le prochain échec dira où s'arrête la mise en
+    route et si le rendu de l'onglet est en arrière-plan.
+  - **Cause sur la VM : non établie, aucun réglage appliqué.** Ce qui est sûr : un onglet neuf est
+    créé caché (`setVisible(false)`) tant que le panneau ne le montre pas ; Chromium le traite
+    alors comme caché (`WasHidden`), son rendu peut passer en priorité d'arrière-plan (macOS :
+    CPU et disque bridés), et sur macOS l'occlusion de la fenêtre (`WebContentsOcclusionCheckerMac`,
+    que garde un patch d'Electron) peut aussi cacher la page. Sur une VM sans GPU qui fait tourner
+    trois suites à la fois, c'est la piste la plus vraisemblable. Mais en local, une vue cachée dans
+    une fenêtre cachée charge `about:blank` en 56 ms : être caché ne bloque pas le chargement, au
+    plus le ralentit. Écartés faute de preuve : `backgroundThrottling: false` sur les onglets
+    (Electron pose `disable_hidden_`, la page ne serait plus jamais « cachée » : minuteries et
+    animations à plein régime dans chaque onglet caché, `document.visibilityState` toujours
+    `visible`, un changement de comportement pour l'utilisateur sans gain prouvé) ; les options de
+    Chromium que posent Puppeteer et Playwright en automatisation
+    (`--disable-renderer-backgrounding`, `--disable-backgrounding-occluded-windows`,
+    `--disable-background-timer-throttling`), possibles dans le seul lanceur e2e, mais qui
+    masqueraient le constat avant que le diagnostic réparé ne parle. Étape suivante : lire les
+    captures `.txt` du prochain échec ; si le rendu de l'onglet y est en arrière-plan et la page
+    `about:blank` en chargement, épreuve A/B de ces options dans `e2e/lib.mjs` (branche jetable).

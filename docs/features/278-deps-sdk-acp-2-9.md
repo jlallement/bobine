@@ -121,6 +121,10 @@ types `dist/v1/unstable/schema/types.gen.d.ts` comparés entre les deux versions
   - Navigateur : premier chargement d'un onglet neuf qui ne finit pas dans le main ; cause non
     établie, corrélée au SDK sans mécanisme trouvé. Les échecs joignent désormais l'état des
     pages du main. Épreuve proposée : `browser` macOS avec le SDK 2.7.0 puis 2.9.1.
+- 2026-11-24 : épreuve A/B (passages 45371706236 et 45371718099 avec le SDK 2.7.0) : l'onglet neuf
+  resté « en chargement » sur macOS échoue aussi sans le SDK 2.9.1 ; la corrélation relevée plus
+  haut n'en est pas une cause. Borne de `CdpTab.whenReady` (le tour de l'agent n'est plus figé) et
+  diagnostic d'échec réparé : fiche 250 (journal du 2026-11-24, onglet neuf).
 - Reste : suites e2e touchées sur GitHub (`session`, `worktree-setup`, `parcours-reglages`,
   `parcours-outils`, `browser`, et celles des fichiers modifiés) ; sonde d'OpenCode 2.4.1 avec
   modèle gratuit.
