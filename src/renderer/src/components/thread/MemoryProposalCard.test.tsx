@@ -131,6 +131,19 @@ describe('MemoryProposalCard (fiche 182)', () => {
     expect(screen.getByText('Voir')).not.toBeNull()
   })
 
+  // Remplace `e2e/suites/memoire.mjs` n° 6 (carte) : « Non » décide, la carte devient une ligne.
+  it('« Non » : décision refusée transmise ; décidée, une ligne « Non retenu » sans « Voir »', async () => {
+    const { decide } = renderCard(item())
+    fireEvent.click(screen.getByTestId('memory-decline'))
+    await waitFor(() => expect(decide).toHaveBeenCalledTimes(1))
+    expect(decide.mock.calls[0]?.slice(0, 2)).toEqual(['mem-1', false])
+    cleanup()
+    renderCard(item({ status: 'declined', decidedAt: 1 }))
+    expect(screen.getByTestId('memory-decided').textContent).toContain('Non retenu')
+    expect(screen.queryByText('Voir')).toBeNull()
+    expect(screen.queryByTestId('memory-accept')).toBeNull()
+  })
+
   it('en attente : le fil ne défile pas sous le pointeur ; décidée, il suit de nouveau (fiche 250)', () => {
     // Pilote, macOS CI 2026-11-23 : « Retenir » cliqué pendant que la réponse s'écrivait sous la
     // carte ; le fil, qui suivait le bas, l'a remontée entre le survol et l'appui, clic perdu.
