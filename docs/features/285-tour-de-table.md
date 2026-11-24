@@ -990,4 +990,29 @@ le main n'a pas livré l'étape 1) :
   - **Non couvert par un essai main** : réplique retenue au plafond d'un participant (« Continuer »
     dans sa conversation) ; agent qui plante pendant son avis (couvert seulement par l'erreur de
     tour) ; tout ce qui s'affiche (renderer).
+- 2026-11-24 : **corrections de la revue sécurité et code** (branche `1.2-rt-engine-fix`).
+  - Lecture seule : participants d'un même tour jugés ensemble par le garde-fou (un outil de l'un
+    ne rend plus les tours des autres « partagés ») ; un changement est dit à tous les tours qui se
+    chevauchent ; un tour non jugé ramène « demandée » à « non vérifiée ». Empreinte du dossier
+    élargie (`.git/config`, crochets, branche, ignorés du premier niveau ; ≈ 150 ms contre ≈ 35 ms
+    sur le dépôt de Bobine), ce qu'elle ne voit pas est écrit dans `folder-fingerprint.ts`.
+  - Niveau `native` : installation relue sur le disque (entrée intacte, aucun fichier du projet du
+    même identifiant), mode reconnu par sa valeur seulement ; profil introuvable : `unverified`.
+  - Participant marqué dans sa fiche (`roundtable`) : aucun outil de l'app (`ask_user` compris),
+    commandes refusées d'office comme les écritures ; un rôle nommé `participant` garde ses outils.
+  - Jeton par lancement, « Relancer » attend la fin du lancement précédent ; places suivantes non
+    lancées après un arrêt ; réessai espacé ; tours finis oubliés en mémoire.
+  - Réplique envoyée avec la provenance `roundtable` (`step: 'rebuttal'`), retirée de la file ou du
+    plafond à l'arrêt ; synthèse en route ou retenue coupée par l'arrêt.
+  - Modèle strict : réglage de catégorie `model` seulement, modèle relu au départ et à la fin de
+    chaque tour ; avis et répliques entiers ; noms de modèles pris chez l'agent ; question de plus
+    de 8 000 caractères refusée.
+  - Balises à suffixe aléatoire par demande, `asData` après NFKC, sans caractères de format, avec
+    entités et lettres d'autres alphabets reconnues ; consignes d'anonymat.
+  - Dossier changé distingué entre l'avis et la réplique ; participants hors de la fusion.
+  - **Contrat** (à suivre par l'interface) : `MessageOrigin.step` accepte `rebuttal` ;
+    `RoundtableStartError` accepte `question` ; `RoundtableRebuttal.changedFolder` ; balises
+    `bobine_*_<nonce>` ; `PARTICIPANT_BRIEF` et règles de synthèse complétés. Clé ajoutée :
+    `roundtable.error.question`. À reformuler par l'interface : `roundtable.state.readOnly.requested`
+    (« vérifiée dans le dépôt seulement »).
 

@@ -305,6 +305,11 @@ profil factice déclare alors `roleExport` comme Bob ou OpenCode et passe ces op
 | `lancer-app` | Lance le serveur « web » du fichier de lancement (`preview_start`), lit son journal et la page |
 | `outil-app` | Appelle l'outil `screenshot` du serveur MCP de l'app, comme Bob (étape générique `mcp-tool` ; seul le texte du résultat est relayé, comme Bob) |
 | `avis-participant` | Tour de table (fiche 285) : avis au format imposé (cinq rubriques), propre au modèle (`factice-rapide` : « la piste A », `factice-precis` : « la piste B »), suivi d'une ligne « Reçu : question … · consigne de participant · lecture seule · dernier échange · pièces jointes · autres avis : aucun » qui prouve l'indépendance ; à la réplique (« Rebuttal round… »), « Position : maintenue » avec sa lettre |
+| `avis-change-modele` | Tour de table : en plein tour, annonce un autre modèle (`config_option_update`), puis son avis : l'app le met en « modèle non appliqué » |
+| `avis-en-deux` | Tour de table : avis en deux morceaux de texte séparés par une lecture : l'app garde la réponse entière du tour |
+| `participant-lit-shell` | Tour de table : lit par le shell (`tool_call` `kind: execute`), puis son avis |
+| `participant-lit-ecrit` | Tour de table : lit par le shell, écrit `note-participant.md` sans demander, puis son avis (deux participants qui exécutent, l'un écrit) |
+| `participant-outils` | Tour de table : liste les outils de l'app reçus (`tools/list`), puis demande une commande (`kind: execute`) : aucun outil, commande refusée d'office |
 | `avis-hors-format` | Tour de table : avis libre, sans les rubriques (« format non suivi ») |
 | `avis-lent` | Tour de table : 100 pas de `--delay` (4 s par défaut, annulable), puis l'avis. Dans les essais, préférer `--verrou-fin-de-tour` |
 | `avis-erreur` | Tour de table : le tour du participant échoue (`-32603` « Model unavailable ») |
