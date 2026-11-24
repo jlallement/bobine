@@ -132,7 +132,7 @@ describe('recueil des avis', () => {
       )
     )
     const meta = within(row('C')).getByTestId('roundtable-row-meta')
-    expect(plain(meta.textContent)).toBe('En erreur : erreur de l’agent au bout de 0:38')
+    expect(plain(meta.textContent)).toBe('Sans avis : erreur de l’agent au bout de 0:38')
     expect(meta.getAttribute('title')).toBe('Internal error: Model unavailable')
     fireEvent.click(within(row('C')).getByTestId('roundtable-relaunch'))
     expect(api.relaunch).toHaveBeenCalledWith('mother', 'rt1', 'C')
@@ -155,7 +155,7 @@ describe('recueil des avis', () => {
     )
     expect(row('A').textContent).toContain('Modèle non proposé par Agent A pour le moment.')
     expect(plain(within(row('B')).getByTestId('roundtable-row-meta').textContent)).toBe(
-      'En erreur : modèle non appliqué au bout de 0:30'
+      'Sans avis : modèle non appliqué au bout de 0:30'
     )
     expect(row('B').getAttribute('data-state')).toBe('error')
   })
@@ -198,14 +198,17 @@ describe('recueil des avis', () => {
     expect(within(row('B')).getByTestId('roundtable-changed').textContent).toContain(
       'a modifié des fichiers du dossier'
     )
-    // Forme courte sur la ligne, détail dans l'infobulle du bouclier.
-    expect(row('B').textContent).toContain('Lecture seule demandée')
-    expect(row('B').textContent).not.toContain('vérifiée dans le dépôt')
+    // « a modifié des fichiers » sur sa propre ligne, hors de la méta coupée (B14).
+    expect(
+      within(row('B'))
+        .getByTestId('roundtable-changed')
+        .closest('[data-testid=roundtable-row-meta]')
+    ).toBeNull()
+    // Le détail « vérifiée dans le dépôt seulement » dans l'infobulle du bouclier.
     expect(within(row('B')).getByTestId('roundtable-readonly').getAttribute('aria-label')).toBe(
       'Lecture seule demandée, vérifiée dans le dépôt seulement'
     )
-    // Lecture seule garantie : pas de texte sur la ligne, un bouclier discret.
-    expect(row('A').textContent).not.toContain('Lecture seule')
+    expect(row('B').textContent).not.toContain('Lecture seule')
   })
 
   it('fil en lecture seule (sans conversation) : aucun geste', () => {
@@ -227,13 +230,30 @@ it('les quatre niveaux de lecture seule, discrètement, avec leur nom en clair',
   const levels = ['enforced', 'native', 'unverified'] as const
   const seats = rt.seats.map((s, i) => ({ ...s, readOnly: levels[i] ?? ('requested' as const) }))
   show(thread({ ...rt, seats }))
+  // Niveaux différents : un bouclier par ligne, focalisable, le niveau en clair (A3).
   const marks = screen.getAllByTestId('roundtable-readonly')
   expect(marks.map((m) => [m.dataset.level, m.getAttribute('aria-label')])).toEqual([
     ['enforced', 'Lecture seule'],
     ['native', 'Lecture seule, tenue par le rôle Participant installé'],
     ['unverified', 'Lecture seule demandée, non vérifiée (dossier hors git)']
   ])
-  expect(row('C').textContent).toContain('non vérifiée (dossier hors git)')
+  expect(marks.every((m) => m.getAttribute('tabindex') === '0')).toBe(true)
+  // Pas répété en texte sur la ligne ; le pied dit la plus faible garantie, une fois.
+  expect(row('C').textContent).not.toContain('Lecture seule')
+  expect(screen.getByTestId('roundtable-foot-note').textContent).toContain(
+    'Lecture seule non vérifiée · chacun répond sans voir les autres'
+  )
+})
+
+it('une même lecture seule pour tous : dite une fois au pied, aucun bouclier par ligne', () => {
+  const rt = roundtable()
+  show(thread({ ...rt, seats: rt.seats.map((s) => ({ ...s, readOnly: 'requested' as const })) }))
+  expect(screen.queryAllByTestId('roundtable-readonly')).toHaveLength(0)
+  for (const letter of ['A', 'B', 'C'])
+    expect(row(letter).textContent).not.toContain('Lecture seule')
+  expect(screen.getByTestId('roundtable-foot-note').textContent).toContain(
+    'Lecture seule demandée · chacun répond'
+  )
 })
 
 describe('avis rendus et synthèse en cours', () => {
@@ -265,7 +285,9 @@ describe('avis rendus et synthèse en cours', () => {
     )
     fireEvent.click(within(row('A')).getByTestId('roundtable-row-toggle'))
     const open = within(row('A')).getByTestId('roundtable-row-open')
-    expect(open.querySelector('h2')?.textContent).toBe('Réponse courte')
+    // La réponse courte a servi au résumé : pas répétée dans l'avis déplié (B9).
+    expect(open.textContent).not.toContain('Réponse courte')
+    expect(open.querySelector('h2')?.textContent).toBe('Arguments')
     fireEvent.click(within(open).getByTestId('roundtable-open'))
     expect(subtasks?.onOpen).toHaveBeenCalledWith('child-A')
     fireEvent.click(within(row('B')).getByTestId('roundtable-row-toggle'))
@@ -310,7 +332,7 @@ describe('pas assez d’avis, arrêt, reprise', () => {
 
   it('arrêté : l’en-tête le dit, plus aucun geste', () => {
     show(thread(roundtable([answered('A'), { type: 'stop', at: T0 }]), OPINIONS))
-    expect(screen.getByTestId('roundtable-progress').textContent).toBe('tour de table arrêté')
+    expect(screen.getByTestId('roundtable-progress').textContent).toBe('arrêté')
     expect(row('B').textContent).toContain('Arrêté avec le tour de table')
     expect(screen.queryByTestId('roundtable-relaunch')).toBeNull()
   })
@@ -494,8 +516,16 @@ describe('synthèse', () => {
       expect(subtasks?.onAsk).toHaveBeenCalledWith('Applique ta recommandation du tour de table.')
     )
     expect(subtasks?.onAsk).toHaveBeenCalledTimes(1)
-    expect(within(actions).getByTestId('roundtable-rebut-cost').textContent).toBe(
+    // Le rappel, d'un tenant avec le bouton, en forme longue et courte (A4).
+    const cost = within(actions).getByTestId('roundtable-rebut-cost')
+    expect(cost.closest('.roundtable-rebut-group')).toBe(
+      within(actions).getByTestId('roundtable-rebut').parentElement
+    )
+    expect(cost.querySelector('.roundtable-hint-full')?.textContent).toBe(
       '≈ 4 fois les jetons d’une question simple'
+    )
+    expect(cost.querySelector('.roundtable-hint-short')?.textContent).toBe(
+      '≈ 4 fois plus de jetons'
     )
     fireEvent.click(within(actions).getByTestId('roundtable-rebut'))
     expect(api.rebuttal).toHaveBeenCalledWith('mother', 'rt1')
@@ -536,6 +566,93 @@ describe('synthèse', () => {
     show(synthesized(rt, 'Accords…'))
     expect(screen.queryByTestId('roundtable-actions')).toBeNull()
     expect(screen.getByTestId('roundtable-answer-label')).toBeTruthy()
+  })
+})
+
+describe('revue UX', () => {
+  it('B1 : sous 5 s, pas de « au bout de » ; le texte brut jamais sur la ligne', () => {
+    show(
+      thread(
+        roundtable([
+          answered('A'),
+          {
+            type: 'seat-failed',
+            letter: 'C',
+            error: 'agent-error',
+            detail: 'Internal error',
+            at: T0 + 1000
+          }
+        ]),
+        OPINIONS
+      )
+    )
+    const meta = within(row('C')).getByTestId('roundtable-row-meta')
+    expect(plain(meta.textContent)).toBe('Sans avis : erreur de l’agent')
+    expect(row('C').textContent).not.toContain('Internal error')
+  })
+
+  it('B3 : arrêté, un cercle barré (pas une case) ; arrêter une ligne, un bouton à infobulle', () => {
+    show(
+      thread(roundtable([{ type: 'seat-stopped', letter: 'A', reason: 'user', at: T0 }]), OPINIONS)
+    )
+    expect(
+      row('A').querySelector('.roundtable-state-icon[data-state=stopped] .lucide-circle-slash')
+    ).toBeTruthy()
+    const stop = within(row('B')).getByTestId('roundtable-stop-seat')
+    expect(stop.className).toContain('roundtable-stop-seat')
+    expect(stop.getAttribute('aria-label')).toBe('Arrêter GLM 5.3 Flash')
+  })
+
+  it('B15 : replié, les avis reçus et les absents', () => {
+    show(
+      synthesized(
+        roundtable([
+          answered('A'),
+          answered('B'),
+          failed('C'),
+          { type: 'step-sent', step: 'synthesis', at: T0 },
+          { type: 'step-answered', step: 'synthesis', at: T0 + 1 }
+        ]),
+        SYNTHESIS
+      )
+    )
+    expect(plain(screen.getByTestId('roundtable-progress').textContent)).toBe(
+      '2 avis · 1 sans avis'
+    )
+  })
+
+  it('B19 : après un redémarrage, le pied dit ce que fait le bouton', async () => {
+    const { settleRoundtable } = await import('@shared/roundtable')
+    show(thread(settleRoundtable(roundtable([answered('A')]), T0 + 1), OPINIONS))
+    expect(screen.getByTestId('roundtable-resume').textContent).toBe(
+      'Relancer les 2 participants arrêtés'
+    )
+  })
+
+  it('A6 : « Consommé », le détail par participant au survol et au focus', () => {
+    const subtasks = info({
+      children: [child('child-A', { usage: { total: 1200 } }), child('child-B'), child('child-C')]
+    })
+    show(thread(roundtable([answered('A'), answered('B'), answered('C')]), OPINIONS), subtasks)
+    const used = screen.getByTestId('roundtable-used')
+    expect(used.getAttribute('tabindex')).toBe('0')
+    expect(used.getAttribute('aria-description')).toBe(
+      'DeepSeek V4.1 Flash : 1,2k jetons\nGLM 5.3 Flash : —\nAgent B : —'
+    )
+  })
+
+  it('B8 : un tour de table posé après masque les actions du précédent', () => {
+    const items = synthesized(done(), SYNTHESIS)
+    const second = { ...roundtable(), roundtableId: 'rt2' }
+    show([...items, { kind: 'roundtable', id: 999, ...second }])
+    expect(screen.queryByTestId('roundtable-apply')).toBeNull()
+  })
+
+  it('A4 : « Faire réagir » garde sa place quand « Appliquer » disparaît', () => {
+    show(synthesized(done(), SYNTHESIS), info({ motherQueued: true }))
+    const actions = screen.getByTestId('roundtable-actions')
+    expect(actions.querySelector('.roundtable-apply-placeholder')).toBeTruthy()
+    expect(within(actions).getByTestId('roundtable-rebut')).toBeTruthy()
   })
 })
 

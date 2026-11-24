@@ -6273,7 +6273,8 @@
       "usage": "Write your question after /roundtable: several models answer it without seeing each other, then the conversation synthesizes their opinions.",
       "button": "Roundtable: ask several models the question",
       "tag": "Roundtable",
-      "close": "Back to a plain question"
+      "close": "Back to a plain question",
+      "running": "A roundtable is already running: wait for its synthesis."
     },
     "line": {
       "participants_one": "{{count}} participant",
@@ -6292,7 +6293,8 @@
       "sendsAll": "Each one gets the question, the attached files and the last exchange of this conversation.",
       "unknownAgent": "A removed agent",
       "byTo": "{{models}} · via {{agent}} · to {{destination}}",
-      "needTwo": "at least 2 needed"
+      "needTwo": "at least 2 needed",
+      "agentTo": "{{agent}} · to {{destination}}"
     },
     "cost": {
       "full": "≈ {{n}}× the tokens of a plain question",
@@ -6318,7 +6320,7 @@
       "waitingAgent": "synthesis waiting: the agent is responding",
       "held": "synthesis held: conversation cost cap reached",
       "interrupted": "interrupted by the app restart",
-      "stopped": "roundtable stopped",
+      "stopped": "stopped",
       "footer": "Read-only · each one answers without seeing the others",
       "footerShort": "Read-only",
       "synthesizeNow": "Synthesize now",
@@ -6341,10 +6343,14 @@
       "none": "No opinion: no synthesis.",
       "partial_one": "Synthesis with {{opinions}} opinions: one participant did not answer.",
       "partial_other": "Synthesis with {{opinions}} opinions: {{count}} participants did not answer.",
-      "resume": "Resume",
       "stopSeat": "Stop {{name}}",
       "attachments": "Attached files: {{files}}",
-      "withExchange": "With the last exchange of this conversation"
+      "withExchange": "With the last exchange of this conversation",
+      "footerLevel": "{{level}} · each one answers without seeing the others",
+      "noOpinions_one": "{{count}} without opinion",
+      "noOpinions_other": "{{count}} without opinion",
+      "relaunchStopped_one": "Run the stopped participant again",
+      "relaunchStopped_other": "Run the {{count}} stopped participants again"
     },
     "state": {
       "waiting": "waiting",
@@ -6378,6 +6384,14 @@
         "requested": "Read-only requested, checked in the repository only",
         "unverified": "Read-only requested, not verified (folder outside git)",
         "requestedShort": "Read-only requested"
+      },
+      "noOpinionBecause": "No opinion: {{reason}}",
+      "noOpinionAfter": "No opinion: {{reason}} after {{duration}}",
+      "readOnlyShort": {
+        "enforced": "Read-only",
+        "native": "Read-only (installed role)",
+        "requested": "Read-only requested",
+        "unverified": "Read-only not verified"
       }
     },
     "confidence": {

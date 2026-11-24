@@ -211,6 +211,8 @@ const fileMenuName = (workspace: string | undefined, discussion: boolean | undef
     : ((workspace === undefined ? undefined : lastSegment(workspace)) ?? '')
 
 const NO_USER_COMMANDS: UserCommand[] = []
+/** `/roundtable` hors du menu « / » : en Discussion, ou pendant un tour (fiche 285, B11). */
+const hideRoundtable = (props: Props) => !!props.discussion || !!props.roundtable?.running
 const NO_ROLES: readonly { name: string; label: string }[] = []
 const NO_AGENT_COMMANDS: AgentCommand[] = []
 
@@ -337,7 +339,7 @@ export function Composer(props: Props) {
   const canSend = view.canSendNow && hasContent
 
   const userCommands = props.userCommands ?? NO_USER_COMMANDS
-  const listed = useCommands(snapshot, userCommands, agentLabel, !!props.discussion)
+  const listed = useCommands(snapshot, userCommands, agentLabel, hideRoundtable(props))
   const { agentCommands, ownCommands, commands } = listed
   const commandMenu = useCommandMenu(text, commands)
 

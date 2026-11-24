@@ -21,7 +21,7 @@ import {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { RoundtableOptions } from '@shared/roundtable-ipc'
-import type { RoundtableChoice } from '@shared/roundtable'
+import { ROUNDTABLE_MAX_SEATS, type RoundtableChoice } from '@shared/roundtable'
 import { menuEntries, searchEntries, type MenuEntry } from './roundtable-view'
 
 export function RoundtableParticipants({
@@ -35,11 +35,39 @@ export function RoundtableParticipants({
 }) {
   const { t } = useTranslation()
   const id = useId()
-  const { main, others } = useMemo(() => menuEntries(options, choices), [options, choices])
+  // L'ordre des cases est figé à l'ouverture : rien ne glisse sous le pointeur pendant qu'on coche
+  // (A2) ; « récents d'abord » ne joue qu'à la réouverture. Cochées et désactivées suivent, elles.
+  const [atOpen] = useState(() => choices)
+  const { main, others } = useMemo(() => {
+    const layout = menuEntries(options, atOpen)
+    const now = new Map(
+      Object.values(menuEntries(options, choices))
+        .flat()
+        .map((e) => [e.key, e])
+    )
+    // Absente de l'état courant (retenu disparu décoché) : décochée, bornée comme les autres.
+    const live = (e: MenuEntry): MenuEntry => {
+      const current = now.get(e.key)
+      if (current) return current
+      const { disabled: _d, reason: _r, ...rest } = e
+      return choices.length >= ROUNDTABLE_MAX_SEATS
+        ? { ...rest, checked: false, disabled: 'full', reason: t('roundtable.menu.full') }
+        : { ...rest, checked: false }
+    }
+    return { main: layout.main.map(live), others: layout.others.map(live) }
+  }, [options, atOpen, choices, t])
   const [searching, setSearching] = useState(false)
   const [query, setQuery] = useState('')
-  const found = useMemo(() => searchEntries(others, query), [others, query])
-  const visible = searching ? [...main, ...found] : main
+  // La recherche filtre toute la liste (A2), au lieu d'ajouter des résultats en bas.
+  const visible = useMemo(
+    () =>
+      !searching
+        ? main
+        : query.trim()
+          ? searchEntries([...main, ...others], query)
+          : [...main, ...others],
+    [searching, query, main, others]
+  )
   const [active, setActive] = useState(0)
   const list = useRef<HTMLDivElement>(null)
   const input = useRef<HTMLInputElement>(null)
@@ -119,7 +147,7 @@ export function RoundtableParticipants({
               aria-disabled={entry.disabled ? true : undefined}
               aria-description={entry.reason}
               // Premier des autres modèles : un filet au-dessus (aucun séparateur dans la liste).
-              className={`menu-item roundtable-option${searching && index === main.length ? ' roundtable-first-other' : ''}`}
+              className={`menu-item roundtable-option${searching && !query.trim() && index === main.length ? ' roundtable-first-other' : ''}`}
               data-index={index}
               data-highlighted={index === active ? '' : undefined}
               data-disabled={entry.disabled ? '' : undefined}
@@ -144,7 +172,7 @@ export function RoundtableParticipants({
           </Fragment>
         ))}
       </div>
-      {searching && found.length === 0 && searchEntries(main, query).length === 0 && (
+      {searching && visible.length === 0 && (
         <div className="menu-item model-none" role="status" data-testid="roundtable-none">
           {t('modelMenu.none')}
         </div>
@@ -158,7 +186,7 @@ export function RoundtableParticipants({
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value)
-                setActive(main.length)
+                setActive(0)
               }}
               placeholder={t('roundtable.menu.search')}
               aria-label={t('roundtable.menu.search')}

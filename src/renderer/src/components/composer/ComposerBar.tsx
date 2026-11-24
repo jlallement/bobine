@@ -63,7 +63,7 @@ interface Props {
   onOpenUsage: (() => void) | undefined
   onRestart: () => void
   /** Tour de table (fiche 285) : le bouton qui fait passer la question en tour de table. */
-  roundtable?: { active: boolean; onToggle: () => void }
+  roundtable?: { active: boolean; blocked?: boolean; onToggle: () => void }
 }
 
 /**
@@ -122,13 +122,19 @@ export function ComposerBar(props: Props) {
             : {})}
         />
         {props.roundtable && (
-          <Tip label={t('roundtable.command.button')}>
+          <Tip
+            label={t(
+              props.roundtable.blocked ? 'roundtable.command.running' : 'roundtable.command.button'
+            )}
+          >
             <button
               type="button"
               className="chip icon-chip roundtable-toggle"
               aria-pressed={props.roundtable.active}
               aria-label={t('roundtable.command.button')}
-              onClick={props.roundtable.onToggle}
+              // Un tour en cours : désactivé, l'infobulle dit pourquoi (B11).
+              aria-disabled={props.roundtable.blocked || undefined}
+              onClick={props.roundtable.blocked ? undefined : props.roundtable.onToggle}
               data-testid="roundtable-toggle"
             >
               <RoundtableIcon size={16} />

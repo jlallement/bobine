@@ -27,6 +27,7 @@ import type { RoundtableGroupData } from '@shared/work-groups'
 import type { WorkCardData } from '@shared/role-request'
 import { ipcErrorText } from '../../ipc-errors'
 import { usePresentation } from '../../presentation'
+import { Tip } from '../common/Menus'
 import { useChildTools } from '../roles/RoleWork'
 import { RoundtableIcon } from '../roundtable/RoundtableIcon'
 import { RoundtableTag } from '../roundtable/RoundtableLine'
@@ -118,16 +119,22 @@ export function useRoundtableTotal(group: RoundtableGroupData, info: SubtasksInf
   const presenting = usePresentation()
   const { item } = group
   // Un participant encore au travail sans chiffre n'est pas « sans chiffre » : il n'a pas fini.
-  const digests = item.seats.flatMap((seat) => {
+  const perSeat = item.seats.map((seat) => {
     const work = group.works.get(seat.letter)
     const child = info?.children.find((c) => c.id === seat.childId)
     const digest = workUsage(work ? currentReport(work) : undefined, child)
-    const running = seat.state === 'working' || seat.state === 'waiting'
-    return running && !digest ? [] : [digest]
+    return { seat, digest, running: seat.state === 'working' || seat.state === 'waiting' }
   })
+  const digests = perSeat.flatMap((p) => (p.running && !p.digest ? [] : [p.digest]))
   const total = roundtableTotal(digests, [item.synthesis?.usage, item.verdict?.usage])
+  // Détail au survol et au focus : une ligne par participant (A6), ce qu'il a communiqué.
+  const detail = perSeat
+    .map(
+      (p) => `${seatLabel(p.seat)} : ${(p.digest && totalText(roundtableTotal([p.digest]))) || '—'}`
+    )
+    .join('\n')
   // Mode présentation (fiche 159) : aucun montant.
-  return presenting ? undefined : totalText(total)
+  return presenting ? undefined : { text: totalText(total), detail }
 }
 
 /** Bulle de la question, avec l'étiquette « Tour de table » (maquette `carte-en-cours`). */
@@ -153,6 +160,25 @@ function RoundtableBubble({ group }: { group: RoundtableGroupData }) {
   )
 }
 
+/** Pied « Consommé » : une ligne, le détail par participant au survol et au focus (A6). */
+export function UsedLine({
+  label,
+  detail,
+  testId = 'roundtable-used'
+}: {
+  label: string
+  detail: string
+  testId?: string
+}) {
+  return (
+    <Tip label={detail} className="roundtable-used-tip">
+      <div className="roundtable-used" tabIndex={0} data-testid={testId} aria-description={detail}>
+        {label}
+      </div>
+    </Tip>
+  )
+}
+
 /** La bulle, puis la carte, ensemble (comme une bulle « @Rôle » et sa carte). */
 export function RoundtableEntry({
   group,
@@ -175,6 +201,17 @@ export function RoundtableEntry({
  */
 const attachmentsLost = (item: RoundtableGroupData['item']) =>
   item.phase === 'interrupted' && !!item.attachments?.length
+
+/**
+ * La lecture seule du tour, dite une fois au pied (A3) : celle de tous les participants, sinon la
+ * plus faible garantie quand elles diffèrent (le bouclier de chaque ligne détaille).
+ */
+function readOnlyLevel(item: RoundtableGroupData['item']): string {
+  const levels = new Set(item.seats.map((s) => s.readOnly).filter(Boolean))
+  const order = ['unverified', 'requested', 'native', 'enforced'] as const
+  const weakest = order.find((l) => levels.has(l)) ?? 'enforced'
+  return i18next.t(`roundtable.state.readOnlyShort.${weakest}`)
+}
 
 /** La synthèse est rendue (ou la réplique a commencé) : la carte se replie en une ligne. */
 const settled = (phase: string) =>
@@ -204,8 +241,12 @@ function useProgress(group: RoundtableGroupData): string {
       return t('roundtable.card.stopped')
     case 'interrupted':
       return t('roundtable.card.interrupted')
-    default:
-      return t('roundtable.card.opinions', { count: opinions })
+    default: {
+      // Repliée : les avis reçus, et les absents s'il y en a (B15).
+      const absent = total - opinions
+      const head = t('roundtable.card.opinions', { count: opinions })
+      return absent > 0 ? `${head} · ${t('roundtable.card.noOpinions', { count: absent })}` : head
+    }
   }
 }
 
@@ -230,6 +271,8 @@ export function RoundtableCard({
   const working = item.seats.filter((s) => s.state === 'working' || s.state === 'waiting')
   const activity = useChildTools(working.flatMap((s) => (s.childId ? [s.childId] : [])))
   const names = listText(item.seats.map(seatLabel))
+  // Une seule lecture seule pour tous : dite au pied ; sinon, le bouclier de chacun (A3).
+  const mixed = new Set(item.seats.map((s) => s.readOnly).filter(Boolean)).size > 1
   return (
     <div
       className="work-group roundtable-card"
@@ -282,16 +325,15 @@ export function RoundtableCard({
               onToggle={() => setOpenLetter((l) => (l === seat.letter ? undefined : seat.letter))}
               gestures={gestures}
               pending={pending}
+              shield={mixed}
             />
           ))}
         </div>
       )}
       {!collapsed && <RoundtableFoot group={group} gestures={gestures} pending={pending} />}
       <GestureRefusal text={refusal} />
-      {used && !rebutted && (
-        <div className="roundtable-used" data-testid="roundtable-used">
-          {t('roundtable.card.used', { total: used })}
-        </div>
+      {used?.text && !rebutted && (
+        <UsedLine label={t('roundtable.card.used', { total: used.text })} detail={used.detail} />
       )}
     </div>
   )
@@ -306,7 +348,8 @@ function SeatRow({
   open,
   onToggle,
   gestures,
-  pending
+  pending,
+  shield
 }: {
   seat: RoundtableSeat
   group: RoundtableGroupData
@@ -317,6 +360,7 @@ function SeatRow({
   onToggle: () => void
   gestures: ReturnType<typeof useRoundtableGestures>['gestures']
   pending: ReadonlySet<string>
+  shield: boolean
 }) {
   const { item } = group
   const child = info?.children.find((c) => c.id === seat.childId)
@@ -331,6 +375,7 @@ function SeatRow({
   return (
     <RoundtableRow
       seat={seat}
+      shield={shield}
       report={opinion}
       child={child}
       activity={activity}
@@ -376,9 +421,11 @@ function RoundtableFoot({
   if (item.phase === 'collecting') {
     return (
       <div className="work-group-foot roundtable-foot" data-testid="roundtable-foot">
-        <span className="roundtable-foot-note">
-          <span className="roundtable-foot-full">{t('roundtable.card.footer')}</span>
-          <span className="roundtable-foot-short">{t('roundtable.card.footerShort')}</span>
+        <span className="roundtable-foot-note" data-testid="roundtable-foot-note">
+          <span className="roundtable-foot-full">
+            {t('roundtable.card.footerLevel', { level: readOnlyLevel(item) })}
+          </span>
+          <span className="roundtable-foot-short">{readOnlyLevel(item)}</span>
         </span>
         <span className="grow" />
         {synthesize && (
@@ -453,7 +500,9 @@ function RoundtableFoot({
             disabled={[...pending].some((k) => k.startsWith('relaunch-'))}
             data-testid="roundtable-resume"
           >
-            {t('roundtable.card.resume')}
+            {t('roundtable.card.relaunchStopped', {
+              count: item.seats.filter((s) => canRelaunch(item, s.letter)).length
+            })}
           </button>
         )}
       </div>

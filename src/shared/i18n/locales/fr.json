@@ -6550,7 +6550,8 @@
       "usage": "Écrivez après /roundtable votre question : plusieurs modèles y répondent sans se voir, puis la conversation en fait la synthèse.",
       "button": "Tour de table : poser la question à plusieurs modèles",
       "tag": "Tour de table",
-      "close": "Revenir à une question simple"
+      "close": "Revenir à une question simple",
+      "running": "Un tour de table est déjà en cours : attendez sa synthèse."
     },
     "line": {
       "participants_one": "{{count}} participant",
@@ -6571,7 +6572,8 @@
       "sendsAll": "Chacun reçoit la question, les fichiers joints et le dernier échange de cette conversation.",
       "unknownAgent": "Un agent retiré",
       "byTo": "{{models}} · par {{agent}} · vers {{destination}}",
-      "needTwo": "il en faut au moins 2"
+      "needTwo": "il en faut au moins 2",
+      "agentTo": "{{agent}} · vers {{destination}}"
     },
     "cost": {
       "full": "≈ {{n}} fois les jetons d’une question simple",
@@ -6599,7 +6601,7 @@
       "waitingAgent": "synthèse en attente : l’agent répond",
       "held": "synthèse retenue : plafond de la conversation atteint",
       "interrupted": "interrompu par le redémarrage de l’app",
-      "stopped": "tour de table arrêté",
+      "stopped": "arrêté",
       "footer": "Lecture seule · chacun répond sans voir les autres",
       "footerShort": "Lecture seule",
       "synthesizeNow": "Synthétiser sans attendre",
@@ -6625,10 +6627,16 @@
       "partial_one": "Synthèse avec {{opinions}} avis : un participant n’a pas répondu.",
       "partial_many": "Synthèse avec {{opinions}} avis : {{count}} participants n’ont pas répondu.",
       "partial_other": "Synthèse avec {{opinions}} avis : {{count}} participants n’ont pas répondu.",
-      "resume": "Reprendre",
       "stopSeat": "Arrêter {{name}}",
       "attachments": "Fichiers joints : {{files}}",
-      "withExchange": "Avec le dernier échange de cette conversation"
+      "withExchange": "Avec le dernier échange de cette conversation",
+      "footerLevel": "{{level}} · chacun répond sans voir les autres",
+      "noOpinions_one": "{{count}} sans avis",
+      "noOpinions_many": "{{count}} sans avis",
+      "noOpinions_other": "{{count}} sans avis",
+      "relaunchStopped_one": "Relancer le participant arrêté",
+      "relaunchStopped_many": "Relancer les {{count}} participants arrêtés",
+      "relaunchStopped_other": "Relancer les {{count}} participants arrêtés"
     },
     "state": {
       "waiting": "en attente",
@@ -6662,6 +6670,14 @@
         "requested": "Lecture seule demandée, vérifiée dans le dépôt seulement",
         "unverified": "Lecture seule demandée, non vérifiée (dossier hors git)",
         "requestedShort": "Lecture seule demandée"
+      },
+      "noOpinionBecause": "Sans avis : {{reason}}",
+      "noOpinionAfter": "Sans avis : {{reason}} au bout de {{duration}}",
+      "readOnlyShort": {
+        "enforced": "Lecture seule",
+        "native": "Lecture seule (rôle installé)",
+        "requested": "Lecture seule demandée",
+        "unverified": "Lecture seule non vérifiée"
       }
     },
     "confidence": {

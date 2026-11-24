@@ -39,6 +39,8 @@ export interface AppCommandContext {
   summary: ConversationSummary | null
   snapshot: AgentSnapshot | null
   usage: ConversationUsage | undefined
+  /** Un tour de table est en cours dans cette conversation (fiche 285). */
+  roundtableRunning?: boolean
 }
 
 /** Ce qui fait les actions (la conversation active : `useConversations`). */
@@ -81,7 +83,7 @@ function choose(
 export function appCommandActions(
   name: AppCommandName,
   args: string,
-  { summary, snapshot, usage }: AppCommandContext
+  { summary, snapshot, usage, roundtableRunning }: AppCommandContext
 ): AppCommandAction[] {
   const agent = snapshot?.info.agentName ?? snapshot?.info.profileLabel ?? i18next.t('app.theAgent')
   switch (name) {
@@ -131,9 +133,11 @@ export function appCommandActions(
         i18next.t(
           summary?.space === 'discussion'
             ? 'roundtable.error.discussion'
-            : summary?.startedFrom
-              ? 'roundtable.error.task'
-              : 'roundtable.command.usage'
+            : roundtableRunning
+              ? 'roundtable.command.running'
+              : summary?.startedFrom
+                ? 'roundtable.error.task'
+                : 'roundtable.command.usage'
         )
       )
     case 'help':

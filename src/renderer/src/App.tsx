@@ -1,4 +1,5 @@
 import { useContinueInProject } from './components/discussion/ContinueInProjectDialog'
+import { roundtableInProgress } from './components/roundtable/roundtable-view'
 import { useSpace } from './useSpace'
 import { onSettingsRequest } from './open-settings'
 import * as Tooltip from '@radix-ui/react-tooltip'
@@ -274,13 +275,16 @@ export function App() {
     !!c.activeId && c.attention[c.activeId] === 'request'
   )
 
+  // Un tour de table en cours dans cette conversation : pas de second (fiche 285, B11).
+  const roundtableBusy = roundtableInProgress(transcript.items)
   /** Commandes « / » de l'app (fiche 039) : traitées ici, rien d'autre n'est envoyé à l'agent. */
   const runAppCommand = (name: AppCommandName, args: string) =>
     applyAppCommand(
       appCommandActions(name, args, {
         summary: c.activeSummary,
         snapshot,
-        usage: transcript.usage
+        usage: transcript.usage,
+        roundtableRunning: roundtableBusy
       }),
       { ...c, aside: startAside }
     )
@@ -353,6 +357,7 @@ export function App() {
       // Tour de table (fiche 285) : le dernier choix du menu des participants, retenu à chaque case.
       roundtable={{
         participants: c.settings?.preferences.roundtableParticipants ?? [],
+        running: roundtableBusy,
         setParticipants: (roundtableParticipants) => c.setPreferences({ roundtableParticipants })
       }}
       composerInbox={composerInbox}

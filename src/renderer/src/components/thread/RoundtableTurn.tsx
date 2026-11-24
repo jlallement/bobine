@@ -34,6 +34,7 @@ import { MessageTime } from './MessageTime'
 import {
   GestureRefusal,
   RoundtableEntry,
+  UsedLine,
   useRoundtableGestures,
   useRoundtableTotal
 } from './RoundtableCard'
@@ -122,10 +123,12 @@ function RebuttalCard({
           )
         })}
       </div>
-      {used && (
-        <div className="roundtable-used" data-testid="roundtable-used-all">
-          {t('roundtable.card.usedAll', { total: used })}
-        </div>
+      {used?.text && (
+        <UsedLine
+          label={t('roundtable.card.usedAll', { total: used.text })}
+          detail={used.detail}
+          testId="roundtable-used-all"
+        />
       )}
     </div>
   )
@@ -178,8 +181,17 @@ function RoundtableActions({
           {t('roundtable.synthesis.apply', { agent: item.synthesizer.label })}
         </button>
       )}
+      {!onAsk && rebut && (
+        // Place gardée : « Faire réagir » ne glisse pas quand « Appliquer » disparaît (A4).
+        <span className="btn small primary roundtable-apply-placeholder" aria-hidden>
+          <Pencil size={13} aria-hidden />
+          {t('roundtable.synthesis.apply', { agent: item.synthesizer.label })}
+        </span>
+      )}
       {rebut && (
-        <>
+        // Le bouton et son rappel d'un tenant : le rappel reste à droite du bouton, et passe à la
+        // ligne avec lui (A4).
+        <span className="roundtable-rebut-group">
           <button
             type="button"
             className="btn small"
@@ -191,9 +203,14 @@ function RoundtableActions({
             {t('roundtable.rebuttal.action')}
           </button>
           <span className="roundtable-actions-hint" data-testid="roundtable-rebut-cost">
-            {t('roundtable.cost.full', { n: rebuttalMultiplier(item) })}
+            <span className="roundtable-hint-full">
+              {t('roundtable.cost.full', { n: rebuttalMultiplier(item) })}
+            </span>
+            <span className="roundtable-hint-short">
+              {t('roundtable.cost.short', { n: rebuttalMultiplier(item) })}
+            </span>
           </span>
-        </>
+        </span>
       )}
     </div>
   )
@@ -278,7 +295,10 @@ export function useRoundtableThread(
     () => new Map(JSON.parse(lettersKey) as [string, Record<string, string>][]),
     [lettersKey]
   )
-  const lastUser = items.findLast((i) => i.kind === 'user' && !i.from)?.id
+  // Un message de l'utilisateur, ou un tour de table posé après (sa bulle en est un, B8).
+  const lastUser = items.findLast(
+    (i) => (i.kind === 'user' && !i.from) || i.kind === 'roundtable'
+  )?.id
   return {
     /** Élément propre au tour de table : son rendu ; sinon `undefined` (rendu ordinaire). */
     entry: (item: TranscriptItem): ReactNode | undefined => {

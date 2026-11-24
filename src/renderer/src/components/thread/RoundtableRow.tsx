@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronRight,
   CircleCheck,
+  CircleSlash,
   CircleX,
   LoaderCircle,
   ShieldAlert,
@@ -35,7 +36,14 @@ import type {
   RoundtableStopReason
 } from '@shared/roundtable'
 import type { ChildTool } from '../roles/RoleWork'
-import { rebuttalSummary, reportText, seatElapsed, seatLabel } from '../roundtable/roundtable-view'
+import {
+  rebuttalSummary,
+  reportText,
+  seatElapsed,
+  seatLabel,
+  withoutShortAnswer
+} from '../roundtable/roundtable-view'
+import { Tip } from '../common/Menus'
 import { FoldedAnswer } from './WorkAnswer'
 import { RowActivity } from './WorkGroupRow'
 import { elapsedText, useNow } from './WorkCard'
@@ -109,7 +117,8 @@ function StateIcon({ state }: { state: IconState }) {
     ) : state === 'error' ? (
       <CircleX {...props} />
     ) : (
-      <Square {...props} size={14} />
+      // Arrêté : un cercle barré, jamais une case à cocher (B3).
+      <CircleSlash {...props} />
     )
   return (
     <span className="roundtable-state-icon" data-state={state}>
@@ -148,21 +157,11 @@ function useSeatTrouble() {
     // infobulle (`title` de la ligne).
     const reason = t(REASON_KEYS[seat.error ?? 'agent-error'])
     const ms = seatElapsed(seat, now)
-    return ms !== undefined && ms >= 1000
-      ? t('roundtable.state.errorAfter', { reason, duration: elapsedText(ms) })
-      : t('roundtable.state.error', { reason })
+    // « au bout de » seulement quand la durée dit quelque chose (5 s et plus, B1).
+    return ms !== undefined && ms >= 5000
+      ? t('roundtable.state.noOpinionAfter', { reason, duration: elapsedText(ms) })
+      : t('roundtable.state.noOpinionBecause', { reason })
   }
-}
-
-/** Lecture seule seulement demandée, non vérifiée, ou tenue par le rôle : dite, discrètement. */
-function readOnlyNote(seat: RoundtableSeat): string | undefined {
-  if (!seat.readOnly || seat.readOnly === 'enforced') return undefined
-  // Sur la ligne, la forme courte ; le détail est dans l'infobulle du bouclier.
-  return i18next.t(
-    seat.readOnly === 'requested'
-      ? 'roundtable.state.readOnly.requestedShort'
-      : READ_ONLY_KEYS[seat.readOnly]
-  )
 }
 
 /** Sous le nom : ce qu'il fait, ce qui l'a empêché, ou sa réponse courte ; puis les marques. */
@@ -190,15 +189,7 @@ function seatMeta(
     )
   } else if (c.trouble) meta.push(c.trouble)
   else if (c.digest?.short) meta.push(c.digest.short)
-  const note = readOnlyNote(seat)
-  if (note && (c.running || seat.state === 'answered')) meta.push(note)
-  if (seat.changedFolder) {
-    meta.push(
-      <span className="roundtable-row-mark" data-testid="roundtable-changed">
-        <TriangleAlert size={12} aria-hidden /> {t('roundtable.state.changedFolder')}
-      </span>
-    )
-  }
+  // La lecture seule est dite une fois, au pied de la carte (A3) ; le dossier modifié a sa ligne.
   return meta
 }
 
@@ -256,9 +247,12 @@ export function RoundtableRow({
   collecting,
   open,
   onToggle,
-  actions
+  actions,
+  shield = false
 }: {
   seat: RoundtableSeat
+  /** Les participants n'ont pas tous la même lecture seule : le bouclier de chacun (A3). */
+  shield?: boolean
   /** Son avis, une fois rendu. */
   report: Report | undefined
   child: ConversationSummary | undefined
@@ -292,14 +286,23 @@ export function RoundtableRow({
       meta={meta.length > 0 ? <Dotted parts={meta} /> : undefined}
       wrap={!!trouble}
       {...(seat.state === 'error' && seat.detail ? { detail: seat.detail } : {})}
+      mark={seat.changedFolder}
       side={
         <>
           {side.length > 0 && <Dotted parts={side} />}
-          <ReadOnlyMark seat={seat} />
+          {shield && <ReadOnlyMark seat={seat} />}
           <RowButtons seat={seat} actions={actions} />
         </>
       }
-      body={text && <OpenAnswer text={text} onOpen={actions.open} />}
+      // La réponse courte a servi au résumé de la ligne : pas répétée dans l'avis déplié (B9).
+      body={
+        text && (
+          <OpenAnswer
+            text={digest?.short ? withoutShortAnswer(text) : text}
+            onOpen={actions.open}
+          />
+        )
+      }
     />
   )
 }
@@ -337,16 +340,19 @@ function ReadOnlyMark({ seat }: { seat: RoundtableSeat }) {
   const label = i18next.t(READ_ONLY_KEYS[level])
   const Icon = level === 'enforced' || level === 'native' ? ShieldCheck : ShieldAlert
   return (
-    <span
-      className="roundtable-readonly"
-      role="img"
-      aria-label={label}
-      title={label}
-      data-level={level}
-      data-testid="roundtable-readonly"
-    >
-      <Icon size={13} aria-hidden />
-    </span>
+    <Tip label={label}>
+      <span
+        className="roundtable-readonly"
+        role="img"
+        aria-label={label}
+        // Focalisable : le niveau se lit au clavier (A3).
+        tabIndex={0}
+        data-level={level}
+        data-testid="roundtable-readonly"
+      >
+        <Icon size={13} aria-hidden />
+      </span>
+    </Tip>
   )
 }
 
@@ -368,17 +374,18 @@ function RowButtons({ seat, actions }: { seat: RoundtableSeat; actions: RowActio
         </button>
       )}
       {actions.stop && (
-        <button
-          type="button"
-          className="icon-button small"
-          aria-label={t('roundtable.card.stopSeat', { name: seatLabel(seat) })}
-          title={t('roundtable.card.stop')}
-          onClick={actions.stop}
-          disabled={actions.busy}
-          data-testid="roundtable-stop-seat"
-        >
-          <Square size={11} aria-hidden />
-        </button>
+        <Tip label={t('roundtable.card.stopSeat', { name: seatLabel(seat) })}>
+          <button
+            type="button"
+            className="icon-button roundtable-stop-seat"
+            aria-label={t('roundtable.card.stopSeat', { name: seatLabel(seat) })}
+            onClick={actions.stop}
+            disabled={actions.busy}
+            data-testid="roundtable-stop-seat"
+          >
+            <Square size={11} aria-hidden />
+          </button>
+        </Tip>
       )}
       {actions.otherModel ? (
         <button
@@ -459,22 +466,14 @@ export function RebuttalRow({
       onToggle={onToggle}
       lead={done ? undefined : <StateIcon state={iconOf(asRow)} />}
       meta={
-        <Dotted
-          parts={[
-            running && activity ? (
-              <RowActivity activity={activity} workspace={child?.workspace} />
-            ) : (
-              meta
-            ),
-            // Le dossier a changé pendant la réplique (celle de l'avis est sur la carte des avis).
-            rebuttal.changedFolder && (
-              <span className="roundtable-row-mark" data-testid="roundtable-changed">
-                <TriangleAlert size={12} aria-hidden /> {t('roundtable.state.changedFolder')}
-              </span>
-            )
-          ].filter(Boolean)}
-        />
+        running && activity ? (
+          <RowActivity activity={activity} workspace={child?.workspace} />
+        ) : (
+          meta || undefined
+        )
       }
+      // Le dossier a changé pendant la réplique (celle de l'avis est sur la carte des avis).
+      mark={rebuttal.changedFolder}
       wrap={false}
       side={rebuttal.stance ? t(STANCE_KEYS[rebuttal.stance]) : undefined}
       body={done && text && <OpenAnswer text={text} onOpen={onOpen} />}
@@ -498,6 +497,7 @@ function RoundtableRowFrame({
   meta,
   wrap,
   detail,
+  mark,
   side,
   body
 }: {
@@ -515,6 +515,8 @@ function RoundtableRowFrame({
   wrap: boolean
   /** Texte brut d'une erreur, en infobulle de la méta (la ligne dit la raison traduite). */
   detail?: string
+  /** Le dossier a changé pendant ce tour : une ligne à elle, jamais coupée (B14). */
+  mark?: boolean | undefined
   side: ReactNode
   body: ReactNode
 }) {
@@ -529,6 +531,11 @@ function RoundtableRowFrame({
           {...(detail ? { title: detail } : {})}
         >
           {meta}
+        </span>
+      )}
+      {mark && (
+        <span className="roundtable-row-mark" data-testid="roundtable-changed">
+          <TriangleAlert size={12} aria-hidden /> {i18next.t('roundtable.state.changedFolder')}
         </span>
       )}
     </span>

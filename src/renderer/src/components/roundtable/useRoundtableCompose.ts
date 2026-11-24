@@ -17,7 +17,13 @@ import { toggleChoice, type RoundtableChoice } from '@shared/roundtable'
 import type { RoundtableOptions, RoundtableStartResult } from '@shared/roundtable-ipc'
 import { saveDraft } from '../../drafts'
 import { ipcErrorText } from '../../ipc-errors'
-import { enterAction, lineState, type LineState, type MenuEntry } from './roundtable-view'
+import {
+  enterAction,
+  inMenuOrder,
+  lineState,
+  type LineState,
+  type MenuEntry
+} from './roundtable-view'
 import { onRoundtableMenuRequest } from './roundtable-menu-request'
 
 /** Ce que l'app donne à la saisie pour le tour de table (absent : pas de tour de table ici). */
@@ -26,9 +32,13 @@ export interface ComposerRoundtable {
   participants: readonly RoundtableChoice[]
   /** Retient un nouveau choix (préférence de l'app, pour ce tour et les suivants). */
   setParticipants: (choices: RoundtableChoice[]) => void
+  /** Un tour est en cours ici : ni bouton ni `/roundtable` jusqu'à sa synthèse (B11). */
+  running?: boolean
 }
 
 const COMMAND = /^\/roundtable\s/
+/** Un Échap qui suit la fermeture du menu de moins que ça est celui du menu (B10). */
+const ESCAPE_AFTER_MENU_MS = 500
 
 /** Texte d'un refus du main : ce qui empêche le tour de partir, dit en clair. */
 export function refusalText(result: Extract<RoundtableStartResult, { ok: false }>): string {
@@ -62,7 +72,13 @@ export function useRoundtableCompose({
 }) {
   const usable = enabled && !!config && !!conversationId
   const [active, setActive] = useState(startActive && usable)
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [menuOpen, setMenuOpenState] = useState(false)
+  // Fermeture du menu : un second Échap tout de suite après ne retire pas le mode (B10).
+  const closedAt = useRef(0)
+  const setMenuOpen = useCallback((open: boolean) => {
+    if (!open) closedAt.current = Date.now()
+    setMenuOpenState(open)
+  }, [])
   const [options, setOptions] = useState<RoundtableOptions | undefined>()
   // Choix fait ici, en attendant que la préférence revienne du main.
   const [local, setLocal] = useState<RoundtableChoice[] | undefined>()
@@ -104,7 +120,7 @@ export function useRoundtableCompose({
     setActive(false)
     setMenuOpen(false)
     setRefusal(undefined)
-  }, [])
+  }, [setMenuOpen])
 
   // « Choisir un autre modèle » d'une carte du fil : la saisie passe en tour de table, menu ouvert.
   // Sans tour possible ici (Discussion, commande prise par l'agent), le menu ne s'arme pas.
@@ -119,7 +135,7 @@ export function useRoundtableCompose({
         latest.current.enter()
         setMenuOpen(true)
       }),
-    []
+    [setMenuOpen]
   )
 
   const state: LineState = useMemo(
@@ -152,7 +168,7 @@ export function useRoundtableCompose({
    * et garde le reste comme question. `undefined` : le texte n'est pas pour le tour de table.
    */
   const fromCommand = (value: string): string | undefined => {
-    if (!usable || !COMMAND.test(value)) return undefined
+    if (!usable || config?.running || !COMMAND.test(value)) return undefined
     enter()
     return value.replace(COMMAND, '')
   }
@@ -176,7 +192,8 @@ export function useRoundtableCompose({
     try {
       const result = await window.api.roundtable.start(conversationId, {
         question: question.trim(),
-        participants: [...choices],
+        // L'ordre des cases du menu, pas celui des clics : la carte le garde (B16).
+        participants: inMenuOrder(choices, options),
         ...(attachments.length ? { attachments } : {})
       })
       if (!result.ok) {
@@ -203,6 +220,12 @@ export function useRoundtableCompose({
     enter,
     exit,
     toggleMode: () => (active ? exit() : enter()),
+    /** Échap dans la saisie : retire le mode, sauf juste après la fermeture du menu (B10). */
+    escape: () => {
+      if (Date.now() - closedAt.current < ESCAPE_AFTER_MENU_MS) return
+      exit()
+    },
+    blocked: !!config?.running,
     menuOpen,
     setMenuOpen,
     options,
@@ -298,6 +321,7 @@ export function useComposerRoundtable(
       ? {
           roundtable: {
             active: rt.active,
+            blocked: rt.blocked && !rt.active,
             onToggle: () => {
               rt.toggleMode()
               c.focusInput()

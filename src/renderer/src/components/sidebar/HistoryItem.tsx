@@ -1,4 +1,6 @@
 import * as Dropdown from '@radix-ui/react-dropdown-menu'
+import { ROUNDTABLE_PARTICIPANT_ROLE } from '@shared/roundtable'
+import { RoundtableIcon } from '../roundtable/RoundtableIcon'
 import { CalendarClock, Ellipsis, GitFork, Bookmark } from 'lucide-react'
 import { useEffect, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -181,13 +183,20 @@ export function HistoryItem({
           )}
           <span className="row-main">
             <span className="row-title">
-              {conversation.role && (
-                <RoleAvatar
-                  role={conversation.role}
-                  size={18}
-                  className="history-role"
-                  testId="history-role"
-                />
+              {conversation.role?.name === ROUNDTABLE_PARTICIPANT_ROLE ? (
+                // Participant d'un tour de table : l'icône du tour (fiche 285, B2).
+                <span className="history-role history-roundtable" data-testid="history-roundtable">
+                  <RoundtableIcon size={14} />
+                </span>
+              ) : (
+                conversation.role && (
+                  <RoleAvatar
+                    role={conversation.role}
+                    size={18}
+                    className="history-role"
+                    testId="history-role"
+                  />
+                )
               )}
               <span className="label">{label}</span>
               {isBranch && (

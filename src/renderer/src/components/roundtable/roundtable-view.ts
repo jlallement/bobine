@@ -11,6 +11,8 @@ import { currentLocale } from '@shared/i18n/format'
 import { shortModelName } from '@shared/models'
 import {
   choiceKey,
+  lastRoundtable,
+  roundtableRunning,
   missingSlots,
   ROUNDTABLE_MAX_SEATS,
   ROUNDTABLE_MIN_SEATS,
@@ -148,7 +150,8 @@ export function participantGroups(
   const groups: ParticipantGroup[] = []
   for (const choice of choices) {
     const agent = options?.agents.find((a) => a.profileId === choice.profileId)
-    const name = agent?.label ?? choice.profileId
+    // Jamais un identifiant brut : le nom de l'agent, sinon le libellé générique.
+    const name = agent?.label ?? i18next.t('roundtable.line.unknownAgent')
     let group = groups.find((g) => g.agent === name)
     if (!group) {
       group = { agent: name, models: [], destinations: [] }
@@ -160,6 +163,41 @@ export function participantGroups(
       group.destinations.push(destination)
   }
   return groups
+}
+
+/** Un agent sans choix de modèle : son nom seul, jamais « X · par X ». */
+export const agentOnly = (group: ParticipantGroup): boolean =>
+  group.models.length === 1 && group.models[0] === group.agent
+
+/**
+ * Participants dans l'ordre du menu (B16) : la carte garde l'ordre des cases, pas celui des clics.
+ * Un retenu absent du menu (agent retiré) garde sa place relative, à la fin.
+ */
+export function inMenuOrder(
+  choices: readonly RoundtableChoice[],
+  options: RoundtableOptions | undefined
+): RoundtableChoice[] {
+  const { main, others } = menuEntries(options, choices)
+  const order = new Map([...main, ...others].map((e, i) => [e.key, i]))
+  return [...choices].sort(
+    (a, b) =>
+      (order.get(choiceKey(a)) ?? Number.MAX_SAFE_INTEGER) -
+      (order.get(choiceKey(b)) ?? Number.MAX_SAFE_INTEGER)
+  )
+}
+
+/**
+ * L'avis déplié sans sa rubrique « Réponse courte », quand elle a déjà servi au résumé de la ligne
+ * (B9). Seule la première rubrique de ce nom part, jusqu'au titre suivant.
+ */
+export function withoutShortAnswer(text: string): string {
+  const lines = text.split('\n')
+  const heading = (l: string) => /^\s*(#{1,6}\s|\*\*|\d+[.)]\s)/.test(l)
+  const start = lines.findIndex((l) => heading(l) && /(réponse courte|short answer)/iu.test(l))
+  if (start === -1) return text
+  let end = start + 1
+  while (end < lines.length && !heading(lines[end] ?? '')) end++
+  return [...lines.slice(0, start), ...lines.slice(end)].join('\n').trim()
 }
 
 /** « A et B », « A, B et C » dans la langue de l'interface. */
@@ -470,3 +508,9 @@ const TURN_BREAKS: ReadonlySet<TranscriptItem['kind']> = new Set([
   'role-request',
   'handover'
 ])
+
+/** Un tour de table de ce fil est-il en cours (un second est alors refusé, B11) ? */
+export function roundtableInProgress(items: readonly TranscriptItem[]): boolean {
+  const last = lastRoundtable(items)
+  return !!last && roundtableRunning(last)
+}

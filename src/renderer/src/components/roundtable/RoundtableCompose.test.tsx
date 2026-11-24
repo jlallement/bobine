@@ -426,6 +426,88 @@ describe('relecture : clavier, focus, envoi lent, brouillon, Discussion', () => 
   })
 })
 
+describe('revue UX : saisie et menu', () => {
+  const openMenu = async () => {
+    fireEvent.click(screen.getByTestId('roundtable-participants'))
+    const menu = await screen.findByTestId('roundtable-menu')
+    await waitFor(() => expect(within(menu).getAllByRole('option').length).toBeGreaterThan(0))
+    return menu
+  }
+  const names = (menu: HTMLElement) =>
+    within(menu)
+      .getAllByRole('option')
+      .map((o) => o.querySelector('.roundtable-option-name')?.textContent)
+
+  it('A2 : l’ordre des cases ne change pas pendant que le menu est ouvert', async () => {
+    const t = setup([deep, b])
+    t.type('/roundtable Q')
+    const menu = await openMenu()
+    fireEvent.click(within(menu).getByTestId('roundtable-others'))
+    await within(menu).findByTestId('roundtable-search')
+    const before = names(menu)
+    const qwen = within(menu)
+      .getAllByRole('option')
+      .find((o) => o.textContent?.includes('Qwen')) as HTMLElement
+    fireEvent.click(qwen)
+    expect(names(menu)).toEqual(before)
+  })
+
+  it('A2 : la recherche filtre toute la liste', async () => {
+    const t = setup([deep, b])
+    t.type('/roundtable Q')
+    const menu = await openMenu()
+    fireEvent.click(within(menu).getByTestId('roundtable-others'))
+    fireEvent.change(await within(menu).findByTestId('roundtable-search'), {
+      target: { value: 'flash' }
+    })
+    expect(names(menu)).toEqual(['DeepSeek V4.1 Flash', 'GLM 5.3 Flash', 'MiMo v2.6 Flash'])
+  })
+
+  it('B16 : les participants partent dans l’ordre des cases, pas des clics', async () => {
+    const t = setup([b, glm, deep])
+    t.type('/roundtable Q')
+    await waitFor(() => expect(api.options).toHaveBeenCalled())
+    await act(async () => t.enter())
+    expect(api.start.mock.calls[0]?.[1]).toMatchObject({ participants: [deep, glm, b] })
+  })
+
+  it('B10 : Échap ferme le menu ; un second Échap aussitôt ne retire pas le mode', async () => {
+    const t = setup()
+    t.type('/roundtable Q')
+    const menu = await openMenu()
+    fireEvent.keyDown(within(menu).getByRole('listbox'), { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByTestId('roundtable-menu')).toBeNull())
+    fireEvent.keyDown(t.input, { key: 'Escape' })
+    expect(screen.getByTestId('roundtable-line')).toBeTruthy()
+  })
+
+  it('B11 : un tour en cours, le bouton de la barre et `/roundtable` désactivés', () => {
+    const t = setup([deep, b], {
+      roundtable: { participants: [deep, b], setParticipants: vi.fn(), running: true }
+    })
+    const toggle = screen.getByTestId('roundtable-toggle')
+    expect(toggle.getAttribute('aria-disabled')).toBe('true')
+    fireEvent.click(toggle)
+    expect(screen.queryByTestId('roundtable-line')).toBeNull()
+    t.type('/roundtable Q')
+    expect(screen.queryByTestId('roundtable-line')).toBeNull()
+    t.type('/round')
+    const items = screen.queryAllByTestId('command-item').map((el) => el.textContent ?? '')
+    expect(items.some((n) => n.includes('/roundtable'))).toBe(false)
+  })
+
+  it('A1 : « 4 ▾ » en saisie très étroite, le nom entier pour le lecteur d’écran', () => {
+    const t = setup([deep, glm, b])
+    t.type('/roundtable Q')
+    const pick = screen.getByTestId('roundtable-participants')
+    expect(pick.getAttribute('aria-label')).toBe('3 participants')
+    expect(pick.querySelector('.roundtable-pick-short')?.textContent).toBe('3')
+    expect(css).toMatch(
+      /@container \(max-width: 420px\) \{\s*\.roundtable-pick-full \{\s*display: none;/
+    )
+  })
+})
+
 describe('ce qui empêche le départ, dit clairement, la question gardée', () => {
   it.each([
     [

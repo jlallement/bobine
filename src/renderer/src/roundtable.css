@@ -23,9 +23,8 @@
 /* Une seule ligne, sobre, entre la question et la barre ; jamais coupée par des points. */
 .roundtable-line {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 2px 8px;
+  gap: 8px;
   min-width: 0;
   margin: 2px 0 6px -2px;
   font-size: 13px;
@@ -65,7 +64,8 @@
   color: var(--muted);
   min-width: 0;
 }
-/* Saisie trop étroite même pour la forme courte : le surcoût passe à la ligne, entier. */
+/* Le surcoût n'est jamais coupé ni renvoyé à la ligne. */
+.roundtable-line-cost,
 .roundtable-cost-full,
 .roundtable-cost-short {
   white-space: nowrap;
@@ -90,10 +90,19 @@
     display: inline;
   }
 }
-/* Très étroite (sous 400 px de saisie) : « + synthèse » s'efface avant le surcoût. */
-@container (max-width: 400px) {
-  .roundtable-plus {
+/*
+ * Très étroite (sous 420 px de saisie) : « 4 ▾ » à la place de « 4 participants ▾ » ; « + synthèse »
+ * et le mot « jetons » restent (sans eux, le multiplicateur paraîtrait faux), sur une ligne.
+ */
+.roundtable-pick-short {
+  display: none;
+}
+@container (max-width: 420px) {
+  .roundtable-pick-full {
     display: none;
+  }
+  .roundtable-pick-short {
+    display: inline;
   }
 }
 .roundtable-close {
@@ -102,6 +111,10 @@
 }
 
 /* Bouton de la barre de la saisie, allumé en tour de table. */
+.chip.roundtable-toggle[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: default;
+}
 .chip.roundtable-toggle[aria-pressed='true'] {
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 10%, transparent);
@@ -126,11 +139,21 @@
   flex-direction: column;
   min-width: 300px;
   max-width: min(440px, calc(100vw - 32px));
+  /* Bornée à la place qu'il y a au-dessus de la saisie : la liste défile, le pied reste. */
+  max-height: min(420px, calc(var(--radix-popover-content-available-height, 420px) - 16px));
 }
 .roundtable-menu-list {
-  max-height: min(320px, 50vh);
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 320px;
   overflow-y: auto;
   outline: none;
+}
+.roundtable-search,
+.roundtable-others,
+.roundtable-menu-foot,
+.roundtable-menu > .menu-label {
+  flex-shrink: 0;
 }
 .roundtable-option {
   display: flex;
@@ -396,4 +419,117 @@
 /* Sommaire : un tour de table par sa question, marqué (fiche 285). */
 .outline-mark {
   color: var(--accent);
+}
+.menu.roundtable-popover .roundtable-menu {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ===== Revue UX (fiche 285) ===== */
+
+/* B2 : participant d'un tour dans la barre latérale. */
+.history-roundtable {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+/* B3 : arrêter un participant, un vrai bouton de 24 px. */
+.icon-button.roundtable-stop-seat {
+  width: 24px;
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
+  color: var(--err);
+}
+.roundtable-state-icon[data-state='stopped'] {
+  color: var(--muted);
+}
+
+/* A3 : le pied sur une rangée, les gestes à droite, une hauteur qui ne bouge pas. */
+.roundtable-foot {
+  flex-wrap: nowrap;
+  min-height: 52px;
+}
+.roundtable-foot .roundtable-foot-note {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.roundtable-foot .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.roundtable-readonly:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* B14 : « a modifié des fichiers » sur sa propre ligne, jamais coupé. */
+.roundtable-row .roundtable-row-mark {
+  display: block;
+  font-size: 12.5px;
+  white-space: normal;
+}
+
+/* B7 : sous 600 px de carte, la méta (confiance, état) passe sous le nom. */
+.roundtable-row .work-group-name,
+.roundtable-row .work-group-meta {
+  white-space: normal;
+}
+@container (max-width: 600px) {
+  .roundtable-row > .work-group-row {
+    flex-wrap: wrap;
+  }
+  .roundtable-row .roundtable-row-side {
+    flex-basis: 100%;
+    padding-left: 26px;
+  }
+}
+
+/* B9 : dans l'avis déplié, les titres à la taille du corps, en gras. */
+.roundtable-row-open .markdown :is(h1, h2, h3) {
+  font-size: 1em;
+  font-weight: 600;
+  margin: 0.8em 0 0.3em;
+}
+
+/* A4 : « Faire réagir » et son rappel d'un tenant ; la forme courte si la place manque. */
+.roundtable-answer {
+  container-type: inline-size;
+}
+.roundtable-rebut-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+.roundtable-hint-short {
+  display: none;
+}
+@container (max-width: 560px) {
+  .roundtable-hint-full {
+    display: none;
+  }
+  .roundtable-hint-short {
+    display: inline;
+  }
+}
+.roundtable-apply-placeholder {
+  visibility: hidden;
+}
+
+/* A6 : le détail du pied « Consommé », une ligne par participant. */
+.tooltip.roundtable-used-tip {
+  white-space: pre-line;
+}
+.roundtable-used:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }

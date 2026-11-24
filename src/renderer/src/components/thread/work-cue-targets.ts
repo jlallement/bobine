@@ -40,11 +40,12 @@ export function delegatedWorkTargets(
   )
   return children.flatMap((child) => {
     const launch = launches.get(child.id)
-    if (!launch) return []
+    // Participants d'un tour de table : la carte du tour est leur seul repère (B4).
+    if (!launch || tours.has(child.id)) return []
     return [
       {
         key: child.id,
-        itemId: tours.get(child.id) ?? anchors.get(child.id) ?? reports.get(child.id) ?? launch.id,
+        itemId: anchors.get(child.id) ?? reports.get(child.id) ?? launch.id,
         label: launch.role?.label ?? launch.title,
         ...(launch.role ? { role: launch.role } : {}),
         state: cueState(childState(child, attention[child.id]), !!launch.role)

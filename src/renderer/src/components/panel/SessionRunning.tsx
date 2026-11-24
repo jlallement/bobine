@@ -7,6 +7,7 @@ import {
   Square,
   SquareTerminal
 } from 'lucide-react'
+import { RoundtableIcon } from '../roundtable/RoundtableIcon'
 import { useEffect, useState, type ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { RunningEntry, RunningKind, RunningState } from '../../session-running'
@@ -56,7 +57,8 @@ function EntryRow({
         }
       >
         <span className="session-entry-icon">
-          <Icon size={14} />
+          {/* Participant d'un tour de table : l'icône du tour (fiche 285, B2). */}
+          {entry.roundtable ? <RoundtableIcon size={14} /> : <Icon size={14} />}
         </span>
       </Tip>
       {childId ? (

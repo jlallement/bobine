@@ -6334,6 +6334,7 @@ export type FrResources = {
       readonly button: 'Tour de table : poser la question à plusieurs modèles'
       readonly tag: 'Tour de table'
       readonly close: 'Revenir à une question simple'
+      readonly running: 'Un tour de table est déjà en cours : attendez sa synthèse.'
     }
     readonly line: {
       readonly participants_one: '{{count}} participant'
@@ -6355,6 +6356,7 @@ export type FrResources = {
       readonly unknownAgent: 'Un agent retiré'
       readonly byTo: '{{models}} · par {{agent}} · vers {{destination}}'
       readonly needTwo: 'il en faut au moins 2'
+      readonly agentTo: '{{agent}} · vers {{destination}}'
     }
     readonly cost: {
       readonly full: '≈ {{n}} fois les jetons d’une question simple'
@@ -6382,7 +6384,7 @@ export type FrResources = {
       readonly waitingAgent: 'synthèse en attente : l’agent répond'
       readonly held: 'synthèse retenue : plafond de la conversation atteint'
       readonly interrupted: 'interrompu par le redémarrage de l’app'
-      readonly stopped: 'tour de table arrêté'
+      readonly stopped: 'arrêté'
       readonly footer: 'Lecture seule · chacun répond sans voir les autres'
       readonly footerShort: 'Lecture seule'
       readonly synthesizeNow: 'Synthétiser sans attendre'
@@ -6408,10 +6410,16 @@ export type FrResources = {
       readonly partial_one: 'Synthèse avec {{opinions}} avis : un participant n’a pas répondu.'
       readonly partial_many: 'Synthèse avec {{opinions}} avis : {{count}} participants n’ont pas répondu.'
       readonly partial_other: 'Synthèse avec {{opinions}} avis : {{count}} participants n’ont pas répondu.'
-      readonly resume: 'Reprendre'
       readonly stopSeat: 'Arrêter {{name}}'
       readonly attachments: 'Fichiers joints : {{files}}'
       readonly withExchange: 'Avec le dernier échange de cette conversation'
+      readonly footerLevel: '{{level}} · chacun répond sans voir les autres'
+      readonly noOpinions_one: '{{count}} sans avis'
+      readonly noOpinions_many: '{{count}} sans avis'
+      readonly noOpinions_other: '{{count}} sans avis'
+      readonly relaunchStopped_one: 'Relancer le participant arrêté'
+      readonly relaunchStopped_many: 'Relancer les {{count}} participants arrêtés'
+      readonly relaunchStopped_other: 'Relancer les {{count}} participants arrêtés'
     }
     readonly state: {
       readonly waiting: 'en attente'
@@ -6445,6 +6453,14 @@ export type FrResources = {
         readonly requested: 'Lecture seule demandée, vérifiée dans le dépôt seulement'
         readonly unverified: 'Lecture seule demandée, non vérifiée (dossier hors git)'
         readonly requestedShort: 'Lecture seule demandée'
+      }
+      readonly noOpinionBecause: 'Sans avis : {{reason}}'
+      readonly noOpinionAfter: 'Sans avis : {{reason}} au bout de {{duration}}'
+      readonly readOnlyShort: {
+        readonly enforced: 'Lecture seule'
+        readonly native: 'Lecture seule (rôle installé)'
+        readonly requested: 'Lecture seule demandée'
+        readonly unverified: 'Lecture seule non vérifiée'
       }
     }
     readonly confidence: {

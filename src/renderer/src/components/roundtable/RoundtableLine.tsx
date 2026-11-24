@@ -20,7 +20,7 @@ import { requestSettings } from '../../open-settings'
 import { RoundtableIcon } from './RoundtableIcon'
 import '../../roundtable.css'
 import { RoundtableParticipants } from './RoundtableParticipants'
-import { listText, participantGroups, sendsKey } from './roundtable-view'
+import { agentOnly, listText, participantGroups, sendsKey } from './roundtable-view'
 import type { RoundtableCompose } from './useRoundtableCompose'
 
 /** Étiquette « Tour de table » en tête de la question (maquette `lancement-2-pret`). */
@@ -77,18 +77,27 @@ function ParticipantsTip({
         <Tooltip.Portal>
           <Tooltip.Content
             className="tooltip roundtable-tip"
+            // Sous la ligne : la question au-dessus reste lisible (B6).
+            side="bottom"
             sideOffset={6}
             data-testid="roundtable-tip"
           >
             {groups.map((g) => (
               <span key={g.agent} className="roundtable-tip-line">
-                {g.destinations.length > 0
-                  ? t('roundtable.line.byTo', {
-                      models: listText(g.models),
-                      agent: g.agent,
-                      destination: listText(g.destinations)
-                    })
-                  : t('roundtable.line.by', { models: listText(g.models), agent: g.agent })}
+                {agentOnly(g)
+                  ? g.destinations.length > 0
+                    ? t('roundtable.line.agentTo', {
+                        agent: g.agent,
+                        destination: listText(g.destinations)
+                      })
+                    : g.agent
+                  : g.destinations.length > 0
+                    ? t('roundtable.line.byTo', {
+                        models: listText(g.models),
+                        agent: g.agent,
+                        destination: listText(g.destinations)
+                      })
+                    : t('roundtable.line.by', { models: listText(g.models), agent: g.agent })}
               </span>
             ))}
             <span className="roundtable-tip-sends">
@@ -158,10 +167,8 @@ function LineStatus({ roundtable }: { roundtable: RoundtableCompose }) {
     case 'ready':
       return (
         <span className="roundtable-line-cost" data-testid="roundtable-cost">
-          <span className="roundtable-plus">
-            {t('roundtable.line.plusSynthesis')}
-            <span aria-hidden> · </span>
-          </span>
+          {t('roundtable.line.plusSynthesis')}
+          <span aria-hidden> · </span>
           <span className="roundtable-cost-full" data-testid="roundtable-cost-full">
             {t('roundtable.cost.full', { n: state.multiplier })}
           </span>
@@ -190,16 +197,34 @@ export function RoundtableLine({
   const count = roundtable.choices.length
   const label =
     count >= 1 ? t('roundtable.line.participants', { count }) : t('roundtable.line.choose')
+  // La saisie entière sert d'ancre : le menu s'ouvre au-dessus d'elle, sans couvrir la question.
+  const line = useRef<HTMLDivElement>(null)
+  const anchor = useRef({
+    getBoundingClientRect: () =>
+      (line.current?.closest('.composer') ?? line.current)?.getBoundingClientRect() ?? new DOMRect()
+  })
   return (
-    <div className="roundtable-line" data-testid="roundtable-line" data-state={state.kind}>
+    <div
+      className="roundtable-line"
+      data-testid="roundtable-line"
+      data-state={state.kind}
+      ref={line}
+    >
       <RoundtableIcon size={15} className="roundtable-line-icon" />
       <Popover.Root open={roundtable.menuOpen} onOpenChange={roundtable.setMenuOpen}>
         <ParticipantsTip roundtable={roundtable} files={files}>
-          <Popover.Trigger className="roundtable-pick" data-testid="roundtable-participants">
-            {label}
+          <Popover.Trigger
+            className="roundtable-pick"
+            data-testid="roundtable-participants"
+            // Saisie très étroite : « 4 ▾ » à l'écran, le nom entier pour le lecteur d'écran.
+            aria-label={label}
+          >
+            <span className="roundtable-pick-full">{label}</span>
+            {count >= 1 && <span className="roundtable-pick-short">{count}</span>}
             <ChevronDown size={14} aria-hidden />
           </Popover.Trigger>
         </ParticipantsTip>
+        <Popover.Anchor virtualRef={anchor} />
         <Popover.Portal>
           <Popover.Content
             className="menu model-menu roundtable-popover"

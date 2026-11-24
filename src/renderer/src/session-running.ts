@@ -4,6 +4,7 @@
  * travail), et ce qui a fini depuis le lancement de l'app. Logique pure : `useSessionRunning`
  * fournit les observations, ce module garde le suivi.
  */
+import { ROUNDTABLE_PARTICIPANT_ROLE } from '@shared/roundtable'
 import type { ConversationSummary } from '@shared/agent'
 import type { AttentionState } from '@shared/attention'
 import { childState } from '@shared/children'
@@ -37,6 +38,8 @@ export interface RunningEntry {
    * « Arrêter » (rien ne tourne).
    */
   blocked?: true
+  /** Participant d'un tour de table (fiche 285) : l'icône du tour, pas celle d'une fille. */
+  roundtable?: true
 }
 
 /** Ce que les sources disent maintenant ; `ended` : fini, à l'heure `endedAt` si connue. */
@@ -160,7 +163,10 @@ export function subagentObservations(items: readonly TranscriptItem[]): RunningO
  * qui ne travaille plus n'est pas observée : le suivi la range dans « Terminées ».
  */
 export function childObservations(
-  children: readonly Pick<ConversationSummary, 'id' | 'title' | 'status' | 'modelRefused'>[],
+  children: readonly Pick<
+    ConversationSummary,
+    'id' | 'title' | 'status' | 'modelRefused' | 'role'
+  >[],
   attention: AttentionState
 ): RunningObservation[] {
   return children.flatMap((child): RunningObservation[] => {
@@ -173,6 +179,7 @@ export function childObservations(
         kind: 'child',
         label: child.title,
         childId: child.id,
+        ...(child.role?.name === ROUNDTABLE_PARTICIPANT_ROLE ? { roundtable: true as const } : {}),
         ...(blocked ? { blocked: true as const } : { stop: { kind: 'child', childId: child.id } })
       }
     ]

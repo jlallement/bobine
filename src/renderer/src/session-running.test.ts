@@ -149,3 +149,20 @@ describe('en cours et terminées (fiche 166)', () => {
     expect(state.finished.map((e) => e.key)).toEqual(['subagent:b'])
   })
 })
+
+describe('participants d’un tour de table (fiche 285, B2)', () => {
+  it('marqués pour l’icône du tour, pas celle d’une fille', () => {
+    const [entry] = childObservations(
+      [
+        {
+          id: 'p',
+          title: 'Alpha',
+          status: 'busy',
+          role: { name: 'participant', label: 'Participant', icon: 'users', color: 'graphite' }
+        }
+      ],
+      {}
+    )
+    expect(entry?.roundtable).toBe(true)
+  })
+})

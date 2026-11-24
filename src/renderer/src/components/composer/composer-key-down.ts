@@ -29,7 +29,7 @@ export interface KeyContext {
   recall: (index: number, from: 'up' | 'down') => void
   leaveHistory: () => void
   /** Tour de table (fiche 285) : Échap, ou retour arrière en tête, ramène à une question simple. */
-  roundtable?: { active: boolean; exit: () => void }
+  roundtable?: { active: boolean; exit: () => void; escape: () => void }
 }
 
 /**
@@ -56,7 +56,7 @@ export function composerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>, c: Ke
     !commandMenu.open &&
     !event.nativeEvent.isComposing
   ) {
-    c.roundtable.exit()
+    c.roundtable.escape()
     return event.preventDefault()
   }
   const action = composerKeyAction(
