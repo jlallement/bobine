@@ -211,6 +211,19 @@ export type Step =
   | { kind: 'when-prompt'; includes: string; then: Step[]; else: Step[] }
   /** Selon qu'un fichier existe dans le dossier de la session (fiche 240 : la fille le voit-elle ?). */
   | { kind: 'when-file'; path: string; then: Step[]; else: Step[] }
+  /**
+   * Étapes calculées d'après le message reçu (tous ses blocs de texte), le modèle de la session et
+   * le nombre de blocs non textuels (pièces jointes) : scénarios du tour de table (fiche 285).
+   */
+  | {
+      kind: 'computed'
+      build: (input: {
+        text: string
+        model?: string
+        attachments: number
+        language: MockLanguage
+      }) => Step[]
+    }
   /** Suite différente selon le modèle de la session au moment du message (fiche 210). */
   | { kind: 'when-model'; model: string; then: Step[]; else: Step[] }
   /**
@@ -570,6 +583,19 @@ async function playStep(step: Step, ctx: TurnContext): Promise<void> {
     }
     case 'when-model':
       return playSteps(ctx.model === step.model ? step.then : step.else, ctx)
+    case 'computed': {
+      const text = ctx.prompt.map((b) => (b.type === 'text' ? b.text : '')).join('\n')
+      const attachments = ctx.prompt.filter((b) => b.type !== 'text').length
+      return playSteps(
+        step.build({
+          text,
+          ...(ctx.model ? { model: ctx.model } : {}),
+          attachments,
+          language: lang(ctx)
+        }),
+        ctx
+      )
+    }
     case 'when-file':
       return playSteps(existsSync(join(ctx.cwd ?? '.', step.path)) ? step.then : step.else, ctx)
     case 'by-language':

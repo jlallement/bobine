@@ -150,6 +150,21 @@ export interface MockAgentOptions {
    */
   installedModes?: InstalledModesOptions
   catalog?: Record<string, Scenario>
+  /**
+   * Scénario joué selon le modèle de la session (`--scenario-par-modele`, tour de table, fiche
+   * 285) : `modèle → scénario`, à la place de `scenario` quand le message n'en nomme pas.
+   */
+  scenarioByModel?: Record<string, string>
+  /**
+   * Modèles refusés par `session/set_config_option` (`--refuser-modele`, fiche 285), comme OpenCode
+   * 2.3.0 : `-32602` « Invalid params: model not found », la session garde son modèle (lot 0, O3).
+   */
+  refusedModels?: string[]
+  /**
+   * Modèles qui retombent en silence (`--modele-retombe`, fiche 285) : le réglage répond la valeur
+   * demandée, puis un `config_option_update` rend l'ancienne ; la session garde son modèle (O5).
+   */
+  fallbackModels?: string[]
 }
 
 /** Présence de ce fichier dans un dossier = dossier approuvé (simule « lancer bob une fois »). */
@@ -592,12 +607,38 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
       if (options.bobDb) deleteBobTask(options.bobDb, params.sessionId)
       return {}
     })
-    .onRequest(methods.agent.session.setConfigOption, async ({ params }) => {
+    .onRequest(methods.agent.session.setConfigOption, async ({ params, client }) => {
       await stallIf('bloque-reglages')
       const session = getSession(sessions, params.sessionId)
       if (options.withConfigOptions === false)
         throw RequestError.methodNotFound(methods.agent.session.setConfigOption)
       const value: unknown = params.value
+      if (params.configId === 'model' && options.refusedModels?.includes(value as string)) {
+        throw new RequestError(-32602, `Invalid params: model not found: ${String(value)}`, {
+          modelId: value
+        })
+      }
+      if (params.configId === 'model' && options.fallbackModels?.includes(value as string)) {
+        // La réponse dit le modèle demandé ; l'état réel (l'ancien) arrive juste après.
+        const claimed = { ...session, model: value as string }
+        setTimeout(() => {
+          void client
+            .notify(methods.client.session.update, {
+              sessionId: session.sessionId,
+              update: {
+                sessionUpdate: 'config_option_update',
+                configOptions: sayAll(
+                  configOptions(session, options.showcase, scenarioModels),
+                  language
+                )
+              }
+            })
+            .catch(() => {})
+        }, 5)
+        return {
+          configOptions: sayAll(configOptions(claimed, options.showcase, scenarioModels), language)
+        }
+      }
       const known = scenarioModels
         ? scenarioModels.some((m) => m.value === value)
         : Object.values(MODELS).includes(value as never)
@@ -662,7 +703,10 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
       // perd pas la session.
       persist(session)
 
-      const chosen = pickScenario(params.prompt, scenario, catalog, options.commitScenario)
+      // Tour de table (fiche 285) : le scénario peut dépendre du modèle de la session.
+      const byModel = options.scenarioByModel?.[session.model]
+      const fallback = (byModel && catalog[byModel]) || scenario
+      const chosen = pickScenario(params.prompt, fallback, catalog, options.commitScenario)
       // Un scénario peut fixer lui-même le contexte (ex. après une compaction) et le coût cumulé
       // (coût qui monte en cours de tour, fiche 157).
       let reportedContext: number | undefined

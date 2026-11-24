@@ -114,6 +114,37 @@ describe('réveil groupé de la mère (fiche 097, étape 2)', () => {
     expect(t.woken).toEqual([])
   })
 
+  it('fiche 285 : le compte rendu d’un participant de tour de table ne réveille jamais la mère', async () => {
+    const t = setup()
+    t.motherItems.push({
+      kind: 'roundtable',
+      id: 2,
+      roundtableId: 'rt',
+      question: 'Q',
+      synthesizer: { profileId: 'mock', label: 'Factice' },
+      seats: [
+        {
+          profileId: 'mock',
+          label: 'F',
+          agentLabel: 'F',
+          letter: 'A',
+          childId: 'b',
+          state: 'working'
+        }
+      ],
+      phase: 'collecting',
+      at: 2
+    })
+    t.wake.await('m', 'a')
+    t.finish('a')
+    // Le compte rendu de `a` est parti avec un message ; seul celui du participant reste.
+    t.motherItems.push({ kind: 'user', id: t.motherItems.length + 1, text: 'Merci' })
+    t.finish('b')
+    t.motherIdle()
+    await tick()
+    expect(t.woken).toEqual([])
+  })
+
   it('une fille qui a encore un message en file n’a pas fini', async () => {
     const t = setup()
     t.set('m', 'ready')

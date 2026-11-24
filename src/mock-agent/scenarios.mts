@@ -28,6 +28,7 @@ import { consumptionScenarios } from './scenarios-consommation.mts'
 import { openCode23QuestionScenarios } from './scenarios-opencode-2-3-questions.mts'
 import { failureScenarios } from './scenarios-pannes.mts'
 import { turnGuardScenarios } from './scenarios-pendant-tour.mts'
+import { roundtableScenarios } from './scenarios-tour-de-table.mts'
 
 /** Réponse avec des diagrammes (fiche 063). */
 const MERMAID = [
@@ -3217,6 +3218,7 @@ export const scenarios: Record<string, Scenario> = {
   ...filesScenarios,
   // Rôles (fiche 223) : délégation, rôle inconnu, lecture seule.
   ...roleScenarios,
+  ...roundtableScenarios,
   // Espace Discussion (fiche 224) : documents lus et écrits, écriture hors du dossier refusée.
   ...discussionScenarios,
   // Vitrine du README (fiche 225).

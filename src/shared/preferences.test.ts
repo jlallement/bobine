@@ -198,3 +198,21 @@ describe('densité et mode présentation (fiche 159)', () => {
     expect('presentation' in DEFAULT_PREFERENCES).toBe(false)
   })
 })
+
+describe('participants retenus du tour de table (fiche 285)', () => {
+  it('lus avec indulgence : entrées abîmées et doublons écartés, 5 au plus, aucun par défaut', () => {
+    expect(DEFAULT_PREFERENCES.roundtableParticipants).toEqual([])
+    expect(parsePreferences({}).roundtableParticipants).toBeUndefined()
+    expect(parsePreferences({ roundtableParticipants: 'abîmé' }).roundtableParticipants).toEqual([])
+    const kept = parsePreferences({
+      roundtableParticipants: [
+        { profileId: 'opencode', model: { controlId: 'model', value: 'a/b', name: 'B' } },
+        { profileId: 'opencode', model: { controlId: 'model', value: 'a/b', name: 'B' } },
+        { profileId: '../evil' },
+        { profileId: 'bob' },
+        ...['c1', 'c2', 'c3', 'c4'].map((profileId) => ({ profileId }))
+      ]
+    }).roundtableParticipants
+    expect(kept?.map((c) => c.profileId)).toEqual(['opencode', 'bob', 'c1', 'c2', 'c3'])
+  })
+})

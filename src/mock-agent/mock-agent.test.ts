@@ -612,7 +612,9 @@ const FAILING_TURNS = new Set([
   'reseau-coupe',
   'limite-debit',
   // Demande de message de commit en erreur (fiche 246).
-  'message-commit-erreur'
+  'message-commit-erreur',
+  // Participant en erreur d'un tour de table (fiche 285).
+  'avis-erreur'
 ])
 
 describe('catalogue', () => {

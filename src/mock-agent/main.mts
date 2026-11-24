@@ -56,7 +56,10 @@ const { values } = parseArgs({
     'max-etapes': { type: 'string' },
     langue: { type: 'string' },
     'modes-installes': { type: 'string' },
-    perso: { type: 'string' }
+    perso: { type: 'string' },
+    'scenario-par-modele': { type: 'string' },
+    'refuser-modele': { type: 'string' },
+    'modele-retombe': { type: 'string' }
   }
 })
 
@@ -112,6 +115,26 @@ if (chunkDelayMs !== undefined && (!Number.isFinite(chunkDelayMs) || chunkDelayM
   process.exit(2)
 }
 
+// Tour de table (fiche 285) : scénario par modèle (`modèle=scénario,…`), modèles refusés ou qui
+// retombent en silence (`a,b`).
+const list = (value: string | undefined) =>
+  (value ?? '')
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean)
+const byModelEntries = list(
+  values['scenario-par-modele'] ?? process.env['MOCK_AGENT_SCENARIO_BY_MODEL']
+).map((entry) => entry.split('=').map((part) => part.trim()) as [string, string])
+for (const [model, name] of byModelEntries) {
+  if (!model || !name || !scenarios[name]) {
+    console.error(`[mock-agent] scénario par modèle invalide : ${model}=${name} (voir --list)`)
+    process.exit(2)
+  }
+}
+const scenarioByModel = Object.fromEntries(byModelEntries)
+const refusedModels = list(values['refuser-modele'] ?? process.env['MOCK_AGENT_REFUSE_MODEL'])
+const fallbackModels = list(values['modele-retombe'] ?? process.env['MOCK_AGENT_FALLBACK_MODEL'])
+
 const stream = ndJsonStream(
   Writable.toWeb(process.stdout) as WritableStream<Uint8Array>,
   Readable.toWeb(process.stdin) as ReadableStream<Uint8Array>
@@ -155,6 +178,9 @@ const connection = connectMockAgent(stream, {
   ...(maxSteps !== undefined ? { maxSteps } : {}),
   language: mockLanguage(values.langue ?? process.env['MOCK_AGENT_LANG']),
   ...(values.devise ? { costCurrency: values.devise } : {}),
+  ...(byModelEntries.length ? { scenarioByModel } : {}),
+  ...(refusedModels.length ? { refusedModels } : {}),
+  ...(fallbackModels.length ? { fallbackModels } : {}),
   ...(installedKind && values.perso
     ? { installedModes: { kind: installedKind as 'bob' | 'opencode', home: values.perso } }
     : {})
