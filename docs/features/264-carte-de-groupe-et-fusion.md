@@ -208,6 +208,24 @@ Pas de nouvelle dépendance.
   le suivant posé), rouge sans le correctif ; `WorkGroup.test.tsx` (ligne dépliée puis « Tout
   lancer » : r2 puis r3), rouge sans le correctif. `children.ts` dépassait 800 lignes : les
   canaux IPC des filles sont passés dans `children-ipc.ts` (réexportés).
+- 2026-11-24 — **ordre des propositions** : quand l'agent propose plusieurs travaux d'un coup
+  (appels `start_child` en parallèle), la carte rangeait les lignes dans l'ordre d'arrivée des
+  appels MCP au serveur de l'app, non garanti (essai `travaux-groupe` : Tests, Tri, Relire au lieu
+  de Tri, Tests, Relire) ; l'ordre pouvait changer d'une fois à l'autre. Correctif (renderer, pur,
+  `childProposalGroups`) : chaque ligne est rangée par la carte d'outil (`tool_call`) à laquelle le
+  main l'a déjà reliée par son titre (fiche 112), donc par l'**ordre d'émission des appels ACP**,
+  celui de l'agent ; une ligne sans carte d'outil dans le fil à son arrivée (appel annoncé après
+  l'appel MCP, titre non relié, agent qui ne met pas `title`/`prompt` dans `rawInput`) est rangée
+  par sa propre arrivée, donc après les lignes déjà affichées. Le rang d'une ligne est fixé à son
+  affichage (`min(id de la carte d'outil, id de la proposition)`, seules les cartes d'avant elle
+  comptent) : les lignes affichées gardent leur ordre entre elles, une ligne en retard peut
+  seulement s'insérer, et la carte reste à la place de la première proposition arrivée. Même
+  ordre à la réouverture (ids du fil enregistré). Générique : rien de propre à un agent, aucune
+  hypothèse sur le moment où un agent envoie ses `tool_call` (sans eux : l'ordre d'arrivée,
+  comme avant). Deux titres identiques peuvent échanger leur carte d'outil : indiscernables à
+  l'écran. Preuve : `children.test.ts` (appels arrivés Tests, Relire, Tri, plus une proposition
+  non reliée et une annoncée après → Tri, Tests, Relire, Notes, Tard ; à chaque arrivée, les
+  lignes déjà affichées gardent leur ordre), rouge sans le correctif.
 
 ## Limites connues
 

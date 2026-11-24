@@ -2,6 +2,13 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- Several pieces of work proposed at once: the card always lists them in the order the agent
+  proposed them, the same every time, and a line already shown no longer changes place.
+
 ## 1.0.0-rc.4 — November 23, 2026
 
 ### New
