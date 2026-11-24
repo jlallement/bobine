@@ -14,12 +14,12 @@ const yes = (value: boolean) => (value ? 'oui' : 'non')
 /** Ce que le participant a reçu, sur une ligne que les essais lisent. */
 function received(text: string, attachments: number): string {
   const question = text.split('\n')[0]?.trim() ?? ''
-  const others = text.includes('<bobine_opinion') || text.includes('<bobine_roundtable step=')
+  const others = /<bobine_opinion|<bobine_roundtable_[0-9a-f]+ step=/.test(text)
   return [
     `Reçu : question « ${question} »`,
     `consigne de participant : ${yes(text.includes('<bobine_role name="participant"'))}`,
     `lecture seule : ${yes(/You are read-only/.test(text))}`,
-    `dernier échange : ${yes(text.includes('<bobine_roundtable_context>'))}`,
+    `dernier échange : ${yes(/<bobine_roundtable_context_[0-9a-f]+>/.test(text))}`,
     `pièces jointes : ${attachments}`,
     `autres avis : ${others ? 'PRÉSENTS' : 'aucun'}`
   ].join(' · ')
@@ -45,7 +45,7 @@ function rebuttal(text: string): Step[] {
         '',
         `Je suis le participant ${letter} et je garde mon avis : la synthèse ne m'oppose aucune preuve.`,
         '',
-        `Synthèse reçue : ${yes(text.includes('<bobine_roundtable_synthesis>'))} · autres avis : ${others ? 'PRÉSENTS' : 'aucun'}`
+        `Synthèse reçue : ${yes(/<bobine_roundtable_synthesis_[0-9a-f]+>/.test(text))} · autres avis : ${others ? 'PRÉSENTS' : 'aucun'}`
       ].join('\n')
     }
   ]
@@ -107,7 +107,7 @@ const letters = (text: string, outcome: 'answered' | 'absent') =>
 
 /** Synthèse (six rubriques) ou décision (sept), d'après le bloc reçu ; sinon une réponse simple. */
 function arbiter(text: string): Step[] {
-  const step = /<bobine_roundtable step="(synthesis|verdict)"/.exec(text)?.[1]
+  const step = /<bobine_roundtable_[0-9a-f]+ step="(synthesis|verdict)"/.exec(text)?.[1]
   if (!step) return [{ kind: 'text', text: 'Réponse ordinaire, hors tour de table.' }]
   const answered = letters(text, 'answered')
   const absent = letters(text, 'absent')

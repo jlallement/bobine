@@ -80,7 +80,7 @@ describe('tour de table : lancer et recueillir (fiche 285, lot 1)', () => {
       expect(first.startsWith(QUESTION)).toBe(true)
       expect(first).toContain('<bobine_role name="participant">')
       expect(first).toContain(PARTICIPANT_BRIEF.split('\n')[0])
-      expect(first).toContain('<bobine_roundtable_context>')
+      expect(first).toMatch(/<bobine_roundtable_context_[0-9a-f]{8}>/)
       expect(first).toContain('Quelle moyenne pour calc.js ?')
       const reply = env.replies(childId).join('\n')
       expect(reply).toContain('autres avis : aucun')
@@ -130,7 +130,9 @@ describe('tour de table : lancer et recueillir (fiche 285, lot 1)', () => {
     })
     // Ce que l'agent a reçu (l'agent factice `echo` le répète) : contexte caché compris.
     const received = env.replies(mother).at(-1) ?? ''
-    expect(received).toContain('<bobine_roundtable step="synthesis" answered="2" absent="0">')
+    expect(received).toMatch(
+      /<bobine_roundtable_[0-9a-f]{8} step="synthesis" answered="2" absent="0">/
+    )
     expect(received).toContain('participant="A" outcome="answered"')
     expect(received).toContain('participant="B" outcome="answered"')
     expect(received).toContain('la piste A')
@@ -214,7 +216,7 @@ describe('tour de table : réplique et décision (fiche 285, lot 3)', () => {
       const childId = seat.childId ?? ''
       const sent = env.users(childId).at(-1)?.text ?? ''
       expect(sent).toContain(`You are participant ${seat.letter}`)
-      expect(sent).toContain('<bobine_roundtable_synthesis>')
+      expect(sent).toMatch(/<bobine_roundtable_synthesis_[0-9a-f]{8}>/)
       // La synthèse seule : jamais les avis des autres.
       expect(sent).not.toContain('<bobine_opinion')
       expect(seat.rebuttal).toMatchObject({ state: 'answered', stance: 'maintains' })

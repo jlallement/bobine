@@ -153,6 +153,7 @@ export const BUILTIN_FR: BuiltinTexts = {
       '- Read what you need in this folder to answer, no more: time and cost matter.',
       '- You are read-only: do not create, edit, delete or move files, do not commit, and do not run commands that write.',
       '- Say "I don\'t know" rather than invent. No complete patch: a few lines are enough to illustrate.',
+      '- Do not name yourself: no model, provider or agent name in your answer.',
       '- Answer in the language of the question, in 400 words at most, with exactly these five headings, in this order, translated into that language:',
       '  1. Short answer: two sentences at most.',
       '  2. Arguments: five at most, each with its evidence when there is one (file:line, command output, documentation).',
