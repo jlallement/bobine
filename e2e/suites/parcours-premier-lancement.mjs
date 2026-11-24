@@ -185,7 +185,10 @@ export async function parcoursPremierLancementSuite(scheme) {
       },
       userData,
       'premier-essai',
-      firstLaunch(trial)
+      // Relance comme celle d'un utilisateur : aucun agent imposé (`withApp` impose sinon l'agent
+      // factice, et un agent imposé ouvre une nouvelle conversation au lieu de la dernière
+      // affichée, fiche 243) ; l'agent factice reste dans la liste.
+      { ...firstLaunch(trial), BOBINE_AGENT_PROFILE: '', BOBINE_MOCK_AGENT: '1' }
     )
   } finally {
     rmSync(workspace, { recursive: true, force: true })
