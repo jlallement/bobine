@@ -154,6 +154,18 @@ Dependabot comme les autres.
   relâché. `measureBottom` traite l'appui comme le maintien : il mesure `atBottom` (la flèche),
   sans toucher au suivi ni défiler. Preuve : `useThreadScroll.test.ts` (« près du bas sans y
   être… » : flèche pendant l'appui, partie au relâché), rouge sans le correctif.
+- 2026-11-24 — Release 1.1.0-rc.1 (run 45289731873, job « .deb (Linux x64) », 1ʳᵉ tentative) :
+  tests unitaires tous verts, mais Vitest a attrapé « write EPIPE » non géré
+  (`src/main/simulator/run.ts:67`, pendant `file-tree.test.ts` « hors dépôt : `null` »).
+  `gitIgnored` passe la liste à `git check-ignore --stdin` par `runCommand` ; hors dépôt, git sort
+  aussitôt (128) sans lire son entrée, et l'écriture dans le tube fermé levait une erreur sur
+  `child.stdin` sans écouteur : exception non gérée du main (l'app aussi, pas seulement l'essai),
+  selon la course entre la sortie de git et l'écriture. **Défaut de l'app** : `runCommand` écoute
+  désormais `error` sur l'entrée de l'enfant (sans objet, le code de sortie est rendu par le
+  rappel) et n'écrit que dans un flux encore `writable`. Preuve : `src/main/simulator/run.test.ts`
+  (vrai enfant Node qui sort sans lire 8 Mio d'entrée : code rendu, aucune `uncaughtException`),
+  rouge 3/3 sans le correctif, vert 3/3 avec. Les autres écritures vers un enfant
+  (`mcp-probe.ts`) avaient déjà leur écouteur.
 
 ## Reste à vérifier sur GitHub (après la poussée)
 
@@ -517,3 +529,18 @@ Dependabot comme les autres.
   `./scripts/verify` vert. Rien joué en local (ADR-0069) : à lancer sur GitHub (macOS, et Linux
   pour les suites du terminal) : `connexion-expiree`, `auth`, `mentions`, `terminal`,
   `parcours-outils`, `pilote`, `memoire`, `parcours-reglages`, `travaux-groupe`.
+- 2026-11-24 — `browser-view` clair rouge une fois sur le Mac de GitHub (run 45245467579) :
+  « molette : la page défile (scrollY 0) », sombre vert, capture : page longue dessinée, en haut.
+  - Cause : la vue de l'onglet naît cachée (`setVisible(false)`), charge, puis le panneau la
+    montre. L'essai attendait des bornes exactes et `innerWidth`, qui suivent `setBounds` même vue
+    cachée, puis envoyait la molette tout de suite : la page était encore `hidden` (pas d'image
+    dessinée), et Chromium jette la molette d'une page qui n'est pas à l'écran. Rien ne la
+    renvoie ensuite : scrollY 0 pendant les 4 s d'attente. Défaut de l'essai, pas de l'app : un
+    utilisateur ne peut pas faire défiler une page avant de la voir.
+  - Preuve, essai hors de l'app (Electron 45, `WebContentsView` cachée, chargée, montrée, trois
+    crans de molette) : molette aussitôt après `setVisible(true)` : scrollY 0, 8 fois sur 8 ;
+    après `visibilityState === 'visible'` seul : 360, deux fois 240 (premier cran perdu) ; après
+    `visible` et deux `requestAnimationFrame` : 360, 8 fois sur 8.
+  - Correctif : avant la molette, l'essai attend (et vérifie) que la page soit `visible` et ait
+    dessiné deux images. Pas de délai fixe ; l'assertion de la molette est inchangée.
+    `./scripts/verify` vert ; `browser-view` non rejouée en local, à lancer sur GitHub.

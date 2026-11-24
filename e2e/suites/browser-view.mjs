@@ -103,6 +103,17 @@ async function viewChecks(ui, main, url) {
   const followsArea = (g) => Math.abs(g.inner - g.area.width * g.uiZoom) <= 1
 
   check(await settled(followsArea), `la page couvre la zone, innerWidth = sa largeur (${show(g)})`)
+  // Bornes et innerWidth suivent `setBounds` même vue cachée : la page n'est montrée qu'une fois
+  // `visible` et deux images dessinées. Avant, Chromium jette la molette (scrollY 0, macOS CI,
+  // fiche 250), comme il ne la donne pas à une page pas encore à l'écran.
+  check(
+    await until(() =>
+      inPage(
+        `document.visibilityState === 'visible' && new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(true))))`
+      )
+    ),
+    `la page est à l’écran (${await inPage('document.visibilityState')})`
+  )
 
   // Défilement : molette (trackpad compris) et clavier, comme macOS les donne à la page.
   await input(

@@ -385,6 +385,58 @@ describe('propositions de filles (fiche 112)', () => {
     expect([...groups.hidden]).toEqual([4])
     expect([...groups.toolCallIds]).toEqual(['c1', 'c2'])
   })
+
+  it('appels en parallèle arrivés dans le désordre : l’ordre des appels de l’agent, rien ne bouge', () => {
+    const tool = (id: number, toolCallId: string): TranscriptItem => ({
+      kind: 'tool',
+      id,
+      toolCallId,
+      title: 'start_child',
+      status: 'pending',
+      content: [],
+      locations: []
+    })
+    const proposal = (id: number, title: string, toolCallId?: string): TranscriptItem => ({
+      kind: 'elicitation',
+      id,
+      requestId: `r${id}`,
+      state: 'pending',
+      prompt: {
+        mode: 'form',
+        message: title,
+        schema: childProposalSchema(),
+        child: { title, prompt: 'Fais' },
+        ...(toolCallId ? { toolCallId } : {})
+      }
+    })
+    // L'agent annonce Tri, Tests, Relire (`tool_call`) ; ses appels MCP arrivent Tests, Relire,
+    // Tri, puis une proposition sans appel annoncé (« Notes »), puis un appel annoncé après.
+    const items: TranscriptItem[] = [
+      { kind: 'user', id: 1, text: 'Découpe' },
+      tool(2, 'tri'),
+      tool(3, 'tests'),
+      tool(4, 'relire'),
+      proposal(5, 'Tests', 'tests'),
+      proposal(6, 'Relire', 'relire'),
+      proposal(7, 'Tri', 'tri'),
+      proposal(8, 'Notes'),
+      proposal(9, 'Tard', 'tard'),
+      tool(10, 'tard')
+    ]
+    const titles = (upTo: number) =>
+      [...childProposalGroups(items.slice(0, upTo)).groups.values()][0]?.map(
+        (i) => i.prompt.child.title
+      )
+    expect(titles(items.length)).toEqual(['Tri', 'Tests', 'Relire', 'Notes', 'Tard'])
+    // Chaque ligne déjà affichée garde sa place par rapport aux autres, quoi qu'il arrive ensuite.
+    for (let upTo = 6; upTo <= items.length; upTo++) {
+      const shown = titles(upTo) ?? []
+      const later = titles(upTo + 1) ?? []
+      expect(later.filter((title) => shown.includes(title))).toEqual(shown)
+    }
+    // La carte reste à la place de la première proposition arrivée.
+    expect([...childProposalGroups(items).groups.keys()]).toEqual([5])
+  })
 })
 
 describe('filles proposées par l’agent (fiche 118)', () => {
