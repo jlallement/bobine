@@ -130,6 +130,38 @@ Classes : `parcours` (reste e2e) · `composant` (Vitest + Testing Library, sans 
 
 ---
 
+## Remplaçants écrits (2026-11-24, branche `test/remplacants-parcours-captures`)
+
+Écrits **avant** toute suppression ; rien n'est supprimé. À jouer sur GitHub (ADR-0069). La colonne
+« Déjà couvert ? » des lignes concernées commence par l'étape exacte (« parcours-X › étape N »).
+
+- **Faits** : `restart` n° 2 (matinée 13), n° 4 (déléguer 6) ; `git` n° 2 (matinée 5) ; `aparte`
+  n° 5 et 7 (matinée 9) ; `terminal` n° 2, 5 (outils 1), n° 9 (outils 2) ; `mermaid` n° 1-2
+  (longue 1) ; `degrade-haut` n° 3 (longue 2, partiel).
+- **Pas encore écrits** (étape proposée gardée dans « Remplaçant ») : `parallel` n° 2-3,
+  `repere` n° 2, `mcp` n° 23/30/36/37, `regles-approbation` n° 18, `pr-ci-sans-ci` n° 4,
+  `browser-annotate` n° 19, `roles-gestion` n° 7/8/22, `limite-etapes` n° 5 (scénario « au
+  lancement » : il faut une journée dont l'agent démarre sur `limite-etapes-session`), `dossiers`
+  n° 3, `historique-saisie` n° 16, `terminal` n° 3-4 et 15, `commit-redige` n° 5, `aide` n° 1/13,
+  `usage` n° 14 (rejeu tardif, coût de la base de Bob), `outils-projet` n° 5, `filles-tech-lead`
+  n° 7-8 (journée `parcours-deleguer` rouge à l'étape 6 tant que les défauts 1-2 de la fiche 277
+  sont ouverts), `finitions` n° 8. Ces suites ne peuvent pas encore perdre ces vérifications.
+
+Mécanisme des **captures qui affirment** : `e2e/affirm.mjs`. `affirm(ui, nom, [sondes])` prend la
+capture puis mesure le DOM réel (boîtes, débordement `MEASURE`, alignement, style calculé,
+contraste WCAG) ; chaque sonde est un `check` qui échoue avec sa mesure. Pas de comparaison
+d'images : l'image sert à comprendre un échec, la mesure est l'oracle. Une ligne `capture` dont
+l'état n'existe dans aucune journée garde sa mesure dans sa suite réduite (y poser `affirm` au
+moment de la réduction) : elle ne devient jamais une photo seule.
+
+Captures du groupe A **mesurées dans une journée** : `terminal` n° 2, `aparte` n° 5. **Mesurables,
+mais hors des journées** (mesure à garder dans la suite réduite) : `repere` n° 7-8, `settings`
+n° 22 et 43 (opacité et `backdrop-filter` calculés), `mcp` n° 5 et 33, `browser-annotate` n° 15,
+`mermaid` n° 5 (couleurs du SVG), `git` n° 3, 14, 15, 19, `worktree-cycle` n° 3, `nouvelle-version`
+n° 6, `plan` n° 2, 3, 6, `aurore` n° 2, 3, 8, 10 (styles calculés), `finitions` n° 3, 6, 7.
+**Pas affirmables par une capture** : `base` n° 3 et 6 (animation de la bobine : se vérifie par
+`document.getAnimations()`, pas par une image).
+
 ## Lot 1
 
 Suites : `profil.mjs`, `settings.mjs`, `rules.mjs`, `parallel.mjs`, `repere.mjs`, `queue.mjs`.
@@ -419,9 +451,9 @@ Compte : 5 vérifications — parcours 2, composant 1, unitaire-main 0, capture 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
 | 1 | Après redémarrage : la conversation est dans « Récents » | Historique relu du disque | doublon | `parcours-matinee` étape 13 | `e2e/suites/parcours-matinee.mjs › relance : la conversation affichée, son fil (relecture comprise), son modèle et son mode` (les deux conversations dans la barre) |
-| 2 | Après redémarrage : la consommation de la conversation est conservée | Usage persisté et relu | parcours | `parcours-matinee` étape 13 (ajouter `usage-meter`) | non (partiel côté données : `src/shared/usage-cost.test.ts › posée par usageDigest, relue du disque, absente sinon`) |
+| 2 | Après redémarrage : la consommation de la conversation est conservée | Usage persisté et relu | parcours | `parcours-matinee` étape 13 (ajouter `usage-meter`) | **parcours-matinee › étape 13** (jauge `usage-meter` relue avant tout nouveau tour) — remplaçant écrit, à jouer sur GitHub ; avant : non (partiel côté données : `src/shared/usage-cost.test.ts › posée par usageDigest, relue du disque, absente sinon`) |
 | 3 | Conversation rechargée (session/load) puis continuée | Reprise ACP réelle | doublon | `parcours-matinee` étape 13 | `parcours-matinee.mjs › agent relancé : il répond dans le même fil, avec les réglages de la conversation` |
-| 4 | Suppression confirmée dans l'app : historique vide, accueil, aucune boîte native | Dialogue intégré, pas de `confirm()` du navigateur ; accueil après la dernière | parcours | `parcours-deleguer` étape 6 (ajouter `ui.dialogs.length === 0`) | partiel : `parcours-deleguer.mjs › mère et travaux à la corbeille : plus dans la barre latérale` (passe par `delete-dialog`) ; `src/renderer/src/components/sidebar/DeleteDialog.test.tsx` (dialogue) ; l'accueil après la dernière suppression non |
+| 4 | Suppression confirmée dans l'app : historique vide, accueil, aucune boîte native | Dialogue intégré, pas de `confirm()` du navigateur ; accueil après la dernière | parcours | `parcours-deleguer` étape 6 (ajouter `ui.dialogs.length === 0`) | **parcours-deleguer › étape 6** (`ui.dialogs.length === 0` ; journée rouge plus loin (fiche 277, défauts 1-2)) — remplaçant écrit, à jouer sur GitHub ; avant : partiel : `parcours-deleguer.mjs › mère et travaux à la corbeille : plus dans la barre latérale` (passe par `delete-dialog`) ; `src/renderer/src/components/sidebar/DeleteDialog.test.tsx` (dialogue) ; l'accueil après la dernière suppression non |
 | 5 | Après redémarrage : « Épinglées » et dossier repliés, mode Dossiers gardé | Replis et regroupement persistés (`localStorage`) | composant | — | `src/renderer/src/components/sidebar/Sidebar.test.tsx › chaque section se replie, et le reste au redémarrage` ; `› un dossier se replie (seul son nom reste), et le reste au redémarrage` (regroupement lu de `localStorage`) |
 
 ---
@@ -449,7 +481,7 @@ Compte : 28 vérifications — parcours 27, composant 1, unitaire-main 0, captur
 |---|---|---|---|---|---|
 | 1 | Accueil : racine et en-têtes immobiles | Pas de défilement parasite (D26) | parcours | garder ici | non |
 | 2 | Accueil, 20 Tab : rien ne bouge | Le focus clavier ne fait pas défiler la racine | parcours | garder ici | non |
-| 3 | Sommaire, messages 41 et 56 : sous le fondu (boucle ×2) | Le défilement doux s'arrête sous le dégradé | parcours | `parcours-longue` étape 2 (ajouter « sous le fondu ») | partiel : `parcours-longue.mjs › le troisième message est à l’écran, le fil n’est plus en bas` (à l'écran, pas sous le fondu) |
+| 3 | Sommaire, messages 41 et 56 : sous le fondu (boucle ×2) | Le défilement doux s'arrête sous le dégradé | parcours | `parcours-longue` étape 2 (ajouter « sous le fondu ») | **parcours-longue › étape 2** (partiel : un message (3ᵉ) par le sommaire, fil déjà rendu) — remplaçant écrit, à jouer sur GitHub ; avant : partiel : `parcours-longue.mjs › le troisième message est à l’écran, le fil n’est plus en bas` (à l'écran, pas sous le fondu) |
 | 4 | Fil rouvert par la fin : premier message pas encore rendu | Rendu partiel (fiche 193), précondition | composant | `src/renderer/src/components/thread/useEntryWindow.test.ts` | partiel : `useEntryWindow.test.ts › fil vide, puis arrivée du fil : ouvert par la fin` |
 | 5 | Sommaire, message à rendre : sous le fondu | Rendre puis montrer, sans passer sous le dégradé | parcours | garder ici | non |
 | 6 | `scrollIntoView`, message 21 : sous le fondu | `scroll-padding`/marge réels | parcours | garder ici | non |
@@ -614,8 +646,8 @@ Compte : 7 vérifications — parcours 2, composant 1, unitaire-main 0, capture 
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
-| 1 | Mermaid pas chargé tant qu'aucun diagramme | découpage Vite réel : le morceau `Diagram` n'est pas préchargé | parcours | `parcours-longue`, étape 1 (avant le premier diagramme) — ou un contrôle du manifeste de build | non |
-| 2 | organigramme et séquence dessinés | la vraie bibliothèque dessine dans Chromium (jsdom n'a pas de mise en page) | parcours | `parcours-longue`, étape 1 | partiel : `MermaidBlock.test.tsx` › « bloc ```mermaid dessiné ; « Voir le code » et retour » (`renderMermaid` simulé) |
+| 1 | Mermaid pas chargé tant qu'aucun diagramme | découpage Vite réel : le morceau `Diagram` n'est pas préchargé | parcours | `parcours-longue`, étape 1 (avant le premier diagramme) — ou un contrôle du manifeste de build | **parcours-longue › étape 1** (`modulepreload` relu avant le premier diagramme) — remplaçant écrit, à jouer sur GitHub |
+| 2 | organigramme et séquence dessinés | la vraie bibliothèque dessine dans Chromium (jsdom n'a pas de mise en page) | parcours | `parcours-longue`, étape 1 | **parcours-longue › étape 1** (états `drawn drawn error`, sans relire les libellés) — remplaçant écrit, à jouer sur GitHub ; avant : partiel : `MermaidBlock.test.tsx` › « bloc ```mermaid dessiné ; « Voir le code » et retour » (`renderMermaid` simulé) |
 | 3 | Mermaid chargé à l'arrivée du diagramme | complément de #1 | doublon | — (de #1) | non (doublon de #1 dans la suite) |
 | 4 | bloc invalide : le code reste, avec l'erreur | erreur de rendu affichée | doublon | — | `MermaidBlock.test.tsx` › « invalide : le code reste, avec l'erreur de Mermaid en une ligne » |
 | 5 | redessiné aux couleurs de la variante | changement de palette → nouveau rendu aux jetons du thème | capture | capture nocturne `m0-mermaid-<variante>` (les variables CSS réelles ne sont pas calculées par jsdom) | non |
@@ -693,7 +725,7 @@ Compte : 19 vérifications — parcours 1, composant 8, unitaire-main 2, capture
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
 | 1 | branche sous la saisie ; ni bouton terminal ni titre (brouillon) | puce de branche dans le contexte de la saisie, en-tête vide pour un brouillon | composant | `Composer.test.tsx` + test de l’en-tête (à créer) | non |
-| 2 | (attente) après le tour de l’agent : point sur la branche | les fichiers écrits par l’agent remontent dans l’état git sans action | parcours | `parcours-matinee`, étape 5 (vérifier `git-branch[data-dirty=true]`) | partiel : `parcours-matinee` étape 7 attend le point retiré après le commit ; `useGitStatus.test.ts › « Committer puis fusionner » ailleurs : le point « non commité » disparaît…` |
+| 2 | (attente) après le tour de l’agent : point sur la branche | les fichiers écrits par l’agent remontent dans l’état git sans action | parcours | `parcours-matinee`, étape 5 (vérifier `git-branch[data-dirty=true]`) | **parcours-matinee › étape 5** — remplaçant écrit, à jouer sur GitHub ; avant : partiel : `parcours-matinee` étape 7 attend le point retiré après le commit ; `useGitStatus.test.ts › « Committer puis fusionner » ailleurs : le point « non commité » disparaît…` |
 | 3 | titre de la conversation aligné à gauche (< 40 px) | position du titre dans l’en-tête | capture | capture nocturne | non |
 | 4 | « Renommer » depuis le titre : en place et dans la barre latérale | menu du titre → renommage partagé | composant | test du menu du titre (à créer) | partiel : `manager.test.ts › titre proposé par l’agent ; renommage prioritaire ; suppression` (main seul) |
 | 5 | « Supprimer » depuis le titre : même confirmation, page de nouveau cliquable | même boîte que la barre latérale ; Radix rend les clics | composant | test du menu du titre (à créer) | partiel : `menus-modal.test.ts › are all non-modal: a modal Radix menu that opens a dialog leaves the page unclickable` ; `DeleteDialog.test.tsx` |
@@ -745,14 +777,14 @@ Compte : 18 vérifications — parcours 5, composant 5, unitaire-main 0, capture
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
 | 1 | ⌃` : un terminal s’ouvre à droite et prend le clavier | raccourci, pty réel, commande tapée | doublon | — | oui : `parcours-outils` étape 1 (même raccourci, commande à la main) |
-| 2 | texte à 12 px du bord, sans cadre arrondi | marge du terminal (fiche 276) | capture | capture nocturne | non |
+| 2 | texte à 12 px du bord, sans cadre arrondi | marge du terminal (fiche 276) | capture | capture nocturne | **parcours-outils › étape 1** (capture qui affirme `277-outils-terminal`) — remplaçant écrit, à jouer sur GitHub |
 | 3 | Nerd Font livrée chargée, dans la police du terminal | la police livrée est réellement chargée par Chromium | parcours | `parcours-outils` étape 1 (ajouter le `printf` d’icônes) | partiel : `appearance.test.ts › Nerd Font livrée juste avant monospace, après les polices de lettres` (pile seule, pas le chargement) |
 | 4 | icônes entières : une cellule d’avance, débord sur l’espace suivant seulement | glyphes powerline non coupés par xterm.js | parcours | `parcours-outils` étape 1 | non (mesure de la vraie police au canvas) |
-| 5 | ⌃` ouvre et referme, même quand le terminal a le clavier | xterm ne mange pas le raccourci | parcours | `parcours-outils` étape 1 (refermer depuis le terminal) | partiel : `usePanel.test.ts › ⌃` ouvre le terminal avec le clavier, puis le referme` (sans xterm réel) |
+| 5 | ⌃` ouvre et referme, même quand le terminal a le clavier | xterm ne mange pas le raccourci | parcours | `parcours-outils` étape 1 (refermer depuis le terminal) | **parcours-outils › étape 1** — remplaçant écrit, à jouer sur GitHub ; avant : partiel : `usePanel.test.ts › ⌃` ouvre le terminal avec le clavier, puis le referme` (sans xterm réel) |
 | 6 | commande montrée avant de partir dans le terminal | rien ne part sans être vu | doublon | — | oui : `parcours-outils` étape 2 ; `terminal-tools.test.ts › commande montrée une fois, lancée dans un onglet neuf, puis lue` |
 | 7 | trois choix (Lancer, Toujours cette commande ici, Refuser) | choix proposés | doublon | — | oui : `command-approval.test.ts › trois choix ; « Toujours cette commande ici » retenu pour ce dossier seulement` |
 | 8 | commande lancée dans un onglet de l’agent (onglet 2), écran lu | l’agent a son onglet et lit la sortie | doublon | — | oui : `parcours-outils` étape 2 ; `terminal-manager.test.ts › onglet dans le dossier, commande lancée, écran lu comme l’utilisateur le voit` |
-| 9 | onglet « Terminal » ouvert tout seul, historique affiché | panneau fermé : il s’ouvre et xterm rejoue la sortie | parcours | `parcours-outils` étape 2 (fermer le panneau avant) | partiel : `parcours-outils` étape 2 (panneau déjà ouvert) |
+| 9 | onglet « Terminal » ouvert tout seul, historique affiché | panneau fermé : il s’ouvre et xterm rejoue la sortie | parcours | `parcours-outils` étape 2 (fermer le panneau avant) | **parcours-outils › étape 2** (terminal refermé à l’étape 1, rouvert par la commande de l’agent) — remplaçant écrit, à jouer sur GitHub ; avant : partiel : `parcours-outils` étape 2 (panneau déjà ouvert) |
 | 10 | Réglages › Confidentialité : commande retenue listée sous son dossier | la commande retenue est visible | composant | test de la section Confidentialité (à créer) | partiel : `approvals.test.ts › sites et commandes retenus, relus au lancement suivant, révocables` (main seul) |
 | 11 | commande retenue oubliée depuis les Réglages | révocation par l’interface, avec confirmation | composant | même test (à créer) | partiel : même test (main seul) |
 | 12 | saisie au clavier dans le terminal | frappe transmise au pty | doublon | — | oui : `parcours-outils` étape 1 |
@@ -1077,9 +1109,9 @@ Compte : 12 vérifications — parcours 1, composant 4, unitaire-main 0, capture
 | 2 | `/btw` proposée dans le menu « / » | la commande est listée | composant | `src/renderer/src/useCommandMenu.test.ts` | non |
 | 3 | l'aparté reçoit la consigne de lecture seule | | doublon | — | `src/main/conversations/aside.test.ts › question sans le fil : session à part en mode plan, consigne de lecture seule, coût compté, session supprimée` ; `src/shared/aside.test.ts › consigne de lecture seule, après la question ; fin du fil seulement si demandée` |
 | 4 | par défaut, rien du fil principal | | doublon | — | `src/shared/aside.test.ts › consigne de lecture seule, après la question ; fin du fil seulement si demandée` |
-| 5 | carte au-dessus de la zone de saisie, saisie vide | placement réel (getBoundingClientRect) | capture | capture nocturne `180-aparte-reponse` | non |
+| 5 | carte au-dessus de la zone de saisie, saisie vide | placement réel (getBoundingClientRect) | capture | capture nocturne `180-aparte-reponse` | **parcours-matinee › étape 9** (capture qui affirme `277-matinee-aparte`) — remplaçant écrit, à jouer sur GitHub |
 | 6 | coût de l'aparté affiché | | doublon | — | `AsideCard.test.tsx › réponse, refus d'office, coût ; « Ajouter au fil » met la citation dans la saisie` |
-| 7 | rien dans le fil, le tour principal attend toujours sa permission | deux sessions du même processus d'agent en parallèle, sans se gêner | parcours | `parcours-matinee` étape 8 (ajouter un `/btw` pendant le tour long) | partiel : `src/main/conversations/aside.test.ts › question sans le fil…` (session à part, sans tour principal en cours) |
+| 7 | rien dans le fil, le tour principal attend toujours sa permission | deux sessions du même processus d'agent en parallèle, sans se gêner | parcours | `parcours-matinee` étape 8 (ajouter un `/btw` pendant le tour long) | **parcours-matinee › étape 9** (pendant un tour `attend-stop` (pas une permission), file comprise) — remplaçant écrit, à jouer sur GitHub ; avant : partiel : `src/main/conversations/aside.test.ts › question sans le fil…` (session à part, sans tour principal en cours) |
 | 8 | case cochée : la fin du fil part avec la question | | doublon | — | `aside.test.ts › avec le fil : la fin de la conversation part avec la question ; une deuxième question dans la même session` |
 | 9 | demande d'autorisation de l'aparté refusée d'office, et dite | | doublon | — | `aside.test.ts › lecture seule : une demande d'autorisation est refusée d'office` ; `AsideCard.test.tsx › réponse, refus d'office, coût…` |
 | 10 | question et réponse en citation dans la saisie, jamais envoyées | | doublon | — | `AsideCard.test.tsx › réponse, refus d'office, coût ; « Ajouter au fil » met la citation dans la saisie` ; `src/shared/aside.test.ts › « Ajouter au fil » : question et réponse en citation` |

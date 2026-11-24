@@ -141,6 +141,33 @@ Il faut les écrire **avant** de supprimer les vérifications qui y migrent :
    composant ne suivent pas les testid ou libellés réels. Il faut garder au moins un e2e du
    pilote contre l'app réelle.
 
+## Remplaçants écrits (2026-11-24, branche `test/remplacants-parcours-captures`)
+
+Écrits **avant** toute suppression ; rien n'est supprimé. À jouer sur GitHub (ADR-0069). La colonne
+« Déjà couvert ? » des lignes concernées commence par l'étape exacte.
+
+- **Faits** : `acp` n° 1 (outils 9) ; `network` n° 3 (pannes 10) ; `onboarding` n° 6, 8, 14, 18
+  dans la **7ᵉ journée `parcours-premier-lancement`** (risque 6 : l'accueil du premier lancement
+  n'était dans aucune journée).
+- **Pas encore écrits** : `bob` n° 4/6, `changes` n° 7, `composer` n° 4/43/47, `filles-fusion`
+  n° 11/14 (journée déléguer rouge), `launch` n° 2/3/5, `panel` n° 7/14, `quick` n° 2/11/16,
+  `simulator` n° 1/4/6, `travaux-groupe` n° 3, `user-commands` n° 6, `auth` n° 3-4 (clé d'API).
+  Enchaînements du risque 3 encore sans journée : clé d'API puis relance, `session/load` et rejeu,
+  bascule `no-resume`, journal changé à chaud, rejeu ACP des diffs, sous-agents hors tour.
+
+Mécanisme des **captures qui affirment** : `e2e/affirm.mjs`. `affirm(ui, nom, [sondes])` prend la
+capture puis mesure le DOM réel (boîtes, débordement `MEASURE`, alignement, style calculé,
+contraste WCAG) ; chaque sonde est un `check` qui échoue avec sa mesure. Pas de comparaison
+d'images : l'image sert à comprendre un échec, la mesure est l'oracle. Une ligne `capture` dont
+l'état n'existe dans aucune journée garde sa mesure dans sa suite réduite (y poser `affirm` au
+moment de la réduction) : elle ne devient jamais une photo seule.
+
+Captures du groupe B **mesurées dans une journée** : `composer` n° 31-32 (premier lancement 5).
+**Mesurables, hors des journées** : `android` n° 11, 13, 18 et `simulator` n° 10, 17, 22 (boîtes
+du cadre et de la vue), `commands` n° 3-4, `composer` n° 18, 20, 37, 38, 44, `fresh-start` n° 2,
+`history` n° 11, `onboarding` n° 23, `panel` n° 12, `pendant-tour` n° 3 (couleur calculée),
+`relecture-commits` n° 4, `scheduled` n° 10, `travaux-groupe` n° 6.
+
 ## Détail par suite
 
 ### `acp.mjs` — onglet « Échanges ACP » du panneau : lignes, regroupement, JSON, filtre, pause
@@ -149,7 +176,7 @@ Il faut les écrire **avant** de supprimer les vérifications qui y migrent :
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
-| 1 | onglet ouvert par le « + », démarrage de l'agent déjà là | les échanges d'avant l'ouverture (`initialize`, `session/new`) sont gardés par le main et livrés au renderer à l'ouverture | `parcours` | `parcours-outils` (nouvelle étape : ouvrir « Échanges ACP », démarrage présent) | partiel : `src/main/agent/acp-exchanges.test.ts › tampon borné…` ; `› lots envoyés seulement aux conversations regardées…` |
+| 1 | onglet ouvert par le « + », démarrage de l'agent déjà là | les échanges d'avant l'ouverture (`initialize`, `session/new`) sont gardés par le main et livrés au renderer à l'ouverture | `parcours` | `parcours-outils` (nouvelle étape : ouvrir « Échanges ACP », démarrage présent) | **parcours-outils › étape 9** (dans une nouvelle conversation) — remplaçant écrit, à jouer sur GitHub ; avant : partiel : `src/main/agent/acp-exchanges.test.ts › tampon borné…` ; `› lots envoyés seulement aux conversations regardées…` |
 | 2 | pied : clés et jetons masqués, messages en mémoire seulement | texte du pied de l'onglet | `composant` | `src/renderer/src/components/panel/AcpTab.test.tsx` (à créer) | non |
 | 3 | → session/prompt avec son identifiant | ligne sortante d'une requête : flèche et `#id` | `doublon` | — | `src/renderer/src/acp-view.test.ts › méthode ou type de mise à jour, détail, durée de la réponse depuis sa requête` |
 | 4 | ← session/request_permission | ligne entrante d'une requête de l'agent | `doublon` | — | même test que #3 |
@@ -425,8 +452,8 @@ Il faut les écrire **avant** de supprimer les vérifications qui y migrent :
 | 28 | 500 px, Plan : invite entière | la hauteur de la zone suit son invite quand la largeur change | `composant` | `src/renderer/src/useTextareaLayout.test.tsx` | partiel : `useTextareaLayout.test.tsx › suit la largeur : une ligne de plus quand la zone rétrécit, sans attendre le texte` |
 | 29 | 500 px, Code : invite entière | même contrat que #28, autre invite | `doublon` | — | partiel : même test que #28 |
 | 30 | 500 px : texte tapé entier, sans défilement | un texte tapé large garde toutes ses lignes une fois la zone rétrécie | `composant` | `useTextareaLayout.test.tsx` | partiel : même test que #28 |
-| 31 | accueil à 760 px : saisie et envoi dans la fenêtre | rien ne dépasse à droite sur l'accueil étroit | `capture` | capture nocturne `composer-9-accueil-760` | non |
-| 32 | accueil à 760 px : suggestions dans la fenêtre | les suggestions ne dépassent pas | `capture` | capture nocturne `composer-9-accueil-760` | non |
+| 31 | accueil à 760 px : saisie et envoi dans la fenêtre | rien ne dépasse à droite sur l'accueil étroit | `capture` | capture nocturne `composer-9-accueil-760` | **parcours-premier-lancement › étape 5** (capture qui affirme `277-premier-accueil-760`) — remplaçant écrit, à jouer sur GitHub |
+| 32 | accueil à 760 px : suggestions dans la fenêtre | les suggestions ne dépassent pas | `capture` | capture nocturne `composer-9-accueil-760` | **parcours-premier-lancement › étape 5** (capture qui affirme `277-premier-accueil-760`) — remplaçant écrit, à jouer sur GitHub |
 | 33 | accueil : dossier et branche sous la saisie | même contrat que #1 | `doublon` | — | partiel : même contrat que #1 |
 | 34 | accueil à 760 px : le bouton d'envoi se clique | un clic sur Envoyer envoie le message | `composant` | `Composer.test.tsx` | partiel : `Composer.test.tsx › double Entrée, ou Entrée puis clic sur Envoyer : un seul envoi` |
 | 35 | mode Code : saisie habituelle, sans rappel (transitions 150 ms) | hors Plan : pas de teinte ni de ligne de rappel | `doublon` | — | `Composer.test.tsx › hors mode Plan : ni teinte, ni ligne de rappel, invite habituelle` |
@@ -741,7 +768,7 @@ Il faut les écrire **avant** de supprimer les vérifications qui y migrent :
 |---|---|---|---|---|---|
 | 1 | bandeau « Connexion perdue » à la place de l'indicateur, Stop proposé | pendant une attente de reconnexion : bandeau, pas d'indicateur de travail, Stop | `composant` | `src/renderer/src/components/thread/TurnRetryBanner.test.tsx` + rendu du fil (indicateur masqué) | partiel : `TurnRetryBanner.test.tsx › décompte la prochaine tentative, et « Réessayer maintenant »` |
 | 2 | décompte de la deuxième tentative | « dans 4 s (2/5) » | `doublon` | — | `TurnRetryBanner.test.tsx › décompte la prochaine tentative…` ; `src/main/agent/turn-retry.test.ts › cinq tentatives après 2, 4, 8, 16 puis 32 s, puis plus rien` |
-| 3 | réseau revenu : le message part, sans nouvelle bulle ni erreur | erreur `fetch failed` réelle de l'agent → nouvelle tentative du main → une seule bulle à l'écran | `parcours` | `parcours-pannes` (nouvelle étape « réseau instable ») | partiel : `src/main/agent/agent-host-retry.test.ts › deux tentatives, puis le message part, sans nouvelle bulle ni erreur` |
+| 3 | réseau revenu : le message part, sans nouvelle bulle ni erreur | erreur `fetch failed` réelle de l'agent → nouvelle tentative du main → une seule bulle à l'écran | `parcours` | `parcours-pannes` (nouvelle étape « réseau instable ») | **parcours-pannes › étape 10** — remplaçant écrit, à jouer sur GitHub ; avant : partiel : `src/main/agent/agent-host-retry.test.ts › deux tentatives, puis le message part, sans nouvelle bulle ni erreur` |
 | 4 | cinq échecs : « Connexion impossible », seul « Réessayer » | état épuisé du bandeau | `doublon` | — | `TurnRetryBanner.test.tsx › limite de débit, puis tentatives épuisées : « Réessayer » seul` |
 | 5 | cinq échecs : une seule bulle, un seul avis d'erreur | pas de doublon de bulle ni d'erreur | `doublon` | — | `agent-host-retry.test.ts › cinq échecs : « Connexion impossible », une seule erreur, puis « Réessayer » repart` |
 | 6 | Échap pendant l'attente : plus de tentative, tour arrêté | Échap annule les tentatives | `doublon` | — | `turn-retry.test.ts › Échap ou Stop annule les tentatives` ; `src/renderer/src/composer-keys.test.ts › Échap arrête la réponse…` |
@@ -762,19 +789,19 @@ Il faut les écrire **avant** de supprimer les vérifications qui y migrent :
 | 3 | étape Agent : pas de « Passer cette étape » | L'étape Agent n'a pas de bouton pour la passer | `doublon` | — | même test |
 | 4 | connexion : « {agent} est prêt », sans message au modèle | Après Continuer, l'état « prêt » est montré, et la vérification n'envoie rien au modèle | `composant` | `Onboarding.test.tsx` (ajouter le texte `readyTitle`) | partiel : `Onboarding.test.tsx › Continuer : agent configuré, vérification sans message…` ; `src/main/onboarding/agent-readiness.test.ts › « connecté ? » : session ouverte sans aucun message au modèle` |
 | 5 | focus sur le bouton principal du nouvel état | Le focus passe sur « Continuer » quand la connexion est prête | `composant` | `Onboarding.test.tsx` | partiel : le focus n'est vérifié que sur `onboarding-cancel` (`Onboarding.test.tsx › Continuer : agent configuré…`) |
-| 6 | barre latérale : l'agent choisi | Le choix fait dans l'accueil (configure → main → conversation) arrive jusqu'au pied de la barre latérale | `parcours` | garder ici (accueil réduit) | non |
+| 6 | barre latérale : l'agent choisi | Le choix fait dans l'accueil (configure → main → conversation) arrive jusqu'au pied de la barre latérale | `parcours` | garder ici (accueil réduit) | **parcours-premier-lancement › étape 2** — remplaçant écrit, à jouer sur GitHub |
 | 7 | essai : le message à envoyer montré tel quel | Le texte exact envoyé à l'agent (« Answer with the single word OK ») est affiché | `composant` | `Onboarding.test.tsx` | non |
-| 8 | essai : la réponse de l'agent | L'essai fait un vrai tour ACP avec l'agent factice et montre sa réponse | `parcours` | garder ici | partiel : `agent-readiness.test.ts › répond : texte, coût et jetons annoncés ; session d'essai supprimée, agent arrêté` |
+| 8 | essai : la réponse de l'agent | L'essai fait un vrai tour ACP avec l'agent factice et montre sa réponse | `parcours` | garder ici | **parcours-premier-lancement › étape 4** — remplaçant écrit, à jouer sur GitHub ; avant : partiel : `agent-readiness.test.ts › répond : texte, coût et jetons annoncés ; session d'essai supprimée, agent arrêté` |
 | 9 | essai réussi : « Commencer » a le focus | Le focus passe sur « Commencer » après la réponse | `composant` | `Onboarding.test.tsx` | non |
 | 10 | première conversation : « Lance les tests » avec pnpm | La suggestion tirée du dossier choisi reprend son gestionnaire de paquets | `composant` | `src/renderer/src/components/Welcome.test.tsx` (à créer) | partiel : `src/main/onboarding/trial-folder.test.ts › commande des tests selon le gestionnaire du dossier` |
 | 11 | première conversation : liens vers l'aide | L'accueil de la première conversation montre Premiers pas et Autorisations | `composant` | `Welcome.test.tsx` (à créer) | non |
 | 12 | la suggestion remplit la saisie sans l'envoyer | Cliquer une suggestion remplit la zone de saisie sans rien envoyer | `composant` | `Welcome.test.tsx` (à créer) | non |
 | 13 | marque « fini » enregistrée | « Commencer » écrit `onboarding.outcome = finished` dans settings.json | `unitaire-main` | `src/main/onboarding/onboarding.test.ts` + `Onboarding.test.tsx` (finish('finished')) | partiel : `onboarding-state.test.ts › fini ou passé : posé une fois, jamais défait` ; `Onboarding.test.tsx › « Passer l'accueil » : marqué passé` (côté skipped seulement) |
-| 14 | relancée : l'accueil ne revient pas | Après un redémarrage, l'accueil fini n'est plus montré | `parcours` | garder ici (redémarrage) | partiel : `src/main/onboarding/onboarding.test.ts › fini puis passé : la première marque reste, l'accueil ne revient plus` |
+| 14 | relancée : l'accueil ne revient pas | Après un redémarrage, l'accueil fini n'est plus montré | `parcours` | garder ici (redémarrage) | **parcours-premier-lancement › étape 8** — remplaçant écrit, à jouer sur GitHub ; avant : partiel : `src/main/onboarding/onboarding.test.ts › fini puis passé : la première marque reste, l'accueil ne revient plus` |
 | 15 | accueil ouvert, rien choisi : aucun agent de conversation lancé | Tant que rien n'est choisi, aucun processus d'agent ne démarre (6 s d'observation) | `parcours` | garder ici | partiel : `src/main/conversations/agentless.test.ts › accueil dû en essai : aucun dossier, l'agent attend le choix (fiche 242, D17)` |
 | 16 | accueil ouvert, rien choisi : aucun quota lu | Aucun quota n'est lu au lancement avant le choix | `unitaire-main` | `src/main/agent/quota-setup.test.ts` | partiel : `quota-setup.test.ts › agent installé mais pas utilisé : son quota n'est pas lu au lancement` |
 | 17 | agent choisi et essayé, pas de dossier : l'agent attend | Après la connexion vérifiée, l'agent de la conversation n'est pas lancé sans dossier | `parcours` | garder ici | partiel : `agentless.test.ts › accueil dû en essai…` |
-| 18 | dossier choisi : l'agent démarre, dans ce dossier | Le dossier choisi dans l'accueil devient le cwd du vrai processus d'agent | `parcours` | garder ici | non |
+| 18 | dossier choisi : l'agent démarre, dans ce dossier | Le dossier choisi dans l'accueil devient le cwd du vrai processus d'agent | `parcours` | garder ici | **parcours-premier-lancement › étape 5** (dossier lu dans le menu du dossier, pas dans `ps`) — remplaçant écrit, à jouer sur GitHub |
 | 19 | aucun agent : sous-titre et conseils des profils | Sans agent, l'écran explique et liste quoi installer, sans alerte | `composant` | `Onboarding.test.tsx` | partiel : `Onboarding.test.tsx › aucun agent : « Chercher à nouveau » sans résultat le dit` (contient « bob ») |
 | 20 | « Chercher à nouveau » sans résultat | La recherche sans résultat affiche « Toujours aucun agent trouvé. » | `doublon` | — | `Onboarding.test.tsx › aucun agent : « Chercher à nouveau » sans résultat le dit` |
 | 21 | explorer sans agent : marqué passé | « Explorer » sans agent marque l'accueil comme passé | `composant` | `Onboarding.test.tsx` | partiel : `Onboarding.test.tsx › « Passer l'accueil » : marqué passé, l'accueil disparaît` (autre bouton) |
