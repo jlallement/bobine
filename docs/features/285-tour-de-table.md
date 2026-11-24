@@ -214,16 +214,19 @@ le dossier de la conversation d'origine, sans worktree. C'est le mécanisme d'un
 (fiches 223, 262) : refus d'office des écritures demandées, empreinte git avant et après, et
 lecture seule seulement demandée pour un agent qui écrit sans demander.
 
-Son premier message contient, dans cet ordre :
+Son premier message contient, dans cet ordre (l'ordre réel, voulu : un agent qui titre sa tâche
+d'après le début du premier message, comme Bob, garde la question, fiche 125) :
 
-1. **La consigne du participant**, en anglais, car ce qui va à l'agent ne se traduit pas
-   (ADR-0014). Voir « Consigne donnée aux participants ».
-2. **La question**, telle que tapée.
-3. **Les pièces jointes du message** et les fichiers cités par `@fichier`. Le participant peut
-   lire le dépôt lui-même : il a ses outils de lecture.
-4. **Le dernier échange de la conversation**, s'il y en a un : dernier message et dernière
+1. **La question**, telle que tapée.
+2. **Le dernier échange de la conversation**, s'il y en a un : dernier message et dernière
    réponse, sur le rendu de la fiche 108 (`conversationText`), borné à environ 8 000 caractères
-   (décision D2). Sans case à cocher ; l'infobulle de « 3 participants » le dit.
+   (décision D2), encadré comme une donnée. Sans case à cocher ; l'infobulle de « 3 participants »
+   le dit.
+3. **La consigne du participant** (bloc `<bobine_role name="participant">`), en anglais, car ce
+   qui va à l'agent ne se traduit pas (ADR-0014). Voir « Consigne donnée aux participants ».
+
+**Les pièces jointes du message** partent avec ce premier message (blocs à part). Le participant
+peut lire le dépôt lui-même : il a ses outils de lecture.
 
 Ce qu'un participant ne reçoit jamais : les avis des autres, le nom des autres modèles, et le reste
 du fil. Il n'a aucun outil de Bobine (mémoire comprise).
@@ -1015,4 +1018,16 @@ le main n'a pas livré l'étape 1) :
     `bobine_*_<nonce>` ; `PARTICIPANT_BRIEF` et règles de synthèse complétés. Clé ajoutée :
     `roundtable.error.question`. À reformuler par l'interface : `roundtable.state.readOnly.requested`
     (« vérifiée dans le dépôt seulement »).
+- 2026-11-25 : **corrections de la recette fonctionnelle et de la revue UX** (branche
+  `1.2-rt-engine-fix2`) : arrêt du tour cohérent (« arrêt en cours », participants arrêtés et
+  attendus, puis « arrêté ») ; fiche de chaque participant tenue à jour (tour en cours ou non,
+  état de sa place : jamais « fini » pour un modèle refusé) ; rien de figé à la corbeille (une place
+  au travail est arrêtée, une conversation absente sort de la synthèse, l'interface lit
+  l'existence) ; agent et modèle de la synthèse et de la décision relevés à leur départ ; plafond
+  d'un participant : avis complet compté, question retenue dans un état explicite repris par
+  « Continuer », libellés traduits sur la carte du plafond ; erreurs typées (question trop longue,
+  conversation archivée) ; durée repartie à la relance ; titres et libellés lisibles, sans
+  préfixe ; hors git sans avertissement ; rôle « Participant » interne ; recherche et export sans
+  texte interne. Ordre réel du premier message d'un participant corrigé ci-dessus (question,
+  dernier échange, consigne).
 
