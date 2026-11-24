@@ -12,6 +12,12 @@ What changes for you, version by version. Shown in Settings › About.
 - The title the agent gives a conversation no longer comes from what Bobine adds to your first
   message (“Summarize the bobine_capabilities project”): the conversation then keeps the title
   taken from your message.
+- IBM Bob: the Bobcoin quota shows at the bottom left from launch — the month’s last reading,
+  with its reading time in the details — then updates a few seconds after Bob is ready. It only
+  appeared once its reading was done.
+- My activity › IBM Bob on this Mac: the help for “Spend on this Mac” explains why this total can
+  be lower than the page’s: sessions Bobine deletes from Bob (drafted commit messages, asides…)
+  are no longer there.
 
 ## 1.0.0 — November 24, 2026
 

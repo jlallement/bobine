@@ -282,6 +282,7 @@ chaque création ou changement de statut.
 | [278](278-deps-sdk-acp-2-9.md) | Dépendances, lot de maintenance : SDK ACP 2.9.1 (schéma 1.34, ajouts seulement ; messages dans l'ordre d'arrivée), i18next, react-i18next, lucide-react, ignore, vitest, typescript-eslint ; référence sans modèle d'OpenCode 2.4.1 (commande `automation`) ; sondes Bob et OpenCode vertes | fait | P2 |
 | [279](279-pyramide-des-essais.md) | Pyramide des essais remise à l'endroit : inventaire des ≈ 2 000 vérifications e2e, remplaçants Vitest et étapes de journées écrits d'abord, puis suppression en deux étapes (une vérification ne part que si son remplaçant est vert) ; étapes 1 et 2 faites : 115 suites, 719 `check` (`docs/tests/plan-suppressions.md`) | en cours | P1 |
 | [280](280-commits-perdus-branche-fusionnee.md) | Commits « perdus » (D1, recette Bob 1.0.0) : la boîte « Supprimer » et « Worktrees orphelins » ne comptent plus que les commits qu'aucune autre branche, étiquette ou branche distante ne garde ; une branche fusionnée affiche 0 | fait | P1 |
+| [282](282-quota-au-demarrage-depense-sur-ce-mac.md) | Quota de Bob montré dès le lancement (dernier relevé du mois, remplacé par la lecture à l'agent prêt) ; aide de « Dépense sur ce Mac » qui explique l'écart avec Mon activité (sessions supprimées chez Bob, D3 de la recette 1.0) | fait | P2 |
 
 **Périmètre** : les fonctionnalités clés de Claude Desktop / Codex autour de l'agent. Bobine
 n'est **pas un IDE** : pas d'éditeur de fichiers, pas d'explorateur de projet. Seule exception

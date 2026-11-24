@@ -74,7 +74,10 @@ vide dans le magasin de l'agent factice à son lancement, comme Bob, puis affich
 `/status` (« Fetching budget... », puis `--plafond` / `MOCK_QUOTA_LIMIT`, 1000 par défaut ou
 `illimite`, et `--consomme` / `MOCK_QUOTA_USED`, 812.5 par défaut). `MOCK_QUOTA_SLOW_MS` : rien
 d'écrit ni d'affiché avant ce délai (`bob chat` lent ; quitter pendant la lecture, fiche 208).
-Suite e2e `quota`.
+**Quota au démarrage** (fiche 282) : relancer l'app sur le même dossier de données avec
+`MOCK_QUOTA_SLOW_MS=8000 MOCK_QUOTA_USED=900` ; le quota du lancement d'avant (81 %, gardé dans
+`agent-quotas.json`) s'affiche tout de suite sous le nom de l'agent, puis la lecture de ce lancement
+le remplace (90 %). Suite e2e `quota`.
 
 **Réglages de session exposés** : modes `code` / `ask`, et (sauf `--sans-options`) les options `model`
 (select groupé : `factice-rapide`, `factice-precis`) et `verbose` (booléen). Le scénario `echo` affiche

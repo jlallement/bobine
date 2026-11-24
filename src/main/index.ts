@@ -393,7 +393,8 @@ async function start(): Promise<void> {
     (list) => {
       if (!quitting) broadcast('usage:quotasChanged', list)
     },
-    { disposable }
+    // Dernier quota lu, montré dès le lancement suivant (fiche 282).
+    { disposable, memoryFile: join(userData, 'agent-quotas.json'), readOnly: profile.readOnly }
   )
 
   // Sites et commandes « toujours autorisés » (fiche 072) ; les Réglages ouverts suivent (plus bas).

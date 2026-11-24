@@ -573,7 +573,7 @@ export type FrResources = {
         readonly quotaHint: 'D’après le serveur de {{agent}}, toutes machines confondues, travail hors Bobine compris.'
         readonly quotaValue: '{{used}} sur {{limit}} · {{percent}} %'
         readonly spend: 'Dépense sur ce Mac'
-        readonly spendHint: 'D’après la base de {{agent}} sur ce Mac, Bobine et terminal compris. Une conversation utilisée dans la période compte en entier.'
+        readonly spendHint: 'D’après la base de {{agent}} sur ce Mac, Bobine et terminal compris. Une conversation utilisée dans la période compte en entier. Les sessions que Bobine a supprimées chez {{agent}} (message de commit rédigé, apartés, conversations supprimées avec leur session) n’y sont plus : Mon activité les compte, cette ligne non.'
       }
       readonly reset: {
         readonly title: 'Historique'
@@ -3181,7 +3181,7 @@ export type FrResources = {
     }
     readonly quotaBobStatus: {
       readonly label: 'Quota de Bobcoins'
-      readonly detail: 'Plafond et consommation du mois selon le serveur de Bob, toutes machines confondues : lus au démarrage par la commande `/status` de Bob Shell (`bob chat` en tâche de fond, 0 Bobcoin), la tâche vide qu’elle crée étant aussitôt supprimée. Bob ne l’envoie pas par ACP.'
+      readonly detail: 'Plafond et consommation du mois selon le serveur de Bob, toutes machines confondues : lus dès que Bob est prêt par la commande `/status` de Bob Shell (`bob chat` en tâche de fond, 0 Bobcoin), la tâche vide qu’elle crée étant aussitôt supprimée ; le dernier relevé du mois s’affiche dès le lancement, avec son heure. Bob ne l’envoie pas par ACP.'
     }
     readonly costBobDb: {
       readonly label: 'Consommation en Bobcoins'
@@ -3493,6 +3493,7 @@ export type FrResources = {
     readonly left: 'Reste'
     readonly over: 'Dépassé de'
     readonly source: 'Selon le serveur de {{agent}}, toutes machines confondues · lu à {{time}}'
+    readonly sourceEarlier: 'Selon le serveur de {{agent}}, toutes machines confondues · lu le {{date}} à {{time}}'
     readonly refresh: 'Actualiser'
     readonly reading: 'Lecture…'
   }
@@ -5768,7 +5769,7 @@ export type FrResources = {
           readonly account: {
             readonly title: '{{agent}} sur cet ordinateur'
             readonly spend: 'Dépense sur cet ordinateur'
-            readonly spendHint: 'D’après la base de {{agent}} sur cet ordinateur, Bobine et terminal compris. Une conversation utilisée dans la période compte en entier.'
+            readonly spendHint: 'D’après la base de {{agent}} sur cet ordinateur, Bobine et terminal compris. Une conversation utilisée dans la période compte en entier. Les sessions que Bobine a supprimées chez {{agent}} (message de commit rédigé, apartés, conversations supprimées avec leur session) n’y sont plus : Mon activité les compte, cette ligne non.'
           }
         }
       }
