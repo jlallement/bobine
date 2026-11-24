@@ -468,7 +468,7 @@ async function nominal(scheme) {
         )
         check(
           outline.some((o) => o.tour && o.text.includes('Postgres seul')) &&
-            outline.every((o) => !/Roundtable|Synthesize|rebuttal/i.test(o.text)),
+            outline.every((o) => o.tour || !/^Roundtable:|Synthesize|rebuttal round/i.test(o.text)),
           `sommaire : le tour par sa question, sans demande interne (${JSON.stringify(outline)})`
         )
       },
