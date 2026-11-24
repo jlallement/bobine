@@ -265,4 +265,41 @@ describe('journal changé à chaud (fiche 080), sur de vrais échanges ACP', () 
       a.manager.stopAll()
     }
   })
+
+  it('« Exécuter » le plan (fiche 095) : le mode changé arrive à l’agent avant la demande d’exécution', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'journal-plan-'))
+    initLog(dir)
+    setVerbosity('detailed')
+    const a = app()
+    try {
+      const id = a.manager.state().activeId
+      await a.manager.startActive()
+      const mode = a.manager
+        .view(id)
+        .snapshot?.controls.find((c) => c.category === 'mode' && c.type === 'select')
+      if (mode?.type !== 'select') throw new Error('pas de sélecteur de mode')
+      const other = mode.options.find((o) => o.value !== mode.currentValue)?.value
+      if (!other) throw new Error('un seul mode')
+      // Comme le renderer : le réglage attendu, puis la demande.
+      await a.call('agent:setControl', id, mode.id, other)
+      await a.call('agent:prompt', id, 'Exécute ce plan.')
+      const lines = readFileSync(join(dir, 'agents.log'), 'utf8').split('\n')
+      const prompt = lines.findIndex((l) => /→ session\/prompt/.test(l))
+      // Le dernier réglage envoyé avant la demande, et sa réponse, revenue avant qu'elle parte.
+      const setting = lines.findLastIndex(
+        (l, i) => i < prompt && /→ session\/set_(mode|config_option)/.test(l)
+      )
+      const answered = lines.findIndex(
+        (l, i) => i > setting && /← réponse #\d+ session\/set_(mode|config_option)/.test(l)
+      )
+      expect(prompt).toBeGreaterThan(-1)
+      expect(setting).toBeGreaterThan(-1)
+      expect(answered).toBeGreaterThan(setting)
+      expect(answered).toBeLessThan(prompt)
+      const after = a.manager.view(id).snapshot?.controls.find((c) => c.id === mode.id)
+      expect(after?.type === 'select' ? after.currentValue : undefined).toBe(other)
+    } finally {
+      a.manager.stopAll()
+    }
+  })
 })

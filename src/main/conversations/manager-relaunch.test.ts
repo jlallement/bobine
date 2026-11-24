@@ -1,6 +1,6 @@
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { basename, join, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { ConversationEvent } from '@shared/agent'
 import { conversationChanges } from '@shared/changes'
@@ -72,11 +72,21 @@ function environment(scenario: string, env: NodeJS.ProcessEnv = {}) {
 async function liveThenReopened(
   scenario: string,
   prompt: string,
-  options: { allow?: boolean; readme?: boolean; loseTranscript?: boolean } = {}
+  options: {
+    allow?: boolean
+    readme?: boolean
+    loseTranscript?: boolean
+    /** Fichiers déjà là, relatifs au dossier de travail. */
+    files?: Record<string, string>
+  } = {}
 ) {
   const env = environment(scenario)
   if (options.readme !== false) {
     writeFileSync(join(env.workspace, 'README.md'), '# Projet\n\nVersion 1\n')
+  }
+  for (const [path, content] of Object.entries(options.files ?? {})) {
+    mkdirSync(dirname(join(env.workspace, path)), { recursive: true })
+    writeFileSync(join(env.workspace, path), content)
   }
   const first = env.launch()
   const id = first.manager.state().activeId
@@ -110,6 +120,9 @@ const names = (view: Parameters<typeof changes>[0]) => changes(view).map((c) => 
 /** Ce que montre la vue « Conversation » : nom, création, totaux, ou « sans totaux » (`unknown`). */
 const shown = (view: Parameters<typeof changes>[0]) =>
   changes(view).map((c) => [basename(c.path), c.created, c.added, c.removed, !!c.unknown])
+/** Ancien texte du premier diff de chaque fichier : `null` dit une création (fiche 203). */
+const oldTexts = (view: Parameters<typeof changes>[0]) =>
+  changes(view).map((c) => [basename(c.path), c.diffs[0]?.oldText])
 /**
  * Fil gardé : les modifications rouvertes sont celles d'avant, à l'identique. Fil refait par le
  * rejeu : mêmes fichiers et mêmes totaux (un fichier créé puis complété peut y garder ses blocs).
@@ -197,9 +210,20 @@ describe('après redémarrage de l’app : la conversation rouverte par session/
     )
     // À la réouverture, le fichier existe : la décision prise à la demande est gardée.
     expect(existsSync(join(workspace, 'notes', 'alpha.txt'))).toBe(true)
-    const created = (view: typeof live) => changes(view).map((c) => [basename(c.path), c.created])
-    expect(created(live)).toEqual([['alpha.txt', true]])
-    expect(created(reopened)).toEqual([['alpha.txt', true]])
+    // Convention de l'app : sans ancien texte (`null`), une création (« Création de … »).
+    expect(oldTexts(live)).toEqual([['alpha.txt', null]])
+    expect(oldTexts(reopened)).toEqual([['alpha.txt', null]])
+  })
+
+  it('fichier vide existant écrit par Bob (même forme, oldText "") : toujours « Modification »', async () => {
+    const { live, reopened } = await liveThenReopened(
+      'modification-fichier-vide-bob',
+      'Écris dans notes/vide.txt',
+      { allow: true, readme: false, files: { 'notes/vide.txt': '' } }
+    )
+    // Ancien texte vide gardé (`""`) : une modification, même après réouverture.
+    expect(oldTexts(live)).toEqual([['vide.txt', '']])
+    expect(oldTexts(reopened)).toEqual([['vide.txt', '']])
   })
 
   it('consommation de la conversation gardée : jetons, tours et coût relus', async () => {
