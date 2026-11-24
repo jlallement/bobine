@@ -63,9 +63,7 @@ const plan: TranscriptItem = {
 describe('onglet « Tâches » (fiche 035)', () => {
   it('pas encore de liste de tâches : l’état vide le dit', () => {
     panel({ items: [{ kind: 'user', id: 1, text: 'Bonjour' }] })
-    expect(screen.getByTestId('tasks-empty').textContent).toContain(
-      'pas encore de liste de tâches'
-    )
+    expect(screen.getByTestId('tasks-empty').textContent).toContain('pas encore de liste de tâches')
     expect(screen.queryByTestId('tasks')).toBeNull()
   })
 

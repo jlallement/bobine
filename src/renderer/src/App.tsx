@@ -2,7 +2,7 @@ import { useContinueInProject } from './components/discussion/ContinueInProjectD
 import { useSpace } from './useSpace'
 import { onSettingsRequest } from './open-settings'
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { FileDiff, ListChecks, PanelRight } from 'lucide-react'
+import { ListChecks, PanelRight } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { childRows, childrenOf } from '@shared/children-rows'
 import { changesSummary, conversationChanges } from '@shared/changes'
@@ -15,7 +15,7 @@ import { InstallDialog } from './components/dialogs/InstallDialog'
 import { ConversationTitle, TitleOrigin } from './components/sidebar/ConversationTitle'
 import { RoleTitleBadge } from './components/roles/RoleWork'
 import { useComposerRoles } from './useComposerRoles'
-import { LineTotals } from './components/common/LineTotals'
+import { ChangesToggle } from './components/panel/ChangesToggle'
 import { useThreadItems } from './role-labels'
 import { openRoleWizardNamed } from './roles/roles-store'
 import { ConversationScope } from './components/thread/ConversationScope'
@@ -540,25 +540,16 @@ export function App() {
                   <span className="grow" />
                   <TemporaryProfileChip />
                   <PresentationPill />
-                  {changes.files > 0 && !activity.open && (
-                    <Tip
-                      label={panel.changesOpen ? t('app.hideChanges') : t('app.showChanges')}
-                      command="show-changes"
-                    >
-                      <button
-                        className={`icon-button panel-toggle no-drag${panel.changesOpen ? ' active' : ''}`}
-                        onClick={() =>
-                          panel.changesOpen
-                            ? panel.update({ open: false })
-                            : panel.openChanges('conversation')
-                        }
-                        data-testid="changes-toggle"
-                      >
-                        <FileDiff size={15} />
-                        {changes.files}
-                        <LineTotals {...changes} />
-                      </button>
-                    </Tip>
+                  {!activity.open && (
+                    <ChangesToggle
+                      changes={changes}
+                      open={panel.changesOpen}
+                      onToggle={() =>
+                        panel.changesOpen
+                          ? panel.update({ open: false })
+                          : panel.openChanges('conversation')
+                      }
+                    />
                   )}
                   {/* Page des tâches planifiées : pas de panneau de conversation (fiche 185, F3). */}
                   {activity.page === 'scheduled' ? null : plan &&

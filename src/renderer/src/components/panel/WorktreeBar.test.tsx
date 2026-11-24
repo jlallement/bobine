@@ -67,9 +67,7 @@ function trackPr(initial: PrTrack) {
     },
     worktree: {
       ...original.worktree,
-      pullRequest: vi.fn(
-        async (): Promise<PrOutcome> => ({ url: PR_URL, existed: false })
-      ),
+      pullRequest: vi.fn(async (): Promise<PrOutcome> => ({ url: PR_URL, existed: false })),
       cleanup: vi.fn(async () => ({}))
     }
   } as unknown as Window['api']
