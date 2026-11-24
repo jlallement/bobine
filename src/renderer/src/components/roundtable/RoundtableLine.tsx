@@ -175,6 +175,9 @@ function LineStatus({ roundtable }: { roundtable: RoundtableCompose }) {
           <span className="roundtable-cost-short" data-testid="roundtable-cost-short">
             {t('roundtable.cost.short', { n: state.multiplier })}
           </span>
+          <span className="roundtable-cost-tiny" data-testid="roundtable-cost-tiny">
+            {t('roundtable.cost.tiny', { n: state.multiplier })}
+          </span>
         </span>
       )
   }

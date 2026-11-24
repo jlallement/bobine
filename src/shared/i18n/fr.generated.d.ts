@@ -6361,6 +6361,7 @@ export type FrResources = {
     readonly cost: {
       readonly full: '≈ {{n}} fois les jetons d’une question simple'
       readonly short: '≈ {{n}} fois plus de jetons'
+      readonly tiny: '≈ {{n}}× jetons'
     }
     readonly menu: {
       readonly title: 'Participants · 2 à 5'

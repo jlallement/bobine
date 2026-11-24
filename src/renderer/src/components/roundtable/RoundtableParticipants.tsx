@@ -72,6 +72,7 @@ export function RoundtableParticipants({
   const list = useRef<HTMLDivElement>(null)
   const input = useRef<HTMLInputElement>(null)
   const opened = useRef(false)
+  const byPointer = useRef(false)
 
   // Ouverture : le focus sur la liste ; ensuite, la case active gardée visible.
   useLayoutEffect(() => {
@@ -80,6 +81,11 @@ export function RoundtableParticipants({
     if (!opened.current) {
       opened.current = true
       box.focus({ preventScroll: true })
+      return
+    }
+    // Case choisie à la souris : la liste ne défile pas sous le pointeur (A2) ; au clavier, si.
+    if (byPointer.current) {
+      byPointer.current = false
       return
     }
     box.querySelector<HTMLElement>(`[data-index="${active}"]`)?.scrollIntoView({ block: 'nearest' })
@@ -152,8 +158,13 @@ export function RoundtableParticipants({
               data-highlighted={index === active ? '' : undefined}
               data-disabled={entry.disabled ? '' : undefined}
               title={entry.reason}
-              onMouseMove={() => index !== active && setActive(index)}
+              onMouseMove={() => {
+                if (index === active) return
+                byPointer.current = true
+                setActive(index)
+              }}
               onClick={() => {
+                if (index !== active) byPointer.current = true
                 setActive(index)
                 pick(entry)
               }}

@@ -1089,3 +1089,23 @@ le main n'a pas livré l'étape 1) :
   Côté main : l'aperçu « retenu » de la carte « Plafond atteint » et les extraits de la recherche
   se construisent dans le main (`held` du `CostCapCard`, `conversations/content-search.ts`).
 
+- 2026-11-25 : revue UX/UI (dans la vraie app), partie interface. Fait : raison traduite « Sans
+  avis : … », texte brut de l'agent en infobulle seulement, pas de « au bout de » sous 5 s (B1) ;
+  icône du tour pour les participants dans la barre latérale et Session › En cours (B2) ; arrêté
+  par un cercle barré, bouton d'arrêt de 24 px (B3) ; aucun repère « travaux ont répondu » pour les
+  participants (B4) ; ligne de la saisie à quatre paliers sur une ligne, « + synthèse » et
+  « jetons » toujours là (« 5 ▾ » sous 420 px, « ≈ 5× jetons » sous 340 px) (A1) ; menu ancré
+  au-dessus de la saisie, hauteur bornée, ordre figé pendant qu'il est ouvert, recherche qui filtre
+  (A2) ; lecture seule dite une fois au pied, boucliers seulement quand les niveaux diffèrent (A3) ;
+  « Faire réagir » et son rappel d'un tenant, place gardée (A4) ; détail du pied « Consommé » par
+  participant (A6) ; infobulle sous la ligne, sans « X · par X » (B6) ; méta sous le nom sous
+  600 px (B7) ; un tour posé après masque les actions du précédent (B8) ; titres de l'avis déplié à
+  la taille du corps, réponse courte non répétée (B9) ; double Échap (B10) ; bouton et commande
+  désactivés pendant un tour (B11) ; en-tête « arrêté » (B12) ; « a modifié des fichiers » sur sa
+  ligne (B14) ; « N avis · M sans avis » (B15) ; ordre des cases du menu (B16) ; marge basse du fil
+  quand « ↓ » est visible (B18) ; « Relancer les N participants arrêtés » (B19). **Non fait, A5**
+  (étiquette en ligne dans la question par `text-indent`) : la zone de saisie est un `textarea`
+  partagé (historique, mentions, jetons de rôle, pièces jointes au-dessus) ; décaler sa première
+  ligne de la largeur d'une pastille posée par-dessus casse la sélection à la souris en tête de
+  texte, le placement du curseur et la composition (IME) sur la première ligne, et dépend de la
+  police chargée : l'étiquette reste sur sa ligne, comme les jetons de rôle.

@@ -104,6 +104,22 @@
   .roundtable-pick-short {
     display: inline;
   }
+  .roundtable-line {
+    gap: 6px;
+  }
+}
+/* La plus étroite (fenêtre de 520 px, barre latérale ouverte) : « ≈ 5× jetons », sans l'icône. */
+.roundtable-cost-tiny {
+  display: none;
+}
+@container (max-width: 340px) {
+  .roundtable-cost-short,
+  .roundtable-line-icon {
+    display: none;
+  }
+  .roundtable-cost-tiny {
+    display: inline;
+  }
 }
 .roundtable-close {
   color: var(--muted);
@@ -519,6 +535,13 @@
   }
   .roundtable-hint-short {
     display: inline;
+  }
+}
+/* Colonne trop étroite même pour la forme courte : le rappel passe sous le bouton, dans le bloc. */
+@container (max-width: 380px) {
+  .roundtable-rebut-group {
+    flex-wrap: wrap;
+    white-space: normal;
   }
 }
 .roundtable-apply-placeholder {

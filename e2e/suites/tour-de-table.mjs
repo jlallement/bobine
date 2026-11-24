@@ -111,24 +111,31 @@ async function choose(ui, names) {
  * La ligne du tour de table tient sur une ligne, sans rien de coupé, et le surcoût visible est
  * celui attendu (il contient le mot des jetons, en forme longue ou courte selon la largeur).
  */
-const lineFits = (cost, label, { wrap = false } = {}) =>
+const lineFits = (cost, label) =>
   probes.custom(
     label,
     `const line = document.querySelector('[data-testid=roundtable-line]')
     if (!line) return { ok: false, detail: 'pas de ligne' }
     const r = line.getBoundingClientRect()
     const visible = (el) => !!el && getComputedStyle(el).display !== 'none' && el.getClientRects().length > 0
-    const full = line.querySelector('[data-testid=roundtable-cost-full]')
-    const short = line.querySelector('[data-testid=roundtable-cost-short]')
-    const shown = [full, short].find(visible)
+    const forms = ['full', 'short', 'tiny'].map((f) => line.querySelector('[data-testid=roundtable-cost-' + f + ']'))
+    const shown = forms.find(visible)
+    const costText = line.querySelector('[data-testid=roundtable-cost]')?.textContent ?? ''
     const cut = [...line.querySelectorAll('*')].filter((el) => visible(el) && el.scrollWidth > el.clientWidth + 1 && getComputedStyle(el).overflow !== 'visible').length
     const kids = [...line.children].filter(visible).map((el) => el.getBoundingClientRect())
-    const oneRow = kids.every((k) => Math.abs(k.top + k.height / 2 - (kids[0].top + kids[0].height / 2)) < 6)
-    const inside = kids.every((k) => k.right <= r.right + 1 && k.left >= r.left - 1)
+    const oneRow = kids.every((k) => Math.abs(k.top + k.height / 2 - (kids[0].top + kids[0].height / 2)) < 6) && r.height < 30
+    // Le bouton des participants déborde de 4 px à gauche par sa marge négative (fond au survol).
+    const inside = kids.every((k) => k.right <= r.right + 1 && k.left >= r.left - 6)
     const text = shown?.textContent ?? ''
+    const plus = costText.includes(${JSON.stringify(L('roundtable.line.plusSynthesis'))})
     return {
-      ok: !!shown && text === ${JSON.stringify(cost)} && (oneRow || ${wrap}) && inside && cut === 0 && line.scrollWidth <= line.clientWidth + 1,
-      detail: JSON.stringify({ text, oneRow, inside, cut, width: Math.round(r.width), scroll: line.scrollWidth })
+      ok: !!shown && [${[]
+        .concat(cost)
+        .map((c) => JSON.stringify(c))
+        .join(
+          ', '
+        )}].includes(text) && plus && oneRow && inside && cut === 0 && line.scrollWidth <= line.clientWidth + 1,
+      detail: JSON.stringify({ text, plus, oneRow, inside, cut, width: Math.round(r.width), scroll: line.scrollWidth })
     }`
   )
 
@@ -203,6 +210,14 @@ async function guarded(scheme) {
         await ui.click(ui.$('roundtable-head-toggle'))
         await ui.waitFor(`!!${rowOf('Sigma')}`)
         await affirm(ui, '285-garde-fous', [probes.threadFits()])
+
+        // Conversation archivée (M11) : la carte se lit, ni « Appliquer » ni « Faire réagir ».
+        check(!!(await ui.ev(`!!${ui.$('roundtable-apply')}`)), 'avant l’archivage : « Appliquer »')
+        await ui.ev(
+          `window.api.conversations.get().then((s) => window.api.conversations.archive(s.activeId, true)).then(() => true)`
+        )
+        await ui.waitFor(`!${ui.$('roundtable-apply')} && !${ui.$('roundtable-rebut')}`, 10_000)
+        check(true, 'archivée : ni « Appliquer » ni « Faire réagir »')
       },
       undefined,
       'synthese-tour-de-table',
@@ -248,8 +263,21 @@ async function nominal(scheme) {
         check(true, 'un seul participant : « il en faut au moins 2 »')
         for (const name of ['Beta', 'Gamma', PEER(), 'Delta']) await toggle(ui, name)
         await ui.waitFor(
-          `${ui.$('roundtable-participants')}.textContent.includes(${JSON.stringify(L('roundtable.line.participants', { count: 5 }))})`
+          `${ui.$('roundtable-participants')}.getAttribute('aria-label') === ${JSON.stringify(L('roundtable.line.participants', { count: 5 }))}`
         )
+        // La recherche filtre la liste : vidée, toutes les cases reviennent.
+        if (await ui.ev(`!!${ui.$('roundtable-search')}`)) {
+          // Champ contrôlé par React : valeur posée par le setter natif, puis l'évènement « input ».
+          await ui.ev(`(() => {
+            const i = ${ui.$('roundtable-search')}
+            Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(i, '')
+            i.dispatchEvent(new Event('input', { bubbles: true }))
+            return true
+          })()`)
+          await ui.waitFor(
+            `document.querySelectorAll('[data-testid=roundtable-option]').length > 5`
+          )
+        }
         await affirm(ui, '285-participants', [
           probes.custom(
             'cinq cochés, les autres désactivés avec leur raison',
@@ -263,8 +291,26 @@ async function nominal(scheme) {
             return { ok: !/gratuit|free|\\$/i.test(t), detail: t.slice(0, 200) }`
           )
         ])
+        // Rien ne glisse sous le pointeur (A2) : une ligne reste à sa place quand on la décoche.
+        const slide = `(() => { const o = ${optionByName('Delta')}; const m = document.querySelector('[data-testid=roundtable-menu]'); const l = document.querySelector('[data-testid=roundtable-menu-list]'); return { top: o.getBoundingClientRect().top, menu: Math.round(m.getBoundingClientRect().top), h: Math.round(m.getBoundingClientRect().height), scroll: l.scrollTop, n: l.children.length, search: !!document.querySelector('[data-testid=roundtable-search]') } })()`
+        await ui.ev(
+          `(() => { ${optionByName('Delta')}.scrollIntoView({ block: 'center' }); return true })()`
+        )
+        const at = await ui.ev(slide)
         // Delta (qui écrit) sert aux cas dégradés : quatre participants ici.
         await toggle(ui, 'Delta')
+        const after = await ui.ev(slide)
+        check(
+          Math.abs(at.top - after.top) < 1,
+          `menu : la ligne décochée reste sous le pointeur (${JSON.stringify(at)} → ${JSON.stringify(after)})`
+        )
+        // Le menu ne couvre pas la question : son bas au-dessus de la saisie (A2).
+        check(
+          await ui.ev(
+            `${ui.$('roundtable-menu')}.getBoundingClientRect().bottom <= document.querySelector('.composer').getBoundingClientRect().top + 1`
+          ),
+          'menu ancré au-dessus de la saisie'
+        )
         await ui.key('Escape')
         await ui.waitFor(`!${ui.$('roundtable-menu')}`)
         await ui.waitFor(`document.activeElement === ${ui.$('composer-input')}`, 3000)
@@ -278,17 +324,26 @@ async function nominal(scheme) {
           probes.contrast('[data-testid=roundtable-cost-full]', 3, 'surcoût lisible'),
           probes.contrast('[data-testid=roundtable-participants]', 4.5, 'bouton des participants')
         ])
+        // Quatre largeurs (A1) : une ligne, « + synthèse » et « jetons » toujours là, rien de coupé.
+        await ui.viewport(760)
+        await affirm(ui, '285-fenetre-760', [
+          lineFits(L('roundtable.cost.short', { n: 5 }), '760 px : forme courte')
+        ])
         await ui.viewport(640)
         await affirm(ui, '285-fenetre-etroite', [
-          lineFits(L('roundtable.cost.short', { n: 5 }), 'forme courte en saisie étroite')
+          lineFits(
+            [L('roundtable.cost.short', { n: 5 }), L('roundtable.cost.tiny', { n: 5 })],
+            '640 px : une forme courte'
+          )
         ])
-        await ui.viewport(480)
-        await affirm(ui, '285-fenetre-tres-etroite', [
-          // Plus étroite que la forme courte : elle passe à la ligne, entière, sans rien couper.
-          lineFits(L('roundtable.cost.short', { n: 5 }), 'très étroite : rien de coupé', {
-            wrap: true
-          }),
-          probes.computed('.roundtable-plus', 'display', 'none')
+        await ui.viewport(520)
+        await affirm(ui, '285-fenetre-520', [
+          lineFits(L('roundtable.cost.tiny', { n: 5 }), '520 px : « ≈ 5× jetons », la plus courte'),
+          probes.custom(
+            '« 5 ▾ » : le compte seul à l’écran, le nom entier pour le lecteur d’écran',
+            `const p = document.querySelector('[data-testid=roundtable-participants]')
+            return { ok: getComputedStyle(p.querySelector('.roundtable-pick-short')).display !== 'none' && getComputedStyle(p.querySelector('.roundtable-pick-full')).display === 'none' && p.getAttribute('aria-label') === ${JSON.stringify(L('roundtable.line.participants', { count: 4 }))} }`
+          )
         ])
         await ui.viewport()
 
@@ -315,6 +370,16 @@ async function nominal(scheme) {
           probes.custom(
             'quatre lignes',
             `return { ok: document.querySelectorAll('[data-testid=roundtable-row]').length === 4 }`
+          ),
+          // Le pied sur une rangée, « Arrêter » en rouge (A3).
+          probes.custom(
+            'pied sur une rangée, « Arrêter » en rouge',
+            `const foot = document.querySelector('[data-testid=roundtable-foot]')
+            const kids = [...foot.children].map((c) => c.getBoundingClientRect()).filter((r) => r.width > 0)
+            const mid = kids.map((r) => r.top + r.height / 2)
+            const stop = document.querySelector('[data-testid=roundtable-stop]')
+            const red = stop && getComputedStyle(stop).color === getComputedStyle(document.documentElement).getPropertyValue('--err').trim()
+            return { ok: Math.max(...mid) - Math.min(...mid) <= 3, detail: mid.map(Math.round).join(', ') + ' · rouge ' + red }`
           )
         ])
 
@@ -350,6 +415,12 @@ async function nominal(scheme) {
         await ui.click(`${rowOf('Alpha')}.querySelector('[data-testid=roundtable-row-toggle]')`)
         await ui.waitFor(`!!${rowOf('Alpha')}.querySelector('[data-testid=roundtable-row-open]')`)
         await affirm(ui, '285-avis', [probes.threadFits()])
+        // Fenêtre étroite (B7) : la carte tient, la méta passe sous le nom.
+        for (const width of [760, 520]) {
+          await ui.viewport(width)
+          await affirm(ui, `285-carte-${width}`, [probes.threadFits()])
+        }
+        await ui.viewport()
 
         // Lettres : le vrai nom au survol, et au focus seul.
         const letter = ui.$('roundtable-letter')
@@ -365,9 +436,10 @@ async function nominal(scheme) {
         ])
         await ui.hover({ x: 2, y: 400 })
         await ui.waitFor(`!document.querySelector('[role=tooltip]')`, 5000)
-        // Au clavier (modalité clavier : focus visible), sans pointeur.
-        await ui.key('Shift')
-        await ui.ev(`${letter}.focus()`)
+        // Au clavier (focus visible), sans pointeur : Tab jusqu'à la lettre.
+        await ui.ev(`(() => { document.activeElement?.blur(); return true })()`)
+        for (let i = 0; i < 80 && !(await ui.ev(`document.activeElement === ${letter}`)); i++)
+          await ui.press('Tab')
         await ui.waitFor(`!!document.querySelector('[role=tooltip]')`, 5000)
         check(true, 'lettre : infobulle au focus seul')
 
@@ -388,6 +460,8 @@ async function nominal(scheme) {
         await ui.ready()
 
         // Sommaire (S4) : le tour par sa question, marqué ; jamais les demandes de l'app.
+        // Le sommaire a besoin de place à gauche du fil : panneau fermé.
+        await ui.closePanel()
         await ui.waitFor(`!!${ui.$('outline')}`, 5000)
         const outline = await ui.ev(
           `[...document.querySelectorAll('[data-testid=outline-item]')].map((b) => ({ text: b.textContent, tour: b.dataset.roundtable === 'true' }))`
@@ -483,14 +557,6 @@ async function degraded(scheme) {
         await ui.click(`${second}.querySelector('[data-testid=roundtable-stop]')`)
         await ui.waitFor(`${second}.dataset.phase === 'stopped'`, 20_000)
         await affirm(ui, '285-arrete', [probes.threadFits()])
-
-        // Conversation archivée (M11) : la carte se lit, ni « Appliquer » ni « Faire réagir ».
-        check(!!(await ui.ev(`!!${ui.$('roundtable-apply')}`)), 'avant l’archivage : « Appliquer »')
-        await ui.ev(
-          `window.api.conversations.get().then((s) => window.api.conversations.archive(s.activeId, true)).then(() => true)`
-        )
-        await ui.waitFor(`!${ui.$('roundtable-apply')} && !${ui.$('roundtable-rebut')}`, 10_000)
-        check(true, 'archivée : ni « Appliquer » ni « Faire réagir »')
       },
       undefined,
       'synthese-tour-de-table',
