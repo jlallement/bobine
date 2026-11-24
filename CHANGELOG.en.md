@@ -2,6 +2,17 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### New
+
+- **Roundtable** (`/roundtable`, or the composer bar button): the same question goes to two to
+  five models, none seeing the others, then the conversation compares the opinions and gives a
+  synthesis that decides. Participants are checked in a menu (the last choice is kept), read-only;
+  a line says before sending how many times more tokens it uses. A card follows each opinion; the
+  synthesis shows the real name behind “Participant A, B…”; “Ask to apply it” and, once, “Ask
+  participants to respond”. See the help: Roundtable.
+
 ## 1.1.0-rc.2 — November 24, 2026
 
 ### Fixes

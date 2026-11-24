@@ -37,19 +37,21 @@ walks you through it.
 7. [PR and CI tracking](suivi-pr-ci.md): open a pull request and follow its checks.
 8. [Scheduled tasks](taches-planifiees.md): run a prompt at a set time.
 9. [Aside](aparte.md): ask a question on the side, without touching the conversation.
-10. [Multiple folders](plusieurs-dossiers.md): give the agent another folder as well.
-11. [Shared memory](memoire.md): what the agents remember about you, with your approval.
+10. [Roundtable](tour-de-table.md): ask several models a question, then synthesize their
+    opinions.
+11. [Multiple folders](plusieurs-dossiers.md): give the agent another folder as well.
+12. [Shared memory](memoire.md): what the agents remember about you, with your approval.
 
 ## Reference
 
-12. [Panels](panneaux.md): the session, changes, the built-in browser, the terminal, the iOS
+13. [Panels](panneaux.md): the session, changes, the built-in browser, the terminal, the iOS
     simulator.
-13. [Settings: privacy and data](reglages.md): what Bobine remembers and how to
+14. [Settings: privacy and data](reglages.md): what Bobine remembers and how to
     erase it; the trash, backups.
-14. [Agents](agents.md): IBM Bob, OpenCode, and what each one can do.
-15. [Troubleshooting](depannage.md): diagnostics, the log, common problems (quiet agent,
+15. [Agents](agents.md): IBM Bob, OpenCode, and what each one can do.
+16. [Troubleshooting](depannage.md): diagnostics, the log, common problems (quiet agent,
     crash, agent version).
-16. [Keyboard shortcuts](raccourcis.md).
+17. [Keyboard shortcuts](raccourcis.md).
 
 ## See also
 

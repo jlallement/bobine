@@ -2276,5 +2276,20 @@ export const SUITES = [
       'src/main/roles/',
       'src/mock-agent/scenarios-tour-de-table.mts'
     ]
+  },
+  {
+    // Journée « tour de table » (fiches 277, 285) : un tour complet au milieu d'un vrai usage.
+    name: 'parcours-tour-de-table',
+    file: 'parcours-tour-de-table.mjs',
+    run: 'parcoursTourDeTableSuite',
+    themes: BOTH,
+    sources: [
+      ...PARCOURS,
+      `${C}roundtable/`,
+      `${C}composer/`,
+      `${R}roundtable.css`,
+      'src/shared/roundtable*.ts',
+      'src/main/roundtable/'
+    ]
   }
 ]

@@ -37,19 +37,21 @@ faire, puis donne la marche à suivre.
 7. [Suivi des PR et de la CI](suivi-pr-ci.md) : ouvrir une pull request et suivre ses contrôles.
 8. [Tâches planifiées](taches-planifiees.md) : lancer une consigne à heure fixe.
 9. [Aparté](aparte.md) : poser une question à côté, sans toucher à la conversation.
-10. [Plusieurs dossiers](plusieurs-dossiers.md) : donner à l'agent un autre dossier en plus.
-11. [Mémoire commune](memoire.md) : ce que les agents retiennent de vous, avec votre accord.
+10. [Tour de table](tour-de-table.md) : poser une question à plusieurs modèles, puis en faire la
+    synthèse.
+11. [Plusieurs dossiers](plusieurs-dossiers.md) : donner à l'agent un autre dossier en plus.
+12. [Mémoire commune](memoire.md) : ce que les agents retiennent de vous, avec votre accord.
 
 ## Référence
 
-12. [Panneaux](panneaux.md) : la session, les modifications, le navigateur intégré, le terminal,
+13. [Panneaux](panneaux.md) : la session, les modifications, le navigateur intégré, le terminal,
     le simulateur iOS.
-13. [Réglages : confidentialité et données](reglages.md) : ce que Bobine retient et comment
+14. [Réglages : confidentialité et données](reglages.md) : ce que Bobine retient et comment
     l'effacer ; la corbeille, la sauvegarde.
-14. [Agents](agents.md) : IBM Bob, OpenCode, et ce que chacun permet.
-15. [Dépannage](depannage.md) : le diagnostic, le journal, les problèmes courants (agent muet,
+15. [Agents](agents.md) : IBM Bob, OpenCode, et ce que chacun permet.
+16. [Dépannage](depannage.md) : le diagnostic, le journal, les problèmes courants (agent muet,
     plantage, version d'agent).
-16. [Raccourcis clavier](raccourcis.md).
+17. [Raccourcis clavier](raccourcis.md).
 
 ## Voir aussi
 
