@@ -7,7 +7,7 @@
 import { cpSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ConversationStore } from './conversations/store'
 import { checkBackup } from './conversations/backup'
 import { PROFILE_FILE } from './profile-format'
@@ -16,6 +16,7 @@ import { ProfileStatusStore } from './profile-status'
 import { readSettings, saveSettings } from './settings'
 import { resetProtectedFiles, setReadOnlyProfile } from './storage'
 import { openUsageDb } from './usage/usage-db'
+import { createOnboarding, firstLaunchFacts } from './onboarding/onboarding'
 
 const FIXTURES = join(__dirname, '..', '..', 'e2e', 'fixtures', 'profils')
 
@@ -108,6 +109,43 @@ describe.each(['0.7', '0.8', '0.9'])('profil réel %s (fiche 196)', (version) =>
       ok: true,
       conversations: 3
     })
+    rmSync(data, { recursive: true, force: true })
+  })
+
+  it('pas d’accueil, et aucune marque d’accueil écrite dans ses réglages (e2e `profil` n° 5)', () => {
+    const data = copy(version)
+    const status = new ProfileStatusStore()
+    openProfile(data, '0.11.0', status)
+    // Relevé fait avant toute écriture des réglages, comme `index.ts`.
+    const facts = firstLaunchFacts(data)
+    const { settings } = readSettings(join(data, 'settings.json'))
+    const setOnboarding = vi.fn()
+    const onboarding = createOnboarding(
+      facts,
+      settings,
+      false,
+      {
+        settings: {
+          onboarding: () => settings.onboarding,
+          setOnboarding,
+          credentials: async () => ({}),
+          keyInfo: () => []
+        },
+        profiles: () => [],
+        summaries: () => [],
+        cwd: data,
+        userData: data,
+        workspaceOf: () => '',
+        runInTerminal: () => 'tab-1',
+        version: '0.11.0'
+      },
+      {}
+    )
+    expect(onboarding.state().due).toBe(false)
+    expect(setOnboarding).not.toHaveBeenCalled()
+    expect(JSON.parse(readFileSync(join(data, 'settings.json'), 'utf8'))).not.toHaveProperty(
+      'onboarding'
+    )
     rmSync(data, { recursive: true, force: true })
   })
 })
