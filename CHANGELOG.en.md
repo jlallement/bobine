@@ -6,6 +6,10 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
+- Settings › Data › Orphan worktrees: the worktree of a conversation restored from the trash (or
+  still in the trash) is no longer listed, and “Clean up” can no longer delete it along with its
+  uncommitted work. Only a conversation erased for good from the trash leaves its worktree
+  orphaned; the list now updates by itself.
 - Windows: a scheduled task in a folder such as `C:\Users\…\project` is saved and runs; it was
   refused, or dropped when the list was read back.
 - Built-in browser: a new tab that never finishes opening no longer blocks the agent forever;

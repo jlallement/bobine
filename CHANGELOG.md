@@ -6,6 +6,10 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ### Corrections
 
+- Réglages › Données › Worktrees orphelins : le worktree d’une conversation restaurée de la
+  corbeille (ou encore dans la corbeille) n’est plus listé, et « Nettoyer » ne peut plus le
+  supprimer avec son travail non commité. Seule une conversation effacée pour de bon de la
+  corbeille laisse son worktree orphelin ; la liste se met à jour d’elle-même.
 - Windows : une tâche planifiée dans un dossier comme `C:\Users\…\projet` s’enregistre et se
   lance ; elle était refusée, ou oubliée à la relecture de la liste.
 - Navigateur intégré : un onglet neuf qui ne finit pas de s’ouvrir ne bloque plus l’agent sans fin ;

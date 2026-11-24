@@ -23,11 +23,20 @@ const plain = (el: HTMLElement) => (el.textContent ?? '').replace(/[\u00a0\u202f
 const api = window.api
 let orphans: ReturnType<typeof vi.fn>
 let removeOrphan: ReturnType<typeof vi.fn>
+/** L'évènement du main « corbeille changée » (fiche 228). */
+let orphansChanged: (() => void) | undefined
 
 beforeEach(() => {
   orphans = vi.fn(async () => [ORPHAN])
   removeOrphan = vi.fn(async () => [])
-  Object.assign(window, { api: { ...api, worktree: { ...api.worktree, orphans, removeOrphan } } })
+  orphansChanged = undefined
+  const onOrphansChanged = (listener: () => void) => {
+    orphansChanged = listener
+    return () => (orphansChanged = undefined)
+  }
+  Object.assign(window, {
+    api: { ...api, worktree: { ...api.worktree, orphans, removeOrphan, onOrphansChanged } }
+  })
 })
 afterEach(() => {
   Object.assign(window, { api })
@@ -56,6 +65,28 @@ describe('Réglages › Données : worktrees orphelins (fiche 110)', () => {
       fireEvent.click(screen.getByTestId('confirm-row-confirm'))
     })
     expect(removeOrphan).toHaveBeenCalledWith(ORPHAN)
+    expect(screen.getByTestId('orphans-none')).toBeTruthy()
+  })
+
+  it('corbeille changée (restauration…) : la liste est relue sans ⟳ (chasse rc.5)', async () => {
+    const { unmount } = render(<OrphanWorktrees />)
+    await screen.findByTestId('orphans')
+    orphans.mockResolvedValue([])
+    await act(async () => orphansChanged?.())
+    expect(screen.getByTestId('orphans-none')).toBeTruthy()
+    unmount()
+    expect(orphansChanged).toBeUndefined()
+  })
+
+  it('« Nettoyer » refusé par le main (worktree tenu entre-temps) : erreur dite, liste relue', async () => {
+    removeOrphan.mockRejectedValue(new Error('Ce worktree sert encore à une conversation'))
+    render(<OrphanWorktrees />)
+    fireEvent.click(await screen.findByTestId('orphans-clean'))
+    orphans.mockResolvedValue([])
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('confirm-row-confirm'))
+    })
+    expect(screen.getByText(/sert encore à une conversation/)).toBeTruthy()
     expect(screen.getByTestId('orphans-none')).toBeTruthy()
   })
 

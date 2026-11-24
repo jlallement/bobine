@@ -655,11 +655,19 @@ describe('cycle d’un worktree (fiche 110)', () => {
     expect(found).toEqual([
       { root, path: orphan, branch: 'bobine/20261001-1200-dead', dirty: 1, ahead: 1 }
     ])
-    await cycle.removeOrphan({ root, path: orphan, branch: 'bobine/20261001-1200-dead' })
+    // Tenu entre-temps (conversation restaurée de la corbeille, fiche 228) : refusé, rien ne part,
+    // même désigné par une liste périmée — chemin écrit autrement compris.
+    const stale = { root, path: orphan, branch: 'bobine/20261001-1200-dead' }
+    await expect(cycle.removeOrphan(stale, new Set([join(orphan, '.')]))).rejects.toThrow(
+      t('worktrees.orphanHeld', { path: orphan })
+    )
+    expect(existsSync(join(orphan, 'y.txt'))).toBe(true)
+    expect(git(root, 'branch', '--list', 'bobine/20261001-1200-dead')).not.toBe('')
+    await cycle.removeOrphan(stale, new Set([target.worktree.path]))
     expect(existsSync(orphan)).toBe(false)
     expect(git(root, 'branch', '--list', 'bobine/20261001-1200-dead')).toBe('')
     expect(await cycle.orphans([root], new Set([target.worktree.path]))).toEqual([])
-    await expect(cycle.removeOrphan({ root, path: root, branch: '' })).rejects.toThrow()
+    await expect(cycle.removeOrphan({ root, path: root, branch: '' }, new Set())).rejects.toThrow()
     for (const line of git(root, 'worktree', 'list', '--porcelain').split('\n')) {
       if (line.startsWith('worktree ') && line.includes('ailleurs-')) {
         rmSync(line.slice('worktree '.length), { recursive: true, force: true })

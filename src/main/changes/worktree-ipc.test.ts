@@ -208,14 +208,39 @@ describe('canaux IPC du cycle des worktrees (fiche 110)', () => {
         branch: 'b'
       })
     ).toHaveLength(3)
-    expect(cycle.removeOrphan).toHaveBeenCalledWith({
-      root: '/repo',
-      path: '/repo/.worktrees/o',
-      branch: 'b'
-    })
+    // Revérifiés au moment de supprimer : les worktrees tenus sont passés au cycle, qui refuse.
+    expect(cycle.removeOrphan).toHaveBeenCalledWith(
+      { root: '/repo', path: '/repo/.worktrees/o', branch: 'b' },
+      new Set(['/repo/.worktrees/x'])
+    )
     await expect(
       handlers['worktree:removeOrphan']({ root: '', path: 'p', branch: '' })
     ).rejects.toThrow('root')
+  })
+
+  it('orphelins : les worktrees de la corbeille sont tenus, relus à chaque appel (fiche 228)', async () => {
+    const { cycle, conversations, worktrees } = setup()
+    let trashed = [{ root: '/corbeille', path: '/corbeille/.worktrees/t', branch: 't', base: 'a' }]
+    const handlers = worktreeHandlers({
+      cycle,
+      conversations,
+      worktrees,
+      recentWorkspaces: () => [],
+      trashed: () => trashed
+    } as unknown as WorktreeCycleDeps)
+    expect(await handlers['worktree:orphans']()).toEqual([
+      { root: '/repo', path: '/repo/.worktrees/o', branch: 'b', dirty: 0, ahead: 0 },
+      { root: '/corbeille', path: '/corbeille/.worktrees/o', branch: 'b', dirty: 0, ahead: 0 },
+      { root: '/autre', path: '/autre/.worktrees/o', branch: 'b', dirty: 0, ahead: 0 }
+    ])
+    const held = new Set(['/repo/.worktrees/x', '/corbeille/.worktrees/t'])
+    expect(cycle.orphans).toHaveBeenCalledWith(['/repo', '/corbeille', '/autre'], held)
+    const orphan = { root: '/corbeille', path: '/corbeille/.worktrees/t', branch: 't' }
+    await handlers['worktree:removeOrphan'](orphan)
+    expect(cycle.removeOrphan).toHaveBeenLastCalledWith(orphan, held)
+    trashed = []
+    await handlers['worktree:removeOrphan'](orphan)
+    expect(cycle.removeOrphan).toHaveBeenLastCalledWith(orphan, new Set(['/repo/.worktrees/x']))
   })
 
   it('fusion : « Mettre de côté » transmis ; refus d’avance avec le titre de la mère (fiche 123)', async () => {
