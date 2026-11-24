@@ -406,7 +406,10 @@ function roleOf(
 ): RoleView | string | undefined {
   if (!name) return undefined
   try {
-    return host.findRole(motherId, name)
+    const role = host.findRole(motherId, name)
+    // Rôle interne (« Participant », fiche 285) : pas pour `start_child`.
+    if (!role.internal) return role
+    throw new Error('internal')
   } catch {
     const known = rolesForAgent(activeRoles(host, motherId)).shown.map((r) => r.name)
     return `Unknown role "${name}". ${known.length ? `Roles: ${known.join(', ')}.` : 'No role is defined.'} Omit \`role\` to start a child without a role.`

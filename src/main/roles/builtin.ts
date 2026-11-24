@@ -62,6 +62,8 @@ export function builtinRoles(language: Language = currentLanguage()): Role[] {
       name === 'participant'
         ? texts[name].prompt.join('\n')
         : typography(texts[name].prompt.join('\n')),
-    scope: 'builtin'
+    scope: 'builtin',
+    // « Participant » ne sert qu'au tour de table (fiche 285).
+    ...(name === 'participant' ? { internal: true as const } : {})
   }))
 }

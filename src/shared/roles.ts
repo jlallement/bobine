@@ -70,6 +70,12 @@ export interface RoleDefinition {
 
 export interface Role extends RoleDefinition {
   scope: RoleScope
+  /**
+   * Rôle interne de l'app (« Participant » du tour de table, fiche 285) : visible dans Réglages ›
+   * Rôles (« Installer dans… »), jamais dans la barre Équipe, les mentions `@` ni ce qui est dit
+   * aux agents.
+   */
+  internal?: true
   /** Fichier d'origine (rôle personnel ou du projet). */
   file?: string
 }
@@ -442,10 +448,12 @@ export function rolesForAgent<T extends RoleDefinition & { scope?: RoleScope }>(
   roles: readonly T[]
 ): { shown: T[]; more: number } {
   const rank = (role: T) => AGENT_ORDER.indexOf(role.scope ?? 'project')
-  const sorted = [...roles].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name))
+  // Rôle interne (fiche 285) : jamais proposé à un agent.
+  const offered = roles.filter((role) => !(role as { internal?: boolean }).internal)
+  const sorted = [...offered].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name))
   return {
     shown: sorted.slice(0, ROLES_FOR_AGENT),
-    more: Math.max(0, roles.length - ROLES_FOR_AGENT)
+    more: Math.max(0, offered.length - ROLES_FOR_AGENT)
   }
 }
 
