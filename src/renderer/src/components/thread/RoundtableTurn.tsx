@@ -66,7 +66,9 @@ function RoundtableRequestLine({
       <span>
         {turn.step === 'synthesis'
           ? t('roundtable.synthesis.requested', { count })
-          : t('roundtable.decision.requested', { count })}
+          : turn.step === 'verdict'
+            ? t('roundtable.decision.requested', { count })
+            : t('roundtable.rebuttal.requested')}
       </span>
       {item.at && <MessageTime at={item.at} />}
     </div>

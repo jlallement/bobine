@@ -20,6 +20,7 @@ import {
   type RoundtableTotal
 } from '@shared/roundtable'
 import type { RoundtableAgentOption, RoundtableOptions } from '@shared/roundtable-ipc'
+import { QUESTION_CHARS } from '@shared/roundtable-prompts'
 import type { DataDestination, HandoverModel } from '@shared/handover'
 import type { WorkCardData } from '@shared/role-request'
 import type { TranscriptItem } from '@shared/transcript'
@@ -40,6 +41,8 @@ type Report = Extract<TranscriptItem, { kind: 'child-report' }>
  */
 export type LineState =
   | { kind: 'refused'; refused: NonNullable<RoundtableOptions['refused']> }
+  /** Question plus longue que ce que reçoivent les participants : à raccourcir avant l'envoi. */
+  | { kind: 'question'; max: number }
   | { kind: 'choose' }
   | { kind: 'unavailable'; agent: string }
   | { kind: 'slots'; missing: number; count: number }
@@ -76,9 +79,12 @@ export function choiceTrouble(
  */
 export function lineState(
   choices: readonly RoundtableChoice[],
-  options: RoundtableOptions | undefined
+  options: RoundtableOptions | undefined,
+  /** Longueur de la question tapée (sans les blancs autour). */
+  questionChars = 0
 ): LineState {
   if (options?.refused) return { kind: 'refused', refused: options.refused }
+  if (questionChars > QUESTION_CHARS) return { kind: 'question', max: QUESTION_CHARS }
   const broken = options ? choices.find((c) => choiceTrouble(c, options)) : undefined
   if (options && broken) {
     // Le modèle retiré se nomme lui-même ; sinon l'agent (ou un libellé générique s'il n'est plus).
@@ -404,7 +410,11 @@ export function seatElapsed(
 /** Une demande de synthèse ou de décision, et les réponses de l'agent qui la suivent. */
 export interface RoundtableTurn {
   roundtableId: string
-  step: 'synthesis' | 'verdict'
+  /**
+   * `rebuttal` : la réplique demandée, dans la conversation du participant (ligne de l'app, sans
+   * cadre ni étiquette sur la réponse).
+   */
+  step: 'synthesis' | 'verdict' | 'rebuttal'
   /** Le message de l'app (provenance `roundtable`). */
   request: number
   /** Réponses de l'agent jusqu'au message suivant, dans l'ordre. */
@@ -418,7 +428,7 @@ export interface RoundtableTurn {
 export function roundtableTurns(
   items: readonly TranscriptItem[],
   /** Fin rendue de chaque demande (`step.answeredAt`), par tour et par étape. */
-  answeredAt: (roundtableId: string, step: RoundtableTurn['step']) => number | undefined = () =>
+  answeredAt: (roundtableId: string, step: 'synthesis' | 'verdict') => number | undefined = () =>
     undefined
 ): {
   byRequest: ReadonlyMap<number, RoundtableTurn>
@@ -434,8 +444,10 @@ export function roundtableTurns(
         item.from?.kind === 'roundtable'
           ? { roundtableId: item.from.id, step: item.from.step, request: item.id, answers: [] }
           : undefined
-      end = open ? answeredAt(open.roundtableId, open.step) : undefined
       if (open) byRequest.set(item.id, open)
+      // La réplique n'encadre rien : la réponse du participant reste une réponse ordinaire.
+      if (open?.step === 'rebuttal') open = undefined
+      end = open ? answeredAt(open.roundtableId, open.step as 'synthesis' | 'verdict') : undefined
     } else if (TURN_BREAKS.has(item.kind)) {
       // Un compte rendu n'est posé qu'au repos de l'agent : le tour de la demande est fini.
       open = undefined

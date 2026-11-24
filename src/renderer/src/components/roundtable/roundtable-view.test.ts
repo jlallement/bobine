@@ -58,6 +58,13 @@ describe('ligne du tour de table', () => {
     expect(lineState([deep, b], undefined)).toEqual({ kind: 'ready', count: 2, multiplier: 3 })
   })
 
+  it('question plus longue que la borne : dite avant l’envoi, Entrée ne fait rien', () => {
+    expect(lineState([deep, b], options(), 8_000).kind).toBe('ready')
+    const state = lineState([deep, b], options(), 8_001)
+    expect(state).toEqual({ kind: 'question', max: 8_000 })
+    expect(enterAction(state)).toBe('none')
+  })
+
   it('places manquantes : la ligne le dit, rien ne part', () => {
     const state = lineState([deep, glm, b], options({ freeSlots: 1 }))
     expect(state).toEqual({ kind: 'slots', missing: 2, count: 3 })
@@ -283,5 +290,19 @@ describe('tours de synthèse et de décision', () => {
     expect(turns.byAnswer.get(5)?.roundtableId).toBe('rt1')
     expect(turns.byAnswer.has(2)).toBe(false)
     expect(turns.byAnswer.has(7)).toBe(false)
+  })
+
+  it('la réplique (conversation du participant) : une demande, aucune réponse encadrée', () => {
+    const turns = roundtableTurns([
+      {
+        kind: 'user',
+        id: 1,
+        text: 'Rebuttal round',
+        from: { kind: 'roundtable', id: 'rt1', title: 'q', step: 'rebuttal' }
+      },
+      { kind: 'agent', id: 2, text: 'Position : maintenue' }
+    ])
+    expect(turns.byRequest.get(1)?.step).toBe('rebuttal')
+    expect(turns.byAnswer.size).toBe(0)
   })
 })

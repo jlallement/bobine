@@ -74,6 +74,8 @@ function show(items: TranscriptItem[], subtasks: SubtasksInfo | null = info()) {
 }
 
 const card = () => screen.getByTestId('roundtable-card')
+/** « attend votre réponse » des lignes de travaux (jamais sur un participant). */
+const L_WAITING = 'attend votre réponse'
 const row = (letter: string) =>
   card().querySelector(`[data-testid=roundtable-row][data-letter=${letter}]`) as HTMLElement
 const failed = (letter: 'A' | 'B' | 'C', detail?: string): RoundtableEvent => ({
@@ -122,16 +124,43 @@ describe('recueil des avis', () => {
     expect(api.stop).toHaveBeenCalledWith('mother', 'rt1', 'C')
   })
 
-  it('participant en erreur : la raison en clair, la durée, « Relancer »', () => {
-    show(thread(roundtable([answered('A'), failed('C', 'Server Error (-32603)')]), OPINIONS))
-    expect(plain(within(row('C')).getByTestId('roundtable-row-meta').textContent)).toBe(
-      'En erreur : Server Error (-32603) au bout de 0:38'
+  it('participant en erreur : une raison traduite et courte, le texte brut en infobulle', () => {
+    show(
+      thread(
+        roundtable([answered('A'), failed('C', 'Internal error: Model unavailable')]),
+        OPINIONS
+      )
     )
+    const meta = within(row('C')).getByTestId('roundtable-row-meta')
+    expect(plain(meta.textContent)).toBe('En erreur : erreur de l’agent au bout de 0:38')
+    expect(meta.getAttribute('title')).toBe('Internal error: Model unavailable')
     fireEvent.click(within(row('C')).getByTestId('roundtable-relaunch'))
     expect(api.relaunch).toHaveBeenCalledWith('mother', 'rt1', 'C')
   })
 
-  it('modèle refusé : dit sans substitution, « Choisir un autre modèle » ouvre le menu', () => {
+  it('modèle absent du catalogue : « non proposé » ; refusé ou changé en cours de tour : « non appliqué »', () => {
+    show(
+      thread(
+        roundtable([
+          { type: 'seat-failed', letter: 'A', error: 'model-not-found', at: T0 + 1000 },
+          {
+            type: 'seat-failed',
+            letter: 'B',
+            error: 'model-not-applied',
+            detail: 'config_option_update: factice-rapide',
+            at: T0 + 30_000
+          }
+        ])
+      )
+    )
+    expect(row('A').textContent).toContain('Modèle non proposé par Agent A pour le moment.')
+    expect(plain(within(row('B')).getByTestId('roundtable-row-meta').textContent)).toBe(
+      'En erreur : modèle non appliqué au bout de 0:30'
+    )
+    expect(row('B').getAttribute('data-state')).toBe('error')
+  })
+
+  it('modèle refusé : sans substitution, « Choisir un autre modèle » ouvre le menu', () => {
     const requested = vi.fn()
     const off = onRoundtableMenuRequest(requested)
     show(
@@ -141,11 +170,23 @@ describe('recueil des avis', () => {
         ])
       )
     )
-    expect(row('B').textContent).toContain('Modèle non proposé par Agent A pour le moment.')
     expect(within(row('B')).queryByTestId('roundtable-relaunch')).toBeNull()
     fireEvent.click(within(row('B')).getByTestId('roundtable-other-model'))
     expect(requested).toHaveBeenCalled()
     off()
+  })
+
+  it('jamais « attend votre réponse » sur la ligne d’un participant', () => {
+    const subtasks = info({
+      children: [
+        child('child-A', { status: 'needs-action' }),
+        child('child-B', { status: 'busy' }),
+        child('child-C')
+      ],
+      attention: { 'child-A': 'request', 'child-B': 'request' }
+    })
+    show(thread(roundtable([answered('C')]), OPINIONS), subtasks)
+    expect(card().textContent).not.toContain(L_WAITING)
   })
 
   it('marques de la ligne : fichiers modifiés, lecture seule seulement demandée', () => {
@@ -157,7 +198,12 @@ describe('recueil des avis', () => {
     expect(within(row('B')).getByTestId('roundtable-changed').textContent).toContain(
       'a modifié des fichiers du dossier'
     )
+    // Forme courte sur la ligne, détail dans l'infobulle du bouclier.
     expect(row('B').textContent).toContain('Lecture seule demandée')
+    expect(row('B').textContent).not.toContain('vérifiée dans le dépôt')
+    expect(within(row('B')).getByTestId('roundtable-readonly').getAttribute('aria-label')).toBe(
+      'Lecture seule demandée, vérifiée dans le dépôt seulement'
+    )
     // Lecture seule garantie : pas de texte sur la ligne, un bouclier discret.
     expect(row('A').textContent).not.toContain('Lecture seule')
   })
@@ -623,6 +669,46 @@ describe('réplique et décision', () => {
     expect(screen.getAllByTestId('roundtable-letter').map((l) => l.textContent)).toContain(
       'Participant C'
     )
+  })
+
+  it('dossier modifié pendant la réplique : la marque sur la réplique, pas sur l’avis', () => {
+    const rt = done([
+      { type: 'rebuttal', at: T0 + 2 },
+      rebutted('A', 'nuances'),
+      // Dit après la fin du tour de réplique (empreinte relue), comme le main.
+      { type: 'seat-changed-folder', letter: 'A', at: T0 + 700 }
+    ])
+    const items = thread(rt, { A: [OPINIONS.A[0] ?? '', 'Position : nuance\nUn détail.'] }, [
+      {
+        kind: 'user',
+        id: 0,
+        text: 'synthesize',
+        from: { kind: 'roundtable', id: 'rt1', title: 'q', step: 'synthesis' }
+      },
+      { kind: 'agent', id: 0, text: SYNTHESIS }
+    ])
+    show(items)
+    const rebuttal = screen.getByTestId('roundtable-rebuttal')
+    expect(within(rebuttal).getAllByTestId('roundtable-changed')).toHaveLength(1)
+    fireEvent.click(screen.getByTestId('roundtable-head-toggle'))
+    expect(within(card()).queryByTestId('roundtable-changed')).toBeNull()
+  })
+
+  it('la réplique dans la conversation du participant : une ligne de l’app, sans cadre', () => {
+    show([
+      {
+        kind: 'user',
+        id: 1,
+        text: 'Rebuttal round…',
+        from: { kind: 'roundtable', id: 'rt1', title: 'q', step: 'rebuttal' }
+      },
+      { kind: 'agent', id: 2, text: 'Position : maintenue (Participant A)' }
+    ])
+    expect(screen.getByTestId('roundtable-request').textContent).toContain(
+      'Réplique demandée par le tour de table'
+    )
+    expect(document.body.textContent).not.toContain('Rebuttal round')
+    expect(screen.queryByTestId('roundtable-answer')).toBeNull()
   })
 
   it('après un redémarrage pendant la réplique : « Demander la décision »', async () => {

@@ -6374,8 +6374,9 @@
       "readOnly": {
         "enforced": "Read-only",
         "native": "Read-only, held by the installed Participant role",
-        "requested": "Read-only requested",
-        "unverified": "Read-only requested, not verified (folder outside git)"
+        "requested": "Read-only requested, checked in the repository only",
+        "unverified": "Read-only requested, not verified (folder outside git)",
+        "requestedShort": "Read-only requested"
       }
     },
     "confidence": {
@@ -6402,7 +6403,8 @@
         "maintains": "maintains",
         "nuances": "nuances",
         "rallies": "rallies"
-      }
+      },
+      "requested": "Rebuttal requested by the roundtable"
     },
     "decision": {
       "label": "Roundtable decision · {{model}}",

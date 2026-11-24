@@ -6441,8 +6441,9 @@ export type FrResources = {
       readonly readOnly: {
         readonly enforced: 'Lecture seule'
         readonly native: 'Lecture seule, tenue par le rôle Participant installé'
-        readonly requested: 'Lecture seule demandée'
+        readonly requested: 'Lecture seule demandée, vérifiée dans le dépôt seulement'
         readonly unverified: 'Lecture seule demandée, non vérifiée (dossier hors git)'
+        readonly requestedShort: 'Lecture seule demandée'
       }
     }
     readonly confidence: {
@@ -6472,6 +6473,7 @@ export type FrResources = {
         readonly nuances: 'nuance'
         readonly rallies: 'se rallie'
       }
+      readonly requested: 'Réplique demandée par le tour de table'
     }
     readonly decision: {
       readonly label: 'Décision du tour de table · {{model}}'

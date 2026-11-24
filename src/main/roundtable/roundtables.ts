@@ -15,6 +15,7 @@
  * Les identifiants venus du renderer sont vérifiés contre l'état réel : un tour se pilote
  * seulement depuis la conversation dont le fil le porte, et une place doit exister.
  */
+import { shortModelName } from '@shared/models'
 import { randomUUID } from 'node:crypto'
 import { t } from 'i18next'
 import type { AgentEvent, ConversationEvent, ConversationSummary } from '@shared/agent'
@@ -621,7 +622,8 @@ export class Roundtables implements RoundtableService {
       const child = await this.deps.children.start(motherId, {
         ...extras,
         text,
-        title: `${t('roundtable.name')} · ${seat.label}`,
+        // Nom court du modèle (« Fx/Alpha » → « Alpha »), comme la carte et le menu de l'interface.
+        title: `${t('roundtable.name')} · ${seat.model ? shortModelName(seat.label) : seat.label}`,
         profileId: seat.profileId,
         roleSnapshot: participantRole(),
         card: roundtableId,

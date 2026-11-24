@@ -47,7 +47,8 @@ export function useRoundtableCompose({
   config,
   enabled,
   focus,
-  startActive = false
+  startActive = false,
+  questionChars = 0
 }: {
   conversationId: string | undefined
   config: ComposerRoundtable | undefined
@@ -56,6 +57,8 @@ export function useRoundtableCompose({
   focus: () => void
   /** Le brouillon de la conversation était un tour de table (`/roundtable …`) : il le reste. */
   startActive?: boolean
+  /** Longueur de la question tapée : au-delà de la borne, la ligne le dit avant l'envoi. */
+  questionChars?: number
 }) {
   const usable = enabled && !!config && !!conversationId
   const [active, setActive] = useState(startActive && usable)
@@ -119,7 +122,10 @@ export function useRoundtableCompose({
     []
   )
 
-  const state: LineState = useMemo(() => lineState(choices, options), [choices, options])
+  const state: LineState = useMemo(
+    () => lineState(choices, options, questionChars),
+    [choices, options, questionChars]
+  )
 
   /** Options relues tout de suite (avant d'envoyer sur un refus peut-être dépassé). */
   const fresh = async (): Promise<LineState> => {
@@ -128,7 +134,7 @@ export function useRoundtableCompose({
     try {
       const read = await window.api.roundtable.options(conversationId)
       if (asked === request.current) setOptions(read)
-      return lineState(choices, read)
+      return lineState(choices, read, questionChars)
     } catch {
       return state
     }
@@ -239,7 +245,8 @@ export function useComposerRoundtable(
     config: props.roundtable,
     enabled: !props.discussion && !!appCommandOf('/roundtable', c.agentCommands, c.ownCommands),
     focus: c.focusInput,
-    startActive: c.draft.startActive
+    startActive: c.draft.startActive,
+    questionChars: c.text.trim().length
   })
   const text = useRef(c.text)
   useLayoutEffect(() => {

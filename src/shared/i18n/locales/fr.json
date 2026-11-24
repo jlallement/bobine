@@ -6658,8 +6658,9 @@
       "readOnly": {
         "enforced": "Lecture seule",
         "native": "Lecture seule, tenue par le rôle Participant installé",
-        "requested": "Lecture seule demandée",
-        "unverified": "Lecture seule demandée, non vérifiée (dossier hors git)"
+        "requested": "Lecture seule demandée, vérifiée dans le dépôt seulement",
+        "unverified": "Lecture seule demandée, non vérifiée (dossier hors git)",
+        "requestedShort": "Lecture seule demandée"
       }
     },
     "confidence": {
@@ -6688,7 +6689,8 @@
         "maintains": "maintient",
         "nuances": "nuance",
         "rallies": "se rallie"
-      }
+      },
+      "requested": "Réplique demandée par le tour de table"
     },
     "decision": {
       "label": "Décision du tour de table · {{model}}",

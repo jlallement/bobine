@@ -439,6 +439,31 @@ describe('ce qui empêche le départ, dit clairement, la question gardée', () =
     expect(screen.getByTestId('roundtable-tag')).toBeTruthy()
   })
 
+  it('question trop longue : dit avant l’envoi, rien ne part, la question gardée', async () => {
+    const t = setup()
+    const long = 'x'.repeat(8_001)
+    t.type(`/roundtable ${long}`)
+    expect((await screen.findByTestId('roundtable-too-long')).textContent).toContain(
+      'La question dépasse 8 000 caractères'
+    )
+    expect((screen.getByTestId('send') as HTMLButtonElement).disabled).toBe(true)
+    await act(async () => t.enter())
+    expect(api.start).not.toHaveBeenCalled()
+    expect(t.input.value).toBe(long)
+    // Raccourcie : la ligne redevient prête.
+    t.type('Courte ?')
+    expect(screen.queryByTestId('roundtable-too-long')).toBeNull()
+  })
+
+  it('refus « question » du main : dit, la question gardée', async () => {
+    api.start.mockResolvedValue({ ok: false, error: 'question' })
+    const t = setup()
+    t.type('/roundtable Ma question')
+    await act(async () => t.enter())
+    expect(screen.getByTestId('roundtable-refusal').textContent).toContain('raccourcissez-la')
+    expect(t.input.value).toBe('Ma question')
+  })
+
   it('erreur du canal : dite, la question gardée', async () => {
     api.start.mockRejectedValue(new Error('Le tour de table n’est pas encore disponible.'))
     const t = setup()

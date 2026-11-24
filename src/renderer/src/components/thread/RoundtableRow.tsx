@@ -139,9 +139,13 @@ function useSeatTrouble() {
     if (seat.removed) return t('roundtable.state.removed')
     if (seat.state === 'stopped' && seat.stopped) return t(STOP_KEYS[seat.stopped])
     if (seat.state !== 'error') return undefined
-    if (MODEL_ERRORS.has(seat.error ?? ''))
+    // Modèle absent du catalogue : il n'est pas proposé ; refusé ou changé en cours de tour : non
+    // appliqué, dit comme une erreur.
+    if (seat.error === 'model-not-found')
       return t('roundtable.state.modelNotOffered', { agent: seat.agentLabel })
-    const reason = seat.detail ?? t(REASON_KEYS[seat.error ?? 'agent-error'])
+    // Une raison courte et traduite selon le genre d'erreur ; le texte brut de l'agent reste en
+    // infobulle (`title` de la ligne).
+    const reason = t(REASON_KEYS[seat.error ?? 'agent-error'])
     const ms = seatElapsed(seat, now)
     return ms !== undefined && ms >= 1000
       ? t('roundtable.state.errorAfter', { reason, duration: elapsedText(ms) })
@@ -151,9 +155,13 @@ function useSeatTrouble() {
 
 /** Lecture seule seulement demandée, non vérifiée, ou tenue par le rôle : dite, discrètement. */
 function readOnlyNote(seat: RoundtableSeat): string | undefined {
-  return seat.readOnly && seat.readOnly !== 'enforced'
-    ? i18next.t(READ_ONLY_KEYS[seat.readOnly])
-    : undefined
+  if (!seat.readOnly || seat.readOnly === 'enforced') return undefined
+  // Sur la ligne, la forme courte ; le détail est dans l'infobulle du bouclier.
+  return i18next.t(
+    seat.readOnly === 'requested'
+      ? 'roundtable.state.readOnly.requestedShort'
+      : READ_ONLY_KEYS[seat.readOnly]
+  )
 }
 
 /** Sous le nom : ce qu'il fait, ce qui l'a empêché, ou sa réponse courte ; puis les marques. */
@@ -282,6 +290,7 @@ export function RoundtableRow({
       lead={collecting || !expandable ? <StateIcon state={iconOf(seat)} /> : undefined}
       meta={meta.length > 0 ? <Dotted parts={meta} /> : undefined}
       wrap={!!trouble}
+      {...(seat.state === 'error' && seat.detail ? { detail: seat.detail } : {})}
       side={
         <>
           {side.length > 0 && <Dotted parts={side} />}
@@ -417,7 +426,7 @@ export function RebuttalRow({
         ? t(STOP_KEYS[rebuttal.stopped])
         : rebuttal.state === 'error'
           ? t('roundtable.state.error', {
-              reason: rebuttal.detail ?? t(REASON_KEYS[rebuttal.error ?? 'agent-error'])
+              reason: t(REASON_KEYS[rebuttal.error ?? 'agent-error'])
             })
           : text && rebuttalSummary(text)
   const asRow = {
@@ -436,11 +445,21 @@ export function RebuttalRow({
       onToggle={onToggle}
       lead={done ? undefined : <StateIcon state={iconOf(asRow)} />}
       meta={
-        running && activity ? (
-          <RowActivity activity={activity} workspace={child?.workspace} />
-        ) : (
-          meta || undefined
-        )
+        <Dotted
+          parts={[
+            running && activity ? (
+              <RowActivity activity={activity} workspace={child?.workspace} />
+            ) : (
+              meta
+            ),
+            // Le dossier a changé pendant la réplique (celle de l'avis est sur la carte des avis).
+            rebuttal.changedFolder && (
+              <span className="roundtable-row-mark" data-testid="roundtable-changed">
+                <TriangleAlert size={12} aria-hidden /> {t('roundtable.state.changedFolder')}
+              </span>
+            )
+          ].filter(Boolean)}
+        />
       }
       wrap={false}
       side={rebuttal.stance ? t(STANCE_KEYS[rebuttal.stance]) : undefined}
@@ -464,6 +483,7 @@ function RoundtableRowFrame({
   lead,
   meta,
   wrap,
+  detail,
   side,
   body
 }: {
@@ -479,6 +499,8 @@ function RoundtableRowFrame({
   meta: ReactNode
   /** La méta est une raison : elle passe à la ligne plutôt que d'être coupée. */
   wrap: boolean
+  /** Texte brut d'une erreur, en infobulle de la méta (la ligne dit la raison traduite). */
+  detail?: string
   side: ReactNode
   body: ReactNode
 }) {
@@ -490,6 +512,7 @@ function RoundtableRowFrame({
           className="work-group-meta"
           data-testid="roundtable-row-meta"
           {...(wrap ? { 'data-wrap': '' } : {})}
+          {...(detail ? { title: detail } : {})}
         >
           {meta}
         </span>
