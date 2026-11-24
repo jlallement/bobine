@@ -44,6 +44,9 @@ export async function discussionSuite(scheme) {
 
         // Un document déposé : copié dans la discussion, l'original intact.
         const id = await ui.ev(`window.api.conversations.get().then((s) => s.activeId)`)
+        await ui.ev(
+          `window.api.documents.add(${JSON.stringify(id)}, [${JSON.stringify(deposited)}])`
+        )
 
         // E3–E5 : le tour de l'agent ; écriture accordée dans les documents, refusée ailleurs.
         await ui.send('Fais la synthèse des ventes.')
