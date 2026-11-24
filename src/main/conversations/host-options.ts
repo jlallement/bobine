@@ -13,6 +13,8 @@ import {
   childrenSessionContext
 } from '@shared/children'
 import { mentionedRoles, ROLE_KEPT_FAMILIES, type RoleStamp } from '@shared/roles'
+import { ROUNDTABLE_PARTICIPANT_ROLE } from '@shared/roundtable'
+import { roundtableChildIds } from '../roundtable/participants'
 import type { AppToolModule } from '../mcp/tools'
 import { handoverContext } from '@shared/handover'
 import { memoryOutcomeContext, memoryOutcomes } from '@shared/memory'
@@ -175,10 +177,14 @@ export function hostOptions(input: HostOptionsInput): AgentHostOptions {
     // Rappel des rôles quand le message en nomme un (`@nom`, fiche 223), à une mère possible.
     extraContext: (text, tools, about) => {
       const items = input.items()
+      // Participants d'un tour de table (fiche 285) : leurs avis partent seulement par la synthèse.
+      const participants = roundtableChildIds(items)
       return joinContext(
         handoverContext(items),
         childContext(
-          childNews(items).filter((news) => input.exists?.(news.childId) ?? true),
+          childNews(items).filter(
+            (news) => (input.exists?.(news.childId) ?? true) && !participants.has(news.childId)
+          ),
           items,
           about
         ),
@@ -241,6 +247,8 @@ export function roleToolModules(
   role: RoleStamp | undefined
 ): readonly AppToolModule[] | undefined {
   const wanted = role?.mcp
+  // Participant d'un tour de table (fiche 285) : aucun outil de Bobine, pas même `message_parent`.
+  if (modules && role?.name === ROUNDTABLE_PARTICIPANT_ROLE) return []
   if (!modules || !wanted) return modules
   return modules.filter((m) => ROLE_KEPT_FAMILIES.includes(m.id) || wanted.includes(m.id))
 }

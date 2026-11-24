@@ -270,6 +270,23 @@ export function worktreeStartEvent(worktree: WorktreeInfo, now = new Date()): Ag
   }
 }
 
+/**
+ * Évènements posés à la lecture d'un fil sur le disque : l'avis d'un fil illisible mis de côté
+ * (fiche 041), puis ce qui règle son état d'avant un redémarrage (tour de table, fiche 285).
+ */
+export function loadedEvents(
+  conversation: { record: { id: string }; transcript?: { items: readonly TranscriptItem[] } },
+  damaged: readonly string[],
+  options: { settleLoaded?: (id: string, items: readonly TranscriptItem[]) => AgentEvent[] }
+): AgentEvent[] {
+  const { id } = conversation.record
+  if (damaged.length > 0) log.warn(`Fil illisible mis de côté (${id}) :`, damaged)
+  return [
+    ...(damaged.length > 0 ? [damagedTranscriptNotice(damaged)] : []),
+    ...(options.settleLoaded?.(id, conversation.transcript?.items ?? []) ?? [])
+  ]
+}
+
 /** Avis « fil illisible mis de côté » (fiche 041) : les fichiers copiés à part. */
 export function damagedTranscriptNotice(files: readonly string[]): AgentEvent {
   return {

@@ -37,7 +37,7 @@ function setup() {
 }
 
 describe('bibliothèque des rôles (fiche 223)', () => {
-  it('les sept rôles fournis sont actifs d’office, avec leur consigne en anglais', () => {
+  it('les huit rôles fournis sont actifs d’office, avec leur consigne en anglais', () => {
     const { library } = setup()
     const roles = library.active()
     expect(roles.map((r) => r.name)).toEqual([
@@ -45,6 +45,7 @@ describe('bibliothèque des rôles (fiche 223)', () => {
       'code-reviewer',
       'flutter-expert',
       'front-architect',
+      'participant',
       'security-expert',
       'tech-lead',
       'ux-ui-expert'
@@ -53,6 +54,7 @@ describe('bibliothèque des rôles (fiche 223)', () => {
     // Fiche 262 : Expert UX/UI est un rôle de conseil (il propose, un autre applique).
     expect(roles.filter((r) => r.readOnly).map((r) => r.name)).toEqual([
       'code-reviewer',
+      'participant',
       'security-expert',
       'tech-lead',
       'ux-ui-expert'

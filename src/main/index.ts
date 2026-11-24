@@ -82,6 +82,8 @@ import { HistoryWriter } from './conversations/history-writer'
 import { ConversationManager } from './conversations/manager'
 import type { ChildConversations } from './conversations/children'
 import { setupChildren } from './conversations/children-setup'
+import type { Roundtables } from './roundtable/roundtables'
+import { setupRoundtables } from './roundtable/setup'
 import { appLaunchFolder } from './conversations/launch-folder'
 import { childrenToolsModule } from './mcp/children-tools'
 import { appCommitDrafts } from './conversations/commit-draft-setup'
@@ -568,6 +570,8 @@ async function start(): Promise<void> {
 
   // Conversations filles (fiche 097) : créées après le gestionnaire, dont elles ont besoin.
   let children: ChildConversations | undefined = undefined
+  // Tour de table (fiche 285) : créé après les filles, dont il a besoin.
+  let roundtables: Roundtables | undefined = undefined
   // Mémoire commune aux agents (fiche 182).
   const memory = appMemory(
     userData,
@@ -606,6 +610,7 @@ async function start(): Promise<void> {
     memory: memory.service,
     roles: roles.library,
     keepLive: (id) => children?.keepLive(id) ?? false,
+    settleLoaded: (id, items) => roundtables?.settleLoaded(id, items) ?? [],
     // Agents vivants au plus : le réglage, sauf `BOBINE_MAX_LIVE` (essais, e2e `filles`, fiche 102).
     maxLive: imposedLiveLimit(process.env),
     ...conversationRelease({ terminals, browser, browserTools }),
@@ -696,6 +701,13 @@ async function start(): Promise<void> {
   // Plafond de coût par conversation (fiche 157, ADR-0035).
   const costCap = new CostCapGuard(conversations, () => settings.preferences())
   costCap.start()
+  // Tour de table (fiche 285, ADR-0072) : abonné après les filles et le plafond de coût.
+  roundtables = setupRoundtables(conversations, {
+    children: childConversations,
+    attention: () => attention.state(),
+    providers: () => providers.list(),
+    nativeRoleMode: roles.forChildren.nativeRoleMode
+  })
   // Tâches planifiées (fiche 178, ADR-0039) : lancées tant que l'app est ouverte.
   // Ce que la lecture a mis de côté ou retrouvé (fiche 196, 197) : dit une fois.
   profile.loaded(approvals, historyStore, (status) => send('profile:changed', status))
@@ -974,6 +986,7 @@ async function start(): Promise<void> {
         memory: memory.service,
         memoryIpc: memory.ipc,
         roles: roles.ipc,
+        roundtables,
         scheduler,
         // Après la garde du plafond de coût, qu'elle enchaîne (fiche 175).
         worktreeSetup: connectWorktreePreparation(conversations, preparation),

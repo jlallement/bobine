@@ -49,7 +49,6 @@ import { log } from '../log'
 import { hasFolder } from './agentless'
 import { ChildWake } from './children-wake'
 import { applyModel, ChildReviews, REVIEWER_ROLE } from './children-review'
-import type { Message } from '@shared/i18n/message'
 import { roleBadge, roleStamp, type RoleSnapshot, type RoleView } from '@shared/roles'
 import type { RoleLibrary } from '../roles/library'
 import { roleFirstMessage, type InstalledMode } from '../roles/launch'
@@ -60,55 +59,12 @@ import { inGitRepo, titleFrom } from './helpers'
 import type { ConversationManager } from './manager'
 import { detachChild } from './family-delete'
 import type { LaunchFolder } from './launch-folder'
-import type {
-  FolderDirty,
-  LaunchFolderState,
-  LeftBehind,
-  UncommittedChoice
-} from '@shared/launch-folder'
+import type { FolderDirty, LaunchFolderState, LeftBehind } from '@shared/launch-folder'
 import { IN_PLACE_LINE } from '@shared/launch-folder'
 import type { CommitOutcome } from '@shared/worktree-cycle'
-import type { RoleRequest } from '@shared/role-request'
-
-/** Ce que demande « Lancer en parallèle… », ou `start_child`. */
-export interface ChildRequest {
-  /** Consigne : le premier message de la fille. */
-  text: string
-  /** Titre de la fille ; absent : le début de la consigne. */
-  title?: string
-  /** Agent de la fille ; absent : celui de la mère. */
-  profileId?: string
-  /** Modèle choisi (réglage de catégorie `model`) ; absent : celui que prend l'agent. */
-  model?: { controlId: string; value: string }
-  /**
-   * Rôle de la fille, par son nom (fiche 223) : sa consigne, son mode, sa lecture seule et ses
-   * outils. Son agent et son modèle sont choisis par l'appelant (carte, dialogue).
-   */
-  role?: string
-  /** Rôle figé à la carte de `start_child` (relecture de la fiche 223) : l'emporte sur `role`. */
-  roleSnapshot?: RoleSnapshot
-  /** Lignes dites dans le fil de la fille dès son lancement (agent du rôle indisponible…). */
-  notices?: Message[]
-  /**
-   * Choix de l'utilisateur devant un dossier modifié (fiche 240, fiche 262) : partir sans elles
-   * (`anyway`, le choix affiché par défaut sous la saisie), ou un avis en lecture seule dans le
-   * dossier de la mère (rôle seulement). Sans choix explicite, une fille qui partirait en worktree
-   * d'un dossier modifié est refusée (outil de l'agent, carte sans réponse) : le main n'en
-   * suppose aucun.
-   */
-  uncommitted?: UncommittedChoice
-  /**
-   * Bulle « @Rôle … » de la saisie (fiche 263) : posée, ou complétée de ce travail, juste avant son
-   * lancement dans le fil de la mère ; `works` : les travaux déjà partis pour la même demande,
-   * complété en place par `start` (l'appelant passe le même objet au rôle suivant).
-   */
-  ask?: RoleRequest
-  /**
-   * Clé de la carte du travail (fiche 264, `ChildStart.card`) : sa ligne de proposition, ou sa
-   * carte seule (« Lancer en parallèle… »). Absente : pas de carte (bulle, relecture).
-   */
-  card?: string
-}
+import { launchRole, type ChildRequest, type LaunchExtras } from './children-request'
+import { roundtableChildIds } from '../roundtable/participants'
+import { applyModelStrict } from '../roundtable/strict-model'
 
 /** Une fille vue par `child_status`. */
 export interface ChildStatus extends ChildWork {
@@ -204,6 +160,10 @@ export class ChildConversations {
   /** Garde-fou des rôles en lecture seule (fiche 223). */
   private readonly readOnly: ReadOnlyWatch
   private readonly folder: LaunchFolder | undefined
+  /** Places réservées d'avance par mère (tour de table, fiche 285). */
+  private readonly reservedSlots = new Map<string, number>()
+  /** Dossier changé pendant le tour d'une fille en lecture seule (tour de table, fiche 285). */
+  private readonly folderListeners = new Set<(id: string) => void>()
 
   constructor(conversations: ChildHost, options: ChildOptions = {}) {
     this.conversations = conversations
@@ -216,7 +176,10 @@ export class ChildConversations {
       conversations,
       summary: (id) => this.summary(id),
       run: options.run ?? gitRun,
-      changed: (id) => this.reviews.changed(id)
+      changed: (id) => {
+        this.reviews.changed(id)
+        for (const listener of this.folderListeners) listener(id)
+      }
     })
     this.reviews = new ChildReviews({
       conversations,
@@ -253,7 +216,7 @@ export class ChildConversations {
       throw new Error(t('children.error.modelNotAllowed'))
     }
     const { active, max } = this.capacity(motherId)
-    if (active >= max) throw new Error(t('children.limit', { count: max }))
+    if (!request.reserved && active >= max) throw new Error(t('children.limit', { count: max }))
     const role = launchRole(
       request,
       request.roleSnapshot ?? (request.role ? this.findRole(motherId, request.role) : undefined)
@@ -287,7 +250,9 @@ export class ChildConversations {
     }
     let launched = () => {}
     this.launching.set(child.id, new Promise<void>((resolve) => (launched = resolve)))
-    void this.launch(child, text, { model: request.model, role, inPlace }, () => {
+    const { attachments, strictModel, proceed, launchFailed } = request
+    const extras = { attachments, strictModel, proceed, launchFailed }
+    void this.launch(child, text, { model: request.model, role, inPlace, ...extras }, () => {
       launched()
       this.launching.delete(child.id)
     })
@@ -386,6 +351,7 @@ export class ChildConversations {
       inRepo: hasFolder(workspace) && inGitRepo(workspace),
       active:
         activeChildren(id, this.conversations.state().conversations, this.attention()) +
+        (this.reservedSlots.get(id) ?? 0) +
         [...this.preparing.values()].filter(
           (launch) =>
             launch.motherId === id &&
@@ -393,6 +359,24 @@ export class ChildConversations {
         ).length,
       max: this.conversations.settings.preferences().maxChildren
     }
+  }
+
+  /**
+   * Tour de table (fiche 285) : `count` places réservées ensemble, ou rien et celles qui manquent.
+   * `release` rend les places une fois les filles lancées (elles comptent alors elles-mêmes).
+   */
+  reserve(motherId: string, count: number): { release: () => void } | { missing: number } {
+    const { active, max } = this.capacity(motherId)
+    if (active + count > max) return { missing: active + count - max }
+    this.reservedSlots.set(motherId, (this.reservedSlots.get(motherId) ?? 0) + count)
+    let held = true
+    const release = () => {
+      const left = (this.reservedSlots.get(motherId) ?? 0) - (held ? count : 0)
+      held = false
+      if (left > 0) this.reservedSlots.set(motherId, left)
+      else this.reservedSlots.delete(motherId)
+    }
+    return { release }
   }
 
   launchState(): ChildLaunchState {
@@ -550,11 +534,17 @@ export class ChildConversations {
     )
   }
 
-  /** Filles d'une conversation, dans l'ordre de la liste (hors archivées). */
+  /**
+   * Filles d'une conversation, dans l'ordre de la liste (hors archivées et hors participants d'un
+   * tour de table, que les outils de la mère ne voient pas : fiche 285).
+   */
   children(motherId: string): ConversationSummary[] {
+    const participants = roundtableChildIds(this.conversations.view(motherId).transcript.items)
     return this.conversations
       .state()
-      .conversations.filter((c) => c.startedFrom?.id === motherId && !c.archived)
+      .conversations.filter(
+        (c) => c.startedFrom?.id === motherId && !c.archived && !participants.has(c.id)
+      )
   }
 
   /** `child_status` : état, branche, fichiers et fin de la dernière réponse de chaque fille. */
@@ -821,18 +811,48 @@ export class ChildConversations {
     return this.deliver(child, body, undefined, fail)
   }
 
+  /**
+   * Tour de table (fiche 285) : « Relancer » un participant dans sa conversation, comme à son
+   * lancement (modèle strict, consigne du rôle, pièces jointes).
+   */
+  relaunchParticipant(
+    childId: string,
+    text: string,
+    request: LaunchExtras & Pick<ChildRequest, 'model'> & { role: RoleSnapshot }
+  ): void {
+    const { role, model, ...extras } = request
+    this.relaunch(this.summary(childId), text, role, { model, ...extras })
+  }
+
+  /** Message de l'app à une fille, sans provenance (réplique d'un tour de table, fiche 285). */
+  followUp(childId: string, text: string, failed: () => void): 'queued' | 'sent' {
+    return this.deliver(this.summary(childId), text, undefined, failed)
+  }
+
+  /** Dossier changé pendant le tour d'une fille en lecture seule ; rend le désabonnement. */
+  onFolderChanged(listener: (id: string) => void): () => void {
+    this.folderListeners.add(listener)
+    return () => this.folderListeners.delete(listener)
+  }
+
+  /** Vérification de lecture seule de fin de tour finie pour cette fille. */
+  watchSettled(id: string): Promise<void> {
+    return this.readOnly.settled(id)
+  }
+
   /** Premier message d'un travail qui n'a pas démarré, refait comme au lancement (`launch`). */
   private relaunch(
     child: ConversationSummary,
     text: string,
-    role: RoleSnapshot
+    role: RoleSnapshot,
+    extras: LaunchExtras & Pick<ChildRequest, 'model'> = {}
   ): 'queued' | 'sent' {
     this.sending.add(child.id)
     this.conversations.holdStarting(child.id, true)
     let launched = () => {}
     this.launching.set(child.id, new Promise<void>((resolve) => (launched = resolve)))
     const inPlace = !role.readOnly && !child.branch
-    void this.launch(child, text, { model: undefined, role, inPlace }, () => {
+    void this.launch(child, text, { model: undefined, ...extras, role, inPlace }, () => {
       launched()
       this.launching.delete(child.id)
     })
@@ -932,14 +952,21 @@ export class ChildConversations {
     {
       model,
       role,
-      inPlace
-    }: { model: ChildRequest['model']; role: RoleSnapshot | undefined; inPlace: boolean },
+      inPlace,
+      ...extras
+    }: LaunchExtras & {
+      model: ChildRequest['model']
+      role: RoleSnapshot | undefined
+      inPlace: boolean
+    },
     launched: () => void
   ): Promise<void> {
     const childId = child.id
     try {
       if (model || role) await this.conversations.ready(childId)
-      if (model) await applyModel(this.conversations, childId, model)
+      // Modèle strict (tour de table, fiche 285) : jamais de repli, le lancement échoue avant l'envoi.
+      if (model && extras.strictModel) await applyModelStrict(this.conversations, childId, model)
+      else if (model) await applyModel(this.conversations, childId, model)
       // Rôle (fiche 223) : mode natif si l'agent l'a, sinon sa consigne en tête du message.
       const found = role && this.nativeRoleMode?.(child.profileId, role, childId)
       // Mode installé qui ne correspond plus au rôle (fiche 262) : jamais posé, et dit.
@@ -958,13 +985,16 @@ export class ChildConversations {
       const first = inPlace ? `${opening}\n\n${IN_PLACE_LINE}` : opening
       // Lecture seule : l'empreinte du dossier avant que la consigne ne parte (garde-fou).
       if (role?.readOnly) await this.readOnly.prepare(childId)
+      // Tour de table arrêté pendant le lancement (fiche 285) : la question ne part pas.
+      if (extras.proceed && !extras.proceed()) return this.abandon(childId, launched)
       // Le tour de la fille ne se termine pas avant longtemps : `launch` n'est pas attendu.
-      const turn = this.conversations.prompt(childId, first)
+      const turn = this.conversations.prompt(childId, first, extras.attachments ?? [])
       launched()
       await turn
       // Envoi retenu sans tour (plafond de coût, fiche 157) : la fille n'est plus « démarre ».
       this.conversations.holdStarting(childId, false)
     } catch (error) {
+      extras.launchFailed?.(error)
       this.conversations.holdStarting(childId, false, true)
       launched()
       this.readOnly.unprepare(childId)
@@ -999,6 +1029,14 @@ export class ChildConversations {
     }
   }
 
+  /** Lancement abandonné avant l'envoi (`proceed`) : la fille ne « démarre » plus, rien n'est dit. */
+  private abandon(childId: string, launched: () => void): void {
+    this.conversations.holdStarting(childId, false, true)
+    this.readOnly.unprepare(childId)
+    this.sending.delete(childId)
+    launched()
+  }
+
   /** Pourquoi l'agent d'une fille n'a pas démarré, d'après son état ; `undefined` sinon. */
   private startFailure(childId: string): string | undefined {
     // Fille supprimée entre-temps : plus d'état à lire.
@@ -1010,14 +1048,5 @@ export class ChildConversations {
   }
 }
 
-/**
- * Avis demandé devant un dossier modifié (`readOnly`, fiche 240) : le rôle part en lecture seule
- * dans le dossier de la mère, qui voit tout ; seulement pour un rôle.
- */
-function launchRole<R extends RoleSnapshot>(request: ChildRequest, role: R | undefined) {
-  if (request.uncommitted !== 'readOnly') return role
-  if (!role) throw new Error('Paramètre invalide : uncommitted')
-  return { ...role, readOnly: true }
-}
-
 export { childHandlers } from './children-ipc'
+export type { ChildRequest } from './children-request'

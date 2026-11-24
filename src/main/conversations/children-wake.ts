@@ -10,6 +10,7 @@
 import type { ConversationEvent, ConversationsState, ConversationView } from '@shared/agent'
 import type { AttentionState } from '@shared/attention'
 import { childNews, childState } from '@shared/children'
+import { roundtableChildIds } from '../roundtable/participants'
 
 export interface WakeHost {
   state: () => ConversationsState
@@ -144,7 +145,11 @@ export class ChildWake {
     // traiter le message) : pas de réveil.
     // Un travail mis à la corbeille n'a plus de compte rendu à transmettre (`exists` de l'hôte,
     // fiche 272) : il ne réveille pas la mère (un réveil facturé pour rien).
-    const news = childNews(view.transcript.items).filter((item) => byId.has(item.childId))
+    // Participants d'un tour de table (fiche 285) : leurs avis ne réveillent jamais la mère.
+    const participants = roundtableChildIds(view.transcript.items)
+    const news = childNews(view.transcript.items).filter(
+      (item) => byId.has(item.childId) && !participants.has(item.childId)
+    )
     if (news.some((item) => item.kind === 'child-report' && !informed.has(item.childId))) {
       this.host.wake(motherId)
     }

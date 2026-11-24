@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import i18next from 'i18next'
 import { LANGUAGES } from '@shared/i18n'
 import { checkRole, roleSnapshot, type Role } from '@shared/roles'
+import { PARTICIPANT_BRIEF } from '@shared/roundtable-prompts'
 import { builtinRoles } from './builtin'
 
 const NAMES = [
@@ -11,7 +12,8 @@ const NAMES = [
   'back-architect',
   'security-expert',
   'tech-lead',
-  'code-reviewer'
+  'code-reviewer',
+  'participant'
 ]
 
 /** Ce qui ne dépend pas de la langue. */
@@ -34,17 +36,19 @@ async function inLanguage<T>(language: 'fr' | 'en', run: () => T): Promise<T> {
 }
 
 describe('rôles fournis (fiche 223, ADR-0046)', () => {
-  it('les sept noms, dans l’ordre de l’interface', () => {
+  it('les huit noms, dans l’ordre de l’interface', () => {
     expect(builtinRoles().map((role) => role.name)).toEqual(NAMES)
   })
 
-  it('chaque langue donne sept rôles valides, mêmes noms, icônes, couleurs et lecture seule', () => {
+  it('chaque langue donne huit rôles valides, mêmes noms, icônes, couleurs et lecture seule', () => {
     const fr = builtinRoles('fr')
     const en = builtinRoles('en')
     expect(looks(fr)).toEqual(looks(en))
     for (const language of LANGUAGES) {
       for (const role of builtinRoles(language)) {
         expect([role.name, checkRole(role).ok]).toEqual([role.name, true])
+        // Participant (fiche 285) : son propre format en cinq rubriques, pas le résumé des rôles.
+        if (role.name === 'participant') continue
         // Le résumé pour la conversation qui l'a lancé est toujours demandé, sans titre ; plus de
         // « compte rendu » (recette N6, fiche 267 : il revenait en titre de la réponse).
         expect(role.prompt).toMatch(
@@ -59,6 +63,7 @@ describe('rôles fournis (fiche 223, ADR-0046)', () => {
     }
     // Textes vraiment traduits : aucune description ni consigne identique d'une langue à l'autre.
     fr.forEach((role, i) => {
+      if (role.name === 'participant') return
       expect(role.description).not.toBe(en[i]?.description)
       expect(role.prompt).not.toBe(en[i]?.prompt)
     })
@@ -103,5 +108,14 @@ describe('rôles fournis (fiche 223, ADR-0046)', () => {
     expect(english.prompt.startsWith('You are a careful code reviewer.')).toBe(true)
     expect(frozen).toEqual(before)
     expect(frozen.prompt.startsWith('Tu es un relecteur de code attentif.')).toBe(true)
+  })
+
+  it('fiche 285 : Participant, de conseil, sans outils de Bobine ; sa consigne anglaise est celle du tour de table', () => {
+    const en = named('participant', builtinRoles('en'))
+    expect(en).toMatchObject({ readOnly: true, mcp: [], icon: 'users' })
+    expect(en.prompt).toBe(PARTICIPANT_BRIEF)
+    // La même consigne en français : ce qu'« Installer dans… » écrit, et ce que le tour envoie.
+    expect(named('participant', builtinRoles('fr')).prompt).toBe(PARTICIPANT_BRIEF)
+    expect(named('participant', builtinRoles('fr')).label).toBe('Participant')
   })
 })

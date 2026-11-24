@@ -1,5 +1,5 @@
 /**
- * Les sept rôles fournis par Bobine (fiche 223, décision 3) : actifs d'office, désactivables ; un
+ * Les huit rôles fournis par Bobine (fiche 223, décision 3 ; « Participant », fiche 285) : actifs d'office, désactivables ; un
  * rôle personnel ou du projet du même nom les remplace. Aucun ne nomme d'agent, de mode ni de
  * modèle : ils marchent avec tous (ADR-0011).
  *
@@ -16,14 +16,16 @@ import { BUILTIN_EN, BUILTIN_NAMES, type BuiltinName, type BuiltinTexts } from '
 import { BUILTIN_FR } from './builtin-fr'
 
 /** Ce qui ne dépend pas de la langue. */
-const LOOKS: Record<BuiltinName, Pick<RoleDefinition, 'icon' | 'color' | 'readOnly'>> = {
+const LOOKS: Record<BuiltinName, Pick<RoleDefinition, 'icon' | 'color' | 'readOnly' | 'mcp'>> = {
   'ux-ui-expert': { icon: 'palette', color: 'pink', readOnly: true },
   'flutter-expert': { icon: 'smartphone', color: 'blue', readOnly: false },
   'front-architect': { icon: 'layout-dashboard', color: 'violet', readOnly: false },
   'back-architect': { icon: 'server', color: 'green', readOnly: false },
   'security-expert': { icon: 'shield-check', color: 'orange', readOnly: true },
   'tech-lead': { icon: 'compass', color: 'graphite', readOnly: true },
-  'code-reviewer': { icon: 'scan-search', color: 'blue', readOnly: true }
+  'code-reviewer': { icon: 'scan-search', color: 'blue', readOnly: true },
+  // Tour de table (fiche 285, décision C3) : rôle de conseil, sans famille d'outils de Bobine.
+  participant: { icon: 'users', color: 'graphite', readOnly: true, mcp: [] }
 }
 
 /** Libellés traduits (affichés) ; les clés suivent le nom du rôle. */
@@ -34,7 +36,8 @@ const LABELS: Record<BuiltinName, (lng: Language) => string> = {
   'back-architect': (lng) => t('roles.builtin.backArchitect', { lng }),
   'security-expert': (lng) => t('roles.builtin.securityExpert', { lng }),
   'tech-lead': (lng) => t('roles.builtin.techLead', { lng }),
-  'code-reviewer': (lng) => t('roles.builtin.codeReviewer', { lng })
+  'code-reviewer': (lng) => t('roles.builtin.codeReviewer', { lng }),
+  participant: (lng) => t('roles.builtin.participant', { lng })
 }
 
 const TEXTS: Record<Language, BuiltinTexts> = { fr: BUILTIN_FR, en: BUILTIN_EN }
@@ -54,7 +57,11 @@ export function builtinRoles(language: Language = currentLanguage()): Role[] {
     label: LABELS[name](language),
     ...LOOKS[name],
     description: typography(texts[name].description),
-    prompt: typography(texts[name].prompt.join('\n')),
+    // Participant (fiche 285) : sa consigne anglaise dans toutes les langues, sans typographie.
+    prompt:
+      name === 'participant'
+        ? texts[name].prompt.join('\n')
+        : typography(texts[name].prompt.join('\n')),
     scope: 'builtin'
   }))
 }

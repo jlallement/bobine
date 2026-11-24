@@ -6709,7 +6709,9 @@
         "unknown-agent": "Cet agent n’existe plus.",
         "unavailable": "Cet agent est indisponible."
       },
-      "unavailable": "Le tour de table n’est pas encore disponible dans cette version."
+      "unavailable": "Le tour de table n’est pas encore disponible dans cette version.",
+      "unknown": "Ce tour de table n’existe pas dans cette conversation.",
+      "attachmentsLost": "Les pièces jointes de ce tour ne sont plus disponibles depuis le redémarrage de l’app : lancez un nouveau tour de table."
     },
     "export_one": "Tour de table à {{count}} participant",
     "export_many": "Tour de table à {{count}} participants",

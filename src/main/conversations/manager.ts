@@ -70,7 +70,7 @@ import { HistoryWriter } from './history-writer'
 import { prepareBranch, previewBranch, revertChange } from './branching'
 import { ConversationStore, type ConversationRecord } from './store'
 import {
-  damagedTranscriptNotice,
+  loadedEvents,
   proposedTitle,
   trackDraftDrop,
   profileOrDefault,
@@ -210,6 +210,8 @@ export interface ConversationManagerOptions {
    * reste une limite souple : ce sont les conversations ordinaires au repos qui laissent la place.
    */
   keepLive?: (id: string) => boolean
+  /** Fil lu du disque : évènements qui le règlent (tour de table interrompu, fiche 285). */
+  settleLoaded?: (id: string, items: readonly TranscriptItem[]) => AgentEvent[]
   /** Corbeille des conversations supprimées (fiche 196) ; celle de `conversationsDir` sinon. */
   trash?: ConversationTrash
 }
@@ -1490,11 +1492,9 @@ export class ConversationManager {
     conversation.transcript = settleTranscript(loaded ?? emptyTranscript)
     // Conversation d'avant la fiche 109 : son résumé vient du fil, à sa première lecture.
     if (this.syncUsage(conversation)) this.emitList()
-    const damaged = this.store.damaged.slice(before)
-    if (damaged.length > 0) {
-      log.warn(`Fil illisible mis de côté (${conversation.record.id}) :`, damaged)
-      this.onEvent(conversation, damagedTranscriptNotice(damaged))
-    }
+    // Fil illisible mis de côté ; tour de table d'avant un redémarrage, réglé (fiche 285).
+    for (const event of loadedEvents(conversation, this.store.damaged.slice(before), this.options))
+      this.onEvent(conversation, event)
     // Un fil de plus en mémoire : les plus anciens dont rien n'a besoin laissent la place.
     const transcript = conversation.transcript
     this.releaseTranscripts()
