@@ -119,6 +119,19 @@ Bob 2.1.0) : contrat 12/12, réponses identiques à la référence 2.1.0 ; `pnpm
 --offline` (OpenCode 2.3.0) : contrat 12/12, réponses identiques. Ni Bob ni OpenCode n'annoncent
 `sessionCapabilities.systemPrompt`.
 
+**SDK ACP 2.9.1** (fiche 278, 2026-11-24, schéma 1.32 → 1.34) : rien ne change sur le fil. Côté
+types, que des ajouts pour un client : curseurs de session (instables : capacité `cursors`,
+mise à jour `cursor_update`, `cursorId` facultatif), et stabilisation de ce que l'app lisait déjà
+par l'entrée instable (plans `plan_update` / `plan_removed`, `subagent_update`, messages de
+session, référence de session). L'app n'annonce aucune capacité nouvelle ; une `cursor_update`
+reçue serait ignorée comme toute mise à jour inconnue. Corrections du SDK qui la concernent :
+messages traités dans l'ordre d'arrivée, notifications reçues avant la fin du flux de l'agent
+délivrées, messages en attente délivrés avant une erreur de lecture ; le reste (annulations v2,
+`auth/status`, `assertSupportedMcpServers` côté agent) n'est pas utilisé. `pnpm bob-probe` (0
+bobcoin, Bob 2.1.0) : contrat 12/12, réponses identiques à la référence 2.1.0 ; `pnpm
+opencode-probe --offline` (OpenCode 2.3.0 local) : contrat 12/12, seul écart la commande
+`automation` de la référence 2.4.1, absente de la 2.3.0.
+
 **Autres dossiers** (`additionalDirectories`, fiche 179) : Bob 2.0.9 ne l'annonce pas (sonde du
 2026-11-06) ; l'app ne lui envoie donc rien et ne propose pas d'en ajouter. Le jour où il
 l'annoncera, la fonction marchera sans rien changer au profil. Recevoir le champ ne suffit pas
@@ -460,6 +473,7 @@ Suivi des versions :
 
 | 2.3.0 (2026-11-16, référence le 2026-11-17) | complète, `opencode/big-pickle`, `--traces --accept` (fiche 232) | contrat de l'app vert ; **sous-agents toujours en arrière-plan** : `resultTag` `subagent` → `null`, `background: true`, travail relayé seulement pendant le tour (`childKinds`, qui dépendait de ce moment, remplacé par `childRelayed` / `childAfterTurn` ; les formes du travail relayé, observées seulement s'il y en a eu, sont vérifiées par le contrat mais jamais comparées aux attentes : `TIMING_DEPENDENT`), rapport hors tour. « création » : le modèle lit parfois chaque fichier (`read`, même celui à créer) avant d'écrire ; la sonde prenait ce `read` pour l'écriture (`kind: "read"`), elle prend maintenant l'appel `kind: edit` | app adaptée (fiche 232) ; `testedVersions` ; **référence 2.3.0 enregistrée** sur un passage complet tout vert (31 points, dont `messageId` et question d'un sous-agent par `ask_user`) ; 28 traces `__traces__/opencode-2.3.0/` ; écarts avec 2.0.32 : 155 clés nouvelles, `resultTag` → `null`, `childKinds` disparu |
 | 2.2.6 (publiée le 2026-11-06) | **pas encore essayée** | — | première sonde hebdomadaire en CI ; correctif de la 2.2 essayée : aucun avis dans la conversation, le Diagnostic la dit non essayée |
+| 2.4.1 (sonde hebdomadaire en CI du 2026-11-23, run 45234324357) | sans modèle (`--offline`), Linux | contrat de l'app **12/12** ; `session/new.commands` gagne `automation` (commande de l'agent, fusionnée génériquement avec celles de l'app : aucun nom en commun) | référence sans modèle 2.4.1 enregistrée à la main (fiche 278 : seul ce champ change, équivalent de `--offline --accept`) ; `testedVersions` ; reste : sonde avec modèle gratuit |
 
 **En CI, chaque semaine** (fiche 198) : `.github/workflows/opencode-probe.yml` (lundi 06:17 UTC,
 et à la main dans l'onglet Actions) télécharge la dernière release `vX.Y.Z` d'OpenCode sur GitHub

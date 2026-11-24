@@ -6,7 +6,8 @@ Agents (fiche 141). Cette page dit ce que l'app fait avec chacun, et pourquoi.
 
 Versions essayées (liste `testedVersions` des profils, `src/main/agent/profiles.ts`) : **IBM Bob
 2.0.6, 2.0.9 et 2.1.0** (dernière sonde : 2.1.0, le 2026-11-14) ; **OpenCode 1.19, 2.0.31, 2.0.32,
-2.2.5 et 2.3.0** (dernière sonde : 2.3.0, le 2026-11-17). Les relevés d'OpenCode de cette page
+2.2.5, 2.3.0 et 2.4.1** (dernière sonde complète : 2.3.0, le 2026-11-17 ; sans modèle : 2.4.1, le
+2026-11-23). Les relevés d'OpenCode de cette page
 datent d'OpenCode 2.0.31 (fiche 078) sauf mention ; les écarts de la 1.19, toujours prise en charge,
 sont notés « 1.19 : … ». `pnpm bob-probe` et `pnpm opencode-probe` disent ce qui change à chaque
 mise à jour.
