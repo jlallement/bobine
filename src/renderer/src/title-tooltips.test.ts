@@ -84,4 +84,30 @@ describe('infobulles des `title` (fiche 126)', () => {
     expect(button.getAttribute('title')).toBe('Cliquer encore')
     expect(button.hasAttribute('aria-label')).toBe(false)
   })
+
+  it('aucune infobulle sur l’élément qui remplace l’élément cliqué sous le pointeur immobile (fiche 272)', () => {
+    // Chromium, le survol recalculé après le rendu : `pointerover` au nouvel élément, aux
+    // coordonnées du clic, sans que le pointeur ait bougé.
+    const at = (type: string, element: Element, x: number, y: number) =>
+      element.dispatchEvent(new MouseEvent(type, { bubbles: true, clientX: x, clientY: y }))
+    at('pointerover', button, 10, 10)
+    at('pointerdown', button, 10, 10)
+    const struck = document.createElement('span')
+    struck.setAttribute('title', 'Fichier introuvable')
+    struck.textContent = 'absent.md'
+    button.replaceWith(struck)
+    at('pointerover', struck, 10, 10)
+    vi.advanceTimersByTime(400)
+    expect(bubble()).toBeNull()
+    expect(struck.getAttribute('title')).toBe('Fichier introuvable')
+    // Le pointeur bouge ensuite sur lui : toujours rien, comme sur l’élément cliqué.
+    at('pointerover', struck, 12, 10)
+    vi.advanceTimersByTime(400)
+    expect(bubble()).toBeNull()
+    // Quitté puis survolé à nouveau : son infobulle revient.
+    leave(struck, document.querySelector('p') as Element)
+    at('pointerover', struck, 14, 10)
+    vi.advanceTimersByTime(400)
+    expect(bubble()?.textContent).toBe('Fichier introuvable')
+  })
 })

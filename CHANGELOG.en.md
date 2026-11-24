@@ -2,6 +2,13 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixed
+
+- After clicking a link to a file that no longer exists, “File not found” no longer shows twice
+  (the bubble plus a tooltip on top of it) when the mouse stays put.
+
 ## 1.1.0-rc.1 — November 23, 2026
 
 ### New

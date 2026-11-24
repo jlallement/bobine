@@ -383,6 +383,17 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
   laissé sur le barré après le clic, l'infobulle de l'app (400 ms) peut s'ajouter à la bulle de
   3 s, même texte ; le `pressed` de `title-tooltips.ts` ne vise que l'élément cliqué, remplacé
   ici. Non observé à l'écran, non corrigé, à trancher.
+- 2026-11-24 — Point ouvert ci-dessus corrigé (branche `fix/infobulle-lien-barre`). Confirmé par
+  un essai jsdom (`title-tooltips.test.ts`) : clic sur un élément à `title`, remplacé par un autre
+  élément à `title`, puis `pointerover` du nouveau aux coordonnées du clic → infobulle de l'app à
+  400 ms (rouge avant le correctif). Cause : la protection après clic de `title-tooltips.ts`
+  (fiche 126) ne visait que l'élément cliqué, remplacé ici. Correctif, générique : la position du
+  pointeur au clic est retenue ; un `pointerover` aux mêmes coordonnées (survol recalculé après le
+  rendu, pointeur immobile) fait de l'élément apparu dessous l'élément cliqué (rien jusqu'à ce que
+  le pointeur le quitte) ; un `pointerover` ailleurs oublie cette position. Un évènement sans
+  coordonnées ne protège rien (comportement d'avant). Effet de bord voulu : le `title` du barré
+  n'est plus mis de côté sous le pointeur immobile ; l'essai e2e `links` (pointeur écarté, puis
+  lecture du `title`) reste valable, non relancé en local (ADR-0069). `./scripts/verify` : 0.
 
 ## Reste
 
@@ -393,7 +404,8 @@ content-search,draft-discard}.ts`, `main/git/{git-queue,repo}.ts`, `main/ipc.ts`
   `fr.lproj` dans Contents/Resources. Les menus eux-mêmes ne sont pas regardés (app non lancée).
 - A21 : décision de garder « coût inconnu » (voir plus haut).
 - G8, G9 : reproduits en essai (jsdom, IPC) ; pas rejoués écran ouvert dans l'app.
-- D2 (rc.3) : option C codée le 2026-11-22 (voir le journal) ; suite e2e `links` verte. Aperçu
+- D2 (rc.3) : option C codée le 2026-11-22 (voir le journal) ; suite e2e `links` verte ; plus
+  d'infobulle en doublon de la bulle (2026-11-24). Aperçu
   et onglet Fichiers gardent leur avis. La bulle recouvre la ligne suivante pendant 3 s : à
   trancher.
 - Liens en code (rc.3) : l'aperçu d'un document d'une conversation qui n'est ni l'active ni celle

@@ -2,6 +2,13 @@
 
 Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrigé
+
+- Après un clic sur un lien vers un fichier disparu, « Fichier introuvable » ne s’affiche plus
+  deux fois (la bulle et une infobulle par-dessus) quand la souris reste sur place.
+
 ## 1.1.0-rc.1 — 23 novembre 2026
 
 ### Nouveau

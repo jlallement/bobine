@@ -5,6 +5,8 @@
  * de l'app (même style que celles de Radix) le remplace : elle se ferme au défilement, au clic, à
  * une touche, et quand l'élément quitte la page. Le `title` revient quand le pointeur s'en va, ou
  * au clic (macOS ne remontre pas d'infobulle native sous un pointeur qui vient de cliquer).
+ * L'élément qui remplace l'élément cliqué sous le pointeur immobile (lien devenu code barré,
+ * fiche 272) hérite de cette protection : sinon son infobulle doublerait ce que le clic a déjà dit.
  */
 
 /** Délai avant l'affichage, comme les infobulles Radix (`Tip`). */
@@ -28,6 +30,8 @@ export function installTitleTooltips(doc: Document = document): () => void {
   let timer: ReturnType<typeof setTimeout> | undefined
   /** Élément cliqué : plus d'infobulle tant que le pointeur ne l'a pas quitté. */
   let pressed: Element | undefined
+  /** Position du pointeur au clic, tant qu'il n'en a pas bougé (inconnue : aucune). */
+  let pressedAt: { x: number; y: number } | undefined
 
   const hide = () => {
     if (timer) clearTimeout(timer)
@@ -78,6 +82,13 @@ export function installTitleTooltips(doc: Document = document): () => void {
     const target = event.target instanceof Element ? event.target : null
     const element = target?.closest('[title]')
     if (!element || element === anchor?.element || element === pressed) return
+    // Survol recalculé après le rendu (Chromium), pointeur resté au point du clic : l'élément
+    // apparu dessous est traité comme l'élément cliqué.
+    if (pressedAt && atPoint(event, pressedAt)) {
+      pressed = element
+      return
+    }
+    pressedAt = undefined
     // Autre élément, ou enfant qui a son propre `title` : c'est le sien qui compte.
     release()
     take(element)
@@ -90,8 +101,9 @@ export function installTitleTooltips(doc: Document = document): () => void {
     if (anchor && !inside(anchor.element)) release()
   }
 
-  const press = () => {
+  const press = (event: Event) => {
     pressed = anchor?.element
+    pressedAt = pointOf(event)
     release()
   }
 
@@ -130,6 +142,19 @@ export function installTitleTooltips(doc: Document = document): () => void {
     for (const type of HIDE_ON) doc.removeEventListener(type, hide, options)
     view.removeEventListener('blur', release)
   }
+}
+
+/** Position d'un évènement de pointeur ; absente pour un évènement sans coordonnées. */
+function pointOf(event: Event): { x: number; y: number } | undefined {
+  const { clientX, clientY } = event as Partial<MouseEvent>
+  return typeof clientX === 'number' && typeof clientY === 'number'
+    ? { x: clientX, y: clientY }
+    : undefined
+}
+
+function atPoint(event: Event, point: { x: number; y: number }): boolean {
+  const here = pointOf(event)
+  return here !== undefined && here.x === point.x && here.y === point.y
 }
 
 /** Sous l'élément, centrée ; au-dessus s'il n'y a pas la place ; jamais hors de la fenêtre. */
