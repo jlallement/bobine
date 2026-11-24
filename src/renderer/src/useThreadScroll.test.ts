@@ -104,6 +104,18 @@ describe('suivi du bas du fil (fiche 050)', () => {
     expect(box.scrollTop).toBe(1000)
   })
 
+  // Remplace `e2e/suites/git.mjs` n° 18 : la flèche d'un fil remonté ne passe pas à une
+  // conversation plus courte que la page.
+  it('fil remonté, puis une conversation plus courte que la page : pas de flèche', () => {
+    const { box, result, rerender, userScroll } = setup()
+    userScroll(100)
+    expect(result.current.atBottom).toBe(false)
+    box.scrollHeight = 150
+    box.scrollTop = 0
+    rerender({ conversation: 'courte', items: [9], empty: false })
+    expect(result.current.atBottom).toBe(true)
+  })
+
   it('fil qui change de taille : on reste en bas si on y était', () => {
     const { box, result } = setup()
     box.scrollHeight = 1300
