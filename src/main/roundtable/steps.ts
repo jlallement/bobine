@@ -49,6 +49,9 @@ export interface StepsHost {
   now: () => number
 }
 
+/** Réessai d'un envoi refusé (l'agent préparait) : 100 ms, puis le double, 5 s au plus. */
+export const retryDelay = (tries: number): number => Math.min(100 * 2 ** (tries - 1), 5_000)
+
 const titleOf = (question: string) => {
   const line = question.replace(/\s+/g, ' ').trim()
   return line.length > TITLE_CHARS ? `${line.slice(0, TITLE_CHARS - 1)}…` : line
@@ -70,6 +73,8 @@ export class MotherSteps {
   /** Dernière demande répondue : un coût communiqué après coup lui revient (Bob, fiche 109). */
   private readonly costWatch = new Map<string, StepRef>()
   private readonly scheduled = new Set<string>()
+  /** Envois refusés d'affilée parce que l'agent préparait une réponse : réessai espacé. */
+  private readonly retries = new Map<string, number>()
   private readonly checking = new Set<string>()
 
   constructor(host: StepsHost) {
@@ -81,12 +86,18 @@ export class MotherSteps {
     return this.sending.has(motherId) || this.answering.has(motherId)
   }
 
+  /** Évènements de cette conversation encore attendus (demande en cours, coût après coup). */
+  watches(motherId: string): boolean {
+    return this.holds(motherId) || this.costWatch.has(motherId)
+  }
+
   /** La conversation a une demande de ce tour en cours de réponse. */
   answeringFor(motherId: string, roundtableId: string): boolean {
     return this.answering.get(motherId)?.roundtableId === roundtableId
   }
 
   forget(motherId: string): void {
+    this.retries.delete(motherId)
     this.sending.delete(motherId)
     this.answering.delete(motherId)
     this.costWatch.delete(motherId)
@@ -134,6 +145,7 @@ export class MotherSteps {
     this.costWatch.delete(motherId)
     if (from?.kind !== 'roundtable') return
     const ref = { roundtableId: from.id, step: from.step }
+    this.retries.delete(motherId)
     this.sending.delete(motherId)
     this.answering.set(motherId, ref)
     this.host.apply(motherId, ref.roundtableId, {
@@ -232,7 +244,10 @@ export class MotherSteps {
     const rt = this.host.tours(motherId).find((r) => r.roundtableId === ref.roundtableId)
     if (!rt || waitingStep(rt) !== ref.step) return
     if (messageOf(error) === t('agentHost.busy')) {
-      this.schedule(motherId)
+      // L'agent prépare un message (rien ne le dit dans son statut) : réessai espacé, borné.
+      const tries = (this.retries.get(motherId) ?? 0) + 1
+      this.retries.set(motherId, tries)
+      setTimeout(() => this.schedule(motherId), retryDelay(tries))
       return
     }
     log.warn(`Tour de table ${ref.roundtableId.slice(0, 8)} : ${ref.step} non envoyée`)

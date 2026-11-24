@@ -6,7 +6,7 @@
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CostCapGuard } from '../conversations/cost-cap'
 import {
   FAST,
@@ -230,6 +230,66 @@ describe('quorum, arrêts et relance (lots 2 et 4)', () => {
     expect(() => env.roundtables.stop(mother, id)).toThrow(/plus possible/)
     expect(env.users(mother).some((u) => u.from?.kind === 'roundtable')).toBe(false)
     rmSync(lock)
+  })
+})
+
+describe('courses (revue de code)', () => {
+  it('« Arrêter » puis « Relancer » pendant le lancement : la question ne part qu’une fois', async () => {
+    const lock = lockFile()
+    const { env, mother } = await setup({
+      profiles: (mock) => [
+        mock('demarre', 'avis-participant', ['--demarrage-lent', '600']),
+        mock('lent', 'avis-participant', ['--verrou-fin-de-tour', lock])
+      ]
+    })
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [
+        choice('lent', 'factice-rapide'),
+        choice('lent', 'factice-precis'),
+        choice('demarre', 'factice-rapide')
+      ]
+    })
+    const id = env.rt(mother).roundtableId
+    const seat = () => env.rt(mother).seats.find((s) => s.profileId === 'demarre')
+    expect(seat()?.state).toBe('waiting')
+    env.roundtables.stop(mother, id, seat()?.letter)
+    await env.roundtables.relaunch(mother, id, seat()?.letter ?? 'A')
+    await env.waitFor(() => seat()?.state === 'answered', 'participant relancé, a répondu')
+    rmSync(lock)
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue', 20_000)
+    expect(seat()?.state).toBe('answered')
+    expect(env.users(seat()?.childId ?? '')).toHaveLength(1)
+  })
+
+  it('tour arrêté pendant le lancement des places : les suivantes ne partent pas', async () => {
+    const { env, mother } = await setup()
+    const original = env.children.start.bind(env.children)
+    let release = () => {}
+    const gate = new Promise<void>((resolve) => (release = resolve))
+    const start = vi.spyOn(env.children, 'start').mockImplementationOnce(async (...args) => {
+      await gate
+      return original(...args)
+    })
+    const launching = env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [FAST, PRECISE, choice('panel', 'autre')]
+    })
+    await env.waitFor(() => env.items(mother).some((i) => i.kind === 'roundtable'), 'tour posé')
+    env.roundtables.stop(mother, env.rt(mother).roundtableId)
+    release()
+    await launching
+    expect(start).toHaveBeenCalledTimes(1)
+    expect(env.rt(mother).phase).toBe('stopped')
+    // La place lancée avant l'arrêt n'a reçu aucune question.
+    const first = env.rt(mother).seats.find((s) => s.childId)
+    await env.waitFor(
+      () =>
+        env.manager.state().conversations.find((c) => c.id === first?.childId)?.status !==
+        'starting',
+      'lancement abandonné'
+    )
+    expect(env.users(first?.childId ?? '')).toEqual([])
   })
 })
 

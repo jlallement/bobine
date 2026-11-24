@@ -101,7 +101,15 @@ export interface LiveTour {
   /** Avis et répliques lus à la fin de leur tour ; relus du fil de la mère sinon. */
   opinions: Map<RoundtableLetter, string>
   rebuttals: Map<RoundtableLetter, string>
+  /**
+   * Lancement en cours de chaque place : son jeton (seul le dernier peut envoyer la question ou
+   * mettre la place en erreur) et sa fin (question partie, abandonnée ou en échec).
+   */
+  launches: Map<RoundtableLetter, { token: number; settled: Promise<void> }>
 }
+
+/** Attente, au plus, de la fin d'un lancement avant « Relancer » (agent qui ne démarre pas). */
+const RELAUNCH_WAIT_MS = 15_000
 
 const asRoundtable = ({ kind: _kind, id: _id, ...rt }: RoundtableItem): Roundtable => rt
 
@@ -111,6 +119,13 @@ const PAST_COLLECTING: ReadonlySet<Roundtable['phase']> = new Set([
   'synthesized',
   'rebutting',
   'deciding',
+  'decided',
+  'stopped'
+])
+
+/** Phases où le tour n'attend plus rien de lui-même. */
+const FINISHED_PHASES: ReadonlySet<Roundtable['phase']> = new Set([
+  'synthesized',
   'decided',
   'stopped'
 ])
@@ -125,6 +140,7 @@ export class Roundtables implements RoundtableService {
   private readonly seatsByChild = new Map<string, SeatRef>()
   /** Conversations dont un tour est en train de partir (deux lancements rapprochés). */
   private readonly starting = new Set<string>()
+  private launchCount = 0
   private readonly steps: MotherSteps
   private readonly seats: SeatEvents
 
@@ -162,6 +178,11 @@ export class Roundtables implements RoundtableService {
         if (ref) this.seats.unjudged(ref, childId)
       }
     })
+  }
+
+  /** Tours et places suivis en mémoire (essais : rien ne reste après la fin d'un tour). */
+  tracked(): { tours: number; seats: number } {
+    return { tours: this.live.size, seats: this.seatsByChild.size }
   }
 
   private now(): number {
@@ -231,6 +252,18 @@ export class Roundtables implements RoundtableService {
       if (tour) tour.attachments = []
     }
     if (after.phase === 'synthesizing' || after.phase === 'deciding') this.steps.schedule(motherId)
+    if (FINISHED_PHASES.has(after.phase)) this.release(after.roundtableId)
+  }
+
+  /**
+   * Tour fini (synthèse rendue, décision rendue, arrêté) : plus rien en mémoire. Un geste suivant
+   * (« Faire réagir les participants ») le suit de nouveau (`track`).
+   */
+  private release(roundtableId: string): void {
+    this.live.delete(roundtableId)
+    for (const [childId, ref] of this.seatsByChild) {
+      if (ref.roundtableId === roundtableId) this.seatsByChild.delete(childId)
+    }
   }
 
   private cancel(conversationId: string): void {
@@ -247,7 +280,13 @@ export class Roundtables implements RoundtableService {
   private track(motherId: string, rt: Roundtable): LiveTour {
     let tour = this.live.get(rt.roundtableId)
     if (!tour) {
-      tour = { motherId, attachments: [], opinions: new Map(), rebuttals: new Map() }
+      tour = {
+        motherId,
+        attachments: [],
+        opinions: new Map(),
+        rebuttals: new Map(),
+        launches: new Map()
+      }
       this.live.set(rt.roundtableId, tour)
     }
     this.index(motherId, rt)
@@ -304,8 +343,9 @@ export class Roundtables implements RoundtableService {
     for (const item of items) {
       if (item.kind !== 'roundtable') continue
       const rt = asRoundtable(item)
-      this.index(motherId, rt)
       if (this.live.has(rt.roundtableId)) continue
+      // Seulement les tours qui attendent encore un geste : rien des tours finis en mémoire.
+      if (roundtableRunning(rt) || rt.phase === 'insufficient') this.index(motherId, rt)
       const settled = settleRoundtable(rt, this.now())
       if (settled === rt) continue
       log.info(`Tour de table ${rt.roundtableId.slice(0, 8)} interrompu par un redémarrage`)
@@ -330,7 +370,7 @@ export class Roundtables implements RoundtableService {
     const seat = this.seatsByChild.get(id)
     if (seat) this.seats.onEvent(id, seat, event)
     const fromTour = event.type === 'user-message' && event.from?.kind === 'roundtable'
-    if (fromTour || this.steps.holds(id) || this.mothers().has(id)) this.steps.onEvent(id, event)
+    if (fromTour || this.steps.watches(id) || this.mothers().has(id)) this.steps.onEvent(id, event)
   }
 
   private mothers(): Set<string> {
@@ -478,7 +518,18 @@ export class Roundtables implements RoundtableService {
     childId?: string
   ): Promise<void> {
     const ref: SeatRef = { motherId, roundtableId, letter: seat.letter }
-    const attachments = this.live.get(roundtableId)?.attachments ?? []
+    const tour = this.live.get(roundtableId)
+    const attachments = tour?.attachments ?? []
+    // Un jeton par lancement : après « Arrêter » puis « Relancer », l'ancien ne peut plus rien.
+    const token = ++this.launchCount
+    let settle = () => {}
+    tour?.launches.set(seat.letter, {
+      token,
+      settled: new Promise((resolve) => (settle = resolve))
+    })
+    const current = () => this.live.get(roundtableId)?.launches.get(seat.letter)?.token === token
+    // Tour arrêté pendant le lancement des places précédentes : celle-ci ne part pas.
+    if (!this.seats.mayStart(ref)) return settle()
     const extras = {
       ...(seat.model
         ? {
@@ -487,8 +538,14 @@ export class Roundtables implements RoundtableService {
           }
         : {}),
       ...(attachments.length ? { attachments } : {}),
-      proceed: () => this.seats.mayStart(ref),
-      launchFailed: (error: unknown) => this.seats.launchFailed(ref, error)
+      proceed: () => {
+        settle()
+        return current() && this.seats.mayStart(ref)
+      },
+      launchFailed: (error: unknown) => {
+        settle()
+        if (current()) this.seats.launchFailed(ref, error)
+      }
     }
     try {
       if (childId) {
@@ -517,6 +574,8 @@ export class Roundtables implements RoundtableService {
         at: this.now()
       })
     } catch (error) {
+      settle()
+      if (!current()) return
       log.warn(`Tour de table ${roundtableId.slice(0, 8)} : participant ${seat.letter} non lancé`)
       this.apply(motherId, roundtableId, {
         type: 'seat-failed',
@@ -544,14 +603,54 @@ export class Roundtables implements RoundtableService {
     return seat
   }
 
+  // Gestes : le tour est suivi le temps du geste ; s'il est fini ensuite (ou que le geste est
+  // refusé sur un tour fini), plus rien n'en reste en mémoire.
   synthesize(motherId: string, roundtableId: string): void {
+    this.gestureOn(motherId, roundtableId, () => this.synthesizeNow(motherId, roundtableId))
+  }
+
+  rebuttal(motherId: string, roundtableId: string): void {
+    this.gestureOn(motherId, roundtableId, () => this.rebuttalNow(motherId, roundtableId))
+  }
+
+  decide(motherId: string, roundtableId: string): void {
+    this.gestureOn(motherId, roundtableId, () => this.decideNow(motherId, roundtableId))
+  }
+
+  stop(motherId: string, roundtableId: string, letter?: RoundtableLetter): void {
+    this.gestureOn(motherId, roundtableId, () => this.stopNow(motherId, roundtableId, letter))
+  }
+
+  async relaunch(motherId: string, roundtableId: string, letter: RoundtableLetter): Promise<void> {
+    try {
+      await this.relaunchNow(motherId, roundtableId, letter)
+    } finally {
+      this.releaseIfFinished(motherId, roundtableId)
+    }
+  }
+
+  private gestureOn(motherId: string, roundtableId: string, run: () => void): void {
+    try {
+      run()
+    } finally {
+      this.releaseIfFinished(motherId, roundtableId)
+    }
+  }
+
+  private releaseIfFinished(motherId: string, roundtableId: string): void {
+    const rt = this.read(motherId, roundtableId)
+    // Seulement un tour de cette conversation : un identifiant d’ailleurs ne libère rien.
+    if (rt && FINISHED_PHASES.has(rt.phase)) this.release(roundtableId)
+  }
+
+  private synthesizeNow(motherId: string, roundtableId: string): void {
     const rt = this.gesture(motherId, roundtableId)
     if (this.apply(motherId, roundtableId, { type: 'synthesize', at: this.now() })) return
     const quorum = hasQuorum(usableSeats(rt).length)
     throw new Error(t(quorum ? 'roundtable.error.phase' : 'roundtable.error.quorum'))
   }
 
-  rebuttal(motherId: string, roundtableId: string): void {
+  private rebuttalNow(motherId: string, roundtableId: string): void {
     const rt = this.gesture(motherId, roundtableId)
     const from = rt.phase === 'interrupted' ? rt.interruptedFrom : rt.phase
     if (rt.verdict || from === 'rebutting' || from === 'deciding' || from === 'decided') {
@@ -574,21 +673,31 @@ export class Roundtables implements RoundtableService {
     }
   }
 
-  decide(motherId: string, roundtableId: string): void {
+  private decideNow(motherId: string, roundtableId: string): void {
     this.gesture(motherId, roundtableId)
     if (!this.apply(motherId, roundtableId, { type: 'decide', at: this.now() })) {
       throw new Error(t('roundtable.error.phase'))
     }
   }
 
-  async relaunch(motherId: string, roundtableId: string, letter: RoundtableLetter): Promise<void> {
+  private async relaunchNow(
+    motherId: string,
+    roundtableId: string,
+    letter: RoundtableLetter
+  ): Promise<void> {
     const rt = this.gesture(motherId, roundtableId)
-    const seat = this.seatOf(rt, letter)
+    this.seatOf(rt, letter)
     if (!canRelaunch(rt, letter)) throw new Error(t('roundtable.error.phase'))
     const tour = this.track(motherId, rt)
     // Pièces jointes perdues au redémarrage : jamais un participant relancé sans elles.
     if (rt.attachments?.length && tour.attachments.length === 0) {
       throw new Error(t('roundtable.error.attachmentsLost'))
+    }
+    // Le lancement précédent finit d'abord (jamais deux réglages de modèle à la fois).
+    if (!(await this.launchSettled(tour, letter))) throw new Error(t('roundtable.error.phase'))
+    const seat = this.seatOf(this.gesture(motherId, roundtableId), letter)
+    if (!canRelaunch(this.gesture(motherId, roundtableId), letter)) {
+      throw new Error(t('roundtable.error.phase'))
     }
     const items = this.deps.conversations.view(motherId).transcript.items
     const at = items.findIndex((i) => i.kind === 'roundtable' && i.roundtableId === roundtableId)
@@ -612,11 +721,24 @@ export class Roundtables implements RoundtableService {
     )
   }
 
+  /** Le lancement en cours de cette place a fini (`false` : toujours en cours après l'attente). */
+  private async launchSettled(tour: LiveTour, letter: RoundtableLetter): Promise<boolean> {
+    const launch = tour.launches.get(letter)
+    if (!launch) return true
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const late = new Promise<false>(
+      (resolve) => (timer = setTimeout(() => resolve(false), RELAUNCH_WAIT_MS))
+    )
+    const done = await Promise.race([launch.settled.then(() => true as const), late])
+    clearTimeout(timer)
+    return done
+  }
+
   private exists(id: string): boolean {
     return this.deps.conversations.state().conversations.some((c) => c.id === id)
   }
 
-  stop(motherId: string, roundtableId: string, letter?: RoundtableLetter): void {
+  private stopNow(motherId: string, roundtableId: string, letter?: RoundtableLetter): void {
     const rt = this.gesture(motherId, roundtableId, true)
     const at = this.now()
     if (!letter) {

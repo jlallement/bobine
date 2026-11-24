@@ -216,6 +216,8 @@ describe('tour de table : réplique et décision (fiche 285, lot 3)', () => {
     expect(env.replies(mother).at(-1)).toContain('Répliques reçus : A, B')
     expect(env.rt(mother).verdict).toMatchObject({ state: 'answered', count: 2 })
     expect(() => env.roundtables.rebuttal(mother, id)).toThrow(/Une seule réplique/)
+    // Tour fini : plus rien en mémoire.
+    expect(env.roundtables.tracked()).toEqual({ tours: 0, seats: 0 })
   })
 
   it('un tour d’une autre conversation, ou une place inexistante, ne se pilote pas', async () => {
