@@ -108,6 +108,11 @@ export interface MockAgentOptions {
   /** `initialize` répond après ce délai (ms) : démarrage lent (`--demarrage-lent`, fiche 139). */
   slowStartMs?: number
   /**
+   * Un tour annulé répond après ce délai (ms) : arrêt lent (`MOCK_AGENT_SLOW_CANCEL_MS`, « arrêt en
+   * cours » du tour de table, fiche 285).
+   */
+  slowCancelMs?: number
+  /**
    * Verrou de fin de tour (`--verrou-fin-de-tour`) : tant que ce fichier existe, un tour joué ne
    * se termine pas (`verrou-fin-de-tour.mts`).
    */
@@ -798,8 +803,11 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
         })
         return { stopReason, usage }
       } catch (error) {
-        if (error instanceof TurnCancelled || turn.signal.aborted)
+        if (error instanceof TurnCancelled || turn.signal.aborted) {
+          if (options.slowCancelMs)
+            await new Promise((resolve) => setTimeout(resolve, options.slowCancelMs))
           return { stopReason: 'cancelled' }
+        }
         throw error
       } finally {
         if (session.turn === turn) session.turn = null

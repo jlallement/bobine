@@ -1,0 +1,199 @@
+import { rmSync } from 'node:fs'
+import { affirm, probes } from '../affirm.mjs'
+import { L, check, withApp } from '../lib.mjs'
+import {
+  BY_MODEL,
+  PEER,
+  arbiterModel,
+  choose,
+  env,
+  repo,
+  rowOf,
+  rowState
+} from './tour-de-table.mjs'
+
+/**
+ * Tour de table (fiche 285), vie des participants après le tour, contre l'agent factice :
+ *
+ * 1. Arrêt avec un participant lent (arrêt lent de l'agent factice) : « arrêt en cours », puis
+ *    « arrêté » ; la carte, le panneau Session et la barre latérale disent la même chose (B5).
+ * 2. Barre latérale : les participants y sont pendant le tour, plus après (M7) ; « Ouvrir sa
+ *    conversation » depuis la carte marche, le participant ouvert reste dans la liste.
+ * 3. Corbeille d'un participant (S1) : l'avis se lit, sans « Ouvrir » ; restauré, la ligne revient.
+ * 4. Synthèse retenue par le plafond de la conversation, puis « Continuer » : la carte du plafond
+ *    montre un libellé traduit ; l'étiquette de la synthèse nomme le modèle qui l'a écrite (S3).
+ */
+export async function lifecycle(scheme) {
+  await stopAndSidebar(scheme)
+  await heldSynthesis(scheme)
+}
+
+/** Participants du tour dans la barre latérale (icône du tour). */
+const sidebarSeats = `[...document.querySelectorAll('[data-testid=history-item]')].filter((h) => h.querySelector('[data-testid=history-roundtable]')).length`
+/** Travaux en cours dans le panneau Session (absent : panneau fermé). */
+const sessionChildren = `(() => { const s = document.querySelector('[data-testid=session-running]'); return s ? s.querySelectorAll('ul:not(.finished) [data-testid=session-entry][data-kind=child]').length : -1 })()`
+const meta = (name) =>
+  `${rowOf(name)}?.querySelector('[data-testid=roundtable-row-meta]')?.textContent`
+const activeId = `window.api.conversations.get().then((s) => s.activeId)`
+
+async function stopAndSidebar(scheme) {
+  const workspace = repo()
+  try {
+    await withApp(
+      scheme,
+      async (ui) => {
+        await ui.ready()
+        await arbiterModel(ui)
+        const mother = await ui.ev(activeId)
+        await ui.ev(`${ui.$('composer-input')}.focus()`)
+        await ui.type('/roundtable Cycle de vie ?')
+        await ui.waitFor(`!!${ui.$('roundtable-line')}`)
+        await choose(ui, [PEER(), 'Alpha', 'Beta'])
+        await ui.ev(`${ui.$('composer-input')}.focus()`)
+        await ui.enter()
+        await ui.waitFor(`!!${ui.$('roundtable-card')}`, 20_000)
+        await ui.waitFor(
+          `${rowState('Alpha', 'answered')} && ${rowState('Beta', 'answered')} && ${rowState(PEER(), 'working')}`,
+          30_000
+        )
+
+        // Pendant le tour : les trois participants dans la barre latérale.
+        await ui.waitFor(`${sidebarSeats} === 3`, 10_000)
+        await affirm(ui, '285-barre-pendant', [
+          probes.custom(
+            'trois participants dans la barre latérale, le lent au travail partout',
+            `const session = ${sessionChildren}
+            return { ok: ${sidebarSeats} === 3 && (session === -1 || session === 1), detail: JSON.stringify({ session }) }`
+          )
+        ])
+
+        // Arrêt : « arrêt en cours » tant que le lent s'arrête, puis « arrêté ».
+        await ui.click(ui.$('roundtable-stop'))
+        await ui.waitFor(
+          `${ui.$('roundtable-progress')}?.textContent.includes(${JSON.stringify(L('roundtable.card.stopping'))})`,
+          5_000
+        )
+        await affirm(ui, '285-arret-en-cours', [
+          probes.custom(
+            '« arrêt en cours » : bouton désactivé, aucun geste sur les lignes',
+            `const stop = document.querySelector('[data-testid=roundtable-stop]')
+            return { ok: !!stop?.disabled && stop.textContent === ${JSON.stringify(L('roundtable.card.stopping'))} && !document.querySelector('[data-testid=roundtable-stop-seat]') && !document.querySelector('[data-testid=roundtable-synthesize]'), detail: stop?.textContent }`
+          )
+        ])
+        await ui.waitFor(`${ui.$('roundtable-card')}?.dataset.phase === 'stopped'`, 20_000)
+        check(
+          (await ui.ev(meta(PEER()))) === L('roundtable.state.stopped.roundtable-stopped'),
+          'après l’arrêt : le lent « Arrêté avec le tour de table » sur la carte'
+        )
+        await ui.waitFor(`${sidebarSeats} === 0 && ${sessionChildren} <= 0`, 10_000)
+        check(true, 'après l’arrêt : plus de participant dans la barre latérale ni dans Session')
+        await affirm(ui, '285-barre-apres', [probes.threadFits()])
+
+        // « Ouvrir sa conversation » depuis la carte : le participant ouvert reste dans la liste.
+        await ui.click(`${rowOf('Alpha')}.querySelector('[data-testid=roundtable-open-row]')`)
+        await ui.waitFor(`${activeId}.then((id) => id !== ${JSON.stringify(mother)})`, 10_000)
+        const alpha = await ui.ev(activeId)
+        await ui.waitFor(`${sidebarSeats} === 1`, 10_000)
+        check(true, '« Ouvrir sa conversation » : le participant affiché, seul dans la liste')
+        await ui.ev(`window.api.conversations.select(${JSON.stringify(mother)}).then(() => true)`)
+        await ui.waitFor(`!!${ui.$('roundtable-card')} && ${sidebarSeats} === 0`, 10_000)
+
+        // Corbeille : l'avis se lit, sans « Ouvrir » ; restauré, la ligne revient.
+        await ui.ev(
+          `window.api.conversations.delete(${JSON.stringify(alpha)}, { fromAgent: false }).then(() => true)`
+        )
+        await ui.waitFor(
+          `${meta('Alpha')} === ${JSON.stringify(L('roundtable.state.trashed'))}`,
+          10_000
+        )
+        check(
+          !(await ui.ev(`!!${rowOf('Alpha')}.querySelector('[data-testid=roundtable-open-row]')`)),
+          'à la corbeille : pas de bouton « Ouvrir »'
+        )
+        await ui.click(`${rowOf('Alpha')}.querySelector('[data-testid=roundtable-row-toggle]')`)
+        await ui.waitFor(`!!${rowOf('Alpha')}.querySelector('[data-testid=work-body]')`)
+        await affirm(ui, '285-participant-corbeille', [probes.threadFits()])
+        await ui.ev(
+          `window.api.profile.restoreFromTrash(${JSON.stringify(alpha)}).then(() => true)`
+        )
+        await ui.waitFor(
+          `!!${rowOf('Alpha')}.querySelector('[data-testid=roundtable-open-row]') && ${meta('Alpha')} !== ${JSON.stringify(L('roundtable.state.trashed'))}`,
+          10_000
+        )
+        check(true, 'restauré : la ligne revient comme avant')
+      },
+      undefined,
+      'synthese-tour-de-table',
+      env(workspace, {
+        MOCK_AGENT_SCENARIO_BY_MODEL: BY_MODEL('avis-lent'),
+        MOCK_AGENT_DELAY_MS: '150',
+        // L'agent factice met 2,5 s à rendre un tour annulé : « arrêt en cours » se voit.
+        MOCK_AGENT_SLOW_CANCEL_MS: '2500'
+      })
+    )
+  } finally {
+    rmSync(workspace, { recursive: true, force: true })
+  }
+}
+
+async function heldSynthesis(scheme) {
+  const workspace = repo()
+  try {
+    await withApp(
+      scheme,
+      async (ui) => {
+        await ui.ready()
+        await ui.closePanel()
+        await arbiterModel(ui)
+        const model = await ui.ev(`${ui.$('model-chip')}.textContent.trim()`)
+        await ui.send('Bonjour')
+        await ui.ready()
+        // Plafond plus bas que ce premier tour : donné à la conversation par « Par défaut »
+        // (comme la suite pendant-tour) ; le message suivant, la synthèse, est retenu.
+        await ui.ev(
+          `window.api.settings.setPreferences({ costCapEnabled: true, costCapAmount: 0.01 }).then(() => true)`
+        )
+        await ui.click(ui.$('usage-meter'))
+        await ui.waitFor(`!!${ui.$('usage-cap-default')}`)
+        await ui.click(ui.$('usage-cap-default'))
+        await ui.waitFor(`${ui.$('usage-cap-default')}?.getAttribute('aria-pressed') === 'true'`)
+        await ui.key('Escape')
+        await ui.ev(`${ui.$('composer-input')}.focus()`)
+        await ui.type('/roundtable Retenue ?')
+        await ui.waitFor(`!!${ui.$('roundtable-line')}`)
+        await choose(ui, ['Alpha', 'Beta'])
+        await ui.ev(`${ui.$('composer-input')}.focus()`)
+        await ui.enter()
+        const lastCap = `[...document.querySelectorAll('[data-testid=cost-cap-card]')].at(-1)`
+        await ui.waitFor(
+          `${ui.$('roundtable-progress')}?.textContent.includes(${JSON.stringify(L('roundtable.card.held'))})`,
+          40_000
+        )
+        await ui.waitFor(
+          `${lastCap}?.querySelector('[data-testid=cost-cap-held]')?.textContent.includes(${JSON.stringify(L('roundtable.held.synthesis'))})`,
+          10_000
+        )
+        await affirm(ui, '285-synthese-retenue', [
+          probes.custom(
+            'carte du plafond : libellé traduit, jamais la consigne',
+            `const held = ${lastCap}.querySelector('[data-testid=cost-cap-held]').textContent
+            return { ok: !/Synthesize|<bobine/i.test(held), detail: held }`
+          )
+        ])
+        await ui.click(`${lastCap}.querySelector('[data-testid=cost-cap-continue]')`)
+        await ui.waitFor(`!!${ui.$('roundtable-answer-label')}`, 40_000)
+        const label = await ui.ev(`${ui.$('roundtable-answer-label')}.textContent`)
+        check(
+          label === L('roundtable.synthesis.label', { model }),
+          `étiquette de la synthèse : le modèle qui l’a écrite (${label})`
+        )
+        await affirm(ui, '285-etiquette-synthese', [probes.threadFits()])
+      },
+      undefined,
+      'synthese-tour-de-table',
+      env(workspace)
+    )
+  } finally {
+    rmSync(workspace, { recursive: true, force: true })
+  }
+}

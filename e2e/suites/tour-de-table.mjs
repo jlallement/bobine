@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { affirm, probes } from '../affirm.mjs'
 import { L, check, withApp } from '../lib.mjs'
+import { lifecycle } from './tour-de-table-vie.mjs'
 
 /**
  * Tour de table (fiche 285), contre l'agent factice et son pair (« Agent factice B ») : chaque
@@ -16,6 +17,8 @@ import { L, check, withApp } from '../lib.mjs'
  *    repliée, lettres (survol et focus), réplique, décision, « Demander de l'appliquer ».
  * 2. Cas dégradés : modèle refusé (« Choisir un autre modèle »), erreur puis « Relancer », dossier
  *    modifié par un participant qui écrit sans demander, « Synthétiser sans attendre », « Arrêter ».
+ * 2 ter. Vie des participants (`tour-de-table-vie.mjs`) : arrêt lent (« arrêt en cours »), barre
+ *    latérale pendant et après le tour, corbeille et restauration, synthèse retenue par le plafond.
  * 3. Redémarrage en plein recueil : « interrompu », participant « arrêté (redémarrage) »,
  *    « Reprendre » ; rien ne repart seul.
  *
@@ -34,7 +37,7 @@ const MODELS = [
 ].join(',')
 
 /** Scénario de chaque modèle ; « Factice précis » (la conversation) joue la synthèse. */
-const BY_MODEL = (rapide = 'avis-participant') =>
+export const BY_MODEL = (rapide = 'avis-participant') =>
   [
     `factice-rapide=${rapide}`,
     'fx/alpha=avis-participant',
@@ -45,10 +48,10 @@ const BY_MODEL = (rapide = 'avis-participant') =>
     'fx/sigma=avis-change-modele'
   ].join(',')
 
-const PEER = () => L('profiles.mockPeer.label')
+export const PEER = () => L('profiles.mockPeer.label')
 
 /** Dépôt git jetable (la lecture seule seulement demandée y est surveillée). */
-function repo() {
+export function repo() {
   const workspace = realpathSync(mkdtempSync(join(tmpdir(), 'bob-e2e-tour-de-table-')))
   const git = (...args) =>
     execFileSync('git', ['-c', 'user.name=e2e', '-c', 'user.email=e2e@example.invalid', ...args], {
@@ -62,7 +65,7 @@ function repo() {
   return workspace
 }
 
-const env = (workspace, extra = {}) => ({
+export const env = (workspace, extra = {}) => ({
   BOBINE_WORKSPACE: workspace,
   BOBINE_MOCK_PEER: '1',
   MOCK_MODELS: MODELS,
@@ -72,7 +75,7 @@ const env = (workspace, extra = {}) => ({
 })
 
 /** La conversation arbitre avec « Factice précis » (ses participants gardent leurs modèles). */
-async function arbiterModel(ui) {
+export async function arbiterModel(ui) {
   await ui.click(ui.$('model-chip'))
   await ui.waitFor(`!!${ui.$('control-model-factice-precis')}`)
   await ui.click(ui.$('control-model-factice-precis'))
@@ -97,7 +100,7 @@ async function toggle(ui, name) {
 }
 
 /** Ouvre le menu des participants et coche ces participants (aucun avant). */
-async function choose(ui, names) {
+export async function choose(ui, names) {
   if (!(await ui.ev(`!!${ui.$('roundtable-menu')}`)))
     await ui.click(ui.$('roundtable-participants'))
   await ui.waitFor(`!!${ui.$('roundtable-menu')}`)
@@ -139,15 +142,17 @@ const lineFits = (cost, label) =>
     }`
   )
 
-const rowOf = (name) =>
+export const rowOf = (name) =>
   `[...document.querySelectorAll('[data-testid=roundtable-row]')].find((r) => r.querySelector('[data-testid=roundtable-row-name]')?.textContent.startsWith(${JSON.stringify(name)}))`
-const rowState = (name, state) => `${rowOf(name)}?.dataset.state === ${JSON.stringify(state)}`
+export const rowState = (name, state) =>
+  `${rowOf(name)}?.dataset.state === ${JSON.stringify(state)}`
 
 export async function roundtableSuite(scheme) {
   console.log(`\n— Tour de table (${scheme})`)
   await nominal(scheme)
   await degraded(scheme)
   await guarded(scheme)
+  await lifecycle(scheme)
   await restart(scheme)
 }
 

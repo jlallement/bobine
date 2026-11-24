@@ -2262,6 +2262,11 @@ export const SUITES = [
     sources: [
       `${C}roundtable/`,
       `${C}thread/Roundtable*.tsx`,
+      `${C}sidebar/history-order.ts`,
+      `${C}sidebar/conversation-state.ts`,
+      `${C}panel/SessionRunning.tsx`,
+      `${C}thread/CostCapCard.tsx`,
+      'src/main/conversations/cost-cap.ts',
       `${C}thread/Markdown.tsx`,
       `${C}composer/ComposerBar.tsx`,
       `${C}composer/composer-key-down.ts`,
