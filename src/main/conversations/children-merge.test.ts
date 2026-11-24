@@ -154,7 +154,8 @@ async function setup(titles: string[], launchOrder?: number[]) {
     commit,
     transcript,
     left,
-    others
+    others,
+    apply
   }
 }
 
@@ -214,6 +215,34 @@ describe('fusion de toutes les filles (fiche 120)', () => {
       'merged',
       'merged'
     ])
+  }, 30_000)
+
+  it('fiche 285 : un participant de tour de table ne se fusionne pas, et n’est pas dans le plan', async () => {
+    const env = await setup(['Travail', 'Participant'])
+    env.apply({
+      type: 'roundtable',
+      roundtable: {
+        roundtableId: 'rt',
+        question: 'Q',
+        synthesizer: { profileId: 'mock', label: 'Factice' },
+        seats: [
+          {
+            profileId: 'mock',
+            label: 'F',
+            agentLabel: 'F',
+            letter: 'A',
+            childId: 'f2',
+            state: 'answered'
+          }
+        ],
+        phase: 'synthesized',
+        at: 1
+      }
+    })
+    const [a, b] = env.children as [Child, Child]
+    env.commit(a, 'a.txt', 'a\n')
+    env.commit(b, 'b.txt', 'b\n')
+    expect((await env.merger.plan('mere')).children.map((c) => c.id)).toEqual(['f1'])
   }, 30_000)
 
   it('recouvrement détecté : deux filles modifient le même fichier', async () => {

@@ -31,6 +31,7 @@ import {
   type MergeCandidateState
 } from '@shared/children-merge'
 import { childState } from '@shared/children'
+import { roundtableChildIds } from '../roundtable/participants'
 import { messageOf } from '@shared/errors'
 import { conflictPrompt, type CommitOutcome, type MergeOutcome } from '@shared/worktree-cycle'
 import type { ConversationSummary } from '@shared/agent'
@@ -146,12 +147,17 @@ export class ChildrenMerger {
     }
   }
 
-  /** Filles encore liées à la mère (hors archivées), dans l'ordre de lancement. */
+  /**
+   * Filles encore liées à la mère (hors archivées et hors participants d'un tour de table, qui ne
+   * se fusionnent pas : fiche 285), dans l'ordre de lancement.
+   */
   private children(motherId: string): ConversationSummary[] {
     const { conversations } = this.deps.conversations.state()
-    const rank = launchRank(this.deps.conversations.view(motherId).transcript.items)
+    const items = this.deps.conversations.view(motherId).transcript.items
+    const rank = launchRank(items)
+    const participants = roundtableChildIds(items)
     return conversations
-      .filter((c) => c.startedFrom?.id === motherId && !c.archived)
+      .filter((c) => c.startedFrom?.id === motherId && !c.archived && !participants.has(c.id))
       .sort((a, b) => rank(a.id) - rank(b.id))
   }
 

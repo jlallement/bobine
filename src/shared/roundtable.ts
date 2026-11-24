@@ -101,6 +101,8 @@ export interface RoundtableRebuttal {
   /** Retenue par le plafond de sa conversation : « réplique retenue : plafond atteint ». */
   held?: true
   detail?: string
+  /** Le dossier a changé pendant le tour de la réplique (pas celui de l'avis). */
+  changedFolder?: true
   /**
    * Heure d'envoi de la réplique dans la conversation du participant (ajout du lot main) : le
    * compte rendu dont `askedAt` est égal porte la réplique.
@@ -338,6 +340,25 @@ const bounded = (detail: string | undefined): { detail?: string } => {
     : {}
 }
 
+/**
+ * Dossier changé pendant un tour d'un participant, dit après la fin de ce tour (empreinte relue) :
+ * sur l'avis pendant le recueil, ou tant que la synthèse n'est pas partie ; sur la réplique pendant
+ * la réplique, ou tant que la décision n'est pas partie. Ailleurs, rien ne change.
+ */
+function changedFolder(rt: Roundtable, letter: RoundtableLetter): Roundtable {
+  const pending = (step: RoundtableStep | undefined) =>
+    step?.state === 'waiting' || step?.state === 'held'
+  if (rt.phase === 'collecting' || (rt.phase === 'synthesizing' && pending(rt.synthesis))) {
+    return withSeat(rt, letter, (s) => ({ ...s, changedFolder: true }))
+  }
+  if (rt.phase === 'rebutting' || (rt.phase === 'deciding' && pending(rt.verdict))) {
+    return withSeat(rt, letter, (s) =>
+      s.rebuttal ? { ...s, rebuttal: { ...s.rebuttal, changedFolder: true } } : s
+    )
+  }
+  return rt
+}
+
 /** Participant arrêté s'il n'a pas fini. */
 const stopIfRunning =
   (reason: RoundtableStopReason, at: number) =>
@@ -513,7 +534,7 @@ function reduceSeat(
     case 'seat-stopped':
       return collecting ? withSeat(rt, event.letter, stopIfRunning(event.reason, event.at)) : rt
     case 'seat-changed-folder':
-      return withSeat(rt, event.letter, (s) => ({ ...s, changedFolder: true }))
+      return changedFolder(rt, event.letter)
     case 'seat-removed':
       return withSeat(rt, event.letter, (s) => ({
         ...stopRebuttalIfRunning('removed')(stopIfRunning('removed', event.at)(s)),

@@ -265,6 +265,31 @@ describe('tour de table : réducteur', () => {
     expect(seat(rebutting, 'A')?.rebuttal).toEqual({ state: 'answered', askedAt: 60 })
   })
 
+  it('dossier changé : sur l’avis ou sur la réplique, seulement tant que l’étape suivante n’est pas partie', () => {
+    const answered = apply(
+      roundtable(),
+      { type: 'seat-launched', letter: 'A', childId: 'c-a', readOnly: 'requested', at: 1 },
+      { type: 'seat-answered', letter: 'A', at: 2 },
+      { type: 'seat-answered', letter: 'B', at: 2 },
+      { type: 'seat-stopped', letter: 'C', reason: 'user', at: 2 }
+    )
+    // Dit après la fin du dernier tour : la synthèse attend encore, l'avertissement compte.
+    expect(answered.phase).toBe('synthesizing')
+    const flagged = reduceRoundtable(answered, { type: 'seat-changed-folder', letter: 'A', at: 3 })
+    expect(seat(flagged, 'A')?.changedFolder).toBe(true)
+    const sent = reduceRoundtable(answered, { type: 'step-sent', step: 'synthesis', at: 3 })
+    expect(reduceRoundtable(sent, { type: 'seat-changed-folder', letter: 'B', at: 4 })).toBe(sent)
+    const rebutting = apply(
+      sent,
+      { type: 'step-answered', step: 'synthesis', at: 4 },
+      { type: 'rebuttal', at: 5 },
+      { type: 'seat-changed-folder', letter: 'A', at: 6 }
+    )
+    // Pendant la réplique : sur la réplique, l'avis garde son état.
+    expect(seat(rebutting, 'A')?.rebuttal?.changedFolder).toBe(true)
+    expect(seat(rebutting, 'B')?.changedFolder).toBeUndefined()
+  })
+
   it('« Synthétiser sans attendre » : dès deux avis, les autres arrêtés ; refusé avant', () => {
     const one = apply(roundtable(), { type: 'seat-answered', letter: 'A', at: 2 })
     expect(reduceRoundtable(one, { type: 'synthesize', at: 3 })).toBe(one)

@@ -106,7 +106,8 @@ export function rebuttalInputs(
   return rt.seats.flatMap((seat): OpinionInput[] => {
     const rebuttal = seat.rebuttal
     if (!rebuttal) return []
-    const base = { letter: seat.letter, ...(seat.changedFolder ? { changedFolder: true } : {}) }
+    // L'avertissement de la décision : le dossier a changé pendant la réplique.
+    const base = { letter: seat.letter, ...(rebuttal.changedFolder ? { changedFolder: true } : {}) }
     if (rebuttal.state === 'answered' && !seat.removed) {
       const reply = text(seat)?.trim()
       return [reply ? { ...base, text: reply } : { ...base, error: 'agent-error' as const }]
