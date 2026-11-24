@@ -21,6 +21,8 @@ import { setupChildren } from '../conversations/children-setup'
 import { ConversationManager } from '../conversations/manager'
 import { until } from '../conversations/manager-until'
 import { gitCommand, queuedGit } from '../git/git-queue'
+import { childrenToolsModule } from '../mcp/children-tools'
+import { AppToolServer } from '../mcp/tool-server'
 import type { Roundtables } from './roundtables'
 import { setupRoundtables } from './setup'
 
@@ -96,12 +98,17 @@ export async function roundtableEnv(options: EnvOptions = {}) {
     ...profile
   })
   const late: { children?: ChildConversations; roundtables?: Roundtables } = {}
+  // Serveur MCP de l'app : la mère reçoit ses outils, un participant aucun.
+  const toolServer = new AppToolServer()
+  await toolServer.start()
   const manager = new ConversationManager({
     profiles: [
       mock('lead', options.lead ?? 'synthese-tour-de-table', options.leadArgs ?? []),
       mock('panel', 'avis-participant', options.panel ?? []),
       ...(options.profiles?.(mock) ?? [])
     ],
+    toolServer,
+    toolModules: [childrenToolsModule(() => late.children)],
     keepLive: (id) => late.children?.keepLive(id) ?? false,
     settleLoaded: (id, items) => late.roundtables?.settleLoaded(id, items) ?? [],
     settingsFile: join(root, 'settings.json'),
@@ -154,7 +161,10 @@ export async function roundtableEnv(options: EnvOptions = {}) {
     replies,
     users,
     seatChild,
-    stop: () => manager.stopAll()
+    stop: () => {
+      manager.stopAll()
+      toolServer.stop()
+    }
   }
 }
 

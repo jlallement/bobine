@@ -48,18 +48,31 @@ describe('participants d’un tour de table (fiche 285, décision 4)', () => {
     expect(roundtableChildIds([started('fille', 1, 'rt')]).size).toBe(0)
   })
 
-  it('aucun outil de Bobine pour un participant, pas même `message_parent`', () => {
+  it('un rôle personnel nommé « participant » garde ses outils (le tour de table se reconnaît à sa fiche)', () => {
     const modules = ['children', 'ask-user', 'memory', 'terminal'].map(
       (id) => ({ id }) as AppToolModule
     )
     const stamp = { name: 'participant', label: 'P', icon: 'users', color: 'graphite' as const }
-    expect(roleToolModules(modules, { ...stamp, readOnly: true, mcp: [] })).toEqual([])
-    // Un autre rôle garde le lien avec sa mère.
     expect(
-      roleToolModules(modules, { ...stamp, name: 'tech-lead', readOnly: true, mcp: [] })?.map(
-        (m) => m.id
-      )
-    ).toEqual(['children', 'ask-user'])
+      roleToolModules(modules, { ...stamp, readOnly: true, mcp: ['memory'] })?.map((m) => m.id)
+    ).toEqual(['children', 'ask-user', 'memory'])
+  })
+
+  it('participant d’un tour de table : les commandes aussi sont refusées d’office', () => {
+    const request: RequestPermissionRequest = {
+      sessionId: 's',
+      toolCall: { toolCallId: 't', title: 'npm test', kind: 'execute' },
+      options: [
+        { optionId: 'yes', name: 'Allow', kind: 'allow_once' },
+        { optionId: 'no', name: 'Reject', kind: 'reject_once' }
+      ]
+    }
+    const rules = { autoAllowed: () => false, place: { workspace: '/p', home: '/h' } }
+    expect(automaticAnswer(request, { ...rules, readOnly: 'participant' })).toEqual({
+      outcome: { outcome: 'selected', optionId: 'no' }
+    })
+    // Un rôle de conseil ordinaire : la commande est demandée à l'utilisateur.
+    expect(automaticAnswer(request, { ...rules, readOnly: true })).toBeUndefined()
   })
 
   it('lecture seule : écrire, supprimer, déplacer, changer de mode sont refusés d’office', () => {

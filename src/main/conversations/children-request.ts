@@ -54,6 +54,8 @@ export interface ChildRequest {
   reserved?: true
   /** Juste avant l'envoi du premier message : `false` l'abandonne, sans erreur (tour arrêté). */
   proceed?: () => boolean
+  /** Participant d'un tour de table (fiche 285) : l'identifiant du tour, retenu dans sa fiche. */
+  roundtable?: string
   /** Le premier message n'a pas pu partir (modèle strict, agent qui ne démarre pas…). */
   launchFailed?: (error: unknown) => void
 }
@@ -72,4 +74,14 @@ export function launchRole<R extends RoleSnapshot>(request: ChildRequest, role: 
   if (request.uncommitted !== 'readOnly') return role
   if (!role) throw new Error('Paramètre invalide : uncommitted')
   return { ...role, readOnly: true }
+}
+
+/** Ce que le garde-fou de lecture seule dit des participants d'un tour de table (fiche 285). */
+export interface ParticipantWatch {
+  /** Groupe d'une conversation : les participants d'un même tour (pas « partagés » entre eux). */
+  group?: (id: string) => string | undefined
+  /** Le dossier a changé pendant son tour. */
+  changed?: (id: string) => void
+  /** Son tour n'a pas pu être jugé. */
+  unjudged?: (id: string) => void
 }

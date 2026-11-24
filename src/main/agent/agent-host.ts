@@ -148,8 +148,11 @@ export interface AgentHostOptions {
    * son mode de travail ; appliqué après les réglages initiaux.
    */
   initialMode?: 'plan' | 'execute'
-  /** Fille d'un rôle en lecture seule (fiche 223) : demandes d'écriture refusées d'office. */
-  readOnly?: boolean
+  /**
+   * Fille d'un rôle en lecture seule (fiche 223) : demandes d'écriture refusées d'office ;
+   * `participant` (tour de table, fiche 285) : les commandes aussi.
+   */
+  readOnly?: boolean | 'participant'
   /** Discussion (fiche 224) : écritures accordées dans ce dossier, refusées ailleurs. */
   writeArea?: string
   /** Délais de démarrage et d'arrêt (remplaçables pour les tests) ; voir `TIMEOUTS`. */
@@ -354,7 +357,7 @@ export class AgentHost {
         this.flushLateAnswer()
       },
       ...(options.deniedCommand ? { deniedCommand: options.deniedCommand } : {}),
-      readOnly: options.readOnly
+      readOnly: !!options.readOnly
     })
     this.appEndpoint = new AppToolsEndpoint({
       bridge: this.appTools,
@@ -901,7 +904,7 @@ export class AgentHost {
     // d'une discussion reposée pour un lien physique dit pourquoi (fiche 230).
     const risks = permissionRisks(withKnownLocations(toolCall, known), place)
     const ask = (asked: RequestPermissionRequest) => this.requests.permission(asked, risks, signal)
-    return askReadOnly({ ...params, toolCall }, this.options.readOnly, ask)
+    return askReadOnly({ ...params, toolCall }, !!this.options.readOnly, ask)
   }
 
   /**

@@ -62,7 +62,12 @@ import type { LaunchFolder } from './launch-folder'
 import type { FolderDirty, LaunchFolderState, LeftBehind } from '@shared/launch-folder'
 import { IN_PLACE_LINE } from '@shared/launch-folder'
 import type { CommitOutcome } from '@shared/worktree-cycle'
-import { launchRole, type ChildRequest, type LaunchExtras } from './children-request'
+import {
+  launchRole,
+  type ChildRequest,
+  type LaunchExtras,
+  type ParticipantWatch
+} from './children-request'
 import { roundtableChildIds } from '../roundtable/participants'
 import { applyModelStrict } from '../roundtable/strict-model'
 
@@ -162,11 +167,8 @@ export class ChildConversations {
   private readonly folder: LaunchFolder | undefined
   /** Places réservées d'avance par mère (tour de table, fiche 285). */
   private readonly reservedSlots = new Map<string, number>()
-  /** Dossier changé pendant le tour d'une fille en lecture seule (tour de table, fiche 285). */
-  private readonly folderListeners = new Set<(id: string) => void>()
-  /** Tour qui n'a pas pu être jugé (lecture seule seulement demandée), et groupes du garde-fou. */
-  private readonly unjudgedListeners = new Set<(id: string) => void>()
-  private watchGroup: ((id: string) => string | undefined) | undefined
+  /** Tour de table (fiche 285) : groupes du garde-fou, dossier changé, tour non jugé. */
+  private participantWatch: ParticipantWatch = {}
 
   constructor(conversations: ChildHost, options: ChildOptions = {}) {
     this.conversations = conversations
@@ -181,12 +183,10 @@ export class ChildConversations {
       run: options.run ?? gitRun,
       changed: (id) => {
         this.reviews.changed(id)
-        for (const listener of this.folderListeners) listener(id)
+        this.participantWatch.changed?.(id)
       },
-      group: (id) => this.watchGroup?.(id),
-      unjudged: (id) => {
-        for (const listener of this.unjudgedListeners) listener(id)
-      }
+      group: (id) => this.participantWatch.group?.(id),
+      unjudged: (id) => this.participantWatch.unjudged?.(id)
     })
     this.reviews = new ChildReviews({
       conversations,
@@ -484,7 +484,11 @@ export class ChildConversations {
           // « Démarre » jusqu'au départ de sa consigne : jamais « a fini » entre-temps (fiche 223).
           this.conversations.holdStarting(child.id, true)
         },
-        { ...(role ? { role: roleStamp(role) } : {}), ...(inPlace ? { inPlace } : {}) }
+        {
+          ...(role ? { role: roleStamp(role) } : {}),
+          ...(inPlace ? { inPlace } : {}),
+          ...(request.roundtable ? { roundtable: request.roundtable } : {})
+        }
       )
       return { created, inPlace }
     } finally {
@@ -836,26 +840,9 @@ export class ChildConversations {
     return this.deliver(this.summary(childId), text, undefined, failed)
   }
 
-  /** Dossier changé pendant le tour d'une fille en lecture seule ; rend le désabonnement. */
-  onFolderChanged(listener: (id: string) => void): () => void {
-    this.folderListeners.add(listener)
-    return () => this.folderListeners.delete(listener)
-  }
-
-  /**
-   * Tour de table (fiche 285) : groupes du garde-fou (les participants d'un même tour) et tours
-   * qu'il n'a pas pu juger ; rend le désabonnement.
-   */
-  watchGroups(
-    group: (id: string) => string | undefined,
-    unjudged: (id: string) => void
-  ): () => void {
-    this.watchGroup = group
-    this.unjudgedListeners.add(unjudged)
-    return () => {
-      this.watchGroup = undefined
-      this.unjudgedListeners.delete(unjudged)
-    }
+  /** Tour de table (fiche 285) : ce que le garde-fou de lecture seule dit des participants. */
+  watchParticipants(watch: ParticipantWatch): void {
+    this.participantWatch = watch
   }
 
   /** Vérification de lecture seule de fin de tour finie pour cette fille. */

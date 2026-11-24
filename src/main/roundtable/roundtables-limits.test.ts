@@ -258,6 +258,29 @@ describe('lecture seule (décision C3)', () => {
     expect(existsSync(join(env.repo, 'note-participant.md'))).toBe(false)
   })
 
+  it('aucun outil de l’app pour un participant ; une commande demandée est refusée d’office', async () => {
+    const { env, mother } = await setup({
+      panel: ['--scenario-par-modele', 'factice-precis=participant-outils']
+    })
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    const tools = env.rt(mother).seats.find((s) => s.model?.value === 'factice-precis')
+    const reply = env.replies(tools?.childId ?? '').join('\n')
+    expect(reply).toContain("Outils de l'app : (aucun serveur MCP HTTP)")
+    expect(reply).toContain('Commande refusée.')
+    // Refus d'office, dit dans le fil du participant : aucune carte n'a attendu l'utilisateur.
+    expect(
+      env
+        .items(tools?.childId ?? '')
+        .some(
+          (i) =>
+            i.kind === 'notice' &&
+            typeof i.message === 'object' &&
+            i.message.key === 'roles.notice.writeRefused'
+        )
+    ).toBe(true)
+  })
+
   it('agent qui écrit sans demander : lecture seule demandée, dossier changé signalé et dit à la synthèse', async () => {
     const { env, mother } = await setup({
       lead: 'echo',

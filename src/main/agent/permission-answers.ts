@@ -28,8 +28,11 @@ export interface PermissionRules {
   remembered?: { has: (title: string) => boolean } | undefined
   /** Dossier de la conversation et dossier personnel, pour repérer les risques. */
   place: RiskContext
-  /** Rôle en lecture seule (fiche 223) : écritures refusées, et dit par `notify`. */
-  readOnly?: boolean | undefined
+  /**
+   * Rôle en lecture seule (fiche 223) : écritures refusées, et dit par `notify`. `participant` :
+   * participant d'un tour de table (fiche 285), les commandes aussi (aucune carte pendant un tour).
+   */
+  readOnly?: boolean | 'participant' | undefined
   /** Ligne du fil qui dit une réponse d'office (refus d'un rôle, écriture d'une discussion). */
   notify?: (event: AgentEvent) => void
   /**
@@ -45,7 +48,7 @@ export interface PermissionRules {
 export function hostRules(
   options: {
     rememberedTools?: PermissionRules['remembered']
-    readOnly?: boolean | undefined
+    readOnly?: boolean | 'participant' | undefined
     writeArea?: string | undefined
     emit: (event: AgentEvent) => void
   },
@@ -120,6 +123,9 @@ export const READ_ONLY_REFUSED: ReadonlySet<string> = new Set([
   'switch_mode'
 ])
 
+/** Participant d'un tour de table (fiche 285) : il lit avec ses outils de lecture, sans commande. */
+export const PARTICIPANT_REFUSED: ReadonlySet<string> = new Set([...READ_ONLY_REFUSED, 'execute'])
+
 /** Ligne du fil qui dit le refus d'une écriture à un rôle en lecture seule. */
 export function readOnlyRefusal(toolCall: RequestPermissionRequest['toolCall']): AgentEvent {
   return {
@@ -141,7 +147,8 @@ export function automaticAnswer(
   params: RequestPermissionRequest,
   rules: PermissionRules
 ): RequestPermissionResponse | undefined {
-  if (rules.readOnly && READ_ONLY_REFUSED.has(params.toolCall.kind ?? '')) {
+  const refused = rules.readOnly === 'participant' ? PARTICIPANT_REFUSED : READ_ONLY_REFUSED
+  if (rules.readOnly && refused.has(params.toolCall.kind ?? '')) {
     const reject =
       params.options.find((o) => o.kind === 'reject_once') ??
       params.options.find((o) => o.kind === 'reject_always')

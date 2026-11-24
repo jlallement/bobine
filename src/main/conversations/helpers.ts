@@ -383,6 +383,8 @@ export interface ChildLink {
    * travaille dans le dossier de sa mère, comme elle.
    */
   inPlace?: boolean
+  /** Participant d'un tour de table (fiche 285) : l'identifiant du tour. */
+  roundtable?: string
 }
 
 /**
@@ -400,6 +402,7 @@ export function childDetachedRequest(
     onCreated?: DetachedRequest['onCreated']
     role?: RoleStamp
     inPlace?: boolean
+    roundtable?: string
   }
 ): DetachedRequest {
   const { profileId, onCreated, role } = request
@@ -414,7 +417,8 @@ export function childDetachedRequest(
     record: {
       startedFrom: { id: mother.id, title: mother.title },
       ...(author ? { reviewOf: { id: author.id, title: author.title } } : {}),
-      ...(role ? { role } : {})
+      ...(role ? { role } : {}),
+      ...(request.roundtable ? { roundtable: request.roundtable } : {})
     },
     ...(onCreated ? { onCreated } : {})
   }

@@ -13,7 +13,6 @@ import {
   childrenSessionContext
 } from '@shared/children'
 import { mentionedRoles, ROLE_KEPT_FAMILIES, type RoleStamp } from '@shared/roles'
-import { ROUNDTABLE_PARTICIPANT_ROLE } from '@shared/roundtable'
 import { roundtableChildIds } from '../roundtable/participants'
 import type { AppToolModule } from '../mcp/tools'
 import { handoverContext } from '@shared/handover'
@@ -135,11 +134,19 @@ export function hostOptions(input: HostOptionsInput): AgentHostOptions {
     conversationId: record.id,
     // Commandes refusées partout par les règles de l'agent (fiche 215) : ni par lui, ni par l'app.
     ...deniedCommandOption(profile, app.agentHome, record.workspace),
-    toolServer: app.toolServer,
+    // Participant d'un tour de table (fiche 285) : aucun outil de l'app, `ask_user` compris.
+    ...(record.roundtable ? {} : { toolServer: app.toolServer }),
     // Rôle (fiche 223) : seulement ses familles d'outils s'il les choisit ; écritures refusées.
     // Discussion (fiche 224) : aucun outil de Bobine ; écritures accordées dans ses documents.
-    toolModules: record.space === 'discussion' ? [] : roleToolModules(app.toolModules, record.role),
-    ...(record.role?.readOnly ? { readOnly: true } : {}),
+    toolModules:
+      record.space === 'discussion' || record.roundtable
+        ? []
+        : roleToolModules(app.toolModules, record.role),
+    ...(record.roundtable
+      ? { readOnly: 'participant' as const }
+      : record.role?.readOnly
+        ? { readOnly: true }
+        : {}),
     ...(record.space === 'discussion' ? { writeArea: record.workspace } : {}),
     // Ceux de la conversation, sinon (nouvelle conversation) le dernier choix fait avec ce profil ;
     // lus à chaque ouverture de session, jamais figés à la création de l'hôte (fiche 256).
@@ -247,8 +254,6 @@ export function roleToolModules(
   role: RoleStamp | undefined
 ): readonly AppToolModule[] | undefined {
   const wanted = role?.mcp
-  // Participant d'un tour de table (fiche 285) : aucun outil de Bobine, pas même `message_parent`.
-  if (modules && role?.name === ROUNDTABLE_PARTICIPANT_ROLE) return []
   if (!modules || !wanted) return modules
   return modules.filter((m) => ROLE_KEPT_FAMILIES.includes(m.id) || wanted.includes(m.id))
 }

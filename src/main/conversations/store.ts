@@ -82,6 +82,11 @@ export interface ConversationRecord {
   controls?: ConversationControls
   /** Dernier tour arrêté avant la fin (`cancelled`), jusqu'au tour suivant (fiche 258). */
   turnStopped?: true
+  /**
+   * Participant d'un tour de table (fiche 285) : l'identifiant du tour. Aucun outil de Bobine, ni
+   * commande ni écriture accordée (`host-options.ts`).
+   */
+  roundtable?: string
 }
 
 export const SAFE_ID = /^[\w-]+$/
@@ -103,7 +108,7 @@ export function isRecord(value: unknown): value is ConversationRecord {
 
 /** Résumé de consommation vérifié : un résumé mal formé est retiré, pas la conversation. */
 function withUsage(record: ConversationRecord): ConversationRecord {
-  const checked = withControls(withTurnStopped(withSpace(withRole(record))))
+  const checked = withControls(withTurnStopped(withSpace(withSeat(withRole(record)))))
   if (checked.usage === undefined) return checked
   const { usage, ...rest } = checked
   const digest = parseUsageDigest(usage)
@@ -130,6 +135,14 @@ function withControls(record: ConversationRecord): ConversationRecord {
 function withSpace(record: ConversationRecord): ConversationRecord {
   if (record.space === undefined || record.space === 'discussion') return record
   const { space: _ignored, ...rest } = record
+  return rest
+}
+
+/** Participant d'un tour de table (fiche 285) : un identifiant court, sinon retiré. */
+function withSeat(record: ConversationRecord): ConversationRecord {
+  const seat = record.roundtable
+  if (seat === undefined || (typeof seat === 'string' && seat && seat.length <= 200)) return record
+  const { roundtable: _ignored, ...rest } = record
   return rest
 }
 

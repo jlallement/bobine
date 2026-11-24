@@ -80,8 +80,7 @@ export interface RoundtablesDeps {
     | 'capacity'
     | 'relaunchParticipant'
     | 'followUp'
-    | 'onFolderChanged'
-    | 'watchGroups'
+    | 'watchParticipants'
     | 'watchSettled'
   >
   attention: () => AttentionState
@@ -150,19 +149,19 @@ export class Roundtables implements RoundtableService {
       participantMode: deps.participantMode,
       now: () => this.now()
     })
-    deps.children.onFolderChanged((childId) => {
-      const ref = this.seatsByChild.get(childId)
-      if (ref) apply(ref.motherId, ref.roundtableId, this.seats.folderChanged(ref))
-    })
-    // Participants d'un même tour : un seul groupe pour le garde-fou ; un tour qu'il n'a pas pu
-    // juger ramène la lecture seule « demandée » à « non vérifiée ».
-    deps.children.watchGroups(
-      (childId) => this.seatsByChild.get(childId)?.roundtableId,
-      (childId) => {
+    // Garde-fou de lecture seule : les participants d'un même tour forment un groupe ; un tour
+    // qu'il n'a pas pu juger ramène la lecture seule « demandée » à « non vérifiée ».
+    deps.children.watchParticipants({
+      group: (childId) => this.seatsByChild.get(childId)?.roundtableId,
+      changed: (childId) => {
+        const ref = this.seatsByChild.get(childId)
+        if (ref) apply(ref.motherId, ref.roundtableId, this.seats.folderChanged(ref))
+      },
+      unjudged: (childId) => {
         const ref = this.seatsByChild.get(childId)
         if (ref) this.seats.unjudged(ref, childId)
       }
-    )
+    })
   }
 
   private now(): number {
@@ -506,6 +505,7 @@ export class Roundtables implements RoundtableService {
         profileId: seat.profileId,
         roleSnapshot: participantRole(),
         card: roundtableId,
+        roundtable: roundtableId,
         ...(reserved ? { reserved: true } : {})
       })
       this.seatsByChild.set(child.id, ref)

@@ -186,6 +186,30 @@ export const roundtableScenarios: Record<string, Scenario> = {
       ...opinion(text, model, attachments)
     ])
   },
+  'participant-outils': {
+    description:
+      'Tour de table : participant qui liste les outils de l’app reçus (`tools/list` du serveur MCP de Bobine), puis demande à lancer une commande (`kind: execute`) : il doit n’avoir aucun outil, et la commande est refusée d’office',
+    steps: participant((text, model, attachments) => [
+      {
+        kind: 'mcp-list',
+        onResult: (names) => [
+          { kind: 'text', text: `Outils de l'app : ${names}\n\n` },
+          {
+            kind: 'permission',
+            toolCall: { toolCallId: 'participant_exec', title: 'npm test', kind: 'execute' },
+            options: [
+              { optionId: 'allow', name: 'Allow once', kind: 'allow_once' },
+              { optionId: 'reject', name: 'Reject', kind: 'reject_once' }
+            ],
+            branches: {
+              allow: opinion(text, model, attachments, ' Commande acceptée.'),
+              reject: opinion(text, model, attachments, ' Commande refusée.')
+            }
+          }
+        ]
+      }
+    ])
+  },
   'participant-ecrit-demande': {
     description:
       'Tour de table : participant qui demande à écrire `note-participant.md` (`kind: edit`, comme Bob) : refusé d’office, il le dit et donne son avis',
