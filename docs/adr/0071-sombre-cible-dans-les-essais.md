@@ -20,7 +20,8 @@ quand un fichier de thème ou de style change.
 2. **Le sombre pour toutes les suites jouées** quand `--changed` voit un fichier de thème ou de
    style modifié (`THEME_SOURCES` du catalogue : `src/renderer/**/*.css`, palettes, `theme.ts`,
    `appearance.*`, Réglages › Apparence, générateur des jetons, `e2e/palette.mjs`).
-3. **Les deux thèmes partout** : la campagne de nuit (`e2e.yml`, `schedule`, `--themes both`) et
+3. **Les deux thèmes partout** : la campagne de nuit (`e2e.yml`, `schedule`, macOS et Linux,
+   `--themes both`) et
    la suite complète avant un tag (`pnpm e2e --if-needed`). Seule une suite complète aux deux
    thèmes pose le tampon vert (`e2e/.last-green.json`) ; le passage par défaut n'en est pas une.
 4. **À la demande** : `--themes both` (tout), `--light` / `--dark` (un seul thème partout).
@@ -47,5 +48,6 @@ touchées, clair et sombre ». ADR-0069 est inchangé par ailleurs.
 - Une nouvelle suite qui vérifie un rendu sombre doit être déclarée `dark: true` ; un nouveau
   fichier de thème doit entrer dans `THEME_SOURCES` (les tests du lanceur vérifient que chaque
   motif couvre un fichier).
-- Les e2e Linux à chaque poussée sur `main` suivent la règle par défaut : la nuit ne joue que le
-  Mac.
+- La campagne de nuit joue macOS et Linux, les deux thèmes partout : le sombre complet est vu
+  chaque nuit sur les deux systèmes ; les e2e Linux à chaque poussée sur `main` gardent le sombre
+  ciblé.

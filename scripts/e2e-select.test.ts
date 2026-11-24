@@ -231,15 +231,21 @@ describe('thèmes joués (ADR-0071)', () => {
 })
 
 describe('campagne de nuit (e2e.yml, ADR-0071)', () => {
-  it('la nuit joue les deux thèmes partout ; à la main, le sombre ciblé', () => {
+  it('la nuit joue les deux thèmes partout, macOS et Linux ; à la main, le sombre ciblé', () => {
     const yml = readFileSync(join(ROOT, '.github', 'workflows', 'e2e.yml'), 'utf8')
     expect(yml).toContain("THEMES: ${{ github.event_name == 'schedule' && 'both' || '' }}")
-    // Chaque passage du Mac (français, anglais, indicatives) reçoit les thèmes de la nuit.
-    const runs = yml.split('\n').filter((l) => /^\s+pnpm e2e /.test(l) && !l.includes('--jobs 2'))
-    expect(runs.length).toBeGreaterThanOrEqual(4)
-    for (const run of runs.filter((l) => !l.includes('pnpm e2e ${suites'))) {
-      expect(run).toContain('${themes[@]+"${themes[@]}"}')
-    }
+    // Chaque passage de macOS et de Linux (français, anglais, indicatives) reçoit les thèmes de
+    // la nuit ; Windows, jamais lancé la nuit, non.
+    const runs = yml
+      .split('\n')
+      .filter((l) => /\bpnpm e2e /.test(l) && !l.includes('pnpm e2e ${suites'))
+    const commands = runs.filter((l) => !/name:|::error::|description:/.test(l))
+    expect(commands.length).toBe(6)
+    for (const run of commands) expect(run).toContain('${themes[@]+"${themes[@]}"}')
+    // Le job Linux part aussi la nuit.
+    expect(yml).toMatch(
+      /e2e-linux:[\s\S]*?if: github\.event_name == 'push' \|\| github\.event_name == 'schedule'/
+    )
     expect(parseArgs(['--themes', 'both'])).toMatchObject({ themes: 'both' })
   })
 })
