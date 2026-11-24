@@ -672,3 +672,15 @@ Dependabot comme les autres.
   20 s ; entrées de l'agent retenues jusqu'à la première peinture, ciblé à l'agent). Restent ouverts,
   à traiter à côté : (1) « branche : le navigateur reprend la page de l'originale » (`BrowserManager.inherit`
   avale ses erreurs ; cause inconnue) ; (2) tour de l'agent > 15 s sur la VM, sans cause établie.
+
+- 2026-11-24 — Recette Bob avant la 1.0.0, jouée avec un vrai IBM Bob 2.1.0 sur `f34c56ef`
+  ([rapport](../recettes/2026-11-24-recette-bob-1-0.md)). **Verdict 1.0.0 : oui.** 0 bloquant,
+  0 sérieux, aucune régression par rapport à la rc1 ; 1 gênant (la boîte « Supprimer » annonce
+  « perdus : 3 commits » pour une branche fille déjà fusionnée, parce que le compte part de la base
+  du worktree au lieu de `main`) et 2 cosmétiques. D1 et D2 de la rc1 sont corrigés et vérifiés
+  avec Bob : la rédaction du commit est comptée, et « Envoyer » reste inactif sur la carte
+  « Site web ». Le travail délégué (2 filles en worktree, puis fusion), la corbeille et la
+  restauration (`session/load`, mémoire gardée) marchent. **Point ouvert tranché** : sous
+  « Toujours dans cette conversation » (modifications), Bob crée un nouveau fichier sans
+  `session/request_permission`, et Bobine le compte quand même dans Modifications. 2,14 Bobcoins
+  dépensés, `~/.bob/settings/settings.json` inchangé.
