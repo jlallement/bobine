@@ -76,6 +76,8 @@ import { LaunchDetails, LaunchLine } from '../thread/LaunchLine'
 import { useTipsContext } from '../../useTips'
 import i18next from 'i18next'
 import { lastSegment } from '@shared/windows-paths'
+import { RoundtableComposerTag, RoundtableLine } from '../roundtable/RoundtableLine'
+import { useComposerRoundtable, type ComposerRoundtable } from '../roundtable/useRoundtableCompose'
 
 interface Props {
   /** Fichiers déposés sur la conversation, à joindre au message (`useFileDrop`). */
@@ -157,6 +159,8 @@ interface Props {
   roles?: ComposerRoles
   /** Historique de la saisie de la conversation (`sentHistory` de son fil, fiche 227). */
   sentHistory?: unknown
+  /** Tour de table (fiche 285) : participants retenus ; absent, pas de tour de table. */
+  roundtable?: ComposerRoundtable
 }
 
 /** Statuts qui ont leur propre texte d'invite (clé `composer.placeholder.<statut>`). */
@@ -343,8 +347,11 @@ export function Composer(props: Props) {
   })
   const roleView = roleCompose.view(text)
   const roleFrame = useRoleFrame(roleView.targets)
+  // Tour de table (fiche 285) : `/roundtable ` ou le bouton de la barre ; Entrée l'envoie.
+  const roundtable = useComposerRoundtable(props, { agentCommands, ownCommands, focusInput })
 
-  const changeText = (value: string, nextCaret?: number) => {
+  const changeText = (typed: string, typedCaret?: number) => {
+    const [value, nextCaret] = roundtable.typed(typed, typedCaret)
     setText(value)
     commandMenu.textChanged(value)
     mentions.textChanged()
@@ -412,23 +419,11 @@ export function Composer(props: Props) {
   }
 
   /** Choix d'une commande : complétée si elle attend un argument, sinon envoyée telle quelle. */
-  const pickCommand = (command: AgentCommand, complete: boolean) => {
-    if (complete || command.hint || (command.source !== 'app' && status !== 'ready')) {
-      changeText(`/${command.name} `)
-      textarea.current?.focus()
-      return
-    }
-    if (command.source === 'app') props.onAppCommand(command.name as AppCommandName, '')
-    else if (command.source === 'user' || command.source === 'project') {
-      const own = userCommandOf(`/${command.name}`, userCommands, agentCommands)
-      if (own) onSend(expandCommand(own.command.prompt, ''))
-      if (own) recordSent(`/${command.name}`)
-    } else {
-      onSend(`/${command.name}`)
-      recordSent(`/${command.name}`)
-    }
-    changeText('')
-  }
+  const pickCommand = (command: AgentCommand, complete: boolean) =>
+    runPickedCommand(command, complete, {
+      ...{ status, props, userCommands, agentCommands, recordSent, changeText },
+      focus: focusInput
+    })
 
   /** Message en attente remis dans la zone de saisie, à la suite du texte en cours. */
   const editQueued = async (id: string) => {
@@ -442,6 +437,7 @@ export function Composer(props: Props) {
 
   const submit = (event?: FormEvent) => {
     event?.preventDefault()
+    if (roundtable.active) return void roundtable.send(text, attachments, recordSent, changeText)
     // Message pour des rôles (fiche 223) : une fille par rôle, rien à la conversation ; un `@nom`
     // inconnu fait relire les rôles, puis l'envoi ordinaire s'il n'en nomme aucun.
     if (
@@ -485,7 +481,7 @@ export function Composer(props: Props) {
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) =>
     composerKeyDown(event, {
       ...{ roleCompose, mentions, commandMenu, busy, text, queued, modeControl, status },
-      ...{ pickEntry, pickCommand, submit, onCancel, editQueued },
+      ...{ pickEntry, pickCommand, submit, onCancel, editQueued, roundtable },
       setControl: props.onSetControl,
       ...history.keys
     })
@@ -561,6 +557,7 @@ export function Composer(props: Props) {
           onPutBack={putBack}
         />
         <RoleTokens roles={roleView.tokens} onRemove={roleView.remove} {...roleView.reply} />
+        {roundtable.active && <RoundtableComposerTag />}
         <LostAttachments count={history.lost} />
         {commandMenu.pendingHint && (
           <div className="command-pending" data-testid="command-hint">
@@ -583,6 +580,9 @@ export function Composer(props: Props) {
           autoFocus={props.autoFocus}
           data-testid="composer-input"
         />
+        {roundtable.active && (
+          <RoundtableLine roundtable={roundtable} files={attachments.items.length > 0} />
+        )}
         <ComposerBar
           settings={settings}
           profileId={snapshot?.info.profileId ?? settings?.profileId}
@@ -590,7 +590,11 @@ export function Composer(props: Props) {
           status={status}
           blocked={!!blocker}
           locked={locked}
-          canSend={sendEnabled(roleView, !!blocker, canSend || (later.free && hasContent))}
+          canSend={roundtable.barSend(
+            text,
+            sendEnabled(roleView, !!blocker, canSend || (later.free && hasContent))
+          )}
+          {...roundtable.bar}
           hasContent={hasContent}
           controls={controls}
           modeControl={modeControl}
@@ -627,6 +631,40 @@ export function Composer(props: Props) {
       />
     </div>
   )
+}
+
+/**
+ * Commande choisie dans le menu « / » (sortie de `Composer`, taille bornée, fiche 089) : complétée
+ * si elle attend un argument (ou si l'agent n'est pas prêt), sinon envoyée telle quelle.
+ */
+function runPickedCommand(
+  command: AgentCommand,
+  complete: boolean,
+  c: {
+    status: string
+    props: Pick<Props, 'onAppCommand' | 'onSend'>
+    userCommands: UserCommand[]
+    agentCommands: readonly AgentCommand[]
+    recordSent: (text: string) => void
+    changeText: (value: string) => void
+    focus: () => void
+  }
+) {
+  if (complete || command.hint || (command.source !== 'app' && c.status !== 'ready')) {
+    c.changeText(`/${command.name} `)
+    c.focus()
+    return
+  }
+  if (command.source === 'app') c.props.onAppCommand(command.name as AppCommandName, '')
+  else if (command.source === 'user' || command.source === 'project') {
+    const own = userCommandOf(`/${command.name}`, c.userCommands, c.agentCommands)
+    if (own) c.props.onSend(expandCommand(own.command.prompt, ''))
+    if (own) c.recordSent(`/${command.name}`)
+  } else {
+    c.props.onSend(`/${command.name}`)
+    c.recordSent(`/${command.name}`)
+  }
+  c.changeText('')
 }
 
 /**
