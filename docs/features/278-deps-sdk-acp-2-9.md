@@ -89,4 +89,25 @@ types `dist/v1/unstable/schema/types.gen.d.ts` comparés entre les deux versions
   écart la commande `automation` de la référence 2.4.1, absente de la 2.3.0.
 - 2026-11-24 : l'utilisateur garde le SDK 2.9.1 pendant la rc : ADR-0070 (remplace le point 4
   de l'ADR-0057, dont seul le statut change).
-- Reste : suites e2e touchées sur GitHub ; sonde d'OpenCode 2.4.1 avec modèle gratuit.
+- 2026-11-24 : suite e2e complète sur GitHub (run 45336692893). Linux vert ; macOS, 5 tâches
+  rouges sur 242, chacune verte dans l'autre thème du même passage. Comparées aux passages macOS
+  récents de `main` et des autres branches (`gh run list --workflow e2e.yml`) : aucune ne vient du
+  lot ; deux sont déjà connues (`worktree-setup` clair, même attente, rouge sur `main` le
+  2026-11-23, run 45174929251 ; service réseau de Chromium vivant après l'app, `filles-tech-lead`
+  le 2026-11-23). Le SDK 2.9.1 (un message par tâche de la boucle) change au plus la durée des
+  fenêtres de course ; aucune ne dépend de l'ordre des messages. Détail et correctifs : fiche 250
+  (journal du 2026-11-24).
+  - `session` sombre : **défaut de l'app**, « Arrêter » perdu quand l'agent de la fille démarre
+    encore (statut `starting`, ou message en préparation) ; corrigé (`SendOrder`, `AgentHost`).
+  - `worktree-setup` clair : **défaut de l'app**, la carte à autoriser bougeait sous le pointeur ;
+    `data-scroll-hold`.
+  - `parcours-reglages` clair : **essai**, bandeau transitoire (≈ 0,8 s) relevé toutes les 100 ms ;
+    scénario `reseau-revenu-au-signal-2-3`, le réseau revient quand l'essai a vu le bandeau.
+  - `parcours-outils` sombre : **essai**, processus de Chromium (`--type=`) attendus 10 s comme
+    crashpad, l'essai échoue toujours s'ils restent.
+  - `browser` clair : cause non établie (`inherit` avale ses erreurs) ; l'échec dit désormais
+    l'état des pages du main. Pas de correctif à l'aveugle.
+  `./scripts/verify` vert. Rien joué en local (ADR-0069).
+- Reste : suites e2e touchées sur GitHub (`session`, `worktree-setup`, `parcours-reglages`,
+  `parcours-outils`, `browser`, et celles des fichiers modifiés) ; sonde d'OpenCode 2.4.1 avec
+  modèle gratuit.

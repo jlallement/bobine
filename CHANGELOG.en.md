@@ -2,6 +2,15 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- **Stop** on a child conversation that was just started (its agent still starting) now stops
+  it: the turn no longer runs to the end.
+- Worktree setup awaiting approval: the card no longer moves under the pointer while the reply
+  is written below it, so “Allow” is no longer missed.
+
 ## 1.0.0-rc.4 — November 23, 2026
 
 ### New
