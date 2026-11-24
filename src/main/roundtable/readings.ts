@@ -86,11 +86,16 @@ const absence = (seat: Pick<RoundtableSeat, 'error' | 'stopped'>) => ({
  */
 export function opinionInputs(
   rt: Pick<Roundtable, 'seats'>,
-  text: (seat: RoundtableSeat) => string | undefined
+  text: (seat: RoundtableSeat) => string | undefined,
+  /** Conversation absente (corbeille, effacée) : l'avis sort de la synthèse. */
+  gone: (childId: string | undefined) => boolean = () => false
 ): OpinionInput[] {
   return rt.seats.map((seat): OpinionInput => {
     const base = { letter: seat.letter, ...(seat.changedFolder ? { changedFolder: true } : {}) }
-    if (seat.state === 'answered' && !seat.removed) {
+    if (seat.state === 'answered' && (seat.removed || gone(seat.childId))) {
+      return { ...base, stopped: 'removed' }
+    }
+    if (seat.state === 'answered') {
       const opinion = text(seat)?.trim()
       return opinion ? { ...base, text: opinion } : { ...base, error: 'agent-error' as const }
     }
@@ -101,14 +106,18 @@ export function opinionInputs(
 /** Répliques telles qu'elles partent à la décision : seulement les places à qui elle a été demandée. */
 export function rebuttalInputs(
   rt: Pick<Roundtable, 'seats'>,
-  text: (seat: RoundtableSeat) => string | undefined
+  text: (seat: RoundtableSeat) => string | undefined,
+  gone: (childId: string | undefined) => boolean = () => false
 ): OpinionInput[] {
   return rt.seats.flatMap((seat): OpinionInput[] => {
     const rebuttal = seat.rebuttal
     if (!rebuttal) return []
     // L'avertissement de la décision : le dossier a changé pendant la réplique.
     const base = { letter: seat.letter, ...(rebuttal.changedFolder ? { changedFolder: true } : {}) }
-    if (rebuttal.state === 'answered' && !seat.removed) {
+    if (rebuttal.state === 'answered' && (seat.removed || gone(seat.childId))) {
+      return [{ ...base, stopped: 'removed' }]
+    }
+    if (rebuttal.state === 'answered') {
       const reply = text(seat)?.trim()
       return [reply ? { ...base, text: reply } : { ...base, error: 'agent-error' as const }]
     }

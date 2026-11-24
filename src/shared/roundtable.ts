@@ -134,6 +134,11 @@ export interface RoundtableSeat extends RoundtableParticipant {
    * (relance, erreur) ou d'après (réplique, messages de l'utilisateur).
    */
   askedAt?: number
+  /**
+   * Question retenue par le plafond de sa conversation (fiche 157) : la place attend « Continuer »
+   * dans cette conversation (ou l'arrêt) ; elle n'est ni finie ni en erreur.
+   */
+  held?: true
   rebuttal?: RoundtableRebuttal
 }
 
@@ -182,6 +187,8 @@ export interface RoundtableStep {
   requestedAt: number
   sentAt?: number
   answeredAt?: number
+  /** Agent et modèle de la conversation au moment où la demande est partie (étiquette). */
+  by?: { profileId: string; label: string; model?: string }
   /** Ce qu'a consommé ce tour de l'agent, tel qu'il l'a communiqué. */
   usage?: UsageDigest
   detail?: string
@@ -202,6 +209,8 @@ export interface Roundtable {
   phase: RoundtablePhase
   /** Phase en cours au redémarrage (`interrupted`). */
   interruptedFrom?: RoundtablePhase
+  /** « Arrêter le tour de table » demandé : les participants s'arrêtent, puis `stopped`. */
+  stopping?: true
   synthesis?: RoundtableStep
   verdict?: RoundtableStep
   at: number
@@ -220,7 +229,16 @@ export type RoundtableEvent =
       at: number
     }
   /** Modèle vérifié, question partie ; `askedAt` : heure d'envoi de la question. */
-  | { type: 'seat-working'; letter: RoundtableLetter; at: number; askedAt?: number }
+  | {
+      type: 'seat-working'
+      letter: RoundtableLetter
+      at: number
+      askedAt?: number
+      /** Nom du modèle tel que la session du participant l'annonce : remplace le libellé. */
+      label?: string
+    }
+  /** Question retenue par le plafond de la conversation du participant. */
+  | { type: 'seat-held'; letter: RoundtableLetter; at: number }
   | { type: 'seat-answered'; letter: RoundtableLetter; at: number }
   | {
       type: 'seat-failed'
@@ -238,7 +256,13 @@ export type RoundtableEvent =
   | { type: 'synthesize'; at: number }
   /** Décision demandée de nouveau après un redémarrage pendant la réplique. */
   | { type: 'decide'; at: number }
-  | { type: 'step-sent'; step: RoundtableStepKind; at: number }
+  | {
+      type: 'step-sent'
+      step: RoundtableStepKind
+      at: number
+      /** Agent et modèle réellement utilisés pour cette demande. */
+      by?: RoundtableStep['by']
+    }
   | { type: 'step-held'; step: RoundtableStepKind }
   | { type: 'step-answered'; step: RoundtableStepKind; usage?: UsageDigest; at: number }
   | { type: 'step-failed'; step: RoundtableStepKind; detail?: string }
@@ -261,6 +285,8 @@ export type RoundtableEvent =
     }
   /** « Arrêter le tour de table » : tout s'arrête, sans synthèse. */
   | { type: 'stop'; at: number }
+  /** Arrêt demandé, en cours (les participants s'arrêtent d'abord). */
+  | { type: 'stopping'; at: number }
 
 const FINISHED: ReadonlySet<RoundtableSeatState> = new Set(['answered', 'stopped', 'error'])
 
@@ -359,11 +385,30 @@ function changedFolder(rt: Roundtable, letter: RoundtableLetter): Roundtable {
   return rt
 }
 
+/** Question partie : au travail, la question retenue n'attend plus, le nom lu dans la session. */
+function working(
+  seat: RoundtableSeat,
+  event: Extract<RoundtableEvent, { type: 'seat-working' }>
+): RoundtableSeat {
+  const { held: _held, ...rest } = seat
+  const label = event.label?.trim()
+  return {
+    ...rest,
+    state: 'working',
+    ...(event.askedAt !== undefined ? { askedAt: event.askedAt } : {}),
+    ...(label && rest.model ? { label, model: { ...rest.model, name: label } } : {})
+  }
+}
+
+const withoutHeld = ({ held: _held, ...seat }: RoundtableSeat): RoundtableSeat => seat
+
 /** Participant arrêté s'il n'a pas fini. */
 const stopIfRunning =
   (reason: RoundtableStopReason, at: number) =>
   (seat: RoundtableSeat): RoundtableSeat =>
-    seatFinished(seat.state) ? seat : { ...seat, state: 'stopped', stopped: reason, endedAt: at }
+    seatFinished(seat.state)
+      ? seat
+      : { ...withoutHeld(seat), state: 'stopped', stopped: reason, endedAt: at }
 
 const stopRebuttalIfRunning =
   (reason: RoundtableStopReason) =>
@@ -458,7 +503,14 @@ function reduceStep(
   const running = STEP_RUNNING.has(step.state)
   switch (event.type) {
     case 'step-sent':
-      return running ? withStep(rt, key, { ...step, state: 'sent', sentAt: event.at }) : rt
+      return running
+        ? withStep(rt, key, {
+            ...step,
+            state: 'sent',
+            sentAt: event.at,
+            ...(event.by ? { by: event.by } : {})
+          })
+        : rt
     case 'step-held':
       return running ? withStep(rt, key, { ...step, state: 'held' }) : rt
     case 'step-usage':
@@ -501,15 +553,11 @@ function reduceSeat(
       }))
     case 'seat-working':
       return collecting
-        ? withSeat(rt, event.letter, (s) =>
-            s.state === 'waiting'
-              ? {
-                  ...s,
-                  state: 'working',
-                  ...(event.askedAt !== undefined ? { askedAt: event.askedAt } : {})
-                }
-              : s
-          )
+        ? withSeat(rt, event.letter, (s) => (s.state === 'waiting' ? working(s, event) : s))
+        : rt
+    case 'seat-held':
+      return collecting
+        ? withSeat(rt, event.letter, (s) => (seatFinished(s.state) ? s : { ...s, held: true }))
         : rt
     case 'seat-answered':
       return collecting
@@ -523,7 +571,7 @@ function reduceSeat(
             seatFinished(s.state)
               ? s
               : {
-                  ...s,
+                  ...withoutHeld(s),
                   state: 'error',
                   error: event.error,
                   endedAt: event.at,
@@ -545,7 +593,8 @@ function reduceSeat(
       const { interruptedFrom: _from, ...rest } = rt
       return withSeat({ ...rest, phase: 'collecting' }, event.letter, (s) => {
         const { error: _e, stopped: _s, detail: _d, endedAt: _end, askedAt: _a, ...seat } = s
-        return { ...seat, state: 'waiting' }
+        // La durée repart de cette tentative.
+        return { ...seat, state: 'waiting', startedAt: event.at }
       })
     }
     case 'rebuttal-seat':
@@ -574,9 +623,12 @@ export function reduceRoundtable(rt: Roundtable, event: RoundtableEvent): Roundt
     }
     case 'rebuttal':
       return canRebut(rt) ? startRebuttal(rt) : rt
+    case 'stopping':
+      if (!RUNNING_PHASES.has(rt.phase) && rt.phase !== 'interrupted') return rt
+      return rt.stopping ? rt : { ...rt, stopping: true }
     case 'stop': {
       if (!RUNNING_PHASES.has(rt.phase) && rt.phase !== 'interrupted') return rt
-      const { interruptedFrom: _from, ...rest } = rt
+      const { interruptedFrom: _from, stopping: _stopping, ...rest } = rt
       const synthesis = stepStopped(rt.synthesis)
       const verdict = stepStopped(rt.verdict)
       return {
@@ -795,7 +847,8 @@ const digestTokens = (d: UsageDigest): number | undefined =>
  * d'addition entre unités (`digestsTotal` de la fiche 266 suit la même règle).
  */
 export function roundtableTotal(
-  participants: readonly (UsageDigest | undefined)[],
+  /** `null` : participant encore au travail, ni chiffre ni « sans chiffre ». */
+  participants: readonly (UsageDigest | undefined | null)[],
   steps: readonly (UsageDigest | undefined)[] = []
 ): RoundtableTotal {
   let tokens: number | undefined
@@ -811,7 +864,7 @@ export function roundtableTotal(
     if (same) same.amount = round6(same.amount + cost.amount)
     else costs.push({ amount: round6(cost.amount), currency: cost.currency })
   }
-  for (const digest of participants) add(digest, true)
+  for (const digest of participants) if (digest !== null) add(digest, true)
   for (const digest of steps) add(digest, false)
   return { ...(tokens !== undefined ? { tokens } : {}), costs, silent }
 }

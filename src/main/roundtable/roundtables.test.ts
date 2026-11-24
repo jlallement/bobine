@@ -288,7 +288,7 @@ describe('tour de table : réplique et décision (fiche 285, lot 3)', () => {
       () => (env.manager.view(a).snapshot?.queued.length ?? 0) === 1,
       'réplique en file'
     )
-    env.roundtables.stop(mother, id)
+    await env.roundtables.stop(mother, id)
     expect(env.manager.view(a).snapshot?.queued ?? []).toEqual([])
     // Le tour de l'utilisateur dans cette conversation n'est pas arrêté par le tour de table.
     expect(env.manager.view(a).snapshot?.status).toBe('busy')
@@ -306,8 +306,8 @@ describe('tour de table : réplique et décision (fiche 285, lot 3)', () => {
     const id = env.rt(mother).roundtableId
     const other = (await env.manager.create({ profileId: 'lead' })).summary.id
     expect(() => env.roundtables.synthesize(other, id)).toThrow(/n’existe pas/)
-    expect(() => env.roundtables.stop(mother, 'inconnu')).toThrow(/n’existe pas/)
+    await expect(env.roundtables.stop(mother, 'inconnu')).rejects.toThrow(/n’existe pas/)
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
-    expect(() => env.roundtables.stop(mother, id, 'E')).toThrow(/n’existe pas/)
+    await expect(env.roundtables.stop(mother, id, 'E')).rejects.toThrow(/n’existe pas/)
   })
 })

@@ -784,3 +784,13 @@ describe('tour de table : arguments IPC', () => {
 it('les lettres suivent l’ordre des places', () => {
   expect(letters(roundtable())).toEqual(['A', 'B', 'C'])
 })
+
+describe('tour de table : recette (M5)', () => {
+  it('participant encore au travail : ni chiffre ni « sans chiffre »', () => {
+    expect(roundtableTotal([{ total: 10 }, null, undefined])).toEqual({
+      tokens: 10,
+      costs: [],
+      silent: 1
+    })
+  })
+})
