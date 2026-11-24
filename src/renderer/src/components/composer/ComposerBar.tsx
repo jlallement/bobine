@@ -18,6 +18,7 @@ import { ChipPlaceholder, useRememberChipWidths, useReservedWidths } from './chi
 import { AttachButton } from './AttachButton'
 import { UsageMeter } from './UsageMeter'
 import { OPTIONS_FOLD, useBarFold } from './useBarFold'
+import { RoundtableIcon } from '../roundtable/RoundtableIcon'
 
 interface Props {
   settings: AgentSettingsView | null
@@ -61,6 +62,8 @@ interface Props {
   /** Réglages › Consommation (fiche 137), depuis le détail de la puce de consommation. */
   onOpenUsage: (() => void) | undefined
   onRestart: () => void
+  /** Tour de table (fiche 285) : le bouton qui fait passer la question en tour de table. */
+  roundtable?: { active: boolean; onToggle: () => void }
 }
 
 /**
@@ -118,6 +121,20 @@ export function ComposerBar(props: Props) {
             ? { extra: sessionSettings(true) }
             : {})}
         />
+        {props.roundtable && (
+          <Tip label={t('roundtable.command.button')}>
+            <button
+              type="button"
+              className="chip icon-chip roundtable-toggle"
+              aria-pressed={props.roundtable.active}
+              aria-label={t('roundtable.command.button')}
+              onClick={props.roundtable.onToggle}
+              data-testid="roundtable-toggle"
+            >
+              <RoundtableIcon size={16} />
+            </button>
+          </Tip>
+        )}
         {props.modeControl && !props.hideMode ? (
           <ModeChip
             control={props.modeControl}

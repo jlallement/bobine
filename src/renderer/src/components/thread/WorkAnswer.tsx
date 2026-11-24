@@ -335,7 +335,7 @@ export function AnswerFacts({
  * fondu en bas, « Lire la suite » dans le fondu ; le bouton n'est là que si la hauteur coupe
  * vraiment quelque chose.
  */
-function FoldedAnswer({ text, relayed }: { text: string; relayed: boolean }) {
+export function FoldedAnswer({ text, relayed }: { text: string; relayed: boolean }) {
   const { t } = useTranslation()
   const ref = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)

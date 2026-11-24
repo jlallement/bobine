@@ -289,3 +289,81 @@ describe('lastMergeFor (fiche 264)', () => {
     expect(lastMergeFor(items)?.runId).toBe('r3')
   })
 })
+
+describe('tour de table (fiche 285)', () => {
+  const seats = (['A', 'B', 'C'] as const).map((letter) => ({
+    profileId: 'agent-a',
+    label: `Modèle ${letter}`,
+    agentLabel: 'Agent A',
+    letter,
+    childId: `p${letter}`,
+    state: 'working' as const
+  }))
+  const rt: TranscriptItem = {
+    kind: 'roundtable',
+    id: 1,
+    roundtableId: 'rt1',
+    question: 'Quelle file ?',
+    synthesizer: { profileId: 'agent-a', label: 'Agent A' },
+    seats,
+    phase: 'collecting',
+    at: 0
+  }
+  const launch = (id: number, childId: string): TranscriptItem => ({
+    kind: 'child-started',
+    id,
+    childId,
+    title: childId,
+    prompt: 'consigne',
+    card: 'rt1',
+    at: 0
+  })
+  const answer = (id: number, childId: string): TranscriptItem => ({
+    kind: 'child-report',
+    id,
+    childId,
+    title: childId,
+    outcome: 'done',
+    files: [],
+    fileCount: 0,
+    added: 0,
+    removed: 0,
+    excerpt: 'avis',
+    reply: `avis de ${childId}`,
+    at: 1
+  })
+
+  it('chaque participant dans la carte du tour, même avec la clé de carte partagée', () => {
+    const items = [
+      rt,
+      launch(2, 'pA'),
+      launch(3, 'pB'),
+      launch(4, 'pC'),
+      answer(5, 'pB'),
+      answer(6, 'pA'),
+      { kind: 'child-started', id: 7, childId: 'other', title: 'autre', prompt: 'x', at: 0 }
+    ] as TranscriptItem[]
+    const layout = workLayout(items)
+    const group = layout.roundtables.get(1)
+    expect([...(group?.works.keys() ?? [])]).toEqual(['A', 'B', 'C'])
+    expect(group?.works.get('B')?.steps).toHaveLength(1)
+    // Ni carte seule, ni ligne dans « Sous-tâches », ni compte rendu à sa place.
+    expect(layout.solos.size).toBe(0)
+    for (const id of [2, 3, 4, 5, 6]) expect(layout.hidden.has(id)).toBe(true)
+    expect([...layout.childIds].sort()).toEqual(['pA', 'pB', 'pC'])
+    // Un travail ordinaire reste comme avant ; l'élément du tour reste à sa place.
+    expect(layout.hidden.has(7)).toBe(false)
+    expect(layout.hidden.has(1)).toBe(false)
+  })
+
+  it('participant sans lancement dans le fil : ses comptes rendus cachés quand même', () => {
+    const layout = workLayout([rt, answer(2, 'pC')])
+    expect(layout.roundtables.get(1)?.works.size).toBe(0)
+    expect(layout.hidden.has(2)).toBe(true)
+    expect(layout.childIds.has('pC')).toBe(true)
+  })
+
+  it('sans tour de table : rien de changé', () => {
+    expect(workLayout([launch(1, 'pA')]).roundtables.size).toBe(0)
+  })
+})

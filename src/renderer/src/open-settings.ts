@@ -7,8 +7,11 @@ import type { NoticeLink } from '@shared/agent'
 const EVENT = 'bobine:open-settings'
 const NETWORK_EVENT = 'bobine:reveal-network'
 
-/** Section demandée : lien d'un avis du fil, ou Réglages › Agents (réseau, fiche 275). */
-export type SettingsRequest = NoticeLink | 'agents'
+/**
+ * Section demandée : lien d'un avis du fil, Réglages › Agents (réseau, fiche 275), ou Réglages ›
+ * Conversation (places de travaux d'un tour de table, fiche 285).
+ */
+export type SettingsRequest = NoticeLink | 'agents' | 'conversation'
 
 export function requestSettings(section: SettingsRequest): void {
   window.dispatchEvent(new CustomEvent<SettingsRequest>(EVENT, { detail: section }))

@@ -241,7 +241,7 @@ function RowMeta({
  * Ce que fait le travail (maquette rc4) : ses chemins relatifs à son dossier, le chemin complet en
  * infobulle.
  */
-function RowActivity({
+export function RowActivity({
   activity,
   workspace
 }: {

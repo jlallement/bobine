@@ -1,4 +1,4 @@
-import { memo, useRef, type ComponentProps } from 'react'
+import { memo, useRef, type ComponentProps, type ReactNode } from 'react'
 import ReactMarkdown, { defaultUrlTransform, type Options } from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import remarkGfm from 'remark-gfm'
@@ -13,6 +13,8 @@ import { useInlineFiles } from './useInlineFiles'
 import { MermaidBlock } from './MermaidBlock'
 import { useTranslation } from 'react-i18next'
 import { rehypeKnownLanguage, rehypeRememberLanguage, textOf } from './code-language'
+import { rehypeRoundtableLetters } from '../roundtable/roundtable-letters'
+import { Tip } from '../common/Menus'
 
 /** Nœud de l'arbre HTML produit par le Markdown (hast), juste ce qu'il faut ici. */
 interface HastNode {
@@ -72,6 +74,22 @@ const COLORED: NonNullable<Options['rehypePlugins']> = [
 ]
 
 /**
+ * « Participant C » dans une synthèse de tour de table (fiche 285) : le vrai nom au survol et au
+ * focus, et pour un lecteur d'écran, à la suite du texte.
+ */
+function LetterName({ name, children }: { name: string | undefined; children?: ReactNode }) {
+  if (!name) return <>{children}</>
+  return (
+    <Tip label={name}>
+      <abbr className="roundtable-letter" tabIndex={0} data-testid="roundtable-letter">
+        {children}
+        <span className="sr-only"> ({name})</span>
+      </abbr>
+    </Tip>
+  )
+}
+
+/**
  * Rendu Markdown (GFM + coloration). Mémoïsé : seul le message en cours se re-rend en streaming.
  * `streaming` : réponse en cours, son bloc de code encore ouvert n'est pas coloré (fiche 192).
  */
@@ -79,7 +97,8 @@ export const Markdown = memo(function Markdown({
   text,
   streaming = false,
   highlight = true,
-  french = false
+  french = false,
+  letters
 }: {
   text: string
   streaming?: boolean
@@ -90,6 +109,8 @@ export const Markdown = memo(function Markdown({
    * nœuds de texte seulement, jamais dans le code ni les adresses (fiche 126). Pas pour l'agent.
    */
   french?: boolean
+  /** Tour de table (fiche 285) : lettre → vrai nom, montré au survol de « Participant X ». */
+  letters?: Readonly<Record<string, string>> | undefined
 }) {
   // Code en ligne vers un fichier : lien seulement si le fichier existe (fiche 272, rc.3).
   const files = useInlineFiles(streaming)
@@ -105,13 +126,31 @@ export const Markdown = memo(function Markdown({
           ...(highlight ? COLORED : []),
           rehypeRememberLanguage,
           // `fichier:ligne` en code : cliquable comme un lien de fichier, s'il existe (fiche 272).
-          [rehypeInlineFileCode, { isFile: files.isFile, want: files.want, isGone: files.isGone }]
+          [rehypeInlineFileCode, { isFile: files.isFile, want: files.want, isGone: files.isGone }],
+          ...(letters
+            ? ([[rehypeRoundtableLetters, { names: letters }]] as Options['rehypePlugins'] & object)
+            : [])
         ]}
         components={{
           // Liens de fichiers ouverts par l'app (fiche 052), liens web dans le navigateur système.
           a: MarkdownLink,
           pre: CodeBlock,
-          table: Table
+          table: Table,
+          ...(letters
+            ? {
+                abbr: ({
+                  node: _node,
+                  children,
+                  ...props
+                }: ComponentProps<'abbr'> & { node?: unknown }) => (
+                  <LetterName
+                    name={letters[String((props as Record<string, unknown>)['data-letter'] ?? '')]}
+                  >
+                    {children}
+                  </LetterName>
+                )
+              }
+            : {})
         }}
       >
         {text}

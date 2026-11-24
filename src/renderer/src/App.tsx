@@ -350,6 +350,11 @@ export function App() {
   const editor = (
     <Composer
       roles={composerRoles}
+      // Tour de table (fiche 285) : le dernier choix du menu des participants, retenu à chaque case.
+      roundtable={{
+        participants: c.settings?.preferences.roundtableParticipants ?? [],
+        setParticipants: (roundtableParticipants) => c.setPreferences({ roundtableParticipants })
+      }}
       composerInbox={composerInbox}
       // Capture d'une zone de l'écran, si la plateforme la permet (fiche 145).
       {...(platformFeatures().screenCapture

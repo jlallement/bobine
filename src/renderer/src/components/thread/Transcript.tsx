@@ -1,13 +1,11 @@
 import { ReviewCard } from './ReviewCard'
 import { DocumentCards } from '../discussion/DocumentCards'
 import {
-  ArrowRightLeft,
   BellRing,
   Brain,
   ChevronRight,
   GitBranch,
   Pencil,
-  RefreshCw,
   RotateCcw,
   Smartphone,
   CircleExclamationPoint,
@@ -15,16 +13,13 @@ import {
   Info,
   ListChecks,
   TriangleExclamationPoint,
-  ArrowsToAxisDashedHorizontal,
   FileText,
-  LoaderCircle,
   Split
 } from 'lucide-react'
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { planVersions } from '@shared/plan-doc'
 import { groupTools, type ThreadEntry } from '@shared/tool-groups'
 import { noticeText, type TranscriptItem } from '@shared/transcript'
-import { handoverName } from '@shared/handover'
 import { originKey, type MessageOrigin as MessageOriginType } from '@shared/children'
 import type { TerminalState } from '@shared/terminal-output'
 import { turnTimes } from '@shared/turn-duration'
@@ -67,6 +62,8 @@ import { RoleBriefFold } from '../roles/RoleWork'
 import { CostCapCard } from './CostCapCard'
 import { TurnLimitCard } from './TurnLimitCard'
 import { entryKey, entryKind, ItemBoundary } from '../common/SafeBoundary'
+import { Compaction, HandoverDivider } from './ThreadMarkers'
+import { useRoundtableThread } from './RoundtableTurn'
 
 /** Avis de l'app qui renvoient au journal (fiche 194) : un lien « Afficher le journal ». */
 const SHOW_LOG_NOTICES: ReadonlySet<string> = new Set(['appTools.serverDown'])
@@ -226,6 +223,8 @@ export function Transcript({
   // (propositions d'un tour, bulle à plusieurs rôles), cartes seules ; ce qu'elles rendent est caché
   // à sa place, et leurs travaux ne sont pas dans « Sous-tâches » (anciennes conversations).
   const layout = useMemo(() => workLayout(items), [items])
+  // Tour de table (fiche 285) : bulle et carte, demandes de l'app, synthèse et décision.
+  const roundtables = useRoundtableThread(items, layout, subtasks)
   // Conversation affichée (ou réaffichée) : ses branches se relisent, une fois pour toutes ses
   // cartes (plan partagé, fiche 264) ; des commits faits ailleurs entre-temps y sont.
   const motherId = subtasks?.motherId
@@ -291,6 +290,8 @@ export function Transcript({
       return <SubagentsCard key={entry.key} items={entry.items} onRespond={respondPermission} />
     }
     const { item } = entry
+    const own = roundtables.entry(item)
+    if (own) return own
     const plan = planAt.get(item.id)
     const card = plan && (
       <PlanDocument
@@ -300,21 +301,14 @@ export function Transcript({
       />
     )
     if (replaced.has(item.id)) {
-      // Réponse remplacée par la carte du plan : son pied (heure, durée) reste, sous la carte
-      // (fiche 272, recette : le tour du plan n'avait pas « 23:29 · 22 s »).
-      const foot = item.kind === 'agent' ? feet.get(item.id) : undefined
-      if (!foot || item.kind !== 'agent') return card ?? null
-      const text = item.text
       return [
         card,
-        <div key={`plan-foot-${item.id}`} className="msg-agent-group plan-foot">
-          <ReplyFoot
-            foot={foot}
-            text={() => text}
-            at={item.at}
-            onOpenChanges={onOpenChanges ? openChanges : undefined}
-          />
-        </div>
+        <PlanFoot
+          key={`plan-foot-${item.id}`}
+          item={item}
+          foot={feet.get(item.id)}
+          onOpenChanges={onOpenChanges ? openChanges : undefined}
+        />
       ]
     }
     const group = layout.groups.get(item.id)
@@ -412,9 +406,10 @@ export function Transcript({
         streaming={item.id === writing}
         onRespondPermission={respondPermission}
         onRespondElicitation={respondElicitation}
+        letters={roundtables.letters(item.id)}
       />
     )
-    return card ? [rendered, card] : rendered
+    return roundtables.frame(item.id, card ? [rendered, card] : rendered)
   }
   return (
     <WorkspaceContext.Provider value={workspace}>
@@ -433,6 +428,28 @@ export function Transcript({
         </FindQueryContext.Provider>
       </AgentCardContext.Provider>
     </WorkspaceContext.Provider>
+  )
+}
+
+/**
+ * Réponse remplacée par la carte du plan : son pied (heure, durée) reste, sous la carte (fiche 272,
+ * recette : le tour du plan n'avait pas « 23:29 · 22 s »).
+ */
+function PlanFoot({
+  item,
+  foot,
+  onOpenChanges
+}: {
+  item: TranscriptItem
+  foot: ReplyFootState | undefined
+  onOpenChanges: (() => void) | undefined
+}) {
+  if (!foot || item.kind !== 'agent') return null
+  const text = item.text
+  return (
+    <div className="msg-agent-group plan-foot">
+      <ReplyFoot foot={foot} text={() => text} at={item.at} onOpenChanges={onOpenChanges} />
+    </div>
   )
 }
 
@@ -685,7 +702,8 @@ const Item = memo(function Item({
   onOpenChanges,
   streaming,
   onRespondPermission,
-  onRespondElicitation
+  onRespondElicitation,
+  letters
 }: {
   item: TranscriptItem
   terminal?: TerminalState
@@ -698,6 +716,8 @@ const Item = memo(function Item({
   streaming: boolean
   onRespondPermission: RespondPermission
   onRespondElicitation: RespondElicitation
+  /** Synthèse d'un tour de table (fiche 285) : lettre → vrai nom. */
+  letters?: Readonly<Record<string, string>> | undefined
 }) {
   const { t } = useTranslation()
   switch (item.kind) {
@@ -711,7 +731,7 @@ const Item = memo(function Item({
       return (
         <div className="msg-agent-group">
           <div className="msg-agent">
-            <Markdown text={item.text} streaming={streaming} />
+            <Markdown text={item.text} streaming={streaming} letters={letters} />
           </div>
           {foot ? (
             <ReplyFoot
@@ -816,10 +836,6 @@ const Item = memo(function Item({
   }
 }, sameItemProps)
 
-/**
- * La conversation continue avec un autre agent (fiche 108), ou dans une session neuve du même agent
- * (ADR-0030) : un trait, l'agent d'après, et pourquoi.
- */
 /** Lien à la suite d'un avis (fiche 198) : ouvre la section des Réglages qu'il nomme. */
 function NoticeLink({ link }: { link: NoticeLinkTarget }) {
   const { t } = useTranslation()
@@ -835,66 +851,5 @@ function NoticeLink({ link }: { link: NoticeLinkTarget }) {
         {t('transcript.notice.diagnosticsLink')}
       </button>
     </>
-  )
-}
-
-function HandoverDivider({ item }: { item: Extract<TranscriptItem, { kind: 'handover' }> }) {
-  const { t } = useTranslation()
-  const agent = item.to.label
-  return (
-    <div className="handover-divider" data-testid="handover-divider" data-reason={item.reason}>
-      <div className="handover-divider-line">
-        {item.reason ? <RefreshCw size={14} /> : <ArrowRightLeft size={14} />}
-        <span>
-          {item.reason === 'discussion'
-            ? t('handover.thread.discussionTitle')
-            : item.reason
-              ? t('handover.thread.renewTitle', { agent })
-              : t('handover.thread.title', { agent: handoverName(item) })}
-        </span>
-      </div>
-      <div className="handover-divider-detail">
-        {item.reason === 'no-resume' && t('handover.thread.renewDetailNoResume', { agent })}
-        {item.reason === 'session-lost' && t('handover.thread.renewDetailLost', { agent })}
-        {item.reason === 'turn-limit' && t('handover.thread.renewDetailTurnLimit', { agent })}
-        {item.reason === 'discussion' && t('handover.thread.discussionDetail', { agent })}
-        {!item.reason && t('handover.thread.detail', { from: item.from.label })}
-      </div>
-    </div>
-  )
-}
-
-/** L'agent a résumé l'échange pour libérer du contexte. */
-function Compaction({ item }: { item: Extract<TranscriptItem, { kind: 'compaction' }> }) {
-  const { t } = useTranslation()
-  const running = item.status === 'in_progress'
-  const failed = item.status === 'failed' || item.status === 'cancelled'
-  const label = running
-    ? t('transcript.compaction.running')
-    : failed
-      ? t(
-          item.status === 'failed'
-            ? 'transcript.compaction.failed'
-            : 'transcript.compaction.cancelled'
-        )
-      : t('transcript.compaction.done')
-  return (
-    <details className="compaction" data-testid="compaction" data-status={item.status}>
-      <summary>
-        {running ? (
-          <LoaderCircle size={14} className="spin" />
-        ) : (
-          <ArrowsToAxisDashedHorizontal size={14} />
-        )}
-        <span>{label}</span>
-        {item.summary && <ChevronRight size={13} className="chevron" />}
-      </summary>
-      {item.summary && (
-        <div className="compaction-summary">
-          <Markdown text={item.summary} />
-        </div>
-      )}
-      {item.error && <div className="compaction-summary error">{item.error}</div>}
-    </details>
   )
 }

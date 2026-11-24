@@ -14,6 +14,10 @@
  * - La relecture d'un travail qui a sa carte (« Faire relire », fiche 265) : sa bulle et la carte du
  *   Code reviewer s'affichent dans la carte de ce travail (ou sous sa ligne d'une carte de groupe),
  *   pas à leur place.
+ * - Les participants d'un tour de table (fiche 285, ADR-0072) : rangés dans la carte du tour, ancrée
+ *   sur son élément `roundtable`, une ligne par participant ; jamais en cartes seules, ni dans
+ *   « Sous-tâches ». Leur carte est retrouvée par leur conversation (`seat.childId`), pas par la clé
+ *   de carte du lancement (tous les participants d'un tour partagent la même).
  */
 import {
   childProposalGroups,
@@ -23,6 +27,7 @@ import {
 } from './children'
 import { lastChildrenMerge, type ChildrenMerge } from './children-merge'
 import { workCards, type RoleRequestItem, type WorkCardData, type WorkCards } from './role-request'
+import type { RoundtableItem, RoundtableLetter } from './roundtable'
 import type { TranscriptItem } from './transcript'
 
 /** Une ligne d'une carte de groupe : une proposition, son travail une fois lancé, ou les deux. */
@@ -39,6 +44,13 @@ export interface WorkGroupData {
   rows: WorkGroupRow[]
   /** Bulle à plusieurs rôles qui a lancé ces travaux ; absente : des propositions. */
   request?: RoleRequestItem
+}
+
+/** Carte d'un tour de table (fiche 285) : l'élément du tour, et le travail de chaque participant. */
+export interface RoundtableGroupData {
+  item: RoundtableItem
+  /** Travail de chaque participant lancé, par sa lettre (lancement, réponses). */
+  works: ReadonlyMap<RoundtableLetter, WorkCardData>
 }
 
 /** Une relecture rangée sous le travail qu'elle relit (fiche 265) : la bulle et sa carte. */
@@ -65,6 +77,8 @@ export interface WorkLayout {
   merges: ReadonlyMap<string, ChildrenMerge>
   /** Relectures de chaque travail rangé (fiche 265), dans l'ordre du fil. */
   reviews: ReadonlyMap<string, WorkReviewEntry[]>
+  /** Cartes des tours de table (fiche 285), par id de leur élément `roundtable`. */
+  roundtables: ReadonlyMap<number, RoundtableGroupData>
 }
 
 /** Clé d'une proposition, telle que le main l'a donnée (absente d'une proposition d'avant). */
@@ -74,7 +88,8 @@ const keyOf = (proposal: ChildProposalItem): string | undefined => {
 }
 
 export function workLayout(items: readonly TranscriptItem[]): WorkLayout {
-  const cards = workCards(items)
+  const seats = roundtableSeats(items)
+  const cards = workCards(seats.size ? withSeatCards(items, seats) : items)
   const proposed = childProposalGroups(items)
   const hidden = new Set<number>([...cards.hidden, ...proposed.hidden])
   const groups = new Map<number, WorkGroupData>()
@@ -102,6 +117,9 @@ export function workLayout(items: readonly TranscriptItem[]): WorkLayout {
       ...(request ? { request } : {})
     })
   }
+  const roundtables = roundtableGroups(items, seats, cards, hidden)
+  for (const group of roundtables.values())
+    for (const work of group.works.values()) grouped.add(work.childId)
   // Lancement avec une clé qu'aucune ligne ne porte : sa carte seule, à sa place.
   const solos = new Map<number, WorkCardData>()
   for (const work of cards.byCard.values()) {
@@ -115,11 +133,75 @@ export function workLayout(items: readonly TranscriptItem[]): WorkLayout {
     solos,
     hidden,
     toolCallIds: proposed.toolCallIds,
-    childIds: cards.childIds,
+    childIds: seats.size ? new Set([...cards.childIds, ...seats.keys()]) : cards.childIds,
     verdicts: childRecommendations(items),
     merges: mergesByWork(items),
-    reviews: reviewsByWork(items, cards, hidden)
+    reviews: reviewsByWork(items, cards, hidden),
+    roundtables
   }
+}
+
+/** Participant d'un tour : le tour et sa lettre, par conversation du participant. */
+type SeatRef = { roundtableId: string; letter: RoundtableLetter }
+
+/** Conversations des participants de tous les tours du fil (`participantIds`, avec la lettre). */
+function roundtableSeats(items: readonly TranscriptItem[]): Map<string, SeatRef> {
+  const seats = new Map<string, SeatRef>()
+  for (const item of items) {
+    if (item.kind !== 'roundtable') continue
+    for (const seat of item.seats)
+      if (seat.childId && !seats.has(seat.childId))
+        seats.set(seat.childId, { roundtableId: item.roundtableId, letter: seat.letter })
+  }
+  return seats
+}
+
+/** Clé de carte propre à un participant (tous ceux d'un tour partagent la clé du lancement). */
+const seatCardKey = (seat: SeatRef, childId: string) =>
+  `roundtable:${seat.roundtableId}:${seat.letter}:${childId}`
+
+/**
+ * Le fil, avec une clé de carte propre à chaque lancement de participant : `workCards` range ainsi
+ * chacun dans sa carte (réponses, réplique), sans bulle ni proposition.
+ */
+function withSeatCards(
+  items: readonly TranscriptItem[],
+  seats: ReadonlyMap<string, SeatRef>
+): TranscriptItem[] {
+  return items.map((item) => {
+    if (item.kind !== 'child-started') return item
+    const seat = seats.get(item.childId)
+    if (!seat) return item
+    const { request: _request, ...started } = item
+    return { ...started, card: seatCardKey(seat, item.childId) }
+  })
+}
+
+/**
+ * Cartes des tours de table, ancrées sur leur élément. Un participant sans lancement dans le fil
+ * (fil abîmé) : ses comptes rendus sont cachés quand même, sa ligne se lit de l'élément.
+ */
+function roundtableGroups(
+  items: readonly TranscriptItem[],
+  seats: ReadonlyMap<string, SeatRef>,
+  cards: WorkCards,
+  hidden: Set<number>
+): Map<number, RoundtableGroupData> {
+  const groups = new Map<number, RoundtableGroupData>()
+  if (seats.size === 0) return groups
+  for (const item of items) {
+    if (item.kind === 'child-report' && seats.has(item.childId)) hidden.add(item.id)
+    if (item.kind !== 'roundtable') continue
+    const works = new Map<RoundtableLetter, WorkCardData>()
+    for (const seat of item.seats) {
+      const ref = seat.childId ? seats.get(seat.childId) : undefined
+      if (!seat.childId || ref?.roundtableId !== item.roundtableId) continue
+      const work = cards.byCard.get(seatCardKey(ref, seat.childId))
+      if (work) works.set(seat.letter, work)
+    }
+    groups.set(item.id, { item, works })
+  }
+  return groups
 }
 
 /**
