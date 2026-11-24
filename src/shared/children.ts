@@ -692,18 +692,32 @@ export interface ChildProposalGroups {
   toolCallIds: Set<string>
 }
 
+/**
+ * Les lignes d'une carte suivent l'ordre où l'agent a émis ses appels `start_child`, pas celui où
+ * leurs appels MCP sont arrivés (appels en parallèle : arrivée non garantie). Rang d'une ligne :
+ * l'id de la carte d'outil (`tool_call`) à laquelle le main l'a reliée, si cette carte était déjà
+ * dans le fil à son arrivée ; sinon (appel annoncé après, ou non relié) son propre id, donc après
+ * tout ce qui est déjà affiché. Un rang ne change jamais une fois la ligne affichée : les lignes
+ * affichées gardent leur ordre entre elles, une ligne arrivée en retard peut seulement s'insérer.
+ */
 export function childProposalGroups(items: readonly TranscriptItem[]): ChildProposalGroups {
   const groups = new Map<number, ChildProposalItem[]>()
   const hidden = new Set<number>()
   const toolCallIds = new Set<string>()
+  // Cartes d'outil déjà dans le fil (seules celles d'avant une proposition peuvent la ranger).
+  const toolIds = new Map<string, number>()
+  const rank = new Map<number, number>()
   let current: ChildProposalItem[] | undefined
   for (const item of items) {
+    if (item.kind === 'tool' && !toolIds.has(item.toolCallId)) toolIds.set(item.toolCallId, item.id)
     if (item.kind === 'user') {
       current = undefined
       continue
     }
     if (!isChildProposal(item)) continue
-    if (item.prompt.toolCallId) toolCallIds.add(item.prompt.toolCallId)
+    const toolCallId = item.prompt.toolCallId
+    if (toolCallId) toolCallIds.add(toolCallId)
+    rank.set(item.id, Math.min(item.id, (toolCallId && toolIds.get(toolCallId)) || item.id))
     if (current) {
       current.push(item)
       hidden.add(item.id)
@@ -711,6 +725,10 @@ export function childProposalGroups(items: readonly TranscriptItem[]): ChildProp
       current = [item]
       groups.set(item.id, current)
     }
+  }
+  // Tri stable : à rang égal (ids en double d'un fil abîmé), l'ordre d'arrivée.
+  for (const group of groups.values()) {
+    group.sort((a, b) => (rank.get(a.id) ?? a.id) - (rank.get(b.id) ?? b.id))
   }
   return { groups, hidden, toolCallIds }
 }
