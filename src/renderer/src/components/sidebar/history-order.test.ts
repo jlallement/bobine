@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ConversationSummary } from '@shared/agent'
-import { byProject, heldOrder, nestChildren } from './history-order'
+import { byProject, heldOrder, listedInSidebar, nestChildren } from './history-order'
 
 const conversation = (id: string, from?: string): ConversationSummary => ({
   id,
@@ -124,5 +124,15 @@ describe('regroupement par projet (fiche 131)', () => {
 
   it('sans projet (données anciennes) : le dossier de travail', () => {
     expect(groups([at('a', '/a'), at('b', '/b'), at('c', '/a')])).toBe('/a: a c | /b: b')
+  })
+})
+
+describe('participants d’un tour de table dans la barre latérale (fiche 285, M7)', () => {
+  it('montrés pendant le tour, ou quand on les affiche ; cachés ensuite', () => {
+    const seat = (active: boolean) => ({ id: 'p', roundtable: { id: 'rt', active } })
+    expect(listedInSidebar(seat(true), null)).toBe(true)
+    expect(listedInSidebar(seat(false), null)).toBe(false)
+    expect(listedInSidebar(seat(false), 'p')).toBe(true)
+    expect(listedInSidebar({ id: 'c' }, null)).toBe(true)
   })
 })

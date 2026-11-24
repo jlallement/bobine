@@ -514,3 +514,20 @@ export function roundtableInProgress(items: readonly TranscriptItem[]): boolean 
   const last = lastRoundtable(items)
   return !!last && roundtableRunning(last)
 }
+
+/**
+ * Où est la conversation d'un participant (S1, S2) : le moteur n'écrit plus rien dans l'élément,
+ * l'interface lit son existence. `here` : dans la liste ; `trash` : à la corbeille (son avis reste
+ * lisible, sans « Ouvrir ») ; `gone` : ni l'une ni l'autre ; `unknown` : corbeille pas encore lue.
+ */
+export type SeatPresence = 'here' | 'trash' | 'gone' | 'unknown'
+
+export function seatPresence(
+  seat: Pick<RoundtableSeat, 'childId'>,
+  exists: ((id: string) => boolean) | undefined,
+  trashed: ReadonlySet<string> | undefined
+): SeatPresence {
+  if (!seat.childId || !exists || exists(seat.childId)) return 'here'
+  if (!trashed) return 'unknown'
+  return trashed.has(seat.childId) ? 'trash' : 'gone'
+}

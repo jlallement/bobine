@@ -4,7 +4,6 @@
  * travail), et ce qui a fini depuis le lancement de l'app. Logique pure : `useSessionRunning`
  * fournit les observations, ce module garde le suivi.
  */
-import { ROUNDTABLE_PARTICIPANT_ROLE } from '@shared/roundtable'
 import type { ConversationSummary } from '@shared/agent'
 import type { AttentionState } from '@shared/attention'
 import { childState } from '@shared/children'
@@ -165,7 +164,7 @@ export function subagentObservations(items: readonly TranscriptItem[]): RunningO
 export function childObservations(
   children: readonly Pick<
     ConversationSummary,
-    'id' | 'title' | 'status' | 'modelRefused' | 'role'
+    'id' | 'title' | 'status' | 'modelRefused' | 'role' | 'roundtable'
   >[],
   attention: AttentionState
 ): RunningObservation[] {
@@ -179,7 +178,7 @@ export function childObservations(
         kind: 'child',
         label: child.title,
         childId: child.id,
-        ...(child.role?.name === ROUNDTABLE_PARTICIPANT_ROLE ? { roundtable: true as const } : {}),
+        ...(child.roundtable ? { roundtable: true as const } : {}),
         ...(blocked ? { blocked: true as const } : { stop: { kind: 'child', childId: child.id } })
       }
     ]

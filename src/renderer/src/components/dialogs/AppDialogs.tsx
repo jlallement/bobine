@@ -171,6 +171,7 @@ export function AppDialogs({
           conversation={deleting}
           onWorktreeStatus={c.worktreeStatus}
           onFamily={c.family}
+          participant={(id) => c.list.some((s) => s.id === id && !!s.roundtable)}
           onClose={() => dialogs.setDeleting(null)}
           onConfirm={(options) => {
             void c.remove(deleting.id, options)

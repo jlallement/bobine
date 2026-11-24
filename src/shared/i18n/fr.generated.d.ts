@@ -956,6 +956,9 @@ export type FrResources = {
     readonly childrenDelete_one: 'Il va aussi à la corbeille. Son worktree est gardé.'
     readonly childrenDelete_other: 'Ils vont aussi à la corbeille. Leurs worktrees sont gardés.'
     readonly childrenDelete_many: 'Ils vont aussi à la corbeille. Leurs worktrees sont gardés.'
+    readonly childrenTrash_one: 'Il va aussi à la corbeille.'
+    readonly childrenTrash_many: 'Ils vont aussi à la corbeille.'
+    readonly childrenTrash_other: 'Ils vont aussi à la corbeille.'
     readonly childrenKeep_one: 'Il deviendra une conversation ordinaire ; son fil le dira.'
     readonly childrenKeep_other: 'Ils deviendront des conversations ordinaires ; leur fil le dira.'
     readonly childrenKeep_many: 'Ils deviendront des conversations ordinaires ; leur fil le dira.'
@@ -6421,6 +6424,7 @@ export type FrResources = {
       readonly relaunchStopped_one: 'Relancer le participant arrêté'
       readonly relaunchStopped_many: 'Relancer les {{count}} participants arrêtés'
       readonly relaunchStopped_other: 'Relancer les {{count}} participants arrêtés'
+      readonly stopping: 'arrêt en cours'
     }
     readonly state: {
       readonly waiting: 'en attente'
@@ -6439,7 +6443,7 @@ export type FrResources = {
         readonly 'roundtable-stopped': 'Arrêté avec le tour de table'
         readonly 'cost-cap': 'Arrêté : plafond de la conversation atteint'
         readonly restart: 'Arrêté (redémarrage)'
-        readonly removed: 'Conversation supprimée'
+        readonly removed: 'Arrêté : conversation mise à la corbeille'
       }
       readonly reason: {
         readonly 'model-not-found': 'modèle introuvable'
@@ -6463,6 +6467,8 @@ export type FrResources = {
         readonly requested: 'Lecture seule demandée'
         readonly unverified: 'Lecture seule non vérifiée'
       }
+      readonly trashed: 'conversation à la corbeille'
+      readonly held: 'retenu par le plafond de sa conversation'
     }
     readonly confidence: {
       readonly high: 'confiance haute'

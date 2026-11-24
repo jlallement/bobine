@@ -43,3 +43,31 @@ describe('barre latérale : travail bloqué par un modèle refusé (fiche 267)',
     expect(state?.reason).toBeUndefined()
   })
 })
+
+describe('participant d’un tour de table (fiche 285, B5)', () => {
+  it('une place en erreur ou arrêtée n’est jamais « fini »', () => {
+    const ready = { status: 'ready' as const }
+    expect(
+      conversationState(
+        conversation({ ...ready, roundtable: { id: 'rt', active: false, state: 'error' } }),
+        undefined,
+        undefined
+      )?.state
+    ).toBe('error')
+    expect(
+      conversationState(
+        conversation({ ...ready, roundtable: { id: 'rt', active: false, state: 'stopped' } }),
+        'done',
+        undefined
+      )?.state
+    ).toBe('stopped')
+    // Une place qui a répondu reste ce que dit sa conversation.
+    expect(
+      conversationState(
+        conversation({ ...ready, roundtable: { id: 'rt', active: false, state: 'answered' } }),
+        undefined,
+        undefined
+      )?.state
+    ).toBe('done')
+  })
+})

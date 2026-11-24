@@ -196,3 +196,14 @@ export function byProject(
   }
   return [...groups].map(([project, grouped]) => ({ project, items: grouped }))
 }
+
+/**
+ * Participant d'un tour de table (fiche 285, M7) : dans la barre latérale tant que son tour est en
+ * cours, et quand c'est la conversation affichée (« Ouvrir sa conversation » depuis la carte) ;
+ * sinon, on le retrouve par la carte du tour ou la recherche.
+ */
+export const listedInSidebar = (
+  conversation: Pick<ConversationSummary, 'id' | 'roundtable'>,
+  activeId: string | null
+): boolean =>
+  !conversation.roundtable || conversation.roundtable.active || conversation.id === activeId

@@ -865,3 +865,95 @@ describe('réplique et décision', () => {
     expect(api.decide).toHaveBeenCalledWith('mother', 'rt1')
   })
 })
+
+describe('contrat du moteur (fix2)', () => {
+  it('arrêt en cours : dit dans l’en-tête, aucun geste tant que l’arrêt n’est pas fini', () => {
+    show(thread(roundtable([answered('A'), answered('B'), { type: 'stopping', at: T0 }]), OPINIONS))
+    expect(screen.getByTestId('roundtable-progress').textContent).toBe(
+      '2 avis sur 3 · arrêt en cours'
+    )
+    const stop = screen.getByTestId('roundtable-stop') as HTMLButtonElement
+    expect(stop.disabled).toBe(true)
+    expect(stop.textContent).toBe('arrêt en cours')
+    expect(screen.queryByTestId('roundtable-synthesize')).toBeNull()
+    expect(screen.queryByTestId('roundtable-stop-seat')).toBeNull()
+  })
+
+  it('« Arrêter » attend la fin de l’arrêt : le bouton reste désactivé jusque-là', async () => {
+    let finish = () => {}
+    api.stop.mockImplementationOnce(
+      () => new Promise<undefined>((r) => (finish = () => r(undefined)))
+    )
+    show(thread(roundtable([answered('A')]), OPINIONS))
+    const stop = screen.getByTestId('roundtable-stop') as HTMLButtonElement
+    fireEvent.click(stop)
+    expect(stop.disabled).toBe(true)
+    await act(async () => finish())
+    expect(stop.disabled).toBe(false)
+  })
+
+  it('place retenue par le plafond de sa conversation, avec « Ouvrir sa conversation »', () => {
+    show(thread(roundtable([answered('A'), { type: 'seat-held', letter: 'B', at: T0 }]), OPINIONS))
+    expect(within(row('B')).getByTestId('roundtable-row-meta').textContent).toBe(
+      'retenu par le plafond de sa conversation'
+    )
+    expect(within(row('B')).getByTestId('roundtable-open-row')).toBeTruthy()
+  })
+
+  it('S1 : à la corbeille, l’avis se lit sans « Ouvrir » ; restaurée, la ligne revient', async () => {
+    const saved = window.api
+    window.api = {
+      ...window.api,
+      profile: { ...window.api.profile, trash: async () => [{ id: 'child-A' }] }
+    } as unknown as typeof window.api
+    const items = thread(roundtable([answered('A')]), OPINIONS)
+    const view = (exists: (id: string) => boolean) => (
+      <Transcript
+        items={items}
+        onRespondPermission={vi.fn()}
+        onRespondElicitation={vi.fn()}
+        subtasks={info({ exists })}
+      />
+    )
+    const { rerender } = wrap(view((id) => id !== 'child-A'))
+    await waitFor(() =>
+      expect(within(row('A')).getByTestId('roundtable-row-meta').textContent).toBe(
+        'conversation à la corbeille'
+      )
+    )
+    expect(within(row('A')).queryByTestId('roundtable-open-row')).toBeNull()
+    rerender(view(() => true))
+    expect(within(row('A')).getByTestId('roundtable-row-meta').textContent).toContain('Redis')
+    expect(within(row('A')).getByTestId('roundtable-open-row')).toBeTruthy()
+    window.api = saved
+  })
+
+  it('S2 : ni dans la liste ni à la corbeille, « conversation supprimée »', async () => {
+    show(thread(roundtable([answered('A')]), OPINIONS), info({ exists: (id) => id !== 'child-A' }))
+    await waitFor(() =>
+      expect(within(row('A')).getByTestId('roundtable-row-meta').textContent).toBe(
+        'conversation supprimée'
+      )
+    )
+    expect(within(row('A')).queryByTestId('roundtable-open-row')).toBeNull()
+  })
+
+  it('S3 : l’étiquette de la synthèse lit l’agent et le modèle de la demande', () => {
+    const rt = roundtable([
+      answered('A'),
+      answered('B'),
+      answered('C'),
+      {
+        type: 'step-sent',
+        step: 'synthesis',
+        at: T0,
+        by: { profileId: 'agent-b', label: 'Agent B', model: 'Kimi K3' }
+      },
+      { type: 'step-answered', step: 'synthesis', at: T0 + 1 }
+    ])
+    show(synthesized(rt, SYNTHESIS))
+    expect(screen.getByTestId('roundtable-answer-label').textContent).toBe(
+      'Synthèse du tour de table · Kimi K3'
+    )
+  })
+})

@@ -21,7 +21,7 @@ export function conversationState(
   if (conversation.backgroundWork && (attention === undefined || attention === 'done')) {
     return { state: 'running', label: t('children.state.running') }
   }
-  const state = childState(conversation, attention)
+  const state = seatState(conversation, childState(conversation, attention))
   // Conversation ordinaire finie ou arrêtée : rien à signaler (l'arrêt ne vaut que pour une fille).
   if (!conversation.startedFrom && !attention && (state === 'done' || state === 'stopped'))
     return undefined
@@ -36,4 +36,14 @@ export function conversationState(
   const label =
     conversation.status === 'starting' ? t('sidebar.status.starting') : t(`children.state.${state}`)
   return { state, label }
+}
+
+/**
+ * Participant d'un tour de table (fiche 285, B5) : une place en erreur ou arrêtée n'est jamais
+ * « finie » ni « réponse à lire », même si sa conversation s'est terminée sans faute.
+ */
+function seatState(conversation: ConversationSummary, state: ChildState): ChildState {
+  const seat = conversation.roundtable?.state
+  if (seat !== 'error' && seat !== 'stopped') return state
+  return state === 'done' || state === 'unread' || state === 'stopped' ? seat : state
 }

@@ -41,7 +41,8 @@ import {
   reportText,
   seatElapsed,
   seatLabel,
-  withoutShortAnswer
+  withoutShortAnswer,
+  type SeatPresence
 } from '../roundtable/roundtable-view'
 import { Tip } from '../common/Menus'
 import { FoldedAnswer } from './WorkAnswer'
@@ -145,8 +146,12 @@ function SeatName({ seat }: { seat: Pick<RoundtableSeat, 'label' | 'agentLabel'>
 /** Pourquoi un participant n'a pas d'avis : la raison en clair (celle de l'agent d'abord). */
 function useSeatTrouble() {
   const { t } = useTranslation()
-  return (seat: RoundtableSeat, now: number): string | undefined => {
-    if (seat.removed) return t('roundtable.state.removed')
+  return (seat: RoundtableSeat, now: number, presence: SeatPresence): string | undefined => {
+    // Conversation à la corbeille ou supprimée (lue de son existence, S1/S2 ; `removed` : élément
+    // écrit par une version précédente) ; restaurée, la ligne redevient ce qu'elle était.
+    if (presence === 'trash') return t('roundtable.state.trashed')
+    if (presence === 'gone' || (seat.removed && presence !== 'here'))
+      return t('roundtable.state.removed')
     if (seat.state === 'stopped' && seat.stopped) return t(STOP_KEYS[seat.stopped])
     if (seat.state !== 'error') return undefined
     // Modèle absent du catalogue : il n'est pas proposé ; refusé ou changé en cours de tour : non
@@ -177,7 +182,10 @@ function seatMeta(
 ): ReactNode[] {
   const t = i18next.t
   const meta: ReactNode[] = []
-  if (c.running) {
+  if (c.running && seat.held && !c.trouble) {
+    // Question retenue par le plafond de sa conversation : « Continuer » se donne là-bas.
+    meta.push(t('roundtable.state.held'))
+  } else if (c.running && !c.trouble) {
     meta.push(
       c.activity ? (
         <RowActivity activity={c.activity} workspace={c.child?.workspace} />
@@ -207,7 +215,7 @@ function seatSide(
   const t = i18next.t
   const side: ReactNode[] = []
   const duration = c.elapsed !== undefined ? elapsedText(c.elapsed) : undefined
-  if (seat.state === 'answered' && !seat.removed) {
+  if (seat.state === 'answered') {
     if (c.collecting)
       side.push(`${t('roundtable.state.answered')}${duration ? ` · ${duration}` : ''}`)
     else if (c.digest?.confidence) side.push(t(CONFIDENCE_KEYS[c.digest.confidence]))
@@ -248,9 +256,12 @@ export function RoundtableRow({
   open,
   onToggle,
   actions,
-  shield = false
+  shield = false,
+  presence = 'here'
 }: {
   seat: RoundtableSeat
+  /** Où est sa conversation (S1, S2) : à la corbeille ou supprimée, l'avis reste lisible. */
+  presence?: SeatPresence
   /** Les participants n'ont pas tous la même lecture seule : le bouclier de chacun (A3). */
   shield?: boolean
   /** Son avis, une fois rendu. */
@@ -265,7 +276,7 @@ export function RoundtableRow({
 }) {
   const running = seat.state === 'working' || seat.state === 'waiting'
   const now = useNow(running)
-  const trouble = useSeatTrouble()(seat, now)
+  const trouble = useSeatTrouble()(seat, now, presence)
   const text = report ? reportText(report) : undefined
   const digest = seat.state === 'answered' && text ? opinionDigest(text) : undefined
   const elapsed = seatElapsed(seat, now)
@@ -290,7 +301,7 @@ export function RoundtableRow({
       side={
         <>
           {side.length > 0 && <Dotted parts={side} />}
-          {shield && <ReadOnlyMark seat={seat} />}
+          {shield && presence === 'here' && <ReadOnlyMark seat={seat} />}
           <RowButtons seat={seat} actions={actions} />
         </>
       }
@@ -336,7 +347,7 @@ function OpenAnswer({ text, onOpen }: { text: string; onOpen: (() => void) | und
  */
 function ReadOnlyMark({ seat }: { seat: RoundtableSeat }) {
   const level = seat.readOnly
-  if (!level || seat.removed) return null
+  if (!level) return null
   const label = i18next.t(READ_ONLY_KEYS[level])
   const Icon = level === 'enforced' || level === 'native' ? ShieldCheck : ShieldAlert
   return (

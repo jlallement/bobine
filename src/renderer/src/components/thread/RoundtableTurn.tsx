@@ -36,7 +36,8 @@ import {
   RoundtableEntry,
   UsedLine,
   useRoundtableGestures,
-  useRoundtableTotal
+  useRoundtableTotal,
+  useSeatPresence
 } from './RoundtableCard'
 import { RebuttalRow } from './RoundtableRow'
 import type { SubtasksInfo } from './Subtasks'
@@ -93,6 +94,7 @@ function RebuttalCard({
   )
   const activity = useChildTools(running.flatMap((s) => (s.childId ? [s.childId] : [])))
   const used = useRoundtableTotal(group, info)
+  const presence = useSeatPresence(item, info)
   return (
     <div className="work-group roundtable-card" data-testid="roundtable-rebuttal">
       <div className="work-group-head">
@@ -117,7 +119,11 @@ function RebuttalCard({
                 activity={childId ? activity.get(childId) : undefined}
                 open={open === seat.letter}
                 onToggle={() => setOpen((l) => (l === seat.letter ? undefined : seat.letter))}
-                onOpen={childId && !seat.removed && info ? () => info.onOpen(childId) : undefined}
+                onOpen={
+                  childId && presence(seat) === 'here' && info
+                    ? () => info.onOpen(childId)
+                    : undefined
+                }
               />
             )
           )
@@ -238,8 +244,11 @@ function RoundtableAnswerFrame({
   const { t } = useTranslation()
   const first = turn.answers[0] === itemId
   const last = turn.answers.at(-1) === itemId
-  const synthesizer = group?.item.synthesizer
-  const model = synthesizer?.model ?? synthesizer?.label ?? ''
+  // Agent et modèle réellement utilisés pour cette demande (S3), relevés à son départ ; un tour
+  // d'une version précédente : ceux de la conversation au lancement du tour.
+  const step = turn.step === 'verdict' ? group?.item.verdict : group?.item.synthesis
+  const by = step?.by ?? group?.item.synthesizer
+  const model = by?.model ?? by?.label ?? ''
   const rebutted = !!group?.item.seats.some((s) => s.rebuttal)
   return (
     <div className="roundtable-answer" data-testid="roundtable-answer" data-step={turn.step}>

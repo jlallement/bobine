@@ -133,6 +133,23 @@ describe('supprimer une mère : ses filles (fiche 228)', () => {
     })
   })
 
+  it('participants d’un tour de table : aucun worktree annoncé (fiche 285, M8)', async () => {
+    render(
+      <DeleteDialog
+        conversation={conversation()}
+        onWorktreeStatus={async () => null}
+        onFamily={async () => family}
+        participant={() => true}
+        onClose={() => {}}
+        onConfirm={() => {}}
+      />
+    )
+    await screen.findByTestId('delete-children')
+    const note = screen.getByTestId('delete-children-note').textContent ?? ''
+    expect(note).toContain('corbeille')
+    expect(note).not.toContain('worktree')
+  })
+
   it('case décochée : les filles restent, la note le dit', async () => {
     const onConfirm = open()
     fireEvent.click(await screen.findByTestId('delete-children'))

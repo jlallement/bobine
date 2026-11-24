@@ -912,6 +912,8 @@
     "childBusyStop": "running, will be stopped",
     "childrenDelete_one": "It goes to the trash too. Its worktree is kept.",
     "childrenDelete_other": "They go to the trash too. Their worktrees are kept.",
+    "childrenTrash_one": "It goes to the trash too.",
+    "childrenTrash_other": "They go to the trash too.",
     "childrenKeep_one": "It will become an ordinary conversation; its thread will say so.",
     "childrenKeep_other": "They will become ordinary conversations; their thread will say so.",
     "fromAgents": "Also delete in {{agent}} <muted>(permanent: these conversations can’t be resumed anymore)</muted>",
@@ -6351,7 +6353,8 @@
       "noOpinions_one": "{{count}} without opinion",
       "noOpinions_other": "{{count}} without opinion",
       "relaunchStopped_one": "Run the stopped participant again",
-      "relaunchStopped_other": "Run the {{count}} stopped participants again"
+      "relaunchStopped_other": "Run the {{count}} stopped participants again",
+      "stopping": "stopping"
     },
     "state": {
       "waiting": "waiting",
@@ -6370,7 +6373,7 @@
         "roundtable-stopped": "Stopped with the roundtable",
         "cost-cap": "Stopped: conversation cost cap reached",
         "restart": "Stopped (restart)",
-        "removed": "Conversation deleted"
+        "removed": "Stopped: conversation moved to the trash"
       },
       "reason": {
         "model-not-found": "model not found",
@@ -6393,7 +6396,9 @@
         "native": "Read-only (installed role)",
         "requested": "Read-only requested",
         "unverified": "Read-only not verified"
-      }
+      },
+      "trashed": "conversation in the trash",
+      "held": "held by its conversation cost cap"
     },
     "confidence": {
       "high": "high confidence",

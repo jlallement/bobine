@@ -970,6 +970,9 @@
     "childrenDelete_one": "Il va aussi à la corbeille. Son worktree est gardé.",
     "childrenDelete_other": "Ils vont aussi à la corbeille. Leurs worktrees sont gardés.",
     "childrenDelete_many": "Ils vont aussi à la corbeille. Leurs worktrees sont gardés.",
+    "childrenTrash_one": "Il va aussi à la corbeille.",
+    "childrenTrash_many": "Ils vont aussi à la corbeille.",
+    "childrenTrash_other": "Ils vont aussi à la corbeille.",
     "childrenKeep_one": "Il deviendra une conversation ordinaire ; son fil le dira.",
     "childrenKeep_other": "Ils deviendront des conversations ordinaires ; leur fil le dira.",
     "childrenKeep_many": "Ils deviendront des conversations ordinaires ; leur fil le dira.",
@@ -6637,7 +6640,8 @@
       "noOpinions_other": "{{count}} sans avis",
       "relaunchStopped_one": "Relancer le participant arrêté",
       "relaunchStopped_many": "Relancer les {{count}} participants arrêtés",
-      "relaunchStopped_other": "Relancer les {{count}} participants arrêtés"
+      "relaunchStopped_other": "Relancer les {{count}} participants arrêtés",
+      "stopping": "arrêt en cours"
     },
     "state": {
       "waiting": "en attente",
@@ -6656,7 +6660,7 @@
         "roundtable-stopped": "Arrêté avec le tour de table",
         "cost-cap": "Arrêté : plafond de la conversation atteint",
         "restart": "Arrêté (redémarrage)",
-        "removed": "Conversation supprimée"
+        "removed": "Arrêté : conversation mise à la corbeille"
       },
       "reason": {
         "model-not-found": "modèle introuvable",
@@ -6679,7 +6683,9 @@
         "native": "Lecture seule (rôle installé)",
         "requested": "Lecture seule demandée",
         "unverified": "Lecture seule non vérifiée"
-      }
+      },
+      "trashed": "conversation à la corbeille",
+      "held": "retenu par le plafond de sa conversation"
     },
     "confidence": {
       "high": "confiance haute",

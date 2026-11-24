@@ -15,6 +15,7 @@ export function DeleteDialog({
   conversation,
   onWorktreeStatus,
   onFamily,
+  participant,
   onClose,
   onConfirm
 }: {
@@ -22,6 +23,8 @@ export function DeleteDialog({
   onWorktreeStatus: (id: string) => Promise<WorktreeStatusView | null>
   /** Descendance de la conversation (fiche 228) ; absente : aucune. */
   onFamily?: (id: string) => Promise<FamilyMember[]>
+  /** Participant d'un tour de table (`summary.roundtable`, fiche 285) : il n'a pas de worktree. */
+  participant?: (id: string) => boolean
   onClose: () => void
   onConfirm: (options: DeleteOptions & { fromAgent: boolean; removeWorktree: boolean }) => void
 }) {
@@ -95,6 +98,7 @@ export function DeleteDialog({
             <FamilyOption
               rootId={conversation.id}
               family={family}
+              participants={!!participant && family.every((m) => participant(m.id))}
               checked={withChildren}
               onChange={setWithChildren}
             />
@@ -182,10 +186,13 @@ function FamilyOption({
   rootId,
   family,
   checked,
-  onChange
+  onChange,
+  participants
 }: {
   rootId: string
   family: FamilyMember[]
+  /** Que des participants d'un tour de table : rien à dire d'un worktree (M8). */
+  participants: boolean
   checked: boolean
   onChange: (checked: boolean) => void
 }) {
@@ -223,7 +230,14 @@ function FamilyOption({
           ))}
         </ul>
         <span className="family-note" data-testid="delete-children-note">
-          {t(checked ? 'deleteDialog.childrenDelete' : 'deleteDialog.childrenKeep', { count })}
+          {t(
+            checked
+              ? participants
+                ? 'deleteDialog.childrenTrash'
+                : 'deleteDialog.childrenDelete'
+              : 'deleteDialog.childrenKeep',
+            { count }
+          )}
         </span>
       </span>
     </label>

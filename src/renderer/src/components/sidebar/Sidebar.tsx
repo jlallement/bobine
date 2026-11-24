@@ -45,6 +45,7 @@ import {
   byProject,
   heldOrder,
   nestChildren,
+  listedInSidebar,
   sidebarFamilies,
   useHeldOrder,
   useHolds,
@@ -163,7 +164,9 @@ export function Sidebar(props: Props) {
   const statusText = afterTurn ? t('sidebar.status.background') : agentStatusText(snapshot)
   const launches = props.childLaunches ?? NO_LAUNCHES
   const listed = withChildLaunches(
-    props.conversations.filter((c) => !c.draft && spaceOf(c) === props.space),
+    props.conversations.filter(
+      (c) => !c.draft && spaceOf(c) === props.space && listedInSidebar(c, props.activeId)
+    ),
     launches
   )
   const preparing = new Set(launches.map((launch) => launchRowId(launch.id)))

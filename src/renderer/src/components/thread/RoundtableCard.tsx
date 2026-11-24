@@ -32,7 +32,15 @@ import { useChildTools } from '../roles/RoleWork'
 import { RoundtableIcon } from '../roundtable/RoundtableIcon'
 import { RoundtableTag } from '../roundtable/RoundtableLine'
 import { requestRoundtableMenu } from '../roundtable/roundtable-menu-request'
-import { listText, seatLabel, seatReports, totalText } from '../roundtable/roundtable-view'
+import {
+  listText,
+  type SeatPresence,
+  seatLabel,
+  seatPresence,
+  seatReports,
+  totalText
+} from '../roundtable/roundtable-view'
+import { useTrashedIds } from '../roundtable/useTrashedIds'
 import { RoundtableRow } from './RoundtableRow'
 import type { SubtasksInfo } from './Subtasks'
 import { currentReport, workUsage } from './work-card'
@@ -125,7 +133,8 @@ export function useRoundtableTotal(group: RoundtableGroupData, info: SubtasksInf
     const digest = workUsage(work ? currentReport(work) : undefined, child)
     return { seat, digest, running: seat.state === 'working' || seat.state === 'waiting' }
   })
-  const digests = perSeat.flatMap((p) => (p.running && !p.digest ? [] : [p.digest]))
+  // `null` : encore au travail, ni chiffre ni « sans chiffre » (contrat de `roundtableTotal`, M5).
+  const digests = perSeat.map((p) => (p.running && !p.digest ? null : p.digest))
   const total = roundtableTotal(digests, [item.synthesis?.usage, item.verdict?.usage])
   // Détail au survol et au focus : une ligne par participant (A6), ce qu'il a communiqué.
   const detail = perSeat
@@ -135,6 +144,22 @@ export function useRoundtableTotal(group: RoundtableGroupData, info: SubtasksInf
     .join('\n')
   // Mode présentation (fiche 159) : aucun montant.
   return presenting ? undefined : { text: totalText(total), detail }
+}
+
+/**
+ * Où est la conversation de chaque participant (S1, S2) : dans la liste, à la corbeille, ou
+ * supprimée. Lu de la liste des conversations, puis de la corbeille pour celles qui manquent.
+ */
+export function useSeatPresence(
+  item: Roundtable,
+  info: SubtasksInfo | undefined
+): (seat: RoundtableSeat) => SeatPresence {
+  const exists = info?.exists
+  const missing = item.seats.flatMap((s) =>
+    s.childId && exists && !exists(s.childId) ? [s.childId] : []
+  )
+  const trashed = useTrashedIds(missing)
+  return (seat) => seatPresence(seat, exists, trashed)
 }
 
 /** Bulle de la question, avec l'étiquette « Tour de table » (maquette `carte-en-cours`). */
@@ -225,8 +250,11 @@ function useProgress(group: RoundtableGroupData): string {
   const total = item.seats.length
   switch (item.phase) {
     case 'collecting':
-    case 'insufficient':
-      return t('roundtable.card.progress', { count: opinions, total })
+    case 'insufficient': {
+      const head = t('roundtable.card.progress', { count: opinions, total })
+      // Arrêt demandé : les participants s'arrêtent d'abord, puis « arrêté ».
+      return item.stopping ? `${head} · ${t('roundtable.card.stopping')}` : head
+    }
     case 'synthesizing': {
       const step = item.synthesis?.state
       const key =
@@ -273,6 +301,7 @@ export function RoundtableCard({
   const names = listText(item.seats.map(seatLabel))
   // Une seule lecture seule pour tous : dite au pied ; sinon, le bouclier de chacun (A3).
   const mixed = new Set(item.seats.map((s) => s.readOnly).filter(Boolean)).size > 1
+  const presence = useSeatPresence(item, info)
   return (
     <div
       className="work-group roundtable-card"
@@ -326,6 +355,7 @@ export function RoundtableCard({
               gestures={gestures}
               pending={pending}
               shield={mixed}
+              presence={presence(seat)}
             />
           ))}
         </div>
@@ -349,7 +379,8 @@ function SeatRow({
   onToggle,
   gestures,
   pending,
-  shield
+  shield,
+  presence
 }: {
   seat: RoundtableSeat
   group: RoundtableGroupData
@@ -361,12 +392,15 @@ function SeatRow({
   gestures: ReturnType<typeof useRoundtableGestures>['gestures']
   pending: ReadonlySet<string>
   shield: boolean
+  presence: SeatPresence
 }) {
   const { item } = group
   const child = info?.children.find((c) => c.id === seat.childId)
   const { opinion } = seatReports(work, seat)
   const collecting = item.phase === 'collecting'
   const running = seat.state === 'working' || seat.state === 'waiting'
+  // Arrêt du tour en cours : plus aucun geste sur les lignes.
+  const live = gestures && !item.stopping ? gestures : undefined
   const modelRefused =
     seat.state === 'error' &&
     (seat.error === 'model-not-found' || seat.error === 'model-not-applied')
@@ -376,6 +410,7 @@ function SeatRow({
     <RoundtableRow
       seat={seat}
       shield={shield}
+      presence={presence}
       report={opinion}
       child={child}
       activity={activity}
@@ -383,13 +418,14 @@ function SeatRow({
       open={open}
       onToggle={onToggle}
       actions={{
-        ...(gestures && collecting && running ? { stop: () => gestures.stop(seat.letter) } : {}),
+        ...(live && collecting && running ? { stop: () => live.stop(seat.letter) } : {}),
         busy: pending.has(`stop-${seat.letter}`) || pending.has(`relaunch-${seat.letter}`),
-        ...(relaunch && !modelRefused && gestures
-          ? { relaunch: () => gestures.relaunch(seat.letter) }
+        ...(relaunch && !modelRefused && live
+          ? { relaunch: () => live.relaunch(seat.letter) }
           : {}),
-        ...(modelRefused && gestures ? { otherModel: requestRoundtableMenu } : {}),
-        ...(childId && !seat.removed && info ? { open: () => info.onOpen(childId) } : {})
+        ...(modelRefused && live ? { otherModel: requestRoundtableMenu } : {}),
+        // À la corbeille ou supprimée : l'avis se lit, sa conversation ne s'ouvre pas.
+        ...(childId && presence === 'here' && info ? { open: () => info.onOpen(childId) } : {})
       }}
     />
   )
@@ -409,7 +445,7 @@ function RoundtableFoot({
   const { item } = group
   const opinions = usableSeats(item).length
   const absent = item.seats.length - opinions
-  const synthesize = gestures && canSynthesize(item)
+  const synthesize = gestures && !item.stopping && canSynthesize(item)
   const lost = attachmentsLost(item) && item.seats.some((s) => canRelaunch(item, s.letter))
   const resumable = gestures && !lost && item.seats.some((s) => canRelaunch(item, s.letter))
   const from = item.interruptedFrom
@@ -444,14 +480,19 @@ function RoundtableFoot({
           <button
             type="button"
             className="btn small ghost roundtable-stop-all"
-            aria-label={t('roundtable.card.stopAll')}
+            aria-label={
+              item.stopping ? t('roundtable.card.stopping') : t('roundtable.card.stopAll')
+            }
             title={t('roundtable.card.stopAll')}
             onClick={() => gestures.stop()}
-            disabled={pending.has('stop-all')}
+            // `roundtable:stop` rend la main une fois l'arrêt fini : le geste attend jusque-là.
+            disabled={pending.has('stop-all') || !!item.stopping}
             data-testid="roundtable-stop"
           >
             <Square size={12} aria-hidden />
-            <span className="roundtable-stop-label">{t('roundtable.card.stop')}</span>
+            <span className="roundtable-stop-label">
+              {item.stopping ? t('roundtable.card.stopping') : t('roundtable.card.stop')}
+            </span>
           </button>
         )}
       </div>

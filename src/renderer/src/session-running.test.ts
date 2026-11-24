@@ -158,7 +158,8 @@ describe('participants d’un tour de table (fiche 285, B2)', () => {
           id: 'p',
           title: 'Alpha',
           status: 'busy',
-          role: { name: 'participant', label: 'Participant', icon: 'users', color: 'graphite' }
+          role: { name: 'participant', label: 'Participant', icon: 'users', color: 'graphite' },
+          roundtable: { id: 'rt', active: true, state: 'working' }
         }
       ],
       {}
