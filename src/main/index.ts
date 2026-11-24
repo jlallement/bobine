@@ -1,6 +1,5 @@
 import type { BrowserManager } from './browser/browser-manager'
 import { setupBrowser } from './browser/browser-setup'
-import { applyChromiumSwitches } from './browser/chromium-switches'
 import { ApprovalStore } from './approvals'
 import { setupSelfInstall } from './self-install-setup'
 import { startUpdateCheck } from './update-check-app'
@@ -210,8 +209,6 @@ function focusMainWindow(): void {
 const userData = freshStart.userData(app.getPath('userData'))
 app.setName('Bobine')
 app.setPath('userData', userData)
-// Avant `ready`, sinon Chromium ne les lit pas : les entrées de l'agent ne sont plus jetées (fiche 250).
-applyChromiumSwitches(app.commandLine)
 // Notifications de Windows (fiche 229) : identifiant du raccourci posé par l'installeur ; rien ailleurs.
 applyAppUserModelId(app, process.platform)
 
