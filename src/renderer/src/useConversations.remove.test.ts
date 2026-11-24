@@ -142,3 +142,23 @@ it('réponse de la suppression arrivée avant la liste sans elle : toujours tue 
     [['m', 'f'], false]
   ])
 })
+
+it('liste sans la supprimée reçue : la porte ne se rouvre qu’après le rendu suivant (effets en attente, fiche 277)', async () => {
+  const { result } = renderHook(() => useConversations())
+  await waitFor(() => expect(result.current.activeId).toBe('m'))
+  act(() => result.current.remove('m', { children: 'delete' }))
+  await act(async () =>
+    settle.resolve({ conversations: [other], activeId: 'o' } as ConversationsState)
+  )
+  // Reçue hors de `act` comme dans l'app : React n'a encore ni rendu, ni exécuté les effets du
+  // rendu d'avant (qui affichait la mère). La porte doit rester fermée à cet instant.
+  pushList({ conversations: [other], activeId: 'o' } as ConversationsState)
+  expect(gated).toEqual([[['m', 'f'], true]])
+  await waitFor(() => expect(result.current.queryId).toBe('o'))
+  await waitFor(() =>
+    expect(gated).toEqual([
+      [['m', 'f'], true],
+      [['m', 'f'], false]
+    ])
+  )
+})

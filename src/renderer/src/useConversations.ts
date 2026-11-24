@@ -191,23 +191,38 @@ function forgetOne(approval: ForgottenApproval): Promise<AgentSettingsView> {
   return window.api.settings.forgetCommand(approval.workspace, approval.command)
 }
 
-/** Conversations, conversation active et réglages, synchronisés avec le main via `window.api`. */
 /**
- * Suppressions finies côté main dont la liste sans elles n'est pas encore arrivée (fiche 277,
- * `parcours-deleguer` 6). La réponse de `conversation:delete` et les évènements poussés par le
- * main (`conversations:changed`, `agent:event`) ne suivent pas la même voie : la réponse peut
- * arriver avant eux. Libérées à la réponse, l'arrêt de l'agent encore en route relançait une
- * lecture de la conversation supprimée, toujours affichée (« Conversation inconnue »). Elles
- * restent donc tues jusqu'à la liste qui ne les a plus.
+ * Suppressions finies côté main, et le moment de rouvrir la porte du preload (fiche 277,
+ * `parcours-deleguer` 6, relevé `conversation:appTools … Conversation inconnue`).
+ *
+ * Deux écarts de temps à couvrir :
+ * - la réponse de `conversation:delete` et les évènements poussés par le main
+ *   (`conversations:changed`, `agent:event`) ne suivent pas la même voie IPC : la réponse peut
+ *   arriver avant la liste ; la conversation supprimée reste tue jusqu'à la liste qui ne l'a plus ;
+ * - React exécute les effets d'un rendu plus tard (`useEffect`), jusqu'au début du rendu suivant.
+ *   Un rendu fait juste avant la liste, la supprimée encore affichée (arrêt de son agent : statut
+ *   changé), laisse en attente l'effet qui relit ses outils de Bobine (onglet Session). Rouverte
+ *   dès la réception de la liste, la porte laissait passer cet effet en retard. Elle ne se rouvre
+ *   donc que dans un effet, après le rendu qui n'affiche plus la conversation supprimée : React a
+ *   alors exécuté tous les effets en attente, ceux de ce rendu-là compris (enfants d'abord).
  */
 function useSettledDeletes(
   setRemoving: (update: (current: ReadonlySet<string>) => ReadonlySet<string>) => void
 ) {
   const deleted = useRef(new Set<string>())
+  /** Plus dans la liste ni affichées : porte du preload à rouvrir après le prochain rendu. */
+  const toRelease = useRef<string[]>([])
   /** Dernière liste reçue du main (`conversations:changed`, ou lecture au montage). */
   const latest = useRef<ConversationsState | null>(null)
+  // Sans dépendances : après chaque rendu (et rien à faire le plus souvent).
+  useEffect(() => {
+    if (!toRelease.current.length) return
+    const ids = toRelease.current
+    toRelease.current = []
+    window.api.conversations.removing(ids, false)
+  })
   return useMemo(() => {
-    const release = () => {
+    const settle = () => {
       const list = latest.current
       if (!list) return
       const gone = [...deleted.current].filter(
@@ -215,24 +230,26 @@ function useSettledDeletes(
       )
       if (!gone.length) return
       for (const id of gone) deleted.current.delete(id)
-      window.api.conversations.removing(gone, false)
+      toRelease.current.push(...gone)
+      // Même lot que la liste reçue : le rendu qui suit affiche la nouvelle conversation active.
       setRemoving((current) => new Set([...current].filter((c) => !gone.includes(c))))
     }
     return {
       /** Liste reçue ; `initial` : lecture au montage, sans remplacer une liste déjà poussée. */
       seen: (list: ConversationsState, initial = false) => {
         if (!initial || !latest.current) latest.current = list
-        release()
+        settle()
       },
-      /** Suppression faite côté main : libérées dès qu'une liste ne les a plus. */
+      /** Suppression faite côté main : libérées après la liste qui ne les a plus. */
       done: (ids: readonly string[]) => {
         for (const id of ids) deleted.current.add(id)
-        release()
+        settle()
       }
     }
   }, [setRemoving])
 }
 
+/** Conversations, conversation active et réglages, synchronisés avec le main via `window.api`. */
 export function useConversations() {
   const [state, dispatch] = useReducer(reducer, {
     list: [],
