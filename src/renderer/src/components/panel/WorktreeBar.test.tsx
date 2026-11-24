@@ -132,3 +132,41 @@ describe('barre du worktree et PR suivie (fiche 176)', () => {
     expect(screen.getByTestId('worktree-cleanup-ask').textContent).not.toContain('GitHub')
   })
 })
+
+/**
+ * Barre d'un worktree ouvert depuis le menu du dossier : remplaçant des vérifications de composant
+ * n° 5 et 7 de la suite e2e `worktree-cycle` (inventaire A). La case par fichier est celle de la
+ * liste de la vue Git (`ChangesTab.test.tsx`).
+ */
+describe('barre du worktree : départ et fusion (fiches 110, 123)', () => {
+  it('départ rappelé (branche, commit), avertissement sur le dossier d’origine', async () => {
+    trackPr({ status: 'unavailable' })
+    bar(view({ dirtyAtStart: 2, baseSubject: 'Merge fiche 114' }))
+    const start = screen.getByTestId('worktree-start')
+    expect(start.textContent).toContain('bobine/x')
+    expect(start.textContent).toContain('main')
+    expect(start.textContent).toContain('abc1234')
+    expect(start.textContent).toContain('Merge fiche 114')
+    expect(screen.getByTestId('worktree-dirty-at-start').textContent).toContain('2')
+  })
+
+  it('« Fusionner » bloqué tant qu’il reste du non commité, la raison en infobulle', async () => {
+    trackPr({ status: 'unavailable' })
+    const { rerender } = bar(view({ dirty: 2 }))
+    const merge = screen.getByTestId('worktree-merge') as HTMLButtonElement
+    expect(merge.disabled).toBe(true)
+    expect(merge.title.replace(/[  ]/g, ' ')).toBe(
+      'Committez d’abord : 2 modifications non commitées.'
+    )
+    rerender(
+      <WorktreeBar
+        conversationId="c1"
+        info={view({ dirty: 0 })}
+        selected={[]}
+        onChanged={() => {}}
+      />
+    )
+    expect((screen.getByTestId('worktree-merge') as HTMLButtonElement).disabled).toBe(false)
+    expect(screen.getByTestId('worktree-merge').title).toBe('')
+  })
+})

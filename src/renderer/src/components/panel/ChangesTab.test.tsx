@@ -635,3 +635,70 @@ describe('vue Conversation de l’onglet Modifications (fiches 021, 071, 272)', 
     expect(screen.queryByTestId('changes-note')).toBeNull()
   })
 })
+
+/** Vue Git d'une conversation en worktree : la barre du worktree, une case par fichier (fiche 110). */
+describe('vue Git d’un worktree (fiche 110)', () => {
+  const api = window.api
+  afterEach(() => {
+    cleanup()
+    window.api = api
+  })
+
+  it('barre du worktree en tête, une case cochée par fichier modifié', async () => {
+    window.api = {
+      ...api,
+      changes: {
+        git: async () => ({
+          root: '/depot/.worktrees/x',
+          branch: 'bobine/x',
+          files: [
+            { path: 'README.md', status: 'modified', added: 1, removed: 0 },
+            { path: 'notes.txt', status: 'untracked', added: 1, removed: 0 }
+          ]
+        }),
+        gitFile: vi.fn()
+      },
+      worktree: {
+        ...api.worktree,
+        info: async () => ({
+          title: 'x',
+          branch: 'bobine/x',
+          path: '/depot/.worktrees/x',
+          root: '/depot',
+          base: 'abc1234',
+          baseShort: 'abc1234',
+          baseBranch: 'main',
+          dirtyAtStart: 1,
+          dirty: 2,
+          ahead: 0,
+          behind: 0,
+          commits: [],
+          merged: false,
+          pr: { ok: false, reason: 'noRemote' },
+          noRemote: true
+        })
+      },
+      settings: { get: async () => ({ preferences: {} }), onChanged: () => () => {} }
+    } as unknown as Window['api']
+    render(
+      <Tooltip.Provider>
+        <ChangesTab
+          conversationId="wt"
+          workspace="/depot/.worktrees/x"
+          items={[]}
+          initialView="git"
+          initialViewSeq={1}
+        />
+      </Tooltip.Provider>
+    )
+    expect(await screen.findByTestId('worktree-bar')).toBeTruthy()
+    expect(screen.getByTestId('worktree-dirty-at-start')).toBeTruthy()
+    await waitFor(() => expect(screen.getAllByTestId('changes-check')).toHaveLength(2))
+    expect(
+      screen.getAllByTestId('changes-check').every((box) => (box as HTMLInputElement).checked)
+    ).toBe(true)
+    // Sans dépôt distant : ni « Ouvrir une PR » ni raison.
+    expect(screen.queryByTestId('worktree-pr')).toBeNull()
+    expect(screen.queryByTestId('worktree-pr-blocker')).toBeNull()
+  })
+})
