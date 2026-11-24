@@ -12,7 +12,6 @@ import { L, MAIN_PORT, check, mainProcess, sleep, withApp } from '../lib.mjs'
  */
 /** Proxy saisi pour la suite (fiche 275) : jamais affiché en clair. */
 const PROXY = 'http://jean:s3cr3t@proxy.exem21ple.test:3128'
-const MASKED = 'http://•••@proxy.exem21ple.test:3128'
 
 export async function failuresVisibleSuite(scheme) {
   console.log(`\n— Pannes visibles (${scheme})`)
@@ -83,29 +82,14 @@ export async function failuresVisibleSuite(scheme) {
         await ui.send('/scenario streaming-texte')
         await ui.ready()
         // Agent relancé avec le proxy saisi plus haut (fiche 275) : silence sans contenu, puis
-        // reprises ; le proxy est cité, identifiants masqués, nulle part en clair.
+        // reprises (proxy cité masqué, nulle part en clair : vérifié dans `parcours-reglages`).
         await ui.send('/scenario silence-annulable')
         await ui.waitFor(`!!${ui.$('silence-proxy')}`, 15000)
-        const silenceProxy = await ui.ev(
-          `({ hint: ${ui.$('silence-proxy')}.innerText, page: document.body.innerText.includes('s3cr3t') })`
-        )
-        check(
-          silenceProxy.hint === L('silenceBanner.proxy', { proxy: MASKED }) && !silenceProxy.page,
-          `silence avec un proxy : cité masqué, « Réglages réseau » (${silenceProxy.hint})`
-        )
         await ui.shot('275-silence-proxy')
         await ui.click(ui.$('silence-stop'))
         await ui.ready()
         await ui.send('/scenario reseau-injoignable-2-3')
         await ui.waitFor(`!!${ui.$('agent-unreachable')}`, 15000)
-        const unreachableProxy = await ui.ev(
-          `({ hint: ${ui.$('agent-unreachable-hint')}.innerText, page: document.body.innerText.includes('s3cr3t') })`
-        )
-        check(
-          unreachableProxy.hint === L('agentRetry.proxy', { proxy: MASKED }) &&
-            !unreachableProxy.page,
-          `modèle injoignable avec un proxy : cité masqué (${unreachableProxy.hint})`
-        )
         await ui.shot('275-injoignable-proxy')
         await ui.click(ui.$('agent-unreachable-stop'))
         await ui.ready()

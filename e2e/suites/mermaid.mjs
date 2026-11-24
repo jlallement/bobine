@@ -2,9 +2,9 @@ import { check, sleep, withApp } from '../lib.mjs'
 import { tokensOf, variantOf, withPalette } from '../palette.mjs'
 
 /**
- * Diagrammes Mermaid (fiche 063) : Mermaid chargé seulement quand un diagramme arrive ;
- * organigramme et séquence dessinés, bloc invalide gardé en code avec l'erreur ; code / diagramme,
- * agrandir.
+ * Diagrammes Mermaid (fiche 063) : Mermaid chargé à l'arrivée d'un diagramme, redessiné aux
+ * couleurs de la variante ; code / diagramme, agrandir (leurs vérifications sont en Vitest et dans
+ * `parcours-longue`).
  */
 export async function mermaidSuite(scheme) {
   console.log(`\n— Diagrammes Mermaid (${scheme})`)
@@ -14,26 +14,12 @@ export async function mermaidSuite(scheme) {
       await ui.ready()
       // Morceaux de Mermaid importés : Vite les annonce par des liens `modulepreload`.
       const loaded = `[...document.querySelectorAll('link[rel=modulepreload]')].some((l) => /Diagram/.test(l.href))`
-      check(!(await ui.ev(loaded)), 'Mermaid pas chargé tant qu’aucun diagramme n’est affiché')
-
       await ui.send('Dessine l’architecture')
       await ui.ready()
       const blocks = `[...document.querySelectorAll('[data-testid=mermaid-block]')]`
       await ui.waitFor(
         `${blocks}.length === 3 && ${blocks}.every((b) => b.dataset.state !== 'pending')`,
         15_000
-      )
-      const states = await ui.ev(`${blocks}.map((b) => b.dataset.state).join(' ')`)
-      const labels = await ui.ev(
-        `${blocks}[0].querySelector('.mermaid-diagram svg')?.textContent ?? ''`
-      )
-      check(
-        states === 'drawn drawn error' &&
-          labels.includes('Processus principal') &&
-          (await ui.ev(
-            `${blocks}[1].querySelector('.mermaid-diagram svg')?.textContent.includes('session/prompt')`
-          )),
-        `organigramme et séquence dessinés (${states})`
       )
       check(await ui.ev(loaded), 'Mermaid chargé à l’arrivée du diagramme')
       await ui.ev(`${blocks}[0].scrollIntoView({ block: 'center' })`)

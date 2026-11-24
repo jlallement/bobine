@@ -30,8 +30,6 @@ export async function asideSuite(scheme) {
 
       await ui.send('Modifie la configuration')
       await ui.waitFor(`!!${ui.$('permission')}`)
-      const users = `document.querySelectorAll('.msg-user').length`
-      const before = await ui.ev(users)
       await ui.shot('180-avant-pendant-tour')
 
       // `/btw` dans le menu « / ».
@@ -40,7 +38,8 @@ export async function asideSuite(scheme) {
       await ui.waitFor(`!!${ui.$('command-menu')}`)
       await ui.shot('180-menu-btw')
 
-      // Question posée pendant le tour : carte au-dessus de la saisie, rien dans le fil.
+      // Question posée pendant le tour (carte au-dessus de la saisie, rien dans le fil : vérifiés
+      // dans `parcours-matinee`).
       await ui.type('w C’est quoi déjà ce flag ?')
       // Menu refermé après l'espace (Échap arrêterait le tour principal).
       await ui.waitFor(`!${ui.$('command-menu')}`)
@@ -48,21 +47,6 @@ export async function asideSuite(scheme) {
       await ui.waitFor(
         `${ui.$('aside-card')}?.dataset.status === 'ready' && !!${ui.$('aside-answer')}`,
         20_000
-      )
-      const first = await ui.ev(`(() => {
-      const card = ${ui.$('aside-card')}
-      const composer = document.querySelector('.thread-dock .composer')
-      return {
-        answer: ${ui.$('aside-answer')}.innerText,
-        above: card.getBoundingClientRect().bottom <= composer.getBoundingClientRect().top + 1,
-        input: ${ui.$('composer-input')}.value,
-        cost: ${ui.$('aside-cost')}?.innerText ?? ''
-      }
-    })()`)
-      check(first.above && first.input === '', 'carte au-dessus de la zone de saisie, saisie vide')
-      check(
-        (await ui.ev(users)) === before && (await ui.ev(`!!${ui.$('permission')}`)),
-        'rien dans le fil, le tour principal attend toujours sa permission'
       )
       await ui.shot('180-aparte-reponse')
 

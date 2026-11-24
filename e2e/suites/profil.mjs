@@ -135,7 +135,6 @@ async function trashAndRestoreConfirm(scheme) {
           await ui.click(ui.$('trash-restore'))
           await ui.waitFor(`!!${ui.$('trash-empty')}`)
           await ui.waitFor(`${HISTORY}.length === 3`)
-          check(true, 'restaurée : de retour dans la liste, corbeille vide')
 
           // Restauration d'une sauvegarde : refusée pour un dossier quelconque, confirmée sinon.
           const choose = (folder) =>
@@ -375,11 +374,18 @@ async function diskFull(scheme) {
         rmSync(filler, { force: true })
         await ui.send('Après le disque plein')
         await ui.ready()
-        await sleep(2000)
-        const saved = readdirSync(conversations)
-          .filter((f) => /^[\w-]+\.json$/.test(f) && f !== 'index.json')
-          .map((f) => readFileSync(join(conversations, f), 'utf8'))
-          .join('\n')
+        // Écriture différée de l'app : on attend qu'elle soit sur le disque (10 s au plus), au lieu
+        // de 2 s fixes (fiche 279).
+        const read = () =>
+          readdirSync(conversations)
+            .filter((f) => /^[\w-]+\.json$/.test(f) && f !== 'index.json')
+            .map((f) => readFileSync(join(conversations, f), 'utf8'))
+            .join('\n')
+        let saved = read()
+        for (let i = 0; i < 100 && !saved.includes('Après le disque plein'); i++) {
+          await sleep(100)
+          saved = read()
+        }
         check(
           saved.includes('Pendant le disque plein') && saved.includes('Après le disque plein'),
           'place libérée : les messages écrits pendant le disque plein sont sur le disque'

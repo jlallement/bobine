@@ -353,29 +353,18 @@ export async function browserSuite(scheme) {
 }
 
 /**
- * Accord par site de bout en bout (fiche 249, audit SEC-1) : un `location = …` de l'agent vers un
- * site non accordé est arrêté et l'agent prévenu ; une page partie ailleurs hors d'une action de
- * l'agent ne lui est lisible qu'après la carte d'accord (refus : rien de lu ; accord : lu).
+ * Accord par site de bout en bout (fiche 249, audit SEC-1) : une page partie ailleurs hors d'une
+ * action de l'agent ne lui est lisible qu'après la carte d'accord (refus : rien de lu ; accord :
+ * lu). Le `location = …` de l'agent arrêté est vérifié dans `parcours-outils`.
  */
 async function siteGuard(ui, foreign) {
+  // `location = …` de l'agent arrêté, page jamais partie : vérifiés dans `parcours-outils`.
   await ui.send('/scenario changement-de-site')
   await ui.ready()
-  const reply = await ui.lastAgentText()
-  check(
-    // La page dite par le dernier outil (les cartes des outils, elles, citent le code).
-    reply.includes('Navigation arrêtée par Bobine') &&
-      /Page : http:\/\/127\.0\.0\.1:\d+\//.test(reply),
-    `location = … vers un site non accordé pendant l’action de l’agent : arrêté, l’agent prévenu (${reply.slice(0, 160)})`
-  )
   const main = await mainProcess()
   try {
-    const onForeign = () =>
-      main.evaluate(
-        `require('electron').webContents.getAllWebContents().filter((w) => w.getURL().includes(${JSON.stringify(FOREIGN_HOST)})).length`
-      )
-    // Au-delà du délai où ce qui arrive vient encore de l'agent (1,5 s) : toujours pas parti.
+    // Au-delà du délai où ce qui arrive vient encore de l'agent (1,5 s).
     await new Promise((r) => setTimeout(r, 2000))
-    check((await onForeign()) === 0, 'la page n’est jamais allée sur le site non accordé')
     // Hors d'une action de l'agent, la page part ailleurs (comme un lien suivi par l'utilisateur) :
     // rien ne l'en empêche.
     const shown = await ui.ev(`${ui.$('browser-address')}.value`)

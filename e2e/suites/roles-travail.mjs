@@ -59,8 +59,7 @@ export async function rolesTravailSuite(scheme) {
   const locks = realpathSync(mkdtempSync(join(tmpdir(), 'bob-e2e-roles-verrou-')))
   const turnLock = join(locks, 'verrou')
   try {
-    // Conversation neuve : `@rôle` en tout premier message (essai réel de la phase 4).
-    await withApp(scheme, (ui) => freshRun(ui), undefined, 'streaming-texte', env)
+    // Conversation neuve, `@rôle` en tout premier message : vérifié dans `parcours-matinee`.
     await withApp(scheme, (ui) => mainRun(ui, turnLock), undefined, 'streaming-texte', {
       ...env,
       MOCK_AGENT_TURN_LOCK: turnLock
@@ -114,39 +113,6 @@ async function heldTurns(turnLock, count, timeoutMs = 30000) {
 async function typeIn(ui, text) {
   await ui.ev(`${input}.focus()`)
   await ui.type(text)
-}
-
-/**
- * `@rôle` comme tout premier message d'une conversation neuve : la conversation entre dans
- * l'historique (titrée d'après la demande, sans message à son agent), la fille s'y rattache, deux
- * rôles cités donnent deux filles.
- */
-async function freshRun(ui) {
-  await ui.ready()
-  await typeIn(ui, '@security-expert @code-reviewer relisez calc.js')
-  await ui.press('Escape')
-  await ui.waitFor(`!!${ui.$('role-destination')}`)
-  await ui.enter()
-  await ui.waitFor(`${workRows}.length === 2`, 30000)
-  check(
-    (await ui.ev(`${input}.value`)) === '' &&
-      (await ui.ev(`document.querySelectorAll('[data-testid=role-request]').length`)) === 1 &&
-      (await ui.ev(`document.querySelectorAll('[data-testid=work-group]').length`)) === 1,
-    'premier message `@rôle` : parti, saisie vidée, aucun refus ; une bulle, une carte de groupe à deux lignes'
-  )
-  await ui.waitFor(
-    `[...document.querySelectorAll('[data-testid=history-item]')].some((i) => i.innerText.includes('relisez calc.js'))`
-  )
-  await ui.waitFor(
-    `document.querySelectorAll('[data-testid=history-item][data-mother]').length === 2`,
-    30000
-  )
-  check(
-    true,
-    'la conversation est dans l’historique, titrée d’après la demande ; deux filles dessous'
-  )
-  await ui.waitFor(`${workRows}.filter((c) => c.dataset.state === 'replied').length === 2`, 30000)
-  await ui.shot('roles-travail-0-premier-message')
 }
 
 /** `turnLock` : verrou de fin de tour de l'agent factice (fichier absent au départ). */

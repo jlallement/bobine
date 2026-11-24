@@ -26,6 +26,9 @@ export async function gitSuite(scheme) {
   git('add', '.')
   git('commit', '-q', '-m', 'init')
   git('checkout', '-q', '-b', 'feat')
+  // Verrou de fin de tour de l'agent factice (`docs/mock-agent.md`) : la réponse reste en cours le
+  // temps de la mesure, quelle que soit la vitesse de l'agent (fiche 279).
+  const turnLock = join(dir, 'verrou')
   const shade = `Number(getComputedStyle(document.querySelector('.main-header'), '::after').opacity)`
   const scroller = `document.querySelector('.main > .scroll')`
   try {
@@ -38,7 +41,6 @@ export async function gitSuite(scheme) {
         await ui.send('Fais les modifications')
         await ui.ready()
         await ui.waitFor(`${ui.$('git-branch')}?.dataset.dirty === 'true'`)
-        check(true, 'après le tour de l’agent : point sur la branche (modifications non commitées)')
 
         // Titre à gauche, avec le menu de la conversation.
         await ui.waitFor(`!!${ui.$('title-menu')}`)
@@ -136,6 +138,7 @@ export async function gitSuite(scheme) {
         await ui.waitFor(`!${ui.$('side-panel')}`)
 
         // Pendant une réponse : les boutons au survol de la réponse ne touchent pas « Écrit… ».
+        writeFileSync(turnLock, '')
         await ui.send('/scenario lent')
         await ui.waitFor(
           `!!document.querySelector('.working') && document.querySelectorAll('.msg-agent-actions').length > 0`
@@ -144,6 +147,7 @@ export async function gitSuite(scheme) {
           `(() => { const a = [...document.querySelectorAll('.msg-agent-actions')].at(-1).getBoundingClientRect(); const w = document.querySelector('.working').getBoundingClientRect(); return Math.round(w.top - a.bottom) })()`
         )
         check(gap >= 2, `boutons de la réponse et indicateur d’activité séparés (${gap} px)`)
+        rmSync(turnLock, { force: true })
         await ui.ready()
 
         // Fondus du fil : en haut quand le fil défile sous la barre, en bas tant qu'il en reste.
@@ -203,7 +207,7 @@ export async function gitSuite(scheme) {
       },
       undefined,
       'modifications',
-      { BOBINE_WORKSPACE: workspace }
+      { BOBINE_WORKSPACE: workspace, MOCK_AGENT_TURN_LOCK: turnLock }
     )
   } finally {
     rmSync(dir, { recursive: true, force: true })

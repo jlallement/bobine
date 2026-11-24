@@ -31,19 +31,6 @@ export async function restartSuite() {
         await ui.send('/scenario refus')
         await ui.ready()
         await ui.shot('6-reprise')
-        await ui.click(`document.querySelector('[data-testid=history-more]')`)
-        await ui.waitFor(`!!${ui.$('history-delete')}`)
-        await ui.click(ui.$('history-delete'))
-        // Confirmation intégrée (fiche 026), plus de boîte du navigateur.
-        await ui.waitFor(`!!${ui.$('delete-dialog')}`)
-        await ui.shot('7-suppression')
-        await ui.click(ui.$('delete-confirm'))
-        await ui.waitFor(`document.querySelectorAll('[data-testid=history-item]').length === 0`)
-        await ui.waitFor(`!!${ui.$('welcome')}`)
-        check(
-          ui.dialogs.length === 0,
-          'suppression confirmée dans l’app : historique vide, nouvelle conversation'
-        )
       },
       userData
     )

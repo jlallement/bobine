@@ -7,6 +7,10 @@
  * pour tout un dossier. Le fichier de la suite s'y ajoute toujours. Une suite sans `sources` est
  * jouée à chaque `--changed`. Un fichier de `GLOBAL_SOURCES` modifié fait jouer toutes les suites.
  * Une carte incomplète n'est pas grave : `pnpm e2e --if-needed` joue tout avant le push.
+ *
+ * Thèmes (ADR-0071) : chaque suite est jouée en clair ; en sombre seulement si elle a `dark: true`
+ * (un contrôle qui dépend du thème sombre, pas une simple capture), sauf en `--themes both` (nuit,
+ * `--if-needed`) ou quand un fichier de `THEME_SOURCES` est touché : le sombre partout.
  */
 
 const BOTH = ['light', 'dark']
@@ -70,6 +74,21 @@ export const GLOBAL_SOURCES = [
   'package.json',
   'pnpm-lock.yaml',
   'electron.vite.config.ts'
+]
+
+/**
+ * Fichiers de thème et de style (ADR-0071) : touché par `--changed`, l'un d'eux fait jouer le
+ * sombre à toutes les suites jouées, pas seulement à celles marquées `dark`.
+ */
+export const THEME_SOURCES = [
+  'src/renderer/**/*.css',
+  'src/shared/themes.ts',
+  'src/shared/theme-aurora.ts',
+  `${R}theme.ts`,
+  `${R}appearance.*`,
+  `${C}settings/Appearance*.tsx`,
+  'scripts/themes-css.mts',
+  'e2e/palette.mjs'
 ]
 
 /** Cartes d'outils de l'agent (permission, sortie, groupes). */
@@ -190,6 +209,8 @@ export const SUITES = [
     file: 'composer.mjs',
     run: 'composerSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : Plan distinct de l'accent sur Nuit noire et Fjord nuit.
+    dark: true,
     sources: [
       `${C}composer/`,
       `${C}common/`,
@@ -444,6 +465,8 @@ export const SUITES = [
     file: 'command-output.mjs',
     run: 'terminalSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : fond et vert ANSI de Nuit noire.
+    dark: true,
     sources: [
       ...TOOLS,
       `${C}thread/TerminalView.tsx`,
@@ -629,6 +652,8 @@ export const SUITES = [
     file: 'browser-annotate.mjs',
     run: 'browserAnnotateSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : épingle dessinée dans la page à l'accent du sombre.
+    dark: true,
     sources: [
       `${C}panel/BrowserTab.tsx`,
       `${C}panel/PageAnnotator.tsx`,
@@ -728,25 +753,6 @@ export const SUITES = [
       'src/main/android/',
       'src/shared/android.ts',
       'e2e/fixtures/android*'
-    ]
-  },
-  {
-    name: 'acp',
-    file: 'acp.mjs',
-    run: 'acpSuite',
-    themes: BOTH,
-    sources: [
-      `${C}panel/AcpTab.tsx`,
-      `${C}common/CopyButton.tsx`,
-      ...PANEL,
-      `${R}acp-view.ts`,
-      `${R}useAcpExchanges.ts`,
-      'src/main/agent/acp-exchanges.ts',
-      'src/main/agent/acp-exchanges-ipc.ts',
-      'src/main/agent/acp-log.ts',
-      'src/main/log-redact.ts',
-      'src/shared/acp-exchanges.ts',
-      'src/shared/panel.ts'
     ]
   },
   {
@@ -853,6 +859,8 @@ export const SUITES = [
     file: 'settings.mjs',
     run: 'settingsSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : fond de Fjord nuit ; menu ☰ opaque sur Aurore nuit hors macOS.
+    dark: true,
     sources: [
       `${C}settings/`,
       `${C}dialogs/SearchDialog.tsx`,
@@ -1185,36 +1193,6 @@ export const SUITES = [
       'src/main/conversations/commit-draft.ts',
       'src/main/conversations/commit-draft-setup.ts',
       'src/mock-agent/scenarios-commit.mts'
-    ]
-  },
-  {
-    // Filles en worktree et non commité de la mère (fiches 240, 262) : ligne discrète et
-    // « Changer… » (rôle, Tâches proposées), Entrée envoie sans elles, juste un avis, rappel.
-    name: 'filles-non-commite',
-    file: 'filles-non-commite.mjs',
-    run: 'fillesNonCommiteSuite',
-    themes: BOTH,
-    sources: [
-      `${C}thread/LaunchLine.tsx`,
-      `${R}launch-choice.ts`,
-      `${C}panel/CommitChooser.tsx`,
-      `${C}panel/CommitForm.tsx`,
-      `${R}commit-chooser.css`,
-      `${C}thread/ChildProposals.tsx`,
-      `${C}thread/Subtasks.tsx`,
-      `${C}thread/WorkGroup.tsx`,
-      `${C}thread/WorkCard.tsx`,
-      `${C}roles/`,
-      `${C}sidebar/ChildDialog.tsx`,
-      `${C}composer/Composer.tsx`,
-      `${R}useComposerRoles.ts`,
-      'src/shared/launch-folder.ts',
-      'src/shared/children.ts',
-      'src/main/conversations/children.ts',
-      'src/main/conversations/launch-folder.ts',
-      'src/main/roles/invoke.ts',
-      'src/main/mcp/children-tools.ts',
-      'src/mock-agent/scenarios-filles.mts'
     ]
   },
   {
@@ -1649,6 +1627,8 @@ export const SUITES = [
     file: 'aurore.mjs',
     run: 'auroreSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : Aurore nuit : fond `--bg` aux jetons d'`auroraNight`.
+    dark: true,
     sources: [
       ...SETTINGS,
       ...APPEARANCE,
@@ -1662,6 +1642,8 @@ export const SUITES = [
     file: 'fun.mjs',
     run: 'funSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : fond de Nuit noire.
+    dark: true,
     sources: [
       ...SETTINGS,
       ...APPEARANCE,
@@ -1749,7 +1731,15 @@ export const SUITES = [
       'src/shared/subagent.ts'
     ]
   },
-  { name: 'tables', file: 'tables.mjs', run: 'tablesSuite', themes: BOTH, sources: [] },
+  {
+    name: 'tables',
+    file: 'tables.mjs',
+    run: 'tablesSuite',
+    themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : couleurs `hljs` aux jetons du sombre et de Nuit noire.
+    dark: true,
+    sources: []
+  },
   {
     // Fiche 145 (D9) : Inter et JetBrains Mono livrées, ligatures du code (Réglages › Apparence).
     name: 'polices',
@@ -1894,24 +1884,6 @@ export const SUITES = [
     ]
   },
   {
-    name: 'mentions',
-    file: 'mentions.mjs',
-    run: 'mentionsSuite',
-    themes: BOTH,
-    sources: [
-      `${C}composer/FileMenu.tsx`,
-      `${C}composer/ComposerAttachments.tsx`,
-      `${R}useMentions.ts`,
-      'src/shared/context-mentions.ts',
-      'src/main/terminal/terminal-context.ts',
-      'src/main/changes/git-context.ts',
-      'src/main/agent/prompt-content.ts',
-      'src/main/workspace-files.ts',
-      'src/main/agent-config/exclusions.ts',
-      'src/main/agent-config/bob-exclusions.ts'
-    ]
-  },
-  {
     name: 'diagnostic',
     file: 'diagnostic.mjs',
     run: 'diagnosticSuite',
@@ -1960,6 +1932,8 @@ export const SUITES = [
     file: 'mermaid.mjs',
     run: 'mermaidSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : diagramme redessiné aux couleurs de Nuit noire puis du sombre.
+    dark: true,
     sources: [`${C}thread/MermaidBlock.tsx`, `${R}mermaid-render.ts`, `${R}theme.ts`]
   },
   {
@@ -2081,6 +2055,8 @@ export const SUITES = [
     file: 'pendant-tour.mjs',
     run: 'turnGuardsSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : couleur d'alerte du compteur aux jetons du sombre.
+    dark: true,
     sources: [
       `${C}thread/StalledNotice.tsx`,
       `${C}thread/CostCapCard.tsx`,
@@ -2152,6 +2128,11 @@ export const SUITES = [
       ...TOOLS,
       `${C}panel/`,
       `${C}composer/`,
+      // Rôle qui écrit, dossier modifié (étape 16, ancienne suite `filles-non-commite`).
+      `${R}launch-choice.ts`,
+      `${R}useComposerRoles.ts`,
+      'src/shared/launch-folder.ts',
+      'src/main/roles/invoke.ts',
       'src/main/approvals.ts',
       'src/main/conversations/'
     ]
@@ -2193,11 +2174,21 @@ export const SUITES = [
     file: 'parcours-outils.mjs',
     run: 'parcoursOutilsSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : sortie de commande aux jetons du sombre.
+    dark: true,
     sources: [
       ...PARCOURS,
       ...PANEL,
       ...APP_TOOLS,
       `${C}panel/`,
+      // `@terminal` (étape 1, ancienne suite `mentions`) et échanges ACP (étape 9, ancienne `acp`).
+      `${R}useMentions.ts`,
+      'src/shared/context-mentions.ts',
+      'src/main/agent/prompt-content.ts',
+      `${R}acp-view.ts`,
+      `${R}useAcpExchanges.ts`,
+      'src/main/agent/acp-exchanges*.ts',
+      'src/shared/acp-exchanges.ts',
       'src/main/quick-entry*.ts',
       'src/main/browser/',
       'src/main/terminal/',

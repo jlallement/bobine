@@ -10,8 +10,6 @@ export async function networkSuite(scheme) {
   await withApp(scheme, async (ui) => {
     await ui.ready()
     const banner = ui.$('turn-retry')
-    const users = `document.querySelectorAll('.msg-user').length`
-    const errors = `document.querySelectorAll('.notice-error').length`
 
     // 1. Panne passagère : « fetch failed » deux fois, puis la réponse.
     await ui.send('/scenario reseau-instable')
@@ -26,13 +24,8 @@ export async function networkSuite(scheme) {
     await ui.waitFor(`${banner}?.dataset.attempt === '2'`, 8000)
     await ui.shot('142-reseau-attente')
     await ui.waitFor(`!${banner}`, 10000)
+    // Le message part ensuite, sans nouvelle bulle ni erreur : vérifié dans `parcours-pannes`.
     await ui.ready()
-    check(
-      (await ui.lastAgentText()).includes('Réseau revenu') &&
-        (await ui.ev(users)) === 1 &&
-        (await ui.ev(errors)) === 0,
-      'réseau revenu : le message part, sans nouvelle bulle ni erreur'
-    )
 
     // 2. Réseau coupé : chaque tentative échoue ; « Réessayer maintenant » les enchaîne.
     await ui.send('/scenario reseau-coupe')

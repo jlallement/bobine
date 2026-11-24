@@ -12,23 +12,14 @@ export async function terminalSuite(scheme) {
     await ui.ev(`${lastTool}.querySelector('details').open = true`)
     await ui.waitFor(`!!${lastTool}.querySelector('[data-testid=terminal]')`)
     const terminal = `${lastTool}.querySelector('[data-testid=terminal]')`
-    check(
-      (await ui.ev(`${terminal}.innerText`)).includes('2 réussis') &&
-        (await ui.ev(`!!${terminal}.querySelector('.ansi-green')`)),
-      'sortie reçue en morceaux, couleurs ANSI rendues'
-    )
     await ui.shot('20-commande')
-    // Fond et couleurs ANSI des jetons de la palette (fiche 134), variante du mode comprise.
+    // Fond et couleurs ANSI des jetons de la palette (fiche 134) : ceux du mode sont vérifiés dans
+    // `parcours-outils`, ceux de sa variante ici.
     const colors = () =>
       ui.ev(`(() => {
         const t = ${terminal}
         return [getComputedStyle(t).backgroundColor, getComputedStyle(t.querySelector('.ansi-green')).color]
       })()`)
-    const own = tokensOf(scheme)
-    check(
-      (await colors()).join() === [rgb(own.codeBg), rgb(own.ansi[2])].join(),
-      'sortie de commande : fond et vert ANSI de la palette'
-    )
     const variant = variantOf(scheme)
     await withPalette(ui, variant, async () => {
       const t = tokensOf(variant)

@@ -48,7 +48,9 @@ pnpm install       # le binaire Electron se télécharge au premier lancement
 pnpm dev           # app en mode développement (rechargement à chaud du renderer)
 pnpm build         # bundles de production dans out/
 ./scripts/verify   # lint + format + typecheck + tests + cohérence de la doc
-pnpm e2e           # essais de bout en bout de l'UI (après pnpm build), 3 suites en parallèle
+pnpm e2e           # essais de bout en bout de l'UI (après pnpm build) : clair partout, sombre
+                   # ciblé (ADR-0071) ; un job pour 3 cœurs, au plus 5 (--jobs 3 si la machine est chargée)
+pnpm e2e --themes both # les deux thèmes pour toutes les suites (la nuit, avant un tag)
 pnpm e2e plan --dark   # une ou plusieurs suites, un thème (pnpm e2e --list)
 pnpm e2e --changed     # les suites touchées par les fichiers modifiés depuis main (fiche 115)
 pnpm e2e --if-needed   # avant un tag de version : la suite complète, sauf si déjà verte pour ce build

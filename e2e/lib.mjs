@@ -329,6 +329,11 @@ export const NEUTRAL_ENV = {
   BOBINE_LANG: LANG,
   // L'agent factice parle la même langue (fiche 167) : ses textes ne sont pas traduits par l'app.
   MOCK_AGENT_LANG: LANG,
+  // Texte de l'agent factice diffusé à 5 ms le morceau au lieu de 40 (fiche 279) : le scénario
+  // `echo` rediffuse tout le contexte joint par l'app (jusqu'à 700 mots, 10 s par tour). Les
+  // pauses des scénarios gardent le délai de base : les fenêtres « en cours » ne changent pas.
+  // Une suite qui a besoin d'une diffusion lente le redit dans son environnement.
+  MOCK_AGENT_CHUNK_MS: '5',
   // Fenêtre montrée sans prendre le focus de la machine (fiche 106) : l'utilisateur continue de
   // travailler à côté, ses frappes ne tombent pas dans l'app d'essai.
   BOBINE_SHOW_INACTIVE: '1',
@@ -352,6 +357,32 @@ export const NEUTRAL_ENV = {
  * suivants. L'app packagée et ses réglages n'en savent rien.
  */
 export const APPKIT_ARGS = ['-ApplePersistenceIgnoreState', 'YES']
+
+/**
+ * Attente d'une page posée (voir `settled` dans `withApp`) : les animations qui finissent dans la
+ * demi-seconde (fondu, menu qui s'ouvre, transition) sont terminées, puis deux images. Les plus
+ * longues (avis qui s'efface en quelques secondes, décor) et les animations sans fin ne sont pas
+ * attendues : une capture ne les attendait pas non plus. Fenêtre cachée : aucune image n'arrive,
+ * chacune est bornée à 250 ms.
+ */
+const SETTLED = `(async () => {
+  const moving = document.getAnimations().filter((a) => {
+    if (a.playState !== 'running') return false
+    const left = a.effect?.getComputedTiming().endTime - (Number(a.currentTime) || 0)
+    return Number.isFinite(left) && left <= 500
+  })
+  await Promise.race([
+    Promise.all(moving.map((a) => a.finished.catch(() => {}))),
+    new Promise((r) => setTimeout(r, 1000))
+  ])
+  for (let i = 0; i < 2; i++) {
+    await new Promise((r) => {
+      setTimeout(r, 250)
+      requestAnimationFrame(() => r())
+    })
+  }
+  return true
+})()`
 
 /** Lance l'app. `keep` : réutilise / conserve ce dossier de données (pour simuler un redémarrage). */
 export async function withApp(
@@ -508,6 +539,13 @@ export async function withApp(
     const $ = (testId) => `document.querySelector('[data-testid="${testId}"]')`
     /** Une image du renderer : les évènements envoyés avant sont traités (fiche 115). */
     const frame = () => ev(`new Promise((r) => requestAnimationFrame(() => r(true)))`)
+    /**
+     * Page posée avant une capture (fiche 279, au lieu d'un quart de seconde fixe) : les animations
+     * courtes en cours terminées, puis deux images rendues (`SETTLED`).
+     */
+    const settled = () => ev(SETTLED)
+    /** Largeur de la fenêtre avant toute émulation (`ui.viewport`). */
+    let naturalWidth
     /**
      * Centre d'un élément amené dans la partie visible de son conteneur, et immobile : une boîte de
      * dialogue ou un menu qui s'ouvre encore (animation) déplacerait la cible sous le pointeur.
@@ -704,7 +742,7 @@ export async function withApp(
       ready: () => waitFor(`!!document.querySelector('${AGENT_DOT}.ready')`),
       reveal,
       shot: async (name) => {
-        await sleep(250)
+        await settled()
         const r = await cdp('Page.captureScreenshot', { format: 'png' })
         const png = await withNativeViews(r.result.data)
         writeFileSync(captureFile(name, scheme, 'png'), Buffer.from(png, 'base64'))
@@ -807,7 +845,9 @@ export async function withApp(
        */
       media: async (features = {}) => {
         await cdp('Emulation.setEmulatedMedia', { features: mediaFeatures(scheme, features) })
-        await sleep(150)
+        // Styles recalculés au rendu des deux images suivantes (fiche 279, au lieu de 150 ms fixes).
+        await frame()
+        await frame()
       },
       /**
        * Deux images rendues (fiche 250) : ce qui ne se met à jour qu'au rendu d'une image (lignes
@@ -819,6 +859,8 @@ export async function withApp(
         await frame()
       },
       viewport: async (width, height = 820) => {
+        // Largeur de la vraie fenêtre, relevée avant la première émulation : celle qui revient.
+        naturalWidth ??= await ev('innerWidth')
         if (width) {
           await cdp('Emulation.setDeviceMetricsOverride', {
             width,
@@ -827,7 +869,9 @@ export async function withApp(
             mobile: false
           })
         } else await cdp('Emulation.clearDeviceMetricsOverride')
-        await sleep(300)
+        // La page a pris sa nouvelle largeur (fiche 279, au lieu de 300 ms fixes) ; sans largeur,
+        // celle de la vraie fenêtre.
+        await waitFor(`innerWidth === ${width || naturalWidth}`, 5000)
         // Deux images rendues à la nouvelle taille (fiche 250) : les `ResizeObserver` de la page
         // (repli de la barre de saisie…) ne passent qu'au rendu d'une image, et une machine chargée
         // n'en produit parfois aucune en 300 ms (runner macOS de GitHub).
@@ -1226,7 +1270,7 @@ export async function attachPage(part, scheme) {
       })
     },
     shot: async (name) => {
-      await sleep(250)
+      await ev(SETTLED)
       const r = await cdp('Page.captureScreenshot', { format: 'png' })
       writeFileSync(captureFile(name, scheme, 'png'), Buffer.from(r.result.data, 'base64'))
     },

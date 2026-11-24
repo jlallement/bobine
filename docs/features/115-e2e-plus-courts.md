@@ -151,3 +151,7 @@ Aucune nouvelle dépendance.
   rc.4) : suites touchées jouées sur GitHub (`e2e.yml` sur la branche, macOS + Linux) et non plus
   en local ni avant chaque push ; suite complète la nuit sur GitHub et en local avant un tag. Le
   lanceur lui-même ne change pas. `AGENTS.md` et le skill `verifier` alignés.
+- 2026-11-24 — **Thèmes et jobs** (fiche 279, ADR-0071) : par défaut, le clair pour toutes les
+  suites et le sombre pour celles déclarées `dark` ; le sombre partout quand un fichier de thème ou
+  de style est touché, la nuit et avec `--if-needed` ; `--themes both|light|dark` (`--light`,
+  `--dark` restent). `--jobs` par défaut : un pour 3 cœurs, au plus 5, et 3 en CI.
