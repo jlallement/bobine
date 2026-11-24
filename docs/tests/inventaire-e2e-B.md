@@ -42,7 +42,7 @@ vérifiée ailleurs : souvent la logique du main, sans le câblage ni le rendu.
 | `astuces` | 12 | 0 | 3 | 1 | 0 | 8 | 10 | disparaitre |
 | `auth` | 30 | 6 | 14 | 5 | 0 | 5 | 23 | reduire |
 | `bob` | 9 | 2 | 2 | 0 | 0 | 5 | 7 | reduire |
-| `browser-view` | 21 | 16 | 2 | 0 | 0 | 3 | 16 | reduire |
+| `browser-view` | 21 | 16 | 2 | 0 | 0 | 3 | 17 | reduire |
 | `changes` | 14 | 1 | 7 | 3 | 0 | 3 | 11 | reduire |
 | `commands` | 17 | 0 | 10 | 0 | 2 | 5 | 13 | disparaitre |
 | `composer` | 53 | 5 | 18 | 0 | 7 | 23 | 39 | reduire |
@@ -301,7 +301,7 @@ Il faut les écrire **avant** de supprimer les vérifications qui y migrent :
 
 ### `browser-view.mjs` — navigateur intégré (WebContentsView) : la vue native suit la zone (colonne, panneau agrandi, zoom de l'interface), défilement, zoom de la page, raccourcis, clic de l'agent, taille imposée par l'agent
 
-<!-- stats suite=browser-view total=21 parcours=16 composant=2 unitaire-main=0 capture=0 doublon=3 couvert=16 verdict=reduire -->
+<!-- stats suite=browser-view total=21 parcours=16 composant=2 unitaire-main=0 capture=0 doublon=3 couvert=17 verdict=reduire -->
 
 | # | Vérification | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
@@ -317,7 +317,7 @@ Il faut les écrire **avant** de supprimer les vérifications qui y migrent :
 | 10 | ⌘− dans la page : retour à 100 %, plus de puce | Le dézoom revient au palier 100 % et retire la puce | `doublon` | — | partiel : même chemin que #9 ; `page-view.test.ts › paliers de zoom…` |
 | 11 | menu « Zoom avant », page au focus : la page zoome, pas l'interface | Le menu natif cible la page quand elle a le focus natif (non joué si l'app est au second plan) | `parcours` | garder ici | non |
 | 12 | page à 150 % : l'agent clique juste, en pixels CSS | Un clic MCP de l'agent par coordonnées CSS tombe au bon endroit sur une page zoomée | `parcours` | garder ici | partiel : `page-view.test.ts › fenêtre de la page en pixels CSS…` + `src/main/browser/browser-tools.test.ts › clic par référence (position calculée dans la page) ou par coordonnées` |
-| 13 | clic sur la puce de zoom : retour à 100 % | La puce est un bouton qui remet le zoom de la page à 100 % | `composant` | `src/renderer/src/components/browser/…test.tsx` (clic `browser-zoom` → appel API reset) | non |
+| 13 | clic sur la puce de zoom : retour à 100 % | La puce est un bouton qui remet le zoom de la page à 100 % | `composant` | `src/renderer/src/components/browser/…test.tsx` (clic `browser-zoom` → appel API reset) | `src/renderer/src/components/panel/BrowserTab.test.tsx` › « puce de zoom : affichée hors de 100 %, un clic remet la page à 100 % » |
 | 14 | ⌘L dans la page : le champ d'adresse prend le clavier | Le focus passe de la vue native au champ d'adresse du renderer | `parcours` | garder ici | partiel : `page-view.test.ts › raccourcis de la page…` (routage seul) |
 | 15 | ⌘R dans la page : elle se recharge | Le raccourci recharge réellement la page | `parcours` | garder ici (fusionné avec #14, #16) | partiel : `page-view.test.ts › raccourcis de la page…` |
 | 16 | ⌘[ et ⌘] : précédent, suivant | Navigation d'historique de la page par raccourcis | `parcours` | garder ici (fusionné avec #14) | partiel : `page-view.test.ts › raccourcis de la page…` |
@@ -325,7 +325,7 @@ Il faut les écrire **avant** de supprimer les vérifications qui y migrent :
 | 18 | taille imposée : 375 × 812 tient entier, puce affichée | La vue émulée est réduite à l'échelle, jamais coupée, centrée en haut ; puce visible | `parcours` | garder ici | partiel : `page-view.test.ts › taille imposée par l'agent : réduite pour tenir entière, centrée en haut de la zone` |
 | 19 | taille imposée : défile à la molette et jusqu'en bas | La page émulée reçoit la molette et reste entièrement atteignable | `parcours` | garder ici | non |
 | 20 | fin du tour : la page reprend la largeur du panneau | L'émulation est annulée à la fin du tour de l'agent | `parcours` | garder ici | partiel : `browser-tools.test.ts › taille d'écran et thème : préréglages, tailles libres, retour au panneau` |
-| 21 | clic sur la puce de taille : la page reprend la largeur | La puce d'émulation annule la taille sans attendre la fin du tour | `composant` | `src/renderer/src/components/browser/…test.tsx` (clic `browser-emulation` → API) | partiel : `browser-tools.test.ts › … retour au panneau` (main) |
+| 21 | clic sur la puce de taille : la page reprend la largeur | La puce d'émulation annule la taille sans attendre la fin du tour | `composant` | `src/renderer/src/components/browser/…test.tsx` (clic `browser-emulation` → API) | `src/renderer/src/components/panel/BrowserTab.test.tsx` › « puce de taille imposée : la taille, et un clic rend la largeur du panneau » ; main : `browser-tools.test.ts` › « taille d'écran et thème : préréglages, tailles libres, retour au panneau » |
 
 **Verdict** : reduire — garder 16 vérifications regroupées en ~8 étapes (géométrie de la vue #1/#4/#7, entrées #2-3, menus selon le focus #8/#11, zoom de page #9/#12, raccourcis #14-16, taille imposée #17-20) ; #5, #6, #10 sont des doublons, #13 et #21 passent en composant. C'est une suite légitimement e2e : tout passe par la vue native.
 **Risques** :

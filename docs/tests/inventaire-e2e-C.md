@@ -41,8 +41,8 @@ Classes : `parcours` (reste e2e), `composant`, `unitaire-main`, `capture` (captu
 | `reprise` | 4 | 0 | 1 | 0 | 0 | 3 | 4 | supprimable |
 | `failures` | 11 | 1 | 0 | 6 | 0 | 4 | 11 | à réduire |
 | `autorisation-commande` | 48 | 2 | 31 | 5 | 10 | 0 | 37 | à réduire |
-| `browser` | 48 | 21 | 5 | 18 | 2 | 2 | 34 | à réduire |
-| `annotate` | 7 | 4 | 2 | 0 | 1 | 0 | 3 | à réduire |
+| `browser` | 48 | 21 | 5 | 18 | 2 | 2 | 37 | à réduire |
+| `annotate` | 7 | 4 | 2 | 0 | 1 | 0 | 4 | à réduire |
 | `command-output` | 5 | 1 | 2 | 0 | 2 | 0 | 3 | supprimable |
 | `commit-choisi` | 8 | 1 | 6 | 1 | 0 | 0 | 8 | à réduire |
 | `branch` | 12 | 3 | 5 | 3 | 0 | 1 | 8 | à réduire |
@@ -367,10 +367,10 @@ Abréviations des chemins : `thread/` = `src/renderer/src/components/thread/`, `
 | 10 | réseau : 500 et corps de la réponse | outil réseau | unitaire-main | idem | `src/main/browser/browser-tools.test.ts` › « réseau : liste filtrée, échecs signalés, corps d'une réponse » |
 | 11 | JavaScript évalué dans la page | outil eval | unitaire-main | idem | `src/main/browser/browser-tools.test.ts` › « JavaScript de débogage : résultat en JSON » |
 | 12 | émulation mobile + mode sombre | outil d'émulation | unitaire-main | idem | `src/main/browser/browser-tools.test.ts` › « taille d'écran et thème : préréglages, tailles libres, retour au panneau » |
-| 13 | nouvel onglet : bandeau d'onglets (2) | rendu des puces d'onglets | composant | `panel/BrowserTab.test.tsx` (à créer) | partiel : `src/main/browser/browser-tools.test.ts` › « onglets : nouvel onglet vers un site extérieur soumis à l'accord, choisir, fermer » |
-| 14 | onglet fermé : retour au précédent | gestion des onglets | unitaire-main | idem | partiel : idem |
+| 13 | nouvel onglet : bandeau d'onglets (2) | rendu des puces d'onglets | composant | `panel/BrowserTab.test.tsx` (à créer) | `src/renderer/src/components/panel/BrowserTab.test.tsx` › « un seul onglet : pas de bandeau ; deux : deux puces, choisir et fermer passent au main » ; `browser-tools.test.ts` › « onglets : nouvel onglet vers un site extérieur soumis à l’accord, choisir, fermer » |
+| 14 | onglet fermé : retour au précédent | gestion des onglets | unitaire-main | idem | `src/main/browser/browser-manager.test.ts` › « l’onglet actif fermé : le suivant prend sa place, le dernier rend la main au précédent » ; › « un autre onglet fermé : l’actif ne change pas ; inconnu : refusé » |
 | 15 | planche contact : carré filmé, ≥ 3 images différentes | film réel d'une animation Chromium | parcours | garder ici | partiel : `src/main/browser/browser-tools.test.ts` › « fait les actions pendant le film, rend une planche et ses moments » |
-| 16 | planche affichée dans la carte de l'outil | image de l'outil rendue | composant | `thread/ToolCall*.test.tsx` (à ajouter) | non |
+| 16 | planche affichée dans la carte de l'outil | image de l'outil rendue | composant | `thread/ToolCall*.test.tsx` (à ajouter) | `src/renderer/src/components/thread/ToolCall.images.test.tsx` › « l’image de la planche est sous la carte, sans rien déplier, agrandissable » (la taille réelle de l’image filmée reste vue par #15) |
 | 17 | planche reçue : le fil reste en bas, pas de « Aller en bas » | suivi du défilement malgré l'ancrage Chromium au chargement d'image | parcours | garder ici (ou `parcours-longue`) | non |
 | 18 | carte « execute » : libellés des outils à la suite | appels par code (OpenCode 2) | unitaire-main | `src/main/agent/app-tools-bridge.test.ts` | `src/main/agent/app-tools-bridge.test.ts` › « comme OpenCode 2 : carte « execute » dont le code cite les outils, libellés et images rattachés » |
 | 19 | carte « execute » : capture et planche dessous | images rattachées | unitaire-main | idem | idem |
@@ -385,13 +385,13 @@ Abréviations des chemins : `thread/` = `src/renderer/src/components/thread/`, `
 | 28 | carte « Site web » : rien de choisi, « Envoyer » inactif | pas de réponse vide | composant | `thread/QuestionCard.test.tsx` | `thread/QuestionCard.test.tsx` › « carte « Site web » (fiche 254, D2) : rien ne paraît choisi, « Envoyer » inactif, aucune réponse vide » |
 | 29 | refusé : l'agent n'a rien lu | refus respecté | unitaire-main | `src/main/browser/browser-tools.test.ts` | `src/main/browser/browser-tools.test.ts` › « site non accordé, refus : rien n'est lu ni fait, l'outil échoue » |
 | 30 | autorisé : lit, sans redemander | accord retenu | unitaire-main | idem | `src/main/browser/browser-tools.test.ts` › « accordé une fois : l'outil s'exécute, sans redemander ensuite » |
-| 31 | « Enregistrer sous » : Téléchargements, dit l'agent et la conversation | texte de la fenêtre native | unitaire-main | `src/main/browser/downloads.test.ts` (ajouter le message) | partiel : `src/main/browser/browser-tools.test.ts` › « téléchargement lancé par l'agent : la décision revient à l'utilisateur, puis son choix (fiche 094) » |
+| 31 | « Enregistrer sous » : Téléchargements, dit l'agent et la conversation | texte de la fenêtre native | unitaire-main | `src/main/browser/downloads.test.ts` (ajouter le message) | `src/main/browser/browser-manager.test.ts` › « lancé par l’agent : dans Téléchargements, la fenêtre dit l’agent et sa conversation » ; › « lancé par l’agent sans titre connu : « lancé par l’agent » ; par la page : le site seul » ; `browser-tools.test.ts` › « téléchargement lancé par l’agent : la décision revient à l’utilisateur, puis son choix (fiche 094) » |
 | 32 | fenêtre ouverte : fichier en attente dans le dossier de l'app | rien à l'endroit choisi avant le choix | unitaire-main | `src/main/browser/downloads.test.ts` | `src/main/browser/downloads.test.ts` › « rien hors du dossier d'attente avant le choix ; déplacé là où l'utilisateur l'a choisi » |
 | 33 | l'agent apprend que l'utilisateur décide, puis où | messages à l'agent | unitaire-main | `src/main/browser/browser-tools.test.ts` | `src/main/browser/browser-tools.test.ts` › « téléchargement lancé par l'agent : la décision revient à l'utilisateur, puis son choix (fiche 094) » |
 | 34 | fichier enregistré, contenu du blob déjà révoqué | vrai téléchargement Chromium | parcours | garder ici | partiel : `src/main/browser/downloads.test.ts` › « rien hors du dossier d'attente avant le choix ; déplacé là où l'utilisateur l'a choisi » |
 | 35 | dossier d'attente vidé | nettoyage | unitaire-main | `src/main/browser/downloads.test.ts` | idem |
 | 36 | bandeau de téléchargement lisible (≥ 6em, rien ne dépasse) | mise en page réelle | capture | capture nocturne | non |
-| 37 | « Afficher dans le Finder » montre le fichier | bouton → `shell.showItemInFolder` | composant | `panel/BrowserTab.test.tsx` (à créer, api simulée) | non |
+| 37 | « Afficher dans le Finder » montre le fichier | bouton → `shell.showItemInFolder` | composant | `panel/BrowserTab.test.tsx` (à créer, api simulée) | `src/renderer/src/components/panel/BrowserTab.test.tsx` › « « Afficher dans le Finder » montre le fichier enregistré ; l’autre conversation ne compte pas » ; › « échec : dit, sans « Afficher dans le Finder » » |
 | 38 | « Annuler » : rien enregistré, pas de bandeau, l'agent le sait | annulation propre | unitaire-main | `src/main/browser/downloads.test.ts` | `src/main/browser/downloads.test.ts` › « « Annuler » : le téléchargement est arrêté, rien ne reste » |
 | 39 | fenêtre laissée ouverte : l'agent n'attend pas, la conversation attend (point) | état « attend » jusqu'à la barre latérale | parcours | garder ici | partiel : `sidebar/Sidebar.test.tsx` › « questions, autorisations, erreurs et réponses restent à leur place ; détails dans l'infobulle » |
 | 40 | « Exporter » cliqué par l'utilisateur : même fenêtre, sans mention de l'agent | attribution clic natif vs agent | parcours | garder ici | non |
@@ -401,26 +401,27 @@ Abréviations des chemins : `thread/` = `src/renderer/src/components/thread/`, `
 | 44 | Réglages ouverts : page native masquée puis réaffichée | WebContentsView sous les fenêtres de l'app | parcours | garder ici | non |
 | 45 | menu « + » : page native masquée puis réaffichée | idem sous un menu | parcours | garder ici | non |
 | 46 | agrandi : la page native suit le panneau | bornes de la vue native | doublon | `browser-view.mjs` | partiel : e2e `browser-view.mjs` (la page suit le panneau, fiche 129) |
-| 47 | agrandi : « Page jointe au message » dans l'en-tête, clic revient | indicateur quand la saisie est cachée | composant | `panel/SidePanel*.test.tsx` (à ajouter) | non |
+| 47 | agrandi : « Page jointe au message » dans l'en-tête, clic revient | indicateur quand la saisie est cachée | composant | `panel/SidePanel*.test.tsx` (à ajouter) | `src/renderer/src/components/panel/SidePanelAttached.test.tsx` › « « Page jointe au message » dans l’en-tête ; un clic revient à la conversation ; puis s’efface » |
 | 48 | branche : le navigateur reprend la page de l'originale | état du navigateur copié à la branche | parcours | garder ici (ou `unitaire-main` dans `src/main/conversations/branching.test.ts`) | non |
 
 **Verdict** : à réduire (garder ~21 vérifs : #1, 3, 4, 6–8, 15, 17, 22–25, 27, 34, 39, 40, 42–45, 48) — tout ce qui touche la vraie vue native, la garde de navigation, les fenêtres et téléchargements réels reste ; les outils de débogage, execute, refus/accord et attente sont déjà en unitaire.
-<!-- stats suite=browser total=48 parcours=21 composant=5 unitaire-main=18 capture=2 doublon=2 couvert=34 verdict=reduire -->
+<!-- stats suite=browser total=48 parcours=21 composant=5 unitaire-main=18 capture=2 doublon=2 couvert=37 verdict=reduire -->
 
 ### `annotate.mjs` — annoter une image jointe (rectangle, flèche, texte), Échap, Appliquer, et dans la fenêtre rapide
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
-| 1 | Échap : image inchangée | fermer sans appliquer ne touche rien | composant | `composer/ImageAnnotator.test.tsx` (à créer) | non |
+| 1 | Échap : image inchangée | fermer sans appliquer ne touche rien | composant | `composer/ImageAnnotator.test.tsx` (à créer) | `src/renderer/src/components/composer/ImageAnnotator.test.tsx` › « Échap : fermée sans rien appliquer, l’image reste celle d’origine » |
 | 2 | fenêtre d'annotation non déplaçable (`-webkit-app-region: no-drag`) | macOS ne prend pas les clics sur la barre du haut | parcours | garder ici (styles.css non chargé en jsdom) | non |
-| 3 | rectangle, flèche, texte dessinés (« Annuler le dernier » actif) | les gestes créent des formes | composant | `composer/ImageAnnotator.test.tsx` (canvas simulé) | partiel : `src/renderer/src/annotation.test.ts` › « dessine chaque forme en coordonnées de l'image » |
+| 3 | rectangle, flèche, texte dessinés (« Annuler le dernier » actif) | les gestes créent des formes | composant | `composer/ImageAnnotator.test.tsx` (canvas simulé) | `src/renderer/src/components/composer/ImageAnnotator.test.tsx` › « rectangle, flèche et texte dessinés ; « Annuler le dernier » et « Appliquer » s’activent » (contexte 2D simulé) ; `annotation.test.ts` › « dessine chaque forme en coordonnées de l'image » |
 | 4 | texte long : revient à la ligne dans l'image (mesures) | la saisie ne sort pas du canevas | capture | capture nocturne | partiel : `src/renderer/src/annotation.test.ts` › « texte : retour à la ligne entre les mots, au milieu d'un mot trop long (fiche 094) » |
 | 5 | appliquée : image annotée à la place, mêmes dimensions | vrai canvas Chromium → pièce jointe | parcours | `parcours-outils` (étape à ajouter : capture annotée) ou garder ici | partiel : `src/renderer/src/annotation.test.ts` › « un texte long est dessiné sur plusieurs lignes, dans l'image » |
 | 6 | fenêtre rapide : agrandie pour annoter, image annotée | redimensionnement de la BrowserWindow | parcours | garder ici | non |
 | 7 | fenêtre rapide : revenue à sa taille | idem au retour | parcours | garder ici | non |
 
 **Verdict** : à réduire (garder 4 vérifs : #2, #5, #6, #7) — Échap et les gestes passent en test de composant, le texte long en capture.
-<!-- stats suite=annotate total=7 parcours=4 composant=2 unitaire-main=0 capture=1 doublon=0 couvert=3 verdict=reduire -->
+**Défaut relevé (2026-11-24, ni e2e ni test)** : Échap dans la saisie d’un texte ferme toute l’annotation au lieu d’abandonner ce texte seul — Radix écoute Échap en capture sur le document, avant le `stopPropagation` de la saisie (`ImageAnnotator.tsx`). Un test de composant le montre (rouge) ; à corriger dans l’app avant de l’ajouter.
+<!-- stats suite=annotate total=7 parcours=4 composant=2 unitaire-main=0 capture=1 doublon=0 couvert=4 verdict=reduire -->
 
 ### `command-output.mjs` — sortie d'une commande de l'agent (extension terminal ACP) : morceaux, couleurs ANSI, code de sortie, palette
 
