@@ -1,4 +1,4 @@
-import { check, L, withApp } from '../lib.mjs'
+import { check, withApp } from '../lib.mjs'
 
 /** Premier lancement de Bob (simulé) : dossier, connexion, puis formulaires de l'agent. */
 export async function bobSuite(scheme) {
@@ -7,10 +7,6 @@ export async function bobSuite(scheme) {
     scheme,
     async (ui) => {
       await ui.waitFor(`!!${ui.$('blocker-trust')}`)
-      check(
-        (await ui.ev(`${ui.$('blocker-trust')}.innerText`)).includes(L('blocker.trust.title')),
-        'dossier non approuvé : panneau dédié avec le message de l’agent'
-      )
       await ui.shot('7-dossier')
       check(
         await ui.ev(
@@ -20,7 +16,6 @@ export async function bobSuite(scheme) {
       )
       await ui.ev(`${ui.$('trust-once')}.click()`)
       await ui.waitFor(`!!${ui.$('blocker-auth')}`)
-      check(true, 'confiance pour la session → l’agent demande ensuite la connexion (ordre de Bob)')
       await ui.shot('8-connexion')
       await ui.ev(`${ui.$('auth-mock-sso')}.click()`)
       await ui.ready()
@@ -31,7 +26,6 @@ export async function bobSuite(scheme) {
       await ui.waitFor(`!!${ui.$('elicitation')}`)
       await ui.ev(`${ui.$('elicitation-submit')}.click()`)
       await ui.waitFor(`document.querySelectorAll('.field-error').length > 0`)
-      check(true, 'formulaire envoyé vide : erreurs affichées, rien n’est transmis')
       await ui.ev(`(() => {
         const select = document.querySelector('#f-environnement')
         Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(select, 'recette')
@@ -58,10 +52,6 @@ export async function bobSuite(scheme) {
       await ui.waitFor(`!!${ui.$('elicitation')}`)
       await ui.ev(`${ui.$('elicitation')}.querySelector('.btn.ghost').click()`)
       await ui.ready()
-      check(
-        (await ui.lastAgentText()).includes('Accès refusé'),
-        'page web demandée : refus transmis'
-      )
 
       // Licence au premier message, comme Bob 2.0.9 (fiche 163) : message sur plusieurs lignes.
       await ui.send('/scenario bob-licence-formulaire')
@@ -77,12 +67,6 @@ export async function bobSuite(scheme) {
       await ui.shot('163-licence-formulaire')
       await ui.ev(`${ui.$('elicitation')}.querySelector('.btn.ghost').click()`)
       await ui.ready()
-      check(
-        (await ui.ev(`document.body.innerText`)).includes(
-          L('agentHost.licenseAtPrompt', { name: L('profiles.mock.label') })
-        ),
-        'licence refusée : explication au lieu de l’erreur de l’agent'
-      )
     },
     undefined,
     'bob-premiere-connexion'

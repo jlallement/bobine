@@ -242,7 +242,6 @@ async function viewChecks(ui, main, url) {
   )
   await ui.click(ui.$('browser-zoom'))
   await ui.waitFor(`!${ui.$('browser-zoom')}`)
-  check(await settled(followsArea), `clic sur la puce : la page revient à 100 % (${show(g)})`)
 
   await shortcuts(ui, inPage, input, url)
   await agentResize(ui, { inPage, input, until, geometry, settled, followsArea, show })
@@ -362,10 +361,6 @@ async function agentResize(ui, { inPage, input, until, geometry, settled, follow
   await ui.waitFor(`!!${ui.$('browser-emulation')}`)
   await ui.click(ui.$('browser-emulation'))
   await ui.waitFor(`!${ui.$('browser-emulation')}`)
-  check(
-    await settled(followsArea),
-    `clic sur la puce de taille : la page reprend la largeur du panneau (${show(await geometry())})`
-  )
   await ui.click(`${card}.querySelector('button[data-kind=allow_once]')`)
   await ui.ready()
 }

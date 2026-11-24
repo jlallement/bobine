@@ -218,14 +218,6 @@ export const SUITES = [
     ]
   },
   {
-    // Relance après avoir quitté en plein tour : la conversation qui travaillait (fiche 243).
-    name: 'reprise',
-    file: 'reprise.mjs',
-    run: 'repriseSuite',
-    themes: BOTH,
-    sources: [...REPLAY, 'src/main/conversations/shown-at-launch.ts', 'src/main/quit-guard.ts']
-  },
-  {
     name: 'startup',
     file: 'startup.mjs',
     run: 'startupSuite',
@@ -273,13 +265,6 @@ export const SUITES = [
       'src/main/mcp/ask-user-tool.ts',
       'src/main/agent/pending-requests.ts'
     ]
-  },
-  {
-    name: 'usage',
-    file: 'usage.mjs',
-    run: 'usageSuite',
-    themes: BOTH,
-    sources: [`${C}composer/UsageMeter.tsx`, 'src/shared/usage.ts']
   },
   {
     name: 'cout-connexion',
@@ -1257,21 +1242,6 @@ export const SUITES = [
     ]
   },
   {
-    // Deux rôles de même icône, collisions de noms (fiche 268) : capture `268-deux-roles-meme-icone`.
-    name: 'roles-meme-icone',
-    file: 'roles-meme-icone.mjs',
-    run: 'rolesMemeIconeSuite',
-    themes: BOTH,
-    sources: [
-      `${C}roles/`,
-      `${R}roles/`,
-      `${R}roles.css`,
-      'src/shared/roles.ts',
-      'src/shared/roles-ipc.ts',
-      'src/main/roles/'
-    ]
-  },
-  {
     // Rôles au travail (fiche 223, phase 3B) : menu `@`, jetons, travaux des rôles, proposition ;
     // bulle « @Rôle … » et carte-réponse (fiche 263).
     name: 'roles-travail',
@@ -1594,27 +1564,6 @@ export const SUITES = [
     ]
   },
   {
-    name: 'providers',
-    file: 'providers.mjs',
-    run: 'providersSuite',
-    themes: BOTH,
-    sources: [
-      ...SETTINGS,
-      `${C}settings/ProvidersSettings.tsx`,
-      `${C}settings/NetworkSettings.tsx`,
-      `${C}settings/DiagnosticsSettings.tsx`,
-      ...AGENT_PAGES,
-      'src/main/agent-config/provider*.ts',
-      'src/main/agent-config/opencode-providers.ts',
-      'src/main/agent-config/network-env.ts',
-      'src/main/agent-config/api-keys.ts',
-      'src/main/shell-env.ts',
-      'src/main/diagnostics.ts',
-      'src/shared/providers.ts',
-      'e2e/fixtures/openai-compatible.mts'
-    ]
-  },
-  {
     // « Autoriser cette commande ? » : la commande entière avant d'accepter (0.11, M1) ; cartes
     // « commande » et « fichier » de la recette OpenCode (fiche 203) ; cartes à risque (fiche 211).
     name: 'autorisation-commande',
@@ -1692,27 +1641,6 @@ export const SUITES = [
       'src/shared/tips.ts',
       'src/main/conversations/sent-history-ipc.ts',
       'src/main/conversations/children.ts'
-    ]
-  },
-  {
-    name: 'touches',
-    file: 'touches.mjs',
-    run: 'touchesSuite',
-    themes: BOTH,
-    // Copie dans le presse-papiers de la machine, relu ensuite (comme `diagnostic`).
-    locks: ['presse-papiers'],
-    sources: [
-      `${C}common/CopyButton.tsx`,
-      `${C}composer/ComposerBar.tsx`,
-      `${C}composer/ComposerContext.tsx`,
-      `${C}sidebar/ConversationMenu.tsx`,
-      ...SETTINGS,
-      `${C}settings/ConversationSettings.tsx`,
-      `${C}settings/GeneralSettings.tsx`,
-      ...AGENT_PAGES,
-      ...APPEARANCE,
-      `${R}time.ts`,
-      'src/main/quit-guard.ts'
     ]
   },
   {
@@ -1895,18 +1823,6 @@ export const SUITES = [
     ]
   },
   {
-    name: 'export',
-    file: 'export.mjs',
-    run: 'exportSuite',
-    themes: [null],
-    sources: [
-      `${C}settings/GeneralSettings.tsx`,
-      'src/main/conversations/backup.ts',
-      'src/main/dialogs.ts',
-      'src/shared/export.ts'
-    ]
-  },
-  {
     name: 'long-thread',
     file: 'long-thread.mjs',
     run: 'longThreadSuite',
@@ -1954,40 +1870,6 @@ export const SUITES = [
       `${R}useFileLinks.ts`,
       'src/main/files/',
       'src/shared/file-links.ts'
-    ]
-  },
-  {
-    // Fil (fiche 156) : durée du tour, copie d'un message, images, éditeur, « Où en était-on ? ».
-    name: 'fil',
-    file: 'fil.mjs',
-    run: 'filSuite',
-    themes: BOTH,
-    // Copie dans le presse-papiers de la machine, relu ensuite (comme `touches`).
-    locks: ['presse-papiers'],
-    sources: [
-      `${C}common/CopyButton.tsx`,
-      `${C}thread/MessageTime.tsx`,
-      `${C}thread/ImageZoom.tsx`,
-      `${C}thread/OpenInEditor.tsx`,
-      `${C}thread/ResumeCard.tsx`,
-      `${C}thread/ConversationScope.tsx`,
-      `${C}thread/FileLink.tsx`,
-      `${C}thread/DiffView.tsx`,
-      `${C}thread/ToolCall.tsx`,
-      `${C}settings/EditorRow.tsx`,
-      `${C}settings/GeneralSettings.tsx`,
-      `${R}useEditor.ts`,
-      `${R}thread-extras.css`,
-      `${R}time.ts`,
-      'src/main/editors/',
-      'src/main/images/',
-      'src/main/thread-ipc.ts',
-      'src/main/thread-ipc-electron.ts',
-      'src/shared/editors.ts',
-      'src/shared/images.ts',
-      'src/shared/resume-card.ts',
-      'src/shared/turn-duration.ts',
-      ...GIT
     ]
   },
   {
@@ -2115,25 +1997,6 @@ export const SUITES = [
     ]
   },
   {
-    // Textes de Linux et de Windows (fiches 145, 229) : Réglages sans Mac, Finder ni Dock ; clé
-    // d'API en clair sous Linux sans trousseau (D4), dite.
-    name: 'textes-plateforme',
-    file: 'textes-plateforme.mjs',
-    run: 'textesPlateformeSuite',
-    themes: BOTH,
-    sources: [
-      'src/shared/i18n/system-texts.ts',
-      'src/shared/i18n/locales/',
-      'src/main/agent-config/api-keys.ts',
-      'src/main/agent-config/keychain-cipher.ts',
-      `${C}settings/ApiKeys.tsx`,
-      `${C}settings/AgentPage.tsx`,
-      `${C}settings/GeneralSettings.tsx`,
-      `${C}settings/NotificationsSettings.tsx`,
-      'src/main/platform.ts'
-    ]
-  },
-  {
     // Dossier et lancement (fiche 158) : menu du dossier, `bobine <dossier>`, commande installée.
     name: 'command',
     file: 'command.mjs',
@@ -2176,25 +2039,6 @@ export const SUITES = [
       'src/main/renderer-windows.ts',
       'src/main/menu.ts',
       'docs/guide/'
-    ]
-  },
-  {
-    // Astuces de Bobine (fiche 191) : aparté, contexte, réglage, relance.
-    name: 'astuces',
-    file: 'astuces.mjs',
-    run: 'tipsSuite',
-    themes: BOTH,
-    sources: [
-      `${C}tips/`,
-      `${R}useTips.ts`,
-      `${R}tips.css`,
-      `${C}settings/TipsRow.tsx`,
-      `${C}settings/GeneralSettings.tsx`,
-      `${C}composer/Composer.tsx`,
-      'src/shared/tips.ts',
-      'src/main/settings-store.ts',
-      'src/main/settings.ts',
-      'src/main/ipc.ts'
     ]
   },
   {

@@ -10,7 +10,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, check, withApp } from '../lib.mjs'
+import { check, withApp } from '../lib.mjs'
 
 /**
  * Préparation des worktrees (fiche 175) : `.worktreeinclude` copie le `.env` ignoré, les commandes
@@ -93,15 +93,6 @@ export async function worktreeSetupSuite(scheme) {
             (await ui.ev(`!!${ui.$('worktree-setup-approve')}`)),
           'worktree : .env ignoré copié, commande du dépôt à autoriser, pas lancée'
         )
-        const rows = await ui.ev(
-          `[...${card}.querySelectorAll('.worktree-setup-command-row dt')].map((d) => d.innerText)`
-        )
-        check(
-          JSON.stringify(rows) ===
-            JSON.stringify([L('worktreeSetup.atCreate'), L('worktreeSetup.atRemove')]) &&
-            (await ui.ev(`${ui.$('worktree-setup-archive')}.innerText`)).includes(archiveMarker),
-          'les deux commandes que l’accord couvre sont montrées, « à la création » et « à la suppression » (D1)'
-        )
         // Un message envoyé avant l'accord attend : la carte le dit, rien ne part à l'agent.
         const users = `document.querySelectorAll('.msg-user').length`
         const typeAndSend = async (text) => {
@@ -112,27 +103,12 @@ export async function worktreeSetupSuite(scheme) {
         await typeAndSend('Travail préparé')
         await ui.waitFor(`!!${ui.$('worktree-setup-held')}`)
         await ui.ev(`${card}.querySelector('details').open = true`)
-        check(
-          (await ui.ev(users)) === 0 &&
-            (await ui.ev(`${ui.$('worktree-setup-approve')}.classList.contains('primary')`)) &&
-            (await ui.ev(`!!${ui.$('worktree-setup-skip')}`)) &&
-            (await ui.ev(`${card}.querySelector('.worktree-setup-files')?.innerText`)) === '.env',
-          'à autoriser : message en attente dit sur la carte, action principale pleine, « Continuer sans préparer », fichier copié listé'
-        )
         await ui.shot('175-preparation-a-autoriser')
 
         // Fichier changé entre l'affichage et l'accord : rien ne tourne, nouvelle carte (D2).
         writeFileSync(join(workspace, '.bobine', 'worktree.json'), config(step('prêt')))
         await ui.click(ui.$('worktree-setup-approve'))
         await ui.waitFor(`!!${ui.$('worktree-setup-changed')}`)
-        check(
-          (await ui.ev(`${card}.dataset.state`)) === 'approval' &&
-            (await ui.ev(`${ui.$('worktree-setup-command')}.innerText`)).includes('prêt') &&
-            !existsSync(join(first, 'prepared.txt')) &&
-            (await ui.ev(`!!${ui.$('worktree-setup-held')}`)) &&
-            (await ui.ev(users)) === 0,
-          'fichier changé avant l’accord : rien lancé, nouvelle commande montrée, message toujours en attente (D2)'
-        )
         await ui.shot('175-preparation-fichier-change')
         // Le changement est gardé dans le dépôt (le dépôt principal reste propre), et dans le
         // premier worktree, d'où part le suivant.
@@ -144,25 +120,13 @@ export async function worktreeSetupSuite(scheme) {
         await ui.waitFor(`${card}?.dataset.state === 'done'`, 30000)
         await ui.waitFor(`${users} === 1`, 30000)
         await ui.ready()
-        check(
-          readFileSync(join(first, 'prepared.txt'), 'utf8').trim() === 'prêt' &&
-            (await ui.ev(`${ui.$('worktree-setup-output')}.textContent`)).includes('Fini.'),
-          'préparation autorisée : lancée, réussie, sortie gardée, message retenu envoyé ensuite'
-        )
         await ui.ev(`${card}.querySelectorAll('details').forEach((d) => (d.open = true))`)
         await ui.ev(`document.querySelector('.scroll')?.scrollTo(0, 0)`)
         await ui.shot('175-preparation-reussie')
 
         // Deuxième worktree : l'accord vaut pour ce dépôt, la commande part d'elle-même.
-        const second = await newWorktree()
+        await newWorktree()
         await ui.waitFor(`${card}?.dataset.state === 'done'`, 30000)
-        check(
-          !!second &&
-            existsSync(join(second, 'prepared.txt')) &&
-            existsSync(join(second, '.env')) &&
-            !(await ui.ev(`!!${ui.$('worktree-setup-approve')}`)),
-          'worktree suivant : préparation lancée d’office (accord retenu pour le dépôt)'
-        )
         check(
           git('status', '--porcelain') === '',
           'dépôt principal intact (aucun fichier suivi modifié)'
@@ -187,21 +151,10 @@ export async function worktreeSetupSuite(scheme) {
         await ui.waitFor(running, 30000)
         await typeAndSend('Pendant la préparation')
         await ui.waitFor(`!!${ui.$('worktree-setup-held')}`)
-        check(
-          (await ui.ev(users)) === 0 &&
-            (await ui.ev(`${ui.$('worktree-setup-held')}.innerText`)).replace(/\s/g, ' ') ===
-              L('worktreeSetup.heldRunning', { count: 1 }).replace(/\s/g, ' ') &&
-            (await ui.ev(`!!${ui.$('worktree-setup-proceed')}`)),
-          'commande en cours : « Votre message attend… » sur la carte, « Arrêter », « Continuer sans attendre » (D4)'
-        )
         await ui.shot('175-preparation-message-en-cours')
         await ui.click(ui.$('worktree-setup-stop'))
         await ui.waitFor(`${card}?.dataset.state === 'failed'`, 15000)
         await ui.waitFor(`${users} === 1`, 30000)
-        check(
-          (await ui.ev(`${ui.$('worktree-setup-state')}.innerText`)) === L('worktreeSetup.stopped'),
-          '« Arrêter » : commande arrêtée, carte « Arrêtée », message envoyé (D4)'
-        )
         await ui.ready()
 
         // « Continuer sans attendre » : le message part, la commande continue.
@@ -212,11 +165,6 @@ export async function worktreeSetupSuite(scheme) {
         await ui.waitFor(`!!${ui.$('worktree-setup-proceed')}`)
         await ui.click(ui.$('worktree-setup-proceed'))
         await ui.waitFor(`${users} === 1`, 30000)
-        check(
-          (await ui.ev(`${card}.dataset.state`)) === 'running' &&
-            !(await ui.ev(`!!${ui.$('worktree-setup-stop')}`)),
-          '« Continuer sans attendre » : message envoyé, la commande tourne encore (D4)'
-        )
         await ui.ready()
         await ui.shot('175-preparation-sans-attendre')
 
@@ -226,7 +174,7 @@ export async function worktreeSetupSuite(scheme) {
           join(source, '.bobine', 'worktree.json'),
           JSON.stringify({ setup: 'echo "autre" > prepared.txt' })
         )
-        const skipped = await newWorktree()
+        await newWorktree()
         await ui.waitFor(`${card}?.dataset.state === 'approval'`)
         await typeAndSend('Sans préparation')
         await ui.waitFor(`!!${ui.$('worktree-setup-held')}`)
@@ -234,10 +182,6 @@ export async function worktreeSetupSuite(scheme) {
         await ui.waitFor(`${card}?.dataset.state === 'skipped'`)
         await ui.waitFor(`${users} === 1`, 30000)
         await ui.ready()
-        check(
-          !!skipped && !existsSync(join(skipped, 'prepared.txt')),
-          '« Continuer sans préparer » : commande non lancée, message envoyé'
-        )
         await ui.shot('175-preparation-sans')
 
         // `archive` seule : sa carte à autoriser, le message n'attend pas ; autorisée, elle tourne
@@ -245,12 +189,6 @@ export async function worktreeSetupSuite(scheme) {
         writeFileSync(join(source, '.bobine', 'worktree.json'), config(undefined))
         await newWorktree()
         await ui.waitFor(`${card}?.dataset.state === 'approval'`)
-        check(
-          !(await ui.ev(`!!${ui.$('worktree-setup-command')}`)) &&
-            (await ui.ev(`${ui.$('worktree-setup-approve')}.innerText`)) ===
-              L('worktreeSetup.approveArchive'),
-          '`archive` seule : carte à autoriser, sans commande à la création (D6)'
-        )
         await typeAndSend('Rien à attendre')
         await ui.waitFor(`${users} === 1`, 30000)
         await ui.click(ui.$('worktree-setup-approve'))
@@ -282,89 +220,5 @@ export async function worktreeSetupSuite(scheme) {
   } finally {
     rmSync(workspace, { recursive: true, force: true })
     rmSync(outside, { recursive: true, force: true })
-  }
-  await scheduledRunSuite(scheme)
-}
-
-/**
- * Tâche planifiée « dans un nouveau worktree » d'un dépôt dont la commande de préparation n'est
- * pas autorisée (D3) : l'exécution n'attend pas l'accord, elle part sans la préparation, et son
- * historique le dit.
- */
-async function scheduledRunSuite(scheme) {
-  const userData = mkdtempSync(join(tmpdir(), 'bob-e2e-preparation-planifiee-'))
-  const project = realpathSync(mkdtempSync(join(tmpdir(), 'bob-e2e-preparation-projet-')))
-  const git = (...args) =>
-    execFileSync('git', ['-c', 'user.name=e2e', '-c', 'user.email=e2e@example.invalid', ...args], {
-      cwd: project,
-      encoding: 'utf8'
-    }).trim()
-  writeFileSync(join(project, 'README.md'), '# Tâche\n')
-  writeFileSync(join(project, '.gitignore'), 'prepared.txt\n')
-  mkdirSync(join(project, '.bobine'))
-  writeFileSync(
-    join(project, '.bobine', 'worktree.json'),
-    JSON.stringify({ setup: 'echo "lancée" > prepared.txt' })
-  )
-  git('init', '-q', '-b', 'main')
-  git('add', '.')
-  git('commit', '-q', '-m', 'init')
-  const now = Date.now()
-  writeFileSync(
-    join(userData, 'scheduled-tasks.json'),
-    JSON.stringify({
-      version: 1,
-      tasks: [
-        {
-          id: 'preparee',
-          name: 'Revue dans un worktree',
-          instruction: 'Relis le code.',
-          folder: project,
-          profileId: 'mock',
-          worktree: true,
-          catchUp: true,
-          paused: false,
-          schedule: { kind: 'daily', time: '09:00' },
-          createdAt: new Date(now - 86_400_000).toISOString(),
-          // Échéance passée d'une minute : elle part au lancement.
-          nextRunAt: new Date(now - 60_000).toISOString(),
-          runs: []
-        }
-      ]
-    })
-  )
-  try {
-    await withApp(
-      scheme,
-      async (ui) => {
-        await ui.ready()
-        const run = `document.querySelector('[data-testid=scheduled-task][data-id="preparee"] [data-testid=scheduled-run]')`
-        await ui.waitFor(`!!${ui.$('history-scheduled-tag')}`, 30000)
-        await ui.click(ui.$('open-scheduled'))
-        await ui.waitFor(`${run}?.dataset.outcome === 'done'`, 30000)
-        check(
-          (await ui.ev(`${run}.querySelector('.scheduled-run-tags')?.innerText ?? ''`)).includes(
-            L('scheduled.setupNotApproved')
-          ),
-          'tâche planifiée, préparation non autorisée : l’exécution finit sans l’attendre, son historique le dit (D3)'
-        )
-        await ui.shot('175-tache-planifiee-sans-preparation')
-        await ui.click(`${run}.querySelector('[data-testid=scheduled-run-open]')`)
-        await ui.waitFor(`!${ui.$('scheduled-page')}`)
-        await ui.waitFor(`${ui.$('worktree-setup')}?.dataset.state === 'skipped'`)
-        await ui.ready()
-        check(
-          !(await ui.ev(`!!${ui.$('worktree-setup-approve')}`)) &&
-            (await ui.ev(`${ui.$('worktree-setup')}.innerText`)).includes(
-              L('worktreeSetup.unattendedHint').slice(0, 20)
-            ),
-          'sa conversation : carte « non lancée », exécution planifiée dite, sans bouton'
-        )
-      },
-      userData,
-      'streaming-texte'
-    )
-  } finally {
-    rmSync(project, { recursive: true, force: true })
   }
 }

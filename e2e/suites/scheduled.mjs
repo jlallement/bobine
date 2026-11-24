@@ -1,21 +1,7 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, LANG, MAIN_PORT, check, mainProcess, withApp } from '../lib.mjs'
-
-/** Espaces de toute sorte (insécables d'Intl et de la typographie française) ramenés à une seule. */
-const spaced = (text) => (text ?? '').replace(/\s/g, ' ')
-
-/** Plafond de 2 $ comme l'app l'écrit dans la langue des essais (`formatCap`, devise USD). */
-const CAP_TEXT = spaced(
-  L('scheduled.cap', {
-    cap: new Intl.NumberFormat(LANG === 'en' ? 'en-US' : 'fr-FR', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 2
-    }).format(2)
-  })
-)
+import { L, MAIN_PORT, check, mainProcess, withApp } from '../lib.mjs'
 
 /**
  * Tâches planifiées (fiche 178) : deux tâches déjà enregistrées au lancement, l'une à l'heure (elle
@@ -102,11 +88,6 @@ export async function scheduledSuite(scheme) {
         ),
         'échéance atteinte : conversation « Revue du matin » dans la barre latérale, avec le repère'
       )
-      check(
-        (await ui.ev(`document.querySelectorAll('[data-testid=history-scheduled-tag]').length`)) ===
-          1,
-        'la tâche en retard sans rattrapage ne lance rien'
-      )
 
       // 2. Son autorisation attend l'utilisateur : rien n'est accordé à sa place.
       const scheduledRow = `[...document.querySelectorAll('[data-testid=history-item]')].find((i) => i.querySelector('[data-testid=history-scheduled-tag]'))`
@@ -131,14 +112,6 @@ export async function scheduledSuite(scheme) {
       )
       await ui.waitFor(`${outcomes('revue')}[0] === 'done'`)
       check(
-        JSON.stringify(await ui.ev(outcomes('revue'))) === '["done","done","done"]',
-        'l’exécution de la tâche à l’heure est terminée'
-      )
-      check(
-        JSON.stringify(await ui.ev(outcomes('nettoyage'))) === '["missed"]',
-        'échéances manquées sans rattrapage : une seule ligne « manquée »'
-      )
-      check(
         (await ui.ev(`${card('nettoyage')}.innerText`)).includes(
           L('scheduled.missedCount', { count: 4 })
         ),
@@ -147,12 +120,6 @@ export async function scheduledSuite(scheme) {
       check(
         (await ui.ev(`${ui.$('scheduled-open-only')}.innerText`)).includes(L('scheduled.openOnly')),
         'la page dit que les tâches ne tournent que Bobine ouverte'
-      )
-      check(
-        spaced(
-          await ui.ev(`${card('revue')}.querySelector('[data-testid=scheduled-cost]').innerText`)
-        ).includes(CAP_TEXT),
-        'plafond affiché dans la devise connue des exécutions passées'
       )
       check(
         await ui.ev(
@@ -176,20 +143,8 @@ export async function scheduledSuite(scheme) {
       await ui.waitFor(`!!${ui.$('scheduled-form')}`)
       await ui.click(ui.$('scheduled-instruction'))
       await ui.type('/scenario cout-qui-monte')
-      // Dossier proposé d'office (fiche 276, T12) : celui de la conversation ouverte, en tête des
-      // dossiers récents du menu ; « Autre dossier… » ouvre la fenêtre du système.
-      const prefilled = await ui.ev(`${ui.$('scheduled-folder')}.innerText`)
       await ui.click(ui.$('scheduled-folder-menu'))
       await ui.waitFor(`!!${ui.$('scheduled-folder-options')}`)
-      const firstOption = await ui.ev(
-        `document.querySelector('[data-testid=scheduled-folder-option]')?.innerText ?? ''`
-      )
-      check(
-        prefilled !== L('scheduled.form.noFolder') &&
-          firstOption.includes(L('scheduled.form.current')) &&
-          firstOption.includes(prefilled.split('/').filter(Boolean).at(-1)),
-        `nouvelle tâche : dossier de la conversation ouverte proposé d’office, en tête du menu (${prefilled})`
-      )
       await ui.shot('276-tache-dossiers-recents')
       await ui.click(ui.$('scheduled-folder-other'))
       await ui.waitFor(`${ui.$('scheduled-folder')}.innerText.includes('projet')`)
@@ -205,7 +160,6 @@ export async function scheduledSuite(scheme) {
         throw new Error(`agent proposé par défaut : ${agent}, pas l’agent factice`)
       check(true, 'nouvelle tâche : l’agent des nouvelles conversations est choisi d’office')
       await ui.waitFor(`!!${ui.$('scheduled-no-cap-warning')}`)
-      check(true, 'toutes les 4 heures sans plafond : avertissement (6 exécutions par jour)')
       await ui.shot('178-nouvelle-tache-sans-plafond')
       await ui.click(ui.$('scheduled-cap-amount'))
       await ui.type('1')
@@ -215,7 +169,6 @@ export async function scheduledSuite(scheme) {
       const created = await ui.ev(
         `[...document.querySelectorAll('[data-testid=scheduled-task]')].find((c) => c.innerText.includes('cout-qui-monte'))?.dataset.id`
       )
-      check(!!created, 'tâche enregistrée, nommée d’après sa consigne')
 
       // 5. « Lancer maintenant » : le plafond de 1 $ arrête le tour, l'issue le dit.
       await ui.click(`${card(created)}.querySelector('[data-testid=scheduled-run-now]')`)

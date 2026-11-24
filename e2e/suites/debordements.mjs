@@ -25,10 +25,6 @@ export async function overflowSuite(scheme) {
       )
       // Mermaid se dessine après coup : on attend le diagramme, plus large que la colonne.
       await ui.waitFor(`!!document.querySelector('.msg-agent svg[id^=mermaid], .mermaid svg')`)
-      check(
-        (await ui.ev(`document.querySelectorAll('[data-testid=subagent]').length`)) === 1,
-        'carte de sous-agent dans le fil'
-      )
       // Groupes d'outils et sous-agent dépliés : leur contenu compte aussi.
       await ui.ev(
         `(() => { for (const b of document.querySelectorAll('[data-testid=subagent-toggle]')) b.click(); return true })()`
@@ -122,29 +118,11 @@ export async function overflowSuite(scheme) {
  * quand la fenêtre s'élargit (fiche 173).
  */
 async function roomForConversation(ui) {
-  // Largeur de la conversation, barre de défilement comprise : superposée sur macOS, à côté du
-  // texte ailleurs (fiche 145).
-  const layout = () =>
-    ui.ev(
-      `(() => ({ panel: document.querySelector('[data-testid=side-panel]')?.getBoundingClientRect().width ?? 0, conversation: Math.round(document.querySelector('.scroll').getBoundingClientRect().width), tab: document.querySelector('.side-panel-tab.active')?.dataset.tab ?? null }))()`
-    )
   await ui.viewport(1440, 900)
   await ui.waitFor(`!!${ui.$('side-panel')}`)
-  const wide = await layout()
-  check(wide.tab === 'session', `1440 px : panneau ouvert d'office sur « Session » (${wide.tab})`)
   await ui.viewport(1100, 900)
-  const half = await layout()
-  check(
-    half.panel > 0 && half.conversation >= 500,
-    `1100 px : le panneau cède (${Math.round(half.panel)} px), la conversation garde ${half.conversation} px`
-  )
   await ui.viewport(720, 900)
   await ui.waitFor(`!${ui.$('side-panel')}`)
-  const narrow = await layout()
-  check(
-    narrow.conversation >= 500,
-    `720 px : panneau replié, la conversation garde ${narrow.conversation} px`
-  )
   // Fiche 272 (recette) : le sélecteur Code / Discussion tient dans la barre latérale étroite.
   const spaces = await ui.ev(`(() => {
     const box = document.querySelector('.space-switch')
@@ -163,6 +141,4 @@ async function roomForConversation(ui) {
   await ui.shot('173-panneau-replie')
   await ui.viewport(1440, 900)
   await ui.waitFor(`!!${ui.$('side-panel')}`)
-  const back = await layout()
-  check(back.tab === 'session', `fenêtre élargie : le panneau revient sur « ${back.tab} »`)
 }

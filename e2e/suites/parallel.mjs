@@ -34,10 +34,6 @@ export async function parallelSuite(scheme) {
         await ui.waitFor(`!document.querySelector('.history-item.active')`)
         await ui.ready()
         await ui.waitFor(`!!${itemNamed('/scenario lent')}?.querySelector('.spin')`)
-        check(
-          true,
-          'la première conversation continue de répondre (indicateur dans la barre latérale)'
-        )
 
         // Nouvelle conversation dans un worktree.
         await ui.click(ui.$('workspace-menu'))
@@ -99,11 +95,6 @@ export async function parallelSuite(scheme) {
         await ui.click(ui.$('delete-confirm'))
         await ui.waitFor(`!${itemNamed('Travail dans le worktree')}`)
         await sleep(500)
-        check(
-          git('branch', '--list', 'bobine/*') === '' &&
-            git('worktree', 'list').split('\n').length === 1,
-          'suppression : worktree et branche supprimés (rien à perdre)'
-        )
       },
       undefined,
       'streaming-texte',

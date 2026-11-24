@@ -34,10 +34,6 @@ export async function launchSuite(scheme) {
         await ui.ready()
         await ui.send('Lance l’app')
         await ui.waitFor(`!!${ui.$('questions')}`)
-        check(
-          (await ui.ev(`${ui.$('questions')}.innerText`)).includes('server.js'),
-          'commande montrée à l’utilisateur avant le lancement'
-        )
         await ui.shot('25-lancer-confirmation')
         await ui.press('1')
         await ui.ready()

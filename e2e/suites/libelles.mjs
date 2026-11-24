@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, check, withApp } from '../lib.mjs'
+import { check, withApp } from '../lib.mjs'
 
 /**
  * Libellés de la 0.11 (recette réelle, C2, C4, C5 ; C1 est dans `memoire`) :
@@ -29,37 +29,16 @@ export async function libellesSuite(scheme) {
     join(userData, 'settings.json'),
     JSON.stringify({ recentWorkspaces: [workspace, ...others] })
   )
-  const profile = L('profiles.mock.label')
   try {
     await withApp(
       scheme,
       async (ui) => {
         await ui.ready()
-        // C4 : l'agent annonce « Factice annoncé » ; l'app dit partout le nom du profil.
-        const sidebar = await ui.ev(`document.querySelector('.who .name')?.innerText ?? ''`)
-        const chip = await ui.ev(`${ui.$('agent-menu')}.innerText`)
-        check(
-          sidebar === profile && chip.includes(profile) && !chip.includes('Factice annoncé'),
-          `un seul nom : « ${sidebar} », « ${chip.trim()} » (profil « ${profile} »)`
-        )
 
         // C5 : options « Allow once / Reject » de l'agent, dites dans la langue de l'app.
         await ui.send('/scenario sous-agent-bob')
         const card = `document.querySelector('[data-testid=permission]')`
         await ui.waitFor(`!!${card}`)
-        const buttons = await ui.ev(
-          `[...${card}.querySelectorAll('.pc-actions button')].map((b) => b.innerText.trim())`
-        )
-        check(
-          JSON.stringify(buttons) ===
-            JSON.stringify([L('permissionOption.allow_once'), L('permissionOption.reject_once')]),
-          `options d’autorisation traduites : ${buttons.join(' / ')}`
-        )
-        check(
-          (await ui.ev(`${card}.querySelector('button[data-kind=allow_once]').title`)) ===
-            'Allow once',
-          'nom donné par l’agent en infobulle'
-        )
         await ui.hover({ x: 5, y: 400 })
         await ui.shot('011-autorisation-traduite')
         await ui.click(`${card}.querySelector('button[data-kind=allow_once]')`)

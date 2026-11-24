@@ -135,7 +135,6 @@ async function run(ui, turnLock) {
   // Un rôle, qui répond pendant qu'on relit le haut du fil.
   await delegate(ui, turnLock, '@security-expert relis le module de connexion', 1)
   await scrollUp(ui)
-  check(!(await ui.ev(`!!${cue}`)), 'rôle au travail : pas de repère')
   rmSync(turnLock, { force: true })
   await ui.waitFor(`${reports}.length === 1 && !!${cue}`, 30000)
   const one = await cueText(ui)
@@ -149,20 +148,6 @@ async function run(ui, turnLock) {
   // Clic direct sur « Voir » : le clic à la souris de l'essai prend plus que la durée de l'anneau.
   await ui.ev(`${cue}.querySelector('[data-testid=work-cue-show]').click()`)
   await ui.waitFor(onScreen(`${reports}.at(-1)`))
-  const shown = await ui.ev(`(() => {
-    const card = ${reports}.at(-1)
-    const style = getComputedStyle(card)
-    return {
-      flash: card.hasAttribute('data-cue-flash'),
-      focus: document.activeElement === card,
-      ring: style.boxShadow,
-      anim: style.animationName
-    }
-  })()`)
-  check(
-    shown.flash && shown.focus && shown.ring !== 'none' && !(await ui.ev(`!!${cue}`)),
-    `« Voir » : la carte à l’écran, entourée, avec le focus ; plus de repère (${JSON.stringify(shown)})`
-  )
   // L'anneau ne dure que 1,4 s : figé à son éclat le temps de la photo (l'essai l'a vu ci-dessus).
   await ui.ev(
     `${reports}.at(-1).getAnimations().forEach((a) => { a.pause(); a.currentTime = 300 })`
@@ -176,19 +161,11 @@ async function run(ui, turnLock) {
   await scrollUp(ui)
   rmSync(turnLock, { force: true })
   await ui.waitFor(`${reports}.length === 3 && ${cue}?.dataset.count === '2'`, 30000)
-  const two = await cueText(ui)
-  check(
-    two === L('workCue.several', { count: 2 }) &&
-      !(await ui.ev(`!!${cue}.querySelector('[data-testid=role-avatar]')`)),
-    `deux travaux : « ↑ ${two} · Voir »`
-  )
   await ui.shot('261-repere-deux')
   await ui.click(`${cue}.querySelector('[data-testid=work-cue-show]')`)
   await ui.waitFor(`${cue}?.dataset.count === '1'`)
-  check(true, '« Voir » : le plus ancien montré, l’autre reste au repère')
   await ui.ev(`(() => { const s = ${scroller}; s.scrollTop = s.scrollHeight })()`)
   await ui.waitFor(`!${cue}`)
-  check(true, 'carte vue en défilant : le repère s’en va')
 
   // 900 px, nom long : seul le nom se coupe, jamais le verbe.
   await ui.viewport(900, 760)

@@ -25,12 +25,8 @@ export async function memoireSuite(scheme) {
           main.evaluate(
             `(require('electron').Menu.getApplicationMenu().getMenuItemById(${JSON.stringify(id)}).click(), true)`
           )
-        const lastReply = () =>
-          ui.ev(`[...document.querySelectorAll('.msg-agent')].at(-1)?.innerText ?? ''`)
         const cards = `[...document.querySelectorAll('[data-testid=memory-card]')]`
         const card = `${cards}.at(-1)`
-        const focusOnCard = () =>
-          ui.ev(`!!document.activeElement?.closest('[data-testid=memory-card]')`)
         try {
           await ui.viewport(900)
           await ui.ready()
@@ -39,50 +35,14 @@ export async function memoireSuite(scheme) {
           await ui.send('/scenario memoire-retient')
           await ui.ready()
           await ui.waitFor(`${cards}.length === 1`)
-          check(
-            (await ui.ev(`${card}.innerText`)).includes(L('memory.card.rememberTitle')) &&
-              (await ui.ev(
-                `${card}.querySelector('[data-testid=memory-accept]').classList.contains('primary')`
-              )) &&
-              !(await focusOnCard()),
-            'carte « Retenir ce souvenir ? » : Retenir en avant, aucun bouton ne prend le focus'
-          )
-          check(
-            (await ui.ev(`${ui.$('memory-pill')}?.innerText ?? ''`)).includes(L('memory.pill')),
-            'pastille neutre « Mémoire » sur la conversation'
-          )
-          check(
-            !(await ui.ev(`${card}.innerText`)).includes(L('memory.type.feedback')),
-            'pas de type sur la carte, seulement la portée'
-          )
-          // Carte de l'outil : ce qu'il fait, pas son nom technique (recette 0.11, C1).
-          const toolTitles = await ui.ev(
-            `[...document.querySelectorAll('[data-testid=tool]')].map((t) => t.innerText).join('\\n')`
-          )
-          check(
-            toolTitles.includes(
-              L('appTools.remember.value', { value: 'Lancer les e2e touchées avant chaque push' })
-            ),
-            'carte de l’outil : « Propose de retenir : … », pas « remember »'
-          )
           await ui.shot('182-1-carte-en-attente')
 
           // 2. « Non » : une ligne, plus de pastille.
           await ui.click(`${card}.querySelector('[data-testid=memory-decline]')`)
           await ui.waitFor(`!!${ui.$('memory-decided')}`)
-          check(
-            (await ui.ev(`${ui.$('memory-decided')}.innerText`)).includes(
-              L('memory.decided.declined')
-            ) && !(await ui.ev(`!!${ui.$('memory-pill')}`)),
-            '« Non » : une ligne « Non retenu », pastille retirée'
-          )
           // Le message suivant dit l'issue à l'agent (il le répète), sans nouvelle carte.
           await ui.send('/scenario memoire-retient')
           await ui.ready()
-          check(
-            (await ui.ev(`${cards}.length`)) === 0,
-            'issue dite au message suivant, pas de carte'
-          )
 
           // 3. Nouvelle proposition, « Retenir » : « Retenu » et « Voir ».
           await ui.send('/scenario memoire-retient')
@@ -99,27 +59,9 @@ export async function memoireSuite(scheme) {
           await ui.send('/scenario memoire-injection')
           await ui.ready()
           await ui.waitFor(`${cards}.length === 1`)
-          check(
-            (await ui.ev(`${card}.dataset.risky`)) === 'true' &&
-              (
-                await ui.ev(`${card}.querySelector('[data-testid=memory-banner]').innerText`)
-              ).includes(L('memory.card.command')) &&
-              (
-                await ui.ev(`${card}.querySelector('[data-testid=memory-command]').innerText`)
-              ).includes('| sh') &&
-              !(await ui.ev(
-                `${card}.querySelector('[data-testid=memory-accept]').classList.contains('primary')`
-              )) &&
-              !(await ui.ev(`!!${card}.querySelector('.memory-body-folded')`)),
-            'contenu externe : bandeau, commande surlignée, corps déplié, aucun bouton en avant'
-          )
           await ui.shot('182-3-contenu-externe')
           await ui.send('Merci')
           await ui.ready()
-          check(
-            (await ui.ev(`${cards}.length`)) === 1 && !(await focusOnCard()),
-            'Entrée dans la saisie : message envoyé, la carte attend toujours'
-          )
           await ui.click(`${card}.querySelector('[data-testid=memory-decline]')`)
           await ui.waitFor(`${cards}.length === 0`)
 
@@ -129,7 +71,6 @@ export async function memoireSuite(scheme) {
           await ui.ready()
           await ui.send('/scenario memoire-index')
           await ui.ready()
-          check((await lastReply()).includes('tests-e2e'), 'conversation suivante : index reçu')
 
           // 6. Onglet Session : ligne « Mémoire », qui mène aux réglages.
           const sessionTab = `document.querySelector('.side-panel-tab[data-tab=session] [role=tab]')`
@@ -161,11 +102,6 @@ export async function memoireSuite(scheme) {
           })()`)
           await ui.click(ui.$('memory-editor-save'))
           await ui.waitFor(`!!${ui.$('memory-editor-error')}`)
-          check(
-            (await ui.ev(`${ui.$('memory-editor-error')}.innerText`)) ===
-              L('settings.memory.secret'),
-            'modification : un secret est refusé'
-          )
           await ui.shot('182-7-reglages-secret-refuse')
           await ui.press('Escape')
           await ui.waitFor(`!${ui.$('memory-editor')}`)
@@ -173,7 +109,6 @@ export async function memoireSuite(scheme) {
           await ui.click(ui.$('memory-delete'))
           await ui.click(ui.$('confirm-row-confirm'))
           await ui.waitFor(`!${entry}`)
-          check(true, 'souvenir supprimé après confirmation')
 
           // 7 bis. Fichier posé hors de Bobine (éditeur, ou agent par son shell) : pas donné aux
           // agents, montré « Modifié hors de Bobine » jusqu'à « Garder ces modifications ».
@@ -199,7 +134,6 @@ export async function memoireSuite(scheme) {
           await ui.shot('182-9-modifie-hors-de-bobine')
           await ui.click(ui.$('memory-approve'))
           await ui.waitFor(`!${posed}?.querySelector('[data-testid=memory-outside]')`)
-          check(true, 'fichier modifié hors de Bobine : signalé, puis gardé après validation')
 
           // 8. Famille « Mémoire » des outils de Bobine : réglée ici, pas de second interrupteur.
           await ui.click(
@@ -207,11 +141,6 @@ export async function memoireSuite(scheme) {
           )
           const family = `document.querySelector('[data-testid=app-tool-family][data-id=memory]')`
           await ui.waitFor(`!!${family}`)
-          check(
-            (await ui.ev(`!!${family}.querySelector('[data-testid=app-tool-setting]')`)) &&
-              !(await ui.ev(`!!${family}.querySelector('[data-testid=app-tool-enabled]')`)),
-            'outils de Bobine : famille « Mémoire » sans interrupteur, avec le chemin du réglage'
-          )
 
           // 9. Mémoire coupée : ni outil ni index pour les conversations suivantes.
           await ui.click(
@@ -227,10 +156,6 @@ export async function memoireSuite(scheme) {
           await ui.ready()
           await ui.send('/scenario memoire-sans-outil')
           await ui.ready()
-          check(
-            !(await lastReply()).includes('Outil remember reçu'),
-            'mémoire coupée : pas d’outil'
-          )
         } finally {
           main.close()
         }

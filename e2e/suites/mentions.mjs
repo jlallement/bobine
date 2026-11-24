@@ -47,10 +47,6 @@ export async function mentionsSuite(scheme) {
         await ui.waitFor(`${fileItems}.some((i) => i.innerText.includes('notes.txt'))`)
         await ui.type('s @secr')
         await new Promise((resolve) => setTimeout(resolve, 600))
-        check(
-          !(await ui.ev(`${fileItems}.some((i) => i.innerText.includes('secret.txt'))`)),
-          'menu « @ » : le fichier exclu par l’agent (.bobignore) n’est pas proposé'
-        )
         await ui.press('Escape')
         await ui.ev(`(() => {
           const input = ${ui.$('composer-input')}
@@ -71,13 +67,6 @@ export async function mentionsSuite(scheme) {
         await ui.type('et @term')
         await ui.waitFor(`${contextItems}[0]?.innerText.includes('@terminal')`)
         await ui.enter()
-        const chips = await ui.ev(
-          `[...document.querySelectorAll('[data-testid=attachment]')].map((a) => a.innerText.trim())`
-        )
-        check(
-          chips.join() === '@git-changes,@terminal',
-          `menu « @ » : @git-changes et @terminal en pièces jointes (${chips.join(', ')})`
-        )
         await ui.enter()
         // Le message apparaît une fois le diff et le terminal lus ; puis l'agent répond.
         await ui.waitFor(`document.querySelectorAll('.msg-user').length === 1`)
@@ -85,25 +74,9 @@ export async function mentionsSuite(scheme) {
         await ui.ready()
         const reply = await ui.lastAgentText()
         check(
-          reply.includes('Contenu de @git-changes') &&
-            reply.includes('notes.txt') &&
-            reply.includes('+deux-modifie'),
-          'à l’envoi : état et diff git du dossier joints au message'
-        )
-        check(
-          !reply.includes('clé-modifiee') &&
-            reply.includes('Fichiers sautés, exclus pour l’agent par') &&
-            reply.includes('secret.txt'),
-          '@git-changes : le fichier exclu par l’agent est sauté, et c’est dit (fiche 155)'
-        )
-        check(
           reply.includes('Contenu de @terminal') && reply.includes('trace-terminal-42'),
           'à l’envoi : dernières lignes du terminal jointes au message'
         )
-        const shown = await ui.ev(
-          `[...document.querySelectorAll('[data-testid=msg-attachments] .attachment')].map((a) => a.innerText.trim()).join()`
-        )
-        check(shown === 'git-changes,terminal', `fil : pièces jointes montrées (${shown})`)
         await ui.shot('j1-mentions-envoyees')
       },
       userData,

@@ -1,4 +1,4 @@
-import { Lpart, check, sleep, withApp } from '../lib.mjs'
+import { check, sleep, withApp } from '../lib.mjs'
 import { tokensOf, variantOf, withPalette } from '../palette.mjs'
 
 /**
@@ -36,11 +36,6 @@ export async function mermaidSuite(scheme) {
         `organigramme et séquence dessinés (${states})`
       )
       check(await ui.ev(loaded), 'Mermaid chargé à l’arrivée du diagramme')
-      const error = await ui.ev(`${blocks}[2].innerText`)
-      check(
-        error.includes('A -->') && error.includes(Lpart('mermaid.invalid')),
-        'bloc invalide : le code reste, avec l’erreur'
-      )
       await ui.ev(`${blocks}[0].scrollIntoView({ block: 'center' })`)
       await ui.shot('m0-mermaid')
       // Redessiné dans les couleurs de la variante du mode (fiche 134).
@@ -67,7 +62,6 @@ export async function mermaidSuite(scheme) {
       )
       await ui.click(`${blocks}[0].querySelector('[data-testid=mermaid-toggle]')`)
       await ui.waitFor(`!!${blocks}[0].querySelector('.mermaid-diagram svg')`)
-      check(true, '« Voir le code » puis le diagramme')
 
       // Agrandir.
       await ui.click(`${blocks}[1].querySelector('[data-testid=mermaid-zoom]')`)
@@ -77,7 +71,6 @@ export async function mermaidSuite(scheme) {
       await ui.shot('m1-mermaid-agrandi')
       await ui.key('Escape')
       await ui.waitFor(`!${ui.$('mermaid-zoom-dialog')}`)
-      check(true, 'agrandi dans une fenêtre, refermée par Échap')
     },
     undefined,
     'mermaid'

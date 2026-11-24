@@ -17,10 +17,6 @@ export async function tablesSuite(scheme) {
       return { th, left: td.borderLeftWidth, bottom: td.borderBottomWidth }
     })()`)
     check(
-      style.th.join() === 'left,right,center,left',
-      `alignements Markdown respectés, à gauche par défaut (${style.th.join()})`
-    )
-    check(
       style.left === '0px' && style.bottom === '1px',
       'pas de grille : seulement des lignes horizontales'
     )

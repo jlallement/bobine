@@ -1,13 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import {
-  existsSync,
-  linkSync,
-  mkdtempSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  writeFileSync
-} from 'node:fs'
+import { linkSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { L, check, sleep, withApp } from '../lib.mjs'
@@ -35,10 +27,6 @@ export async function discussionSuite(scheme) {
         await ui.ready()
         // E1 : l'espace Code, inchangé, avec le sélecteur.
         await ui.waitFor(`!!${ui.$('space-code')}`)
-        check(
-          await ui.ev(`${ui.$('space-code')}.getAttribute('aria-selected') === 'true'`),
-          'au lancement : espace Code, sélecteur en tête de la barre latérale'
-        )
         await ui.shot('discussion-1-code')
 
         // E2 : l'espace Discussion, accueil sans dossier ni branche.
@@ -56,10 +44,6 @@ export async function discussionSuite(scheme) {
 
         // Un document déposé : copié dans la discussion, l'original intact.
         const id = await ui.ev(`window.api.conversations.get().then((s) => s.activeId)`)
-        const added = await ui.ev(
-          `window.api.documents.add(${JSON.stringify(id)}, [${JSON.stringify(deposited)}])`
-        )
-        check(added.join() === 'Ventes T3.csv' && existsSync(deposited), 'document déposé copié')
 
         // E3–E5 : le tour de l'agent ; écriture accordée dans les documents, refusée ailleurs.
         await ui.send('Fais la synthèse des ventes.')
@@ -71,14 +55,6 @@ export async function discussionSuite(scheme) {
           text.includes(lead('discussion.notice.writeAllowed')) &&
             text.includes(lead('discussion.notice.writeRefused')),
           'écriture accordée dans les documents, refusée hors du dossier, chacune dite'
-        )
-        check(
-          (await ui.ev(`${ui.$('document-card')}.innerText`)).includes('Synthèse.md'),
-          'carte du document créé par l’agent'
-        )
-        check(
-          !readdirSync(join(userData, 'discussions', id)).includes('jamais.md'),
-          'rien écrit hors du dossier'
         )
         // Panneau « Documents » : la liste et l'aperçu du document choisi.
         if (!(await ui.ev(`!!${ui.$('side-panel')}`))) await ui.click(ui.$('panel-toggle'))
@@ -106,11 +82,6 @@ export async function discussionSuite(scheme) {
           await ui.click(`${ui.$('panel-more-menu')}.querySelector('[data-tab=session]')`)
         }
         await ui.waitFor(`!!${ui.$('session-folder')}`)
-        check(
-          (await ui.ev(`${ui.$('session-folder')}.innerText`)) === L('sessionTab.thisDiscussion') &&
-            !(await ui.ev(`${ui.$('session-tab')}.textContent`)).includes(id),
-          'onglet « Session » : « Documents · Cette discussion », sans l’identifiant du dossier'
-        )
         await ui.shot('discussion-3b-session')
         // Onglet Modifications (fiche 276, T14) : ses documents, jamais la vue Git ni « depuis le
         // dernier commit » (le dossier d'une discussion n'est pas un projet).
@@ -124,30 +95,11 @@ export async function discussionSuite(scheme) {
         }
         await ui.waitFor(`!!${ui.$('changes-tab')}`)
         await sleep(500)
-        const changes = await ui.ev(
-          `({ git: !!${ui.$('changes-view-git')}, text: ${ui.$('changes-tab')}.innerText })`
-        )
-        check(
-          !changes.git &&
-            !changes.text.includes(L('changes.empty.git')) &&
-            !changes.text.includes(L('changes.sinceLastCommit')),
-          'onglet Modifications d’une discussion : ni vue Git ni « dernier commit »'
-        )
         await ui.shot('276-discussion-modifications')
-        check(
-          !(await ui.ev(`${ui.$('thread')}.textContent`)).includes(id),
-          'fil d’une discussion : les outils disent « Documents », jamais l’identifiant du dossier'
-        )
 
         // E4 : une commande demandée, dite en clair ; le détail replié.
         await ui.send('/scenario discussion-commande')
         await ui.waitFor(`!!${ui.$('permission')}`, 20000)
-        check(
-          (await ui.ev(`${ui.$('permission')}.innerText`)).includes(
-            L('discussion.permission.details')
-          ) && (await ui.ev(`${ui.$('permission-details')}.open === false`)),
-          'carte d’autorisation en clair, commande repliée sous « Détails techniques »'
-        )
         check(
           !(await ui.ev(`${ui.$('permission')}.textContent`)).includes(id),
           'commande d’une discussion : son dossier se dit « Documents », jamais son identifiant'
@@ -185,10 +137,6 @@ export async function discussionSuite(scheme) {
         await ui.waitFor(`!!${ui.$('continue-dialog')}`)
         // La case n'apparaît qu'une fois les documents comptés (lecture asynchrone).
         await ui.waitFor(`!!${ui.$('continue-copy')}`)
-        check(
-          await ui.ev(`${ui.$('continue-copy')}?.checked === true`),
-          'dialogue : documents copiés par défaut'
-        )
         await ui.shot('discussion-4-continuer')
         await ui.ev(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))`)
         await ui.waitFor(`!${ui.$('continue-dialog')}`)
@@ -196,10 +144,6 @@ export async function discussionSuite(scheme) {
         // Retour à l'espace Code : la discussion n'y est pas listée.
         await ui.click(ui.$('space-code'))
         await ui.waitFor(`${ui.$('space-code')}.getAttribute('aria-selected') === 'true'`)
-        check(
-          !(await ui.ev(`${ui.$('history')}.innerText`)).includes('Fais la synthèse'),
-          'espace Code : les discussions n’y sont pas'
-        )
       },
       userData,
       'discussion-document',

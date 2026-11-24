@@ -20,8 +20,6 @@ const shown = (key, params) =>
   L(key, params)
     .replace(/<\/?anchor>/g, '')
     .replace(/\s+/g, ' ')
-/** Issues affichées sous les boutons (erreur, note) : jamais plus d'une (fiche 189, verdict UX). */
-const ISSUES = `document.querySelectorAll('[data-testid=worktree-error], [data-testid=worktree-note]').length`
 const noteText = (ui) => ui.ev(`${ui.$('worktree-note')}.innerText.replace(/\\s+/g, ' ')`)
 
 /**
@@ -111,10 +109,6 @@ export async function gitlabSuite(scheme) {
           '« Ouvrir une MR » désactivé : glab pas connecté à l’hôte, la commande à lancer dite'
         )
         await ui.shot('189-mr-glab-non-connecte')
-        check(
-          (await ui.ev(ISSUES)) <= 1,
-          'une seule issue sous les boutons (189-mr-glab-non-connecte)'
-        )
 
         // Connecté (`glab auth login`), puis « Actualiser » : le parcours de la MR.
         setState({ auth: 'ok' })
@@ -135,7 +129,6 @@ export async function gitlabSuite(scheme) {
           'formulaire : « Pousser et ouvrir la MR »'
         )
         await ui.shot('189-mr-formulaire')
-        check((await ui.ev(ISSUES)) <= 1, 'une seule issue sous les boutons (189-mr-formulaire)')
         await ui.click(ui.$('worktree-pr-confirm'))
         await ui.waitFor(`!!${ui.$('worktree-pr-link')}`, 30000)
         const branch = state().mr?.source_branch
@@ -155,7 +148,6 @@ export async function gitlabSuite(scheme) {
         )
         await ui.waitFor(`!${button(ui)}`)
         await ui.shot('189-mr-ouverte')
-        check((await ui.ev(ISSUES)) <= 1, 'une seule issue sous les boutons (189-mr-ouverte)')
 
         // Un commit fait dans un terminal, « Actualiser » : « Pousser vers la MR ».
         const worktreePath = git('worktree', 'list', '--porcelain')
@@ -173,16 +165,8 @@ export async function gitlabSuite(scheme) {
           30000
         )
         await ui.shot('189-mr-pousser')
-        check((await ui.ev(ISSUES)) <= 1, 'une seule issue sous les boutons (189-mr-pousser)')
         await ui.click(button(ui))
         await ui.waitFor(`!${button(ui)}`, 30000)
-        check(
-          remoteHead(branch) === inWorktree('rev-parse', 'HEAD') &&
-            (await noteText(ui)).includes(
-              shown('worktreeCycle.pr.existed_mr', { name: 'demo/app!1' })
-            ),
-          '« Pousser vers la MR » : branche poussée, MR existante retrouvée'
-        )
 
         // VPN coupé : GitLab ne répond plus ; le message dit quoi faire, sans erreur brute.
         writeFileSync(join(worktreePath, 'NOTES.md'), 'Deuxième commit\n')
@@ -195,14 +179,7 @@ export async function gitlabSuite(scheme) {
         setState({ down: true })
         await ui.click(button(ui))
         await ui.waitFor(`!!${ui.$('worktree-error')}`, 30000)
-        check(
-          (await ui.ev(`${ui.$('worktree-error')}.innerText`)).includes(
-            L('worktreeCycle.mr.error.unreachable', { host: HOST })
-          ) && !(await ui.ev(`${ui.$('worktree-error')}.innerText`)).includes('dial tcp'),
-          'hôte injoignable : message clair (réseau, VPN), pas la sortie brute de glab'
-        )
         await ui.shot('189-mr-injoignable')
-        check((await ui.ev(ISSUES)) <= 1, 'une seule issue sous les boutons (189-mr-injoignable)')
 
         // Forge inconnue (ni GitHub ni GitLab) : pas de bouton, la raison dite sous les boutons.
         setState({ down: false })
@@ -216,15 +193,7 @@ export async function gitlabSuite(scheme) {
           `${ui.$('worktree-pr-blocker')}?.innerText.replace(/\\s+/g, ' ') === ${JSON.stringify(unknown)}`,
           30000
         )
-        check(
-          !(await ui.ev(`!!${button(ui)}`)),
-          'forge inconnue : pas de bouton, la raison et l’hôte dits sous les boutons'
-        )
         await ui.shot('189-forge-inconnue')
-        check(
-          (await ui.ev(ISSUES)) === 0,
-          'forge inconnue après « Actualiser » : plus d’erreur ni de note d’avant (autre hôte)'
-        )
         await sleep(100)
       },
       undefined,

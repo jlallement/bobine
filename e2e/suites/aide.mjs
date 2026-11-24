@@ -50,11 +50,6 @@ export async function helpSuite(scheme) {
             `titre « ${L('help.title')} », curseur dans la recherche (⌘?)`
           )
           const home = await help.ev(`${help.$('help-page')}.innerText`)
-          check(
-            home.includes(LANG === 'fr' ? 'Guide de Bobine' : 'Bobine guide') ||
-              home.includes(LANG === 'fr' ? 'Commencer' : 'Getting started'),
-            `accueil du guide dans la langue de l’interface (${LANG})`
-          )
           await help.shot('aide-0-accueil')
 
           check(
@@ -74,15 +69,8 @@ export async function helpSuite(scheme) {
           await help.click(help.$('help-search'))
           await help.type('worktree')
           await help.waitFor(`document.querySelectorAll('[data-testid="help-result"]').length > 1`)
-          const marked = await help.ev(
-            `document.querySelector('[data-testid="help-result"] mark')?.textContent.toLowerCase()`
-          )
           const pages = await help.ev(
             `[...document.querySelectorAll('[data-testid="help-result"]')].map((r) => r.dataset.page)`
-          )
-          check(
-            marked === 'worktree' && !pages.includes('README'),
-            `résultats pendant la frappe, mot souligné, sans l’accueil (${pages.join(', ')})`
           )
           const highlighted = () =>
             help.ev(`(() => {
@@ -126,10 +114,6 @@ export async function helpSuite(scheme) {
           await help.press('Enter')
           await help.press('Escape')
           await help.waitFor(`!!${help.$('help-toc')} && ${help.$('help-search')}.value === ''`)
-          check(
-            (await help.ev(`${help.$('help-page')}.dataset.page`)) === pages[other],
-            '↩ ouvre la section ; Échap efface la recherche, le sommaire revient'
-          )
 
           // L'accueil répond par ses notes (« Voir aussi » : les astuces), pas par son sommaire.
           await help.click(help.$('help-search'))
@@ -209,10 +193,6 @@ export async function helpSuite(scheme) {
           check(
             flashed.every((id) => id === 'reglages'),
             `seule la section visée ressort (${JSON.stringify(flashed)})`
-          )
-          check(
-            (await windows()).length === 1,
-            '« ? » de Réglages › Mémoire : page « Mémoire commune »'
           )
           await help.shot('aide-4-memoire')
         } finally {

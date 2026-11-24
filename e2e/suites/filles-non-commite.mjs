@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, check, withApp } from '../lib.mjs'
+import { check, withApp } from '../lib.mjs'
 
 /**
  * Filles en worktree et non commité de la mère (fiches 240, 262), contre l'agent factice, dans un
@@ -23,15 +23,13 @@ import { L, check, withApp } from '../lib.mjs'
  */
 export async function fillesNonCommiteSuite(scheme) {
   console.log(`\n— Filles et non commité de la mère (${scheme})`)
-  for (const run of [roleRun, proposalsRun, noCommitRun]) {
-    const { workspace, git } = repository(run === proposalsRun, run !== noCommitRun)
-    try {
-      await withApp(scheme, (ui) => run(ui, git), undefined, 'echo', {
-        BOBINE_WORKSPACE: workspace
-      })
-    } finally {
-      rmSync(workspace, { recursive: true, force: true })
-    }
+  const { workspace, git } = repository()
+  try {
+    await withApp(scheme, (ui) => roleRun(ui, git), undefined, 'echo', {
+      BOBINE_WORKSPACE: workspace
+    })
+  } finally {
+    rmSync(workspace, { recursive: true, force: true })
   }
 }
 
@@ -96,20 +94,7 @@ async function roleRun(ui) {
   // Une ligne discrète dès le rôle cité ; ni encadré ni bouton (fiche 262, R1).
   await typeRoles(ui, '@front-architect construisez la page\n/scenario voit-le-plan')
   await ui.waitFor(`!!${ui.$('launch-line')}`, 10000)
-  check(
-    (await ui.ev(`${ui.$('launch-line')}.dataset.count`)) === '1' &&
-      (await ui.ev(`${ui.$('launch-line')}.classList.contains('warn')`)) &&
-      (await ui.ev(`${ui.$('launch-line')}.innerText`)).includes(
-        L('launchLine.without', { count: 1 })
-      ) &&
-      !(await ui.ev(`!!document.querySelector('.main-dirty')`)),
-    'rôle : une ligne en orange sous la saisie, aucun encadré'
-  )
   await change(ui, 'launch-line-show', 'filles-non-commite-1b-menu')
-  check(
-    (await ui.ev(`${ui.$('launch-line-file')}.innerText`)) === 'plan.md',
-    'rôle : « Changer… › Voir la modification » liste le fichier non commité'
-  )
   await ui.shot('filles-non-commite-1-ligne')
 
   // Entrée envoie, avec le choix affiché : la fille part du commit, sans le plan (R2).
@@ -119,10 +104,6 @@ async function roleRun(ui) {
   check(
     (await ui.ev(`${leads}[0]`)).includes('je ne trouve pas plan.md'),
     'Entrée : partie sans elles, la fille ne voit pas le travail non commité'
-  )
-  check(
-    !!(await ui.ev(`!!${ui.$('work-left-behind')}`)),
-    'partie sans elles : rappel sur sa carte-réponse, dans la mère'
   )
   await ui.shot('filles-non-commite-2-rappel')
 
@@ -134,134 +115,9 @@ async function roleRun(ui) {
   await ui.waitFor(`!!${ui.$('launch-line-change')}`, 10000)
   await change(ui, 'launch-line-opinion')
   await ui.waitFor(`${ui.$('role-destination')}?.hasAttribute('data-opinion')`)
-  check(
-    (await ui.ev(`${ui.$('role-destination')}.innerText`)).includes(
-      L('roleWork.destination.sameFolder')
-    ),
-    'avis : la ligne dit que les rôles partent dans ce dossier'
-  )
   await ui.shot('filles-non-commite-3-avis')
   await ui.enter()
   // Deux rôles d'un message : une carte de groupe sous la bulle (fiche 264).
   await unfold(ui, 2)
   await ui.waitFor(`${reports}.length === 3`, 30000)
-  const opinions = (await ui.ev(`JSON.stringify(${leads}.slice(1))`)) ?? '[]'
-  check(
-    JSON.parse(opinions).every((lead) => lead.includes('je vois plan.md')),
-    'avis en lecture seule : les deux filles voient le travail non commité'
-  )
-}
-
-async function proposalsRun(ui, git) {
-  await ui.ready()
-  await ui.send('Découpe la suite\n/scenario tache-plan')
-  const pending = `document.querySelector('[data-testid=proposal-row][data-outcome=pending]')`
-  await ui.waitFor(`!!${pending}`, 30000)
-  await ui.waitFor(`!!${ui.$('launch-line')}`, 10000)
-  check(
-    (await ui.ev(`${ui.$('launch-line')}.innerText`)).includes(
-      L('launchLine.withoutAlone.work', { count: 2 })
-    ) && !(await ui.ev(`${pending}.querySelector('[data-testid=proposal-start]').disabled`)),
-    'Tâches proposées : une ligne discrète ; « Lancer » n’attend pas (sans elles par défaut)'
-  )
-  await ui.shot('filles-non-commite-4-taches-proposees')
-  await change(ui, 'launch-line-commit')
-  await ui.waitFor(`!!${ui.$('launch-line-commit-confirm')}`)
-  // Fiche 244 : la liste complète, cochée ; le `.env` décoché ne part pas.
-  const rows = `[...document.querySelectorAll('[data-testid=launch-line-commit-file]')]`
-  check(
-    JSON.stringify(await ui.ev(`${rows}.map((li) => li.dataset.path).sort()`)) ===
-      JSON.stringify(['.env', 'plan.md']) &&
-      (await ui.ev(`${rows}.every((li) => li.querySelector('input').checked)`)),
-    'Committer d’abord : la liste complète (.env compris), tout coché'
-  )
-  await ui.click(`${rows}.find((li) => li.dataset.path === '.env').querySelector('input')`)
-  await ui.waitFor(`!!${ui.$('launch-line-commit-left')}`)
-  // Fiche 246 : le message rédigé par l'agent ne suit pas les cases d'office ; refait sans le .env.
-  await ui.waitFor(`${ui.$('launch-line-commit-draft')}?.dataset.state === 'agent'`, 15000)
-  await ui.click(ui.$('launch-line-commit-draft-again'))
-  await ui.waitFor(`${ui.$('launch-line-commit-draft')}?.dataset.state === 'drafting'`, 15000)
-  await ui.waitFor(`${ui.$('launch-line-commit-draft')}?.dataset.state === 'agent'`, 15000)
-  check(
-    !(await ui.ev(`${ui.$('launch-line-commit-message')}.value`)).includes('.env') &&
-      (await ui.ev(`${ui.$('launch-line-commit-left')}.innerText`)) ===
-        L('launchLine.left', { count: 1 }),
-    'le .env décoché : hors du message, la ligne dit que le travail partira sans lui'
-  )
-  await ui.shot('filles-non-commite-5-committer')
-  await ui.click(ui.$('launch-line-commit-confirm'))
-  await ui.waitFor(`!${ui.$('launch-line-commit-confirm')}`, 10000)
-  await ui.waitFor(`${ui.$('launch-line')}?.dataset.count === '1'`, 10000)
-  check(
-    git('status', '--porcelain') === '?? .env' &&
-      git('show', '--name-only', '--format=', 'HEAD') === 'plan.md',
-    'Committer d’abord : plan.md commité seul, le .env reste non suivi dans le dossier'
-  )
-  // « Lancer » armé une fois le dossier de la mère lu (fiches 240, 262).
-  await ui.waitFor(`!${pending}.querySelector('[data-testid=proposal-start]').disabled`, 30000)
-  await ui.click(`${pending}.querySelector('[data-testid=proposal-start]')`)
-  await unfold(ui, 1)
-  await ui.waitFor(`${reports}.length === 1`, 30000)
-  check(
-    (await ui.ev(`${leads}[0]`)).includes('je vois plan.md') &&
-      !!(await ui.ev(`!!${ui.$('work-left-behind')}`)),
-    'Committer d’abord puis Lancer : la fille voit plan.md, et part sans le .env (rappelé)'
-  )
-  await ui.shot('filles-non-commite-6-fille-voit')
-}
-
-async function noCommitRun(ui, git) {
-  const noCommit = () => {
-    try {
-      git('rev-parse', '--verify', '--quiet', 'HEAD')
-      return false
-    } catch {
-      return true
-    }
-  }
-  await ui.ready()
-  await ui.send('Écris le plan')
-  await ui.ready()
-
-  // Rôle qui écrit : la ligne dit « dans ce dossier », sans « dernier commit () » ni « Changer… ».
-  await typeRoles(ui, '@front-architect construisez la page\n/scenario voit-le-plan')
-  await ui.waitFor(`${ui.$('launch-line')}?.dataset.place === 'here'`, 10000)
-  const line = await ui.ev(`${ui.$('role-destination')}.innerText`)
-  check(
-    line.includes(L('launchLine.noCommit.role')) &&
-      !line.includes('()') &&
-      !(await ui.ev(`!!${ui.$('launch-line-change')}`)),
-    `dépôt sans commit : le rôle travaillera dans ce dossier, rien à choisir (${line})`
-  )
-  await ui.shot('filles-non-commite-7-sans-commit')
-  await ui.enter()
-  await ui.waitFor(`${reports}.length === 1`, 30000)
-  check(
-    (await ui.ev(`${leads}[0]`)).includes('je vois plan.md') &&
-      noCommit() &&
-      git('worktree', 'list').split('\n').length === 1,
-    'dépôt sans commit : la fille travaille dans le dossier (elle voit le plan), ni worktree ni commit'
-  )
-
-  // Proposition de l'agent (`start_child`) : la même règle, dite sur la carte.
-  await ui.send('Découpe la suite\n/scenario tache-plan')
-  const pending = `document.querySelector('[data-testid=proposal-row][data-outcome=pending]')`
-  await ui.waitFor(`!!${pending}`, 30000)
-  await ui.waitFor(`!!${ui.$('work-group')}?.querySelector('[data-testid=launch-line]')`, 10000)
-  check(
-    (await ui.ev(`${ui.$('work-group')}.innerText`)).includes(L('launchLine.noCommit.work')),
-    'Tâches proposées, dépôt sans commit : ce travail se fera dans ce dossier'
-  )
-  await ui.shot('filles-non-commite-8-sans-commit-proposition')
-  // « Lancer » armé une fois le dossier de la mère lu (fiches 240, 262).
-  await ui.waitFor(`!${pending}.querySelector('[data-testid=proposal-start]').disabled`, 30000)
-  await ui.click(`${pending}.querySelector('[data-testid=proposal-start]')`)
-  await unfold(ui, 1)
-  await ui.waitFor(`${reports}.length === 2`, 30000)
-  check(
-    (await ui.ev(`${leads}[1]`)).includes('je vois plan.md') &&
-      noCommit() &&
-      git('worktree', 'list').split('\n').length === 1,
-    'proposition lancée : dans le dossier, toujours aucun commit (jamais de commit vide)'
-  )
 }

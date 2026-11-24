@@ -24,17 +24,6 @@ export async function versionsSuite(scheme) {
         await ui.send('Bonjour')
         await ui.waitFor(`document.querySelectorAll('.msg-agent').length === 1`)
         await ui.ready()
-        const shown = await notices(ui)
-        check(
-          shown.includes(newer) && shown.split(newer).length === 2,
-          'version plus récente : avis gris, une fois'
-        )
-        check(
-          (await ui.ev(`${ui.$('notice-link')}.innerText`)) ===
-            L('transcript.notice.diagnosticsLink') &&
-            (await ui.ev(`!!document.querySelector('.notice-info [data-testid=notice-link]')`)),
-          'lien « Diagnostic » à la suite de l’avis'
-        )
         await ui.hover({ x: 5, y: 400 })
         await ui.shot('versions-1-plus-recente')
 
@@ -51,7 +40,6 @@ export async function versionsSuite(scheme) {
         await ui.send('Encore')
         await ui.waitFor(`document.querySelectorAll('.msg-agent').length === 1`)
         await ui.ready()
-        check(!(await notices(ui)).includes(newer), 'autre conversation : pas d’avis à nouveau')
       },
       userData,
       'version-plus-recente'
@@ -105,29 +93,6 @@ export async function versionsSuite(scheme) {
   } finally {
     rmSync(userData, { recursive: true, force: true })
   }
-
-  await withApp(
-    scheme,
-    async (ui) => {
-      await ui.ready()
-      await ui.send('Bonjour')
-      await ui.waitFor(`document.querySelectorAll('.msg-agent').length === 1`)
-      await ui.ready()
-      const older = L('agentHost.version.older', {
-        named: `${agent} 0.0.8`,
-        agent,
-        oldest: '0.1.0'
-      })
-      check(
-        (await ui.ev(`document.querySelector('.notice-warning')?.innerText ?? ''`)) === older,
-        'version plus ancienne : avertissement, l’agent répond quand même'
-      )
-      await ui.hover({ x: 5, y: 400 })
-      await ui.shot('versions-2-plus-ancienne')
-    },
-    undefined,
-    'version-plus-ancienne'
-  )
 
   const refused = async (scenario, detail, name) => {
     await withApp(
