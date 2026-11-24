@@ -243,6 +243,32 @@ describe('fil — remplaçants des e2e', () => {
     }
   })
 
+  // Remplace `e2e/suites/touches.mjs` n° 2 : la réponse copiée est sa source Markdown.
+  it('copier la réponse : le Markdown complet, pas le texte rendu', async () => {
+    const writeText = vi.fn(async () => {})
+    const clipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard')
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    try {
+      const reply = '## Bilan\n\n- **trois** fichiers\n- `pnpm test` vert'
+      render(
+        <Transcript
+          items={[
+            { kind: 'user', id: 1, text: 'Fais-le', at: T0 },
+            { kind: 'agent', id: 2, text: reply, at: T0 + 5000 }
+          ]}
+          onRespondPermission={noop}
+          onRespondElicitation={noop}
+          messageActions={{ busy: false, onEdit: noop, onOpenConversation: noop }}
+        />
+      )
+      await act(async () => fireEvent.click(screen.getByTestId('copy-reply')))
+      expect(writeText).toHaveBeenCalledWith(reply)
+    } finally {
+      if (clipboard) Object.defineProperty(navigator, 'clipboard', clipboard)
+      else delete (navigator as unknown as Record<string, unknown>).clipboard
+    }
+  })
+
   it('lien `fichier:ligne` d’une réponse : « Ouvrir dans VS Code » juste après, à la ligne (fil n° 7)', () => {
     const open = vi.fn()
     render(

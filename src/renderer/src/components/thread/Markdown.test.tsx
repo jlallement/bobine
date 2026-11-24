@@ -182,4 +182,39 @@ describe('Markdown', () => {
     const plain = render(<Markdown text={'Marqué « modifié » ;'} />)
     expect(plain.container.textContent).toBe('Marqué « modifié » ;')
   })
+
+  // Remplace `e2e/suites/tables.mjs` n° 1 : alignements GFM, gauche par défaut.
+  it('tableau : alignements Markdown respectés, rien d’imposé sans alignement', () => {
+    const text = '| g | c | d | n |\n|:--|:-:|--:|---|\n| 1 | 2 | 3 | 4 |\n'
+    render(<Markdown text={text} />)
+    const align = [...screen.getByTestId('markdown-table').querySelectorAll('th')].map(
+      (th) => th.style.textAlign || th.getAttribute('align') || ''
+    )
+    expect(align).toEqual(['left', 'center', 'right', ''])
+  })
+
+  // Remplace `e2e/suites/touches.mjs` n° 1 : « Copier » d'un bloc de code met son texte.
+  it('« Copier » d’un bloc de code : son texte exact dans le presse-papiers', async () => {
+    const writeText = vi.fn(async () => {})
+    const clipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard')
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    // jsdom n'a pas `innerText` (texte rendu) : le texte du nœud en tient lieu.
+    const innerText = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'innerText')
+    Object.defineProperty(HTMLElement.prototype, 'innerText', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.textContent
+      }
+    })
+    try {
+      render(<Markdown text={'```sh\npnpm test\npnpm build\n```\n'} />)
+      await act(async () => fireEvent.click(screen.getByTestId('copy-code')))
+      expect(writeText).toHaveBeenCalledWith('pnpm test\npnpm build')
+    } finally {
+      if (innerText) Object.defineProperty(HTMLElement.prototype, 'innerText', innerText)
+      else delete (HTMLElement.prototype as unknown as Record<string, unknown>).innerText
+      if (clipboard) Object.defineProperty(navigator, 'clipboard', clipboard)
+      else delete (navigator as unknown as Record<string, unknown>).clipboard
+    }
+  })
 })

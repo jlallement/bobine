@@ -67,3 +67,20 @@ describe('polices livrées hors macOS (fiche 145)', () => {
     expect(codeFontCss('Fira Code')).toBe("'Fira Code', var(--font-mono)")
   })
 })
+
+// Remplace `e2e/suites/touches.mjs` n° 5 : la largeur du fil choisie devient `--column-width`.
+describe('largeur du fil (fiche 027)', () => {
+  it('étroite, normale, large : 640, 740, 960 px', async () => {
+    const { applyAppearance } = await import('./appearance')
+    const { DEFAULT_PREFERENCES } = await import('@shared/preferences')
+    const width = () => document.documentElement.style.getPropertyValue('--column-width')
+    for (const [threadWidth, px] of [
+      ['wide', '960px'],
+      ['narrow', '640px'],
+      ['normal', '740px']
+    ] as const) {
+      applyAppearance({ preferences: { ...DEFAULT_PREFERENCES, threadWidth } })
+      expect(width()).toBe(px)
+    }
+  })
+})
