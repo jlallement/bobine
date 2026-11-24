@@ -1,5 +1,5 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ComponentProps } from 'react'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import type { AgentSettingsView, AgentSnapshot } from '@shared/agent'
@@ -471,8 +471,11 @@ describe('Composer — remplaçants des e2e', () => {
 
   it('mode choisi dans le menu : focus rendu à la saisie, sans infobulle ouverte (composer n° 2, 3)', async () => {
     const t = setup({ controls: modes('code') })
+    screen.getByTestId('mode-chip').focus()
     fireEvent.keyDown(screen.getByTestId('mode-chip'), { key: 'Enter' })
     await act(async () => fireEvent.click(screen.getByTestId('control-mode-ask')))
+    // Laisse passer le tour où Radix rendrait le focus à la puce : il doit rester à la saisie.
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 10)))
     expect(t.onSetControl).toHaveBeenCalledWith('mode', 'ask')
     expect(screen.queryByTestId('mode-menu-content')).toBeNull()
     expect(document.activeElement).toBe(t.input)
@@ -482,13 +485,15 @@ describe('Composer — remplaçants des e2e', () => {
   it('Échap ferme le menu du mode et rend le focus à la puce (composer n° 10)', async () => {
     setup({ controls: modes('code') })
     const chip = screen.getByTestId('mode-chip')
+    chip.focus()
     fireEvent.keyDown(chip, { key: 'Enter' })
     expect(screen.getByTestId('mode-menu-content')).toBeTruthy()
     await act(async () =>
       fireEvent.keyDown(screen.getByTestId('mode-menu-content'), { key: 'Escape' })
     )
     expect(screen.queryByTestId('mode-menu-content')).toBeNull()
-    expect(document.activeElement).toBe(chip)
+    // Radix rend le focus au tour suivant (FocusScope, `setTimeout`).
+    await waitFor(() => expect(document.activeElement).toBe(chip))
   })
 
   it('le mode Plan a son icône, distincte des autres modes (composer n° 23)', () => {
@@ -527,7 +532,12 @@ describe('Composer — remplaçants des e2e', () => {
   })
 
   it('capture d’écran : l’image est jointe dans la zone de saisie (quick n° 12)', async () => {
-    const image = { kind: 'image' as const, name: 'capture.png', mimeType: 'image/png', data: 'AA==' }
+    const image = {
+      kind: 'image' as const,
+      name: 'capture.png',
+      mimeType: 'image/png',
+      data: 'AA=='
+    }
     setup({}, { onCaptureScreen: vi.fn(async () => image) })
     await act(async () => fireEvent.click(screen.getByTestId('capture')))
     const [chip, ...others] = screen.getAllByTestId('attachment')

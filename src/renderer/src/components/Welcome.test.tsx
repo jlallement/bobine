@@ -16,9 +16,7 @@ afterEach(() => {
   delete api.help
 })
 
-function setup(
-  options: { testCommand?: string; welcomeHint?: string; discussion?: boolean } = {}
-) {
+function setup(options: { testCommand?: string; welcomeHint?: string; discussion?: boolean } = {}) {
   const open = vi.fn()
   api.help = { open }
   const fill = vi.fn()
@@ -52,18 +50,20 @@ describe('accueil d’une conversation vide', () => {
     const suggestions = screen.getByTestId('suggestions')
     expect(welcome.contains(input)).toBe(true)
     const greeting = welcome.querySelector('h1.greeting')
-    expect(greeting).toBeTruthy()
+    if (!greeting) throw new Error('salutation absente')
     // Dans l'ordre du document : salutation, saisie, suggestions (la mise au centre reste au CSS).
-    expect(greeting!.compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(input.compareDocumentPosition(suggestions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(greeting.compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(
+      input.compareDocumentPosition(suggestions) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
     expect(screen.getAllByTestId('suggestion')).toHaveLength(4)
   })
 
   it('la bobine est dans la salutation, animée à l’arrivée (base n° 2)', () => {
     setup()
-    const greeting = screen.getByTestId('welcome').querySelector('h1.greeting')!
+    const greeting = screen.getByTestId('welcome').querySelector('h1.greeting')
     const spool = screen.getByTestId('spool-mark')
-    expect(greeting.contains(spool)).toBe(true)
+    expect(greeting?.contains(spool)).toBe(true)
     expect(spool.getAttribute('data-motion')).toBe('intro')
   })
 
@@ -93,11 +93,12 @@ describe('accueil d’une conversation vide', () => {
   it('première conversation : liens vers « Premiers pas » et « Autorisations » de l’aide (onboarding n° 11)', () => {
     const { open } = setup({ testCommand: 'pnpm test' })
     const help = screen.getByTestId('welcome-help')
-    const [first, second] = [...help.querySelectorAll('button')]
-    expect(first?.textContent?.trim()).toBe('Premiers pas')
-    expect(second?.textContent?.trim()).toBe('Autorisations')
-    fireEvent.click(first!)
-    fireEvent.click(second!)
+    const [first, second] = help.querySelectorAll('button')
+    if (!first || !second) throw new Error('liens absents')
+    expect(first.textContent?.trim()).toBe('Premiers pas')
+    expect(second.textContent?.trim()).toBe('Autorisations')
+    fireEvent.click(first)
+    fireEvent.click(second)
     expect(open.mock.calls).toEqual([['gettingStarted'], ['permissions']])
   })
 
@@ -108,7 +109,9 @@ describe('accueil d’une conversation vide', () => {
 
   it('une suggestion remplit la saisie, sans rien envoyer (onboarding n° 12)', () => {
     const { fill } = setup()
-    fireEvent.click(screen.getAllByTestId('suggestion')[0]!)
+    const [first] = screen.getAllByTestId('suggestion')
+    if (!first) throw new Error('aucune suggestion')
+    fireEvent.click(first)
     expect(fill).toHaveBeenCalledTimes(1)
     expect(fill).toHaveBeenCalledWith(i18next.t('home.suggestions.explain.text'))
   })
