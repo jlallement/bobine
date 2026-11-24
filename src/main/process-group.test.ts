@@ -7,6 +7,7 @@ import {
   signalGroup,
   STOP_GRACE_MS,
   stopGroup,
+  stoppingByHandle,
   stoppingGroups,
   terminateGroup
 } from './process-group'
@@ -198,5 +199,29 @@ describe('arrêt sous Windows sans objets de tâche (fiche 229, lot 7a)', () => 
     stopGroup(gone, STOP_GRACE_MS, 'win32')
     expect(gone.kill).not.toHaveBeenCalled()
     expect(kill).not.toHaveBeenCalled()
+  })
+})
+
+describe('Windows sans objets de tâche : attente des processus arrêtés par leur handle', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('attendus jusqu’à leur sortie, sans SIGKILL ; jamais par leur numéro', async () => {
+    const kill = vi.spyOn(process, 'kill').mockImplementation(() => true)
+    const child = fakeChild(4244)
+    stopGroup(child, NEVER, 'win32')
+    expect(stoppingByHandle()).toEqual([child])
+    setTimeout(() => Object.assign(child, { exitCode: 1 }), 40)
+    expect(await settleStoppedGroups(1000, 5)).toBe(0)
+    expect(child.kill).toHaveBeenCalledTimes(1)
+    expect(stoppingByHandle()).toEqual([])
+    expect(kill).not.toHaveBeenCalled()
+  })
+
+  it('encore vivant au bout de l’attente : SIGKILL par le handle, compté', async () => {
+    const child = fakeChild(4245)
+    stopGroup(child, NEVER, 'win32')
+    expect(await settleStoppedGroups(30, 5)).toBe(1)
+    expect(child.kill).toHaveBeenLastCalledWith('SIGKILL')
+    expect(stoppingByHandle()).toEqual([])
   })
 })
