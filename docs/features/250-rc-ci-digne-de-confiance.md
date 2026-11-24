@@ -572,3 +572,87 @@ Dependabot comme les autres.
 
   `./scripts/verify` vert. Rien joué en local (ADR-0069). À relancer sur GitHub (macOS, clair et
   sombre) : `session`, `filles`, `subagents`, `worktree-setup`, `browser`, `parcours-outils`.
+
+- 2026-11-24 — Onglet neuf resté « en chargement » sur le runner macOS (`browser`,
+  `parcours-outils`), passages 45371706236, 45371718099 (SDK 2.7.0, épreuve A/B : échoue aussi, ce
+  n'est donc pas le SDK), 45371749951, 45361829816. Linux et Mac local verts.
+  - **Défaut de l'app corrigé : `CdpTab.whenReady` sans borne.** `LOAD_TIMEOUT_MS` ne couvrait que
+    `loadURL` ; la mise en route d'un onglet (`about:blank`, puis débogueur) restée en plan figeait
+    le tour de l'agent sans fin (`browser_navigate`, `browser_tabs new`, et toute commande CDP).
+    Bornée à `READY_TIMEOUT_MS` = 20 s (quelques dizaines de ms d'ordinaire, jusqu'à ≈ 10 s relevé
+    sur le runner chargé) : l'outil rend une erreur claire à l'agent (« The page did not finish
+    loading… »), le tour continue ; un échec ou un délai dépassé n'est pas définitif, l'appel
+    suivant relance la mise en route (`about:blank` interrompt celle restée en plan). Essai
+    unitaire `cdp-tab.test.ts`, rouge (4/5 en délai dépassé) avant le correctif, vert après. Ne
+    rend pas l'e2e verte : elle attend l'agent 15 s, la borne est au-delà, exprès.
+  - **Diagnostic d'échec aveugle (`914050f`) corrigé.** Les captures `.txt` de ces passages disent
+    « Pages du main : (aucune) » alors que l'onglet existe : le filtre `getType() !== 'window'`
+    écartait aussi les onglets, une page de `WebContentsView` ayant le type `window` (relevé en
+    local sur Electron 45.4.1). Les pages des fenêtres sont désormais écartées par leur `id` ;
+    s'ajoutent la visibilité de la vue, `backgroundThrottling`, et `ps` (pid, priorité, état,
+    %CPU) des rendus des onglets et des fenêtres. Le prochain échec dira où s'arrête la mise en
+    route et si le rendu de l'onglet est en arrière-plan.
+  - **Cause sur la VM : non établie, aucun réglage appliqué.** Ce qui est sûr : un onglet neuf est
+    créé caché (`setVisible(false)`) tant que le panneau ne le montre pas ; Chromium le traite
+    alors comme caché (`WasHidden`), son rendu peut passer en priorité d'arrière-plan (macOS :
+    CPU et disque bridés), et sur macOS l'occlusion de la fenêtre (`WebContentsOcclusionCheckerMac`,
+    que garde un patch d'Electron) peut aussi cacher la page. Sur une VM sans GPU qui fait tourner
+    trois suites à la fois, c'est la piste la plus vraisemblable. Mais en local, une vue cachée dans
+    une fenêtre cachée charge `about:blank` en 56 ms : être caché ne bloque pas le chargement, au
+    plus le ralentit. Écartés faute de preuve : `backgroundThrottling: false` sur les onglets
+    (Electron pose `disable_hidden_`, la page ne serait plus jamais « cachée » : minuteries et
+    animations à plein régime dans chaque onglet caché, `document.visibilityState` toujours
+    `visible`, un changement de comportement pour l'utilisateur sans gain prouvé) ; les options de
+    Chromium que posent Puppeteer et Playwright en automatisation
+    (`--disable-renderer-backgrounding`, `--disable-backgrounding-occluded-windows`,
+    `--disable-background-timer-throttling`), possibles dans le seul lanceur e2e, mais qui
+    masqueraient le constat avant que le diagnostic réparé ne parle. Étape suivante : lire les
+    captures `.txt` du prochain échec ; si le rendu de l'onglet y est en arrière-plan et la page
+    `about:blank` en chargement, épreuve A/B de ces options dans `e2e/lib.mjs` (branche jetable).
+- 2026-11-24 — Passages macOS 45375547896, 45375561141, 45375571622 de cette branche : `browser`
+  rouge trois fois, sous trois formes. Le diagnostic réparé parle : à chaque échec, l'onglet est
+  chargé (`loading: false`), visible, débogueur attaché, son rendu à la même priorité que la
+  fenêtre (`pri 20`). **La piste du rendu en arrière-plan est écartée**, pas d'épreuve A/B des
+  options d'automatisation. Le symptôme « onglet neuf resté en chargement » ne s'est pas montré.
+  | Échec | Cause |
+  |---|---|
+  | `browser` clair (en) : « Bonjour, ! », 1 action en échec | **Défaut de l'app.** Le clic de l'agent sur le champ n'est pas arrivé ; la saisie qui suit échoue (« No text field has focus »). Déjà vu en local sous charge (fiche 094, 2 sur 7). |
+  | `browser` sombre (en) : fichier non enregistré, bandeau « File saved » jamais affiché | **Même défaut.** `telechargement` clique sur « Exporter » aussitôt `browser_navigate` rendu ; le CDP répond « Clic en (60, 60) », la page ne reçoit rien. |
+  | `browser` sombre (fr) : agent pas « Prêt » en 15 s | **Lenteur, pas un blocage** : toutes les actions réussies, tour fini en 18,6 s, 3 s après la capture. Cause de la lenteur non établie ; borne d'essai non touchée. |
+  Mécanisme, lu dans Chromium (`WidgetInputHandlerManager::DispatchEvent`) puis reproduit en local
+  (Electron 45.4.1, script hors dépôt) : tant que le rendu d'une page est suspendu, juste après une
+  navigation et jusqu'à sa première peinture, Chromium jette clics, touches et molette en les
+  acquittant « non consommés » ; le CDP ne dit rien. Clic par le CDP aussitôt `loadURL` rendu :
+  perdu à chaque fois, même sur une page au contenu immédiat ; dans une vue cachée jamais montrée :
+  toujours perdu. Sur un Mac rapide, l'aller-retour MCP entre deux outils suffit d'ordinaire ; sur
+  la VM sans GPU, non. Pour un utilisateur, même défaut : un clic de l'agent juste après une
+  navigation sur une machine chargée, ou dans un onglet que le panneau ne montre pas, est perdu
+  sans erreur.
+  **Décision de l'utilisateur** : pas d'option globale de Chromium. `allow-pre-commit-input` (essayé
+  en `4c7585b`, retiré par `git revert`) règle tout, mais ôte aussi à l'utilisateur la protection de
+  Chromium contre un clic qui tombe sur une page pas encore vue. Correctif ciblé sur les entrées de
+  l'agent (`paint-gate.ts`, `CdpTab`, `BrowserManager.paintHidden`) : avant le premier appui,
+  touche, molette ou saisie de l'agent dans un document, on attend sa première peinture (entrée
+  `paint` de la page, lue dans le monde isolé ; une fois par document, refaite à chaque
+  `did-navigate`). Un onglet caché est peint le temps de l'attente : montré à sa taille, hors de la
+  fenêtre sauf un point (son coin haut-gauche au coin bas-droit de la fenêtre), puis remis par
+  `layout`. Relevé : une vue entièrement hors de la fenêtre n'est pas peinte ; réduite à 1 × 1, elle
+  est peinte mais garde cette taille une fois cachée et le clic tombe à côté. Borne 5 s
+  (`PAINT_TIMEOUT_MS`) : au-delà, l'outil rend « The page has not been rendered yet… Nothing was
+  sent » et l'attente n'est pas refaite pour ce document (page sans rien à peindre : Chromium la
+  libère seul, relevé ≈ 3 s). Les déplacements du pointeur ne sont jamais retenus (Chromium les
+  laisse passer). Écartés : `rAF` × 2 (non essayé : les images de la page peuvent tourner pendant la
+  retenue des commits, il ne prouverait pas la peinture) ; `incrementCapturerCount` et
+  `capturePage` sur la vue cachée (sans réponse en 30 à 60 s, relevé). Rejoué hors dépôt avec le script de `firstPaintScript` et le placement de
+  `paintHidden` : clic aussitôt après `loadURL`, page visible ou cachée, contenu immédiat ou peint
+  après 1,5 s : reçu 6 fois sur 6 (attente 23 à 27 ms, 1,5 s pour la page tardive), contre 0 sur 2
+  sans. Essais unitaires `paint-gate.test.ts` (logique d'attente) et `cdp-tab.test.ts` (appui
+  retenu, erreur sans appui envoyé, déplacement libre, onglet caché peint puis remis), rouges sans
+  le branchement dans `CdpTab`. À relancer sur GitHub macOS : `browser parcours-outils`, trois fois.
+
+- 2026-11-24 — Décision de l'utilisateur : `browser` et `parcours-outils` deviennent indicatives sur le
+  runner macOS de GitHub (comme `perf`, `simulator`, `android`), bloquantes en local, sous Linux et
+  quand on les nomme. Deux vrais défauts trouvés en route sont corrigés (chargement d'onglet borné à
+  20 s ; entrées de l'agent retenues jusqu'à la première peinture, ciblé à l'agent). Restent ouverts,
+  à traiter à côté : (1) « branche : le navigateur reprend la page de l'originale » (`BrowserManager.inherit`
+  avale ses erreurs ; cause inconnue) ; (2) tour de l'agent > 15 s sur la VM, sans cause établie.

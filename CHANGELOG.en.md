@@ -8,6 +8,11 @@ What changes for you, version by version. Shown in Settings › About.
 
 - Windows: a scheduled task in a folder such as `C:\Users\…\project` is saved and runs; it was
   refused, or dropped when the list was read back.
+- Built-in browser: a new tab that never finishes opening no longer blocks the agent forever;
+  after 20 seconds, the agent is told the page did not finish loading and carries on, and the tab
+  can still be used and reloaded.
+- Built-in browser: a click or keystroke from the agent right after a page opens, or in a tab the
+  panel is not showing, is no longer silently lost; the agent waits for the page to be displayed.
 - Several pieces of work proposed at once: the card always lists them in the order the agent
   proposed them, the same every time, and a line already shown no longer changes place.
 - Outline of a long conversation: at the very bottom of the thread, the last message is the one
