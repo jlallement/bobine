@@ -531,13 +531,13 @@ Ce que cela donne pour un tour de table, sans nouvelle interface :
 
 **Indépendance et lecture seule**
 
-- [ ] Chaque participant reçoit consigne, question, fichiers et dernier échange borné, et
+- [x] Chaque participant reçoit consigne, question, fichiers et dernier échange borné, et
       **jamais** l'avis ni le nom d'un autre. Vérifié par un scénario de
       l'agent factice qui répète ce qu'il a reçu.
-- [ ] Les participants sont en lecture seule dans le dossier d'origine, sans worktree, sans outil
+- [x] Les participants sont en lecture seule dans le dossier d'origine, sans worktree, sans outil
       de Bobine : écritures demandées refusées, empreinte comparée, mention « lecture seule
       demandée » pour un agent qui écrit sans demander, « non vérifiée » hors git.
-- [ ] Un modèle non appliqué met le participant en erreur avant l'envoi de la question, sans
+- [x] Un modèle non appliqué met le participant en erreur avant l'envoi de la question, sans
       substitution.
 
 **Attente, avis, synthèse**
@@ -547,7 +547,7 @@ Ce que cela donne pour un tour de table, sans nouvelle interface :
 - [ ] La synthèse part seule quand tous ont fini et qu'au moins deux avis sont là, au premier
       repos de l'agent, même avec un participant en erreur. « Synthétiser sans attendre » existe
       dès deux avis et arrête les participants restants. Moins de deux avis : pas de synthèse.
-- [ ] La demande de synthèse contient les avis bornés à 6 000 caractères (coupure dite),
+- [x] La demande de synthèse contient les avis bornés à 6 000 caractères (coupure dite),
       anonymisés (« Participant A, B, C », ordre mélangé, sans table des lettres ni nom de
       modèle), avec les absents nommés par leur lettre. Les avis ne repartent pas avec le message
       suivant de l'utilisateur.
@@ -575,11 +575,11 @@ Ce que cela donne pour un tour de table, sans nouvelle interface :
 
 **Cas limites**
 
-- [ ] Un participant en erreur ou arrêté n'empêche pas la synthèse des autres.
+- [x] Un participant en erreur ou arrêté n'empêche pas la synthèse des autres.
 - [ ] Un second `/roundtable` dans la même conversation est refusé tant que le premier n'a pas
       rendu sa synthèse. Un message pendant le tour part sans les avis, et la synthèse attend la
       fin de la réponse.
-- [ ] Après un redémarrage, la carte se relit du fil : les participants en cours sont « arrêtés
+- [x] Après un redémarrage, la carte se relit du fil : les participants en cours sont « arrêtés
       (redémarrage) », et aucune synthèse ne part sans geste.
 - [ ] Corbeille et archivage : les participants suivent la famille ; la conversation d'un
       participant supprimée après la synthèse laisse son avis lisible.
@@ -597,7 +597,7 @@ Ce que cela donne pour un tour de table, sans nouvelle interface :
   - `replique` ;
   - coût dans une unité propre (bobcoins) et participant sans chiffre, en réutilisant
     `--cout-bob` et `--sans-usage`.
-- [ ] Unitaires : désignation et mélange, bornes, dernier échange, total par unité, état lu du fil
+- [x] Unitaires : désignation et mélange, bornes, dernier échange, total par unité, état lu du fil
       (redémarrage), réplique unique, quorum.
 - [ ] e2e `tour-de-table`, en clair et en sombre, avec `--lang en` : lancement en deux gestes,
       premier usage (menu ouvert par Entrée), menu à cases, ligne en saisie étroite, carte,
@@ -952,3 +952,42 @@ le main n'a pas livré l'étape 1) :
   des données, canaux IPC et vérification de leurs arguments, clés de traduction, glossaire) ;
   plan par lot et partage des fichiers entre main et renderer. Aucune interface ni orchestration
   encore : rien de visible pour l'utilisateur.
+- 2026-11-24 : **lot main 1 à 4** (branche `1.2`). Commits `feat(roundtable): ipc wiring`
+  (canaux `roundtable:*` dans `IpcInvokeContract`, preload `window.api.roundtable.*`, gardien de
+  lecture seule, préférence `roundtableParticipants`), puis orchestrateur, essais et docs.
+  - **Fait** : module `src/main/roundtable/` (`roundtables.ts`, `seat-events.ts`, `steps.ts`,
+    `options.ts`, `strict-model.ts`, `participant-role.ts`, `participants.ts`, `readings.ts`,
+    `setup.ts`, `ipc.ts`) ; rôle fourni « Participant » (`builtin*.ts`, consigne
+    `PARTICIPANT_BRIEF` dans les deux langues, `mcp: []`, aucun outil de Bobine) ;
+    `ChildConversations` : `reserve`, `ChildRequest.attachments` / `strictModel` / `reserved` /
+    `proceed` / `launchFailed`, `relaunchParticipant`, `followUp`, `onFolderChanged`,
+    `watchSettled`, `children()` sans les participants (`ChildRequest` sorti dans
+    `children-request.ts`) ; exclusions dans `host-options.ts` et `children-wake.ts` ; option
+    `settleLoaded` du gestionnaire (`loadedEvents`, `helpers.ts`) ; agent factice
+    (`--scenario-par-modele`, `--refuser-modele`, `--modele-retombe`, étape `computed`, scénarios
+    `avis-*`, `participant-ecrit*`, `synthese-tour-de-table`, `replique`).
+  - **Contrat** (changement additif, demandé par le chef pour l'interface) : `askedAt` sur
+    `RoundtableSeat` et `RoundtableRebuttal`, porté par `seat-working` et `rebuttal-seat` : l'heure
+    d'envoi de la question (de la réplique) dans la conversation du participant ; le compte rendu
+    dont `askedAt` est égal porte l'avis (la réplique), relance ou erreur intermédiaire comprises.
+    Effacé par `seat-relaunched`. Testé dans `shared/roundtable.test.ts`.
+  - **Écarts** : « Relancer » repart dans la **même** conversation (pas une nouvelle fille) ; après
+    un redémarrage, un tour dont la question avait des pièces jointes refuse « Relancer »
+    (`roundtable.error.attachmentsLost`) plutôt que de relancer sans elles. Un réglage refusé par
+    l'agent donne « modèle non appliqué » (avec sa raison, « model not found » chez OpenCode) ;
+    « modèle introuvable » est réservé à une valeur absente des options annoncées (rien de propre
+    à un agent). La question n'est pas posée en message dans le fil de la mère (la bulle vient de
+    l'élément) ; son historique de saisie est écrit par le renderer (`conversation:recordSent`),
+    pas par le main, pour ne pas le doubler. Archiver la mère pendant que des participants
+    travaillent reste refusé (fiche 228) ; archivée avec une synthèse en attente, le tour s'arrête.
+  - **Essais** (agent factice, aucun vrai agent) : `src/main/roundtable/*.test.ts` (indépendance,
+    synthèse anonymisée au repos et attente du repos, cloisonnement, refus d'un second tour et
+    depuis un travail, réplique unique et décision, modèle strict, sélection et places, quorum,
+    « Synthétiser sans attendre », arrêts, relance, lecture seule demandée / refusée / hors git,
+    avis piégé, corbeille, archivage, plafond, redémarrage pendant le recueil et pendant la
+    réplique), `children-wake.test.ts`, `settings-store.test.ts`, `preferences.test.ts`,
+    `builtin.test.ts`. Pas d'e2e locale (ADR-0069).
+  - **Non couvert par un essai main** : réplique retenue au plafond d'un participant (« Continuer »
+    dans sa conversation) ; agent qui plante pendant son avis (couvert seulement par l'erreur de
+    tour) ; tout ce qui s'affiche (renderer).
+
