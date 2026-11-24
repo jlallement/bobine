@@ -24,7 +24,7 @@ and Rolldown are, for the small runtime helpers they add to the build output.
 
 | Package | Version | License | Used by | License text |
 |---|---|---|---|---|
-| [@agentclientprotocol/sdk](https://github.com/agentclientprotocol/typescript-sdk) | 2.7.0 | Apache-2.0 | main process | [T2](#t2) |
+| [@agentclientprotocol/sdk](https://github.com/agentclientprotocol/typescript-sdk) | 2.9.1 | Apache-2.0 | main process | [T2](#t2) |
 | [@braintree/sanitize-url](https://github.com/braintree/sanitize-url) | 7.1.2 | MIT | interface | [T3](#t3) |
 | [@chevrotain/gast](https://github.com/Chevrotain/chevrotain) | 13.2.0 | Apache-2.0 | interface | [T4](#t4) |
 | [@chevrotain/regexp-to-ast](https://github.com/Chevrotain/chevrotain) | 13.2.0 | Apache-2.0 | interface | [T4](#t4) |
@@ -120,8 +120,8 @@ and Rolldown are, for the small runtime helpers they add to the build output.
 | [highlight.js](https://github.com/highlightjs/highlight.js) | 11.11.2 | BSD-3-Clause | interface | [T43](#t43) |
 | [html-parse-stringify](https://github.com/i18next/html-parse-stringify) | 4.0.1 | MIT | interface | [T44](#t44) |
 | [html-url-attributes](https://github.com/rehypejs/rehype-minify/tree/main/packages/html-url-attributes) | 3.0.1 | MIT | interface | [T45](#t45) |
-| [i18next](https://github.com/i18next/i18next) | 27.1.2 | MIT | main process, interface | [T46](#t46) |
-| [ignore](https://github.com/kaelzhang/node-ignore) | 7.0.14 | MIT | main process | [T47](#t47) |
+| [i18next](https://github.com/i18next/i18next) | 27.2.4 | MIT | main process, interface | [T46](#t46) |
+| [ignore](https://github.com/kaelzhang/node-ignore) | 7.0.16 | MIT | main process | [T47](#t47) |
 | [inline-style-parser](https://github.com/remarkablemark/inline-style-parser) | 0.2.7 | MIT | interface | [T48](#t48) |
 | [internmap](https://github.com/mbostock/internmap) | 2.0.3 | ISC | interface | [T49](#t49) |
 | [is-plain-obj](https://github.com/sindresorhus/is-plain-obj) | 4.1.0 | MIT | interface | [T38](#t38) |
@@ -133,7 +133,7 @@ and Rolldown are, for the small runtime helpers they add to the build output.
 | [lodash-es](https://github.com/lodash/lodash) | 4.18.1 | MIT | interface | [T54](#t54) |
 | [longest-streak](https://github.com/wooorm/longest-streak) | 3.1.0 | MIT | interface | [T55](#t55) |
 | [lowlight](https://github.com/wooorm/lowlight) | 3.3.0 | MIT | interface | [T33](#t33) |
-| [lucide-react](https://github.com/lucide-icons/lucide) | 1.73.0 | ISC | interface | [T56](#t56) |
+| [lucide-react](https://github.com/lucide-icons/lucide) | 1.77.0 | ISC | interface | [T56](#t56) |
 | [markdown-table](https://github.com/wooorm/markdown-table) | 3.0.4 | MIT | interface | [T33](#t33) |
 | [marked](https://github.com/markedjs/marked) | 16.4.2 | MIT | interface | [T57](#t57) |
 | [mdast-util-find-and-replace](https://github.com/syntax-tree/mdast-util-find-and-replace) | 3.0.3 | MIT | interface | [T33](#t33) |
@@ -178,7 +178,7 @@ and Rolldown are, for the small runtime helpers they add to the build output.
 | [property-information](https://github.com/wooorm/property-information) | 7.2.0 | MIT | interface | [T62](#t62) |
 | [react](https://github.com/react/react) | 19.3.1 | MIT | interface | [T63](#t63) |
 | [react-dom](https://github.com/react/react) | 19.3.1 | MIT | interface | [T63](#t63) |
-| [react-i18next](https://github.com/i18next/react-i18next) | 18.0.1 | MIT | interface | [T64](#t64) |
+| [react-i18next](https://github.com/i18next/react-i18next) | 18.0.3 | MIT | interface | [T64](#t64) |
 | [react-markdown](https://github.com/remarkjs/react-markdown) | 10.1.0 | MIT | interface | [T65](#t65) |
 | [react-remove-scroll](https://github.com/theKashey/react-remove-scroll) | 2.7.2 | MIT | interface | [T13](#t13) |
 | [react-remove-scroll-bar](https://github.com/theKashey/react-remove-scroll-bar) | 2.3.8 | MIT | interface | [T66](#t66) |
@@ -323,7 +323,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ### T2
 
-Used by: @agentclientprotocol/sdk 2.7.0.
+Used by: @agentclientprotocol/sdk 2.9.1.
 
 ```text
 
@@ -2190,7 +2190,7 @@ THE SOFTWARE.
 
 ### T46
 
-Used by: i18next 27.1.2.
+Used by: i18next 27.2.4.
 
 ```text
 The MIT License (MIT)
@@ -2218,7 +2218,7 @@ SOFTWARE.
 
 ### T47
 
-Used by: ignore 7.0.14.
+Used by: ignore 7.0.16.
 
 ```text
 Copyright (c) 2013 Kael Zhang <i@kael.me>, contributors
@@ -2477,7 +2477,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ### T56
 
-Used by: lucide-react 1.73.0.
+Used by: lucide-react 1.77.0.
 
 ```text
 ISC License
@@ -2798,7 +2798,7 @@ SOFTWARE.
 
 ### T64
 
-Used by: react-i18next 18.0.1.
+Used by: react-i18next 18.0.3.
 
 ```text
 The MIT License (MIT)
