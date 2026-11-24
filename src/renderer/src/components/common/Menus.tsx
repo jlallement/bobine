@@ -56,7 +56,7 @@ if (typeof window !== 'undefined') {
  * sans clavier ni souris dessus : pas d'infobulle. Sans prise en charge de `:focus-visible` (jsdom
  * des essais), rien n'est filtré.
  */
-function focusWithoutIntent(element: HTMLElement): boolean {
+export function focusWithoutIntent(element: HTMLElement): boolean {
   if (document.activeElement !== element || Date.now() - lastPointerDown > 800) return false
   if (typeof CSS === 'undefined' || !CSS.supports?.('selector(:focus-visible)')) return false
   return !element.matches(':focus-visible') && !element.matches(':hover')

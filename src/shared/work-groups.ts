@@ -118,8 +118,9 @@ export function workLayout(items: readonly TranscriptItem[]): WorkLayout {
     })
   }
   const roundtables = roundtableGroups(items, seats, cards, hidden)
-  for (const group of roundtables.values())
-    for (const work of group.works.values()) grouped.add(work.childId)
+  // Participants d'un tour : dans sa carte, ou nulle part (jamais une carte seule).
+  for (const [key, work] of cards.byCard)
+    if (key.startsWith('roundtable:')) grouped.add(work.childId)
   // Lancement avec une clé qu'aucune ligne ne porte : sa carte seule, à sa place.
   const solos = new Map<number, WorkCardData>()
   for (const work of cards.byCard.values()) {
@@ -144,21 +145,35 @@ export function workLayout(items: readonly TranscriptItem[]): WorkLayout {
 /** Participant d'un tour : le tour et sa lettre, par conversation du participant. */
 type SeatRef = { roundtableId: string; letter: RoundtableLetter }
 
-/** Conversations des participants de tous les tours du fil (`participantIds`, avec la lettre). */
-function roundtableSeats(items: readonly TranscriptItem[]): Map<string, SeatRef> {
-  const seats = new Map<string, SeatRef>()
+/**
+ * Conversations des participants de tous les tours du fil (`participantIds`, avec la lettre), et
+ * tout lancement dont la clé de carte est l'identifiant d'un tour (participant dont la place n'a
+ * pas encore, ou plus, sa conversation) : jamais une carte seule ni une ligne de « Sous-tâches ».
+ */
+function roundtableSeats(items: readonly TranscriptItem[]): Map<string, SeatRef | undefined> {
+  const seats = new Map<string, SeatRef | undefined>()
+  const tours = new Set<string>()
   for (const item of items) {
     if (item.kind !== 'roundtable') continue
+    tours.add(item.roundtableId)
     for (const seat of item.seats)
       if (seat.childId && !seats.has(seat.childId))
         seats.set(seat.childId, { roundtableId: item.roundtableId, letter: seat.letter })
   }
+  for (const item of items)
+    if (
+      item.kind === 'child-started' &&
+      item.card &&
+      tours.has(item.card) &&
+      !seats.has(item.childId)
+    )
+      seats.set(item.childId, undefined)
   return seats
 }
 
 /** Clé de carte propre à un participant (tous ceux d'un tour partagent la clé du lancement). */
-const seatCardKey = (seat: SeatRef, childId: string) =>
-  `roundtable:${seat.roundtableId}:${seat.letter}:${childId}`
+const seatCardKey = (seat: SeatRef | undefined, childId: string) =>
+  `roundtable:${seat?.roundtableId ?? ''}:${seat?.letter ?? ''}:${childId}`
 
 /**
  * Le fil, avec une clé de carte propre à chaque lancement de participant : `workCards` range ainsi
@@ -166,12 +181,11 @@ const seatCardKey = (seat: SeatRef, childId: string) =>
  */
 function withSeatCards(
   items: readonly TranscriptItem[],
-  seats: ReadonlyMap<string, SeatRef>
+  seats: ReadonlyMap<string, SeatRef | undefined>
 ): TranscriptItem[] {
   return items.map((item) => {
-    if (item.kind !== 'child-started') return item
+    if (item.kind !== 'child-started' || !seats.has(item.childId)) return item
     const seat = seats.get(item.childId)
-    if (!seat) return item
     const { request: _request, ...started } = item
     return { ...started, card: seatCardKey(seat, item.childId) }
   })
@@ -183,7 +197,7 @@ function withSeatCards(
  */
 function roundtableGroups(
   items: readonly TranscriptItem[],
-  seats: ReadonlyMap<string, SeatRef>,
+  seats: ReadonlyMap<string, SeatRef | undefined>,
   cards: WorkCards,
   hidden: Set<number>
 ): Map<number, RoundtableGroupData> {

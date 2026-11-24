@@ -11,9 +11,13 @@
 import { ChevronDown, ChevronRight, Square } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import i18next from 'i18next'
 import {
+  canRebut,
   canRelaunch,
   canSynthesize,
+  hasQuorum,
+  type Roundtable,
   roundtableTotal,
   usableSeats,
   type RoundtableLetter,
@@ -40,24 +44,62 @@ type Gesture = 'synthesize' | 'rebuttal' | 'decide' | 'relaunch' | 'stop'
  * inconnu, pièces jointes perdues au redémarrage…) est dit sur place, en clair. Sans conversation
  * connue (fil en lecture seule), aucun geste.
  */
-export function useRoundtableGestures(info: SubtasksInfo | undefined, roundtableId: string) {
+export function useRoundtableGestures(info: SubtasksInfo | undefined, item: Roundtable) {
   const [refusal, setRefusal] = useState<string | undefined>()
+  // Un geste à la fois par bouton : pas de second envoi sur un double clic (revue QA).
+  const [pending, setPending] = useState<ReadonlySet<string>>(new Set())
   const conversationId = info?.motherId
-  if (!conversationId) return { gestures: undefined, refusal }
-  const run = (promise: () => Promise<unknown>) => {
+  if (!conversationId) return { gestures: undefined, refusal, pending }
+  const { roundtableId } = item
+  const run = (key: string, refused: string | undefined, call: () => Promise<unknown>) => {
+    if (pending.has(key)) return
+    // Hors de sa phase, le geste ne part pas : la raison est dite tout de suite.
+    if (refused) return setRefusal(refused)
     setRefusal(undefined)
-    void promise().catch((error: unknown) => setRefusal(ipcErrorText(error)))
+    setPending((p) => new Set([...p, key]))
+    void call()
+      .catch((error: unknown) => setRefusal(ipcErrorText(error)))
+      .finally(() => setPending((p) => new Set([...p].filter((k) => k !== key))))
   }
   const api = () => window.api.roundtable
   const gestures = {
-    synthesize: () => run(() => api().synthesize(conversationId, roundtableId)),
-    rebuttal: () => run(() => api().rebuttal(conversationId, roundtableId)),
-    decide: () => run(() => api().decide(conversationId, roundtableId)),
+    synthesize: () =>
+      run('synthesize', synthesizeRefusal(item), () =>
+        api().synthesize(conversationId, roundtableId)
+      ),
+    rebuttal: () =>
+      run('rebuttal', rebuttalRefusal(item), () => api().rebuttal(conversationId, roundtableId)),
+    decide: () => run('decide', undefined, () => api().decide(conversationId, roundtableId)),
     relaunch: (letter: RoundtableLetter) =>
-      run(() => api().relaunch(conversationId, roundtableId, letter)),
-    stop: (letter?: RoundtableLetter) => run(() => api().stop(conversationId, roundtableId, letter))
+      run(
+        `relaunch-${letter}`,
+        canRelaunch(item, letter) ? undefined : i18next.t('roundtable.error.phase'),
+        () => api().relaunch(conversationId, roundtableId, letter)
+      ),
+    stop: (letter?: RoundtableLetter) =>
+      run(`stop-${letter ?? 'all'}`, undefined, () =>
+        api().stop(conversationId, roundtableId, letter)
+      )
   } satisfies Record<Gesture, unknown>
-  return { gestures, refusal }
+  return { gestures, refusal, pending }
+}
+
+/** « Synthétiser » hors de sa phase : pas assez d'avis, ou étape dépassée. */
+function synthesizeRefusal(item: Roundtable): string | undefined {
+  if (canSynthesize(item)) return undefined
+  return i18next.t(
+    hasQuorum(usableSeats(item).length) ? 'roundtable.error.phase' : 'roundtable.error.quorum'
+  )
+}
+
+/** « Faire réagir » : une seule réplique par tour, et seulement après la synthèse. */
+function rebuttalRefusal(item: Roundtable): string | undefined {
+  if (canRebut(item)) return undefined
+  return i18next.t(
+    item.verdict || item.seats.some((s) => s.rebuttal)
+      ? 'roundtable.error.rebuttalOnce'
+      : 'roundtable.error.phase'
+  )
 }
 
 /** Refus d'un geste, sur la carte : lu à voix haute, sans fenêtre. */
@@ -177,7 +219,7 @@ export function RoundtableCard({
   const [reopened, setReopened] = useState(false)
   const collapsed = folded && !reopened
   const [openLetter, setOpenLetter] = useState<RoundtableLetter | undefined>()
-  const { gestures, refusal } = useRoundtableGestures(info, item.roundtableId)
+  const { gestures, refusal, pending } = useRoundtableGestures(info, item)
   const progress = useProgress(group)
   const used = useRoundtableTotal(group, info)
   const rebutted = item.seats.some((s) => s.rebuttal)
@@ -197,7 +239,6 @@ export function RoundtableCard({
             type="button"
             className="roundtable-head-toggle"
             aria-expanded={!collapsed}
-            aria-label={collapsed ? t('roundtable.card.reopen') : undefined}
             onClick={() => setReopened((r) => !r)}
             data-testid="roundtable-head-toggle"
           >
@@ -236,11 +277,12 @@ export function RoundtableCard({
               open={openLetter === seat.letter}
               onToggle={() => setOpenLetter((l) => (l === seat.letter ? undefined : seat.letter))}
               gestures={gestures}
+              pending={pending}
             />
           ))}
         </div>
       )}
-      {!collapsed && <RoundtableFoot group={group} gestures={gestures} />}
+      {!collapsed && <RoundtableFoot group={group} gestures={gestures} pending={pending} />}
       <GestureRefusal text={refusal} />
       {used && !rebutted && (
         <div className="roundtable-used" data-testid="roundtable-used">
@@ -259,7 +301,8 @@ function SeatRow({
   activity,
   open,
   onToggle,
-  gestures
+  gestures,
+  pending
 }: {
   seat: RoundtableSeat
   group: RoundtableGroupData
@@ -269,6 +312,7 @@ function SeatRow({
   open: boolean
   onToggle: () => void
   gestures: ReturnType<typeof useRoundtableGestures>['gestures']
+  pending: ReadonlySet<string>
 }) {
   const { item } = group
   const child = info?.children.find((c) => c.id === seat.childId)
@@ -291,6 +335,7 @@ function SeatRow({
       onToggle={onToggle}
       actions={{
         ...(gestures && collecting && running ? { stop: () => gestures.stop(seat.letter) } : {}),
+        busy: pending.has(`stop-${seat.letter}`) || pending.has(`relaunch-${seat.letter}`),
         ...(relaunch && !modelRefused && gestures
           ? { relaunch: () => gestures.relaunch(seat.letter) }
           : {}),
@@ -304,10 +349,12 @@ function SeatRow({
 /** Pied de la carte : la mention de lecture seule et les gestes de la phase, ou ce qui s'est passé. */
 function RoundtableFoot({
   group,
-  gestures
+  gestures,
+  pending
 }: {
   group: RoundtableGroupData
   gestures: ReturnType<typeof useRoundtableGestures>['gestures']
+  pending: ReadonlySet<string>
 }) {
   const { t } = useTranslation()
   const { item } = group
@@ -335,6 +382,7 @@ function RoundtableFoot({
             type="button"
             className="btn small"
             onClick={gestures.synthesize}
+            disabled={pending.has('synthesize')}
             data-testid="roundtable-synthesize"
           >
             <span className="roundtable-foot-full">{t('roundtable.card.synthesizeNow')}</span>
@@ -348,6 +396,7 @@ function RoundtableFoot({
             aria-label={t('roundtable.card.stopAll')}
             title={t('roundtable.card.stopAll')}
             onClick={() => gestures.stop()}
+            disabled={pending.has('stop-all')}
             data-testid="roundtable-stop"
           >
             <Square size={12} aria-hidden />
@@ -372,6 +421,7 @@ function RoundtableFoot({
             type="button"
             className="btn small primary"
             onClick={gestures.synthesize}
+            disabled={pending.has('synthesize')}
             data-testid="roundtable-synthesize"
           >
             {t('roundtable.card.synthesizeWith', { count: opinions })}
@@ -382,6 +432,7 @@ function RoundtableFoot({
             type="button"
             className="btn small primary"
             onClick={gestures.decide}
+            disabled={pending.has('decide')}
             data-testid="roundtable-decide"
           >
             {t('roundtable.decision.again')}
@@ -395,6 +446,7 @@ function RoundtableFoot({
               for (const seat of item.seats)
                 if (canRelaunch(item, seat.letter)) gestures.relaunch(seat.letter)
             }}
+            disabled={[...pending].some((k) => k.startsWith('relaunch-'))}
             data-testid="roundtable-resume"
           >
             {t('roundtable.card.resume')}

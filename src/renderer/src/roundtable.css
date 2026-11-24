@@ -84,6 +84,12 @@
     display: inline;
   }
 }
+/* Très étroite (sous 400 px de saisie) : « + synthèse » s'efface avant le surcoût. */
+@container (max-width: 400px) {
+  .roundtable-plus {
+    display: none;
+  }
+}
 .roundtable-close {
   color: var(--muted);
   flex-shrink: 0;
@@ -125,6 +131,10 @@
   align-items: center;
   gap: 9px;
   cursor: pointer;
+}
+.roundtable-option.roundtable-first-other {
+  border-top: 1px solid var(--border);
+  border-radius: 0;
 }
 .roundtable-option[data-disabled] {
   opacity: 0.5;
@@ -350,7 +360,10 @@
 .roundtable-letter:hover,
 .roundtable-letter:focus-visible {
   background: var(--surface-2);
-  outline: none;
+}
+.roundtable-letter:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 .roundtable-actions {
   display: flex;
@@ -366,6 +379,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .roundtable-tag {
+    animation: none;
+  }
+  /* Participants au travail : la roue ne tourne pas, la durée suffit à dire qu'il travaille. */
+  .roundtable-state-icon .spin {
     animation: none;
   }
 }

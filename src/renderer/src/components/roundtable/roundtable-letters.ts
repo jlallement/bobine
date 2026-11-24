@@ -41,12 +41,16 @@ export function splitLetters(
 /** Éléments où le texte reste tel quel : du code, un lien déjà cliquable. */
 const KEEP = new Set(['code', 'pre', 'a', 'abbr'])
 
-function visit(node: HastNode, known: Readonly<Record<string, string>>): void {
+function visit(
+  node: HastNode,
+  known: Readonly<Record<string, string>>,
+  seen: Set<string> = new Set()
+): void {
   if (!node.children || (node.tagName && KEEP.has(node.tagName))) return
   const next: HastNode[] = []
   for (const child of node.children) {
     if (child.type !== 'text' || typeof child.value !== 'string') {
-      visit(child, known)
+      visit(child, known, seen)
       next.push(child)
       continue
     }
@@ -57,10 +61,15 @@ function visit(node: HastNode, known: Readonly<Record<string, string>>): void {
           : {
               type: 'element',
               tagName: 'abbr',
-              properties: { dataLetter: part.letter },
+              // Première mention de la lettre : la seule étape de tabulation.
+              properties: {
+                dataLetter: part.letter,
+                ...(seen.has(part.letter) ? {} : { dataFirst: 'true' })
+              },
               children: [{ type: 'text', value: part.text }]
             }
       )
+      if (typeof part !== 'string') seen.add(part.letter)
     }
   }
   node.children = next

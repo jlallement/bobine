@@ -21,6 +21,7 @@ import {
 } from '@shared/roundtable'
 import type { TranscriptItem } from '@shared/transcript'
 import type { RoundtableGroupData, WorkLayout } from '@shared/work-groups'
+import { ipcErrorText } from '../../ipc-errors'
 import { useChildTools } from '../roles/RoleWork'
 import { RoundtableIcon } from '../roundtable/RoundtableIcon'
 import {
@@ -132,19 +133,33 @@ function RebuttalCard({
 function RoundtableActions({
   group,
   step,
-  info
+  info,
+  followed
 }: {
   group: RoundtableGroupData
   step: RoundtableTurn['step']
   info: SubtasksInfo | undefined
+  /** Un message de l'utilisateur suit déjà ce tour : « Appliquer » ne se propose plus. */
+  followed: boolean
 }) {
   const { t } = useTranslation()
   const { item } = group
-  const { gestures, refusal } = useRoundtableGestures(info, item.roundtableId)
+  const { gestures, refusal, pending } = useRoundtableGestures(info, item)
+  // « Appliquer » : le motif de `WorkFoot` (un envoi à la fois, échec dit), fiche 263.
+  const [acting, setActing] = useState(false)
+  const act = (action: () => unknown) => {
+    if (acting) return
+    setActing(true)
+    void Promise.resolve()
+      .then(action)
+      .catch((error: unknown) => info?.onWarn?.(ipcErrorText(error)))
+      .finally(() => setActing(false))
+  }
   const answered = (step === 'synthesis' ? item.synthesis : item.verdict)?.state === 'answered'
   if (!answered) return null
   const rebut = step === 'synthesis' && !!gestures && canRebut(item)
-  const onAsk = info?.onAsk
+  // Un message attend déjà dans la file, ou a suivi : il emporte la suite, rien à proposer.
+  const onAsk = followed || info?.motherQueued ? undefined : info?.onAsk
   if (!onAsk && !rebut) return null
   return (
     <div className="roundtable-actions" data-testid="roundtable-actions">
@@ -153,7 +168,8 @@ function RoundtableActions({
         <button
           type="button"
           className="btn small primary"
-          onClick={() => void onAsk(t('roundtable.synthesis.applyDraft'))}
+          onClick={() => act(() => onAsk(t('roundtable.synthesis.applyDraft')))}
+          disabled={acting}
           data-testid="roundtable-apply"
         >
           <Pencil size={13} aria-hidden />
@@ -166,6 +182,7 @@ function RoundtableActions({
             type="button"
             className="btn small"
             onClick={gestures.rebuttal}
+            disabled={pending.has('rebuttal')}
             data-testid="roundtable-rebut"
           >
             <Reply size={13} aria-hidden />
@@ -189,12 +206,14 @@ function RoundtableAnswerFrame({
   itemId,
   group,
   info,
+  followed,
   children
 }: {
   turn: RoundtableTurn
   itemId: number
   group: RoundtableGroupData | undefined
   info: SubtasksInfo | undefined
+  followed: boolean
   children: ReactNode
 }) {
   const { t } = useTranslation()
@@ -219,7 +238,7 @@ function RoundtableAnswerFrame({
         (turn.step === 'synthesis' && rebutted ? (
           <RebuttalCard group={group} info={info} />
         ) : (
-          <RoundtableActions group={group} step={turn.step} info={info} />
+          <RoundtableActions group={group} step={turn.step} info={info} followed={followed} />
         ))}
     </div>
   )
@@ -235,15 +254,29 @@ export function useRoundtableThread(
   layout: Pick<WorkLayout, 'roundtables'>,
   info: SubtasksInfo | undefined
 ) {
-  const turns = useMemo(() => roundtableTurns(items), [items])
   const byId = useMemo(
     () => new Map([...layout.roundtables.values()].map((g) => [g.item.roundtableId, g])),
     [layout.roundtables]
   )
-  const letters = useMemo(
-    () => new Map([...byId].map(([id, g]) => [id, letterNames(g.item.seats)])),
-    [byId]
+  // La synthèse (la décision) s'arrête à sa fin rendue : une réponse d'après n'en est pas.
+  const turns = useMemo(
+    () =>
+      roundtableTurns(items, (id, step) => {
+        const item = byId.get(id)?.item
+        return (step === 'synthesis' ? item?.synthesis : item?.verdict)?.answeredAt
+      }),
+    [items, byId]
   )
+  // Tables des lettres gardées tant que leur contenu ne change pas : une synthèse qui s'écrit ne
+  // refait pas le Markdown des autres, ni ne remonte ses lettres (focus, infobulle).
+  const lettersKey = JSON.stringify(
+    [...byId].map(([id, g]) => [id, letterNames(g.item.seats)] as const)
+  )
+  const letters = useMemo(
+    () => new Map(JSON.parse(lettersKey) as [string, Record<string, string>][]),
+    [lettersKey]
+  )
+  const lastUser = items.findLast((i) => i.kind === 'user' && !i.from)?.id
   return {
     /** Élément propre au tour de table : son rendu ; sinon `undefined` (rendu ordinaire). */
     entry: (item: TranscriptItem): ReactNode | undefined => {
@@ -277,6 +310,7 @@ export function useRoundtableThread(
           itemId={itemId}
           group={byId.get(turn.roundtableId)}
           info={info}
+          followed={(lastUser ?? -1) > itemId}
         >
           {rendered}
         </RoundtableAnswerFrame>

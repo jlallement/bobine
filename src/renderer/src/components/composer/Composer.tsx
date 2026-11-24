@@ -53,6 +53,7 @@ import { QueuedMessages } from './QueuedMessages'
 import {
   appCommandOf,
   mergeCommands,
+  ROUNDTABLE_COMMAND,
   withCompactCommand,
   type AppCommandName
 } from '@shared/app-commands'
@@ -217,7 +218,13 @@ const NO_AGENT_COMMANDS: AgentCommand[] = []
  * Commandes « / » de l'agent, personnelles et de l'app (fiches 039, 045) ; l'agent gagne à nom
  * égal. Sa commande de compaction figure sous son vrai nom (`/compress`, fiche 126).
  */
-function useCommands(snapshot: AgentSnapshot | null, userCommands: UserCommand[], agent: string) {
+function useCommands(
+  snapshot: AgentSnapshot | null,
+  userCommands: UserCommand[],
+  agent: string,
+  /** Espace Discussion (fiche 224) : pas de tour de table, sa commande n'est pas proposée. */
+  discussion: boolean
+) {
   const announced = snapshot?.commands ?? NO_AGENT_COMMANDS
   const compactCommand = snapshot?.compactCommand
   const agentCommands = useMemo(
@@ -226,8 +233,11 @@ function useCommands(snapshot: AgentSnapshot | null, userCommands: UserCommand[]
   )
   const ownCommands = useMemo(() => toAgentCommands(userCommands), [userCommands])
   const commands = useMemo(
-    () => mergeCommands(agentCommands, ownCommands, compactCommand),
-    [agentCommands, ownCommands, compactCommand]
+    () =>
+      mergeCommands(agentCommands, ownCommands, compactCommand).filter(
+        (c) => !(discussion && c.source === 'app' && c.name === ROUNDTABLE_COMMAND)
+      ),
+    [agentCommands, ownCommands, compactCommand, discussion]
   )
   return { agentCommands, ownCommands, commands }
 }
@@ -306,7 +316,12 @@ export function Composer(props: Props) {
   const view = composerView(snapshot)
   const { status, busy, queued, locked, controls, modeControl, agentLabel, blocker } = view
   // Brouillon (fiches 026, 155) : texte et pièces jointes.
-  const { text, setText, attachments } = useComposerDraft({
+  const {
+    text,
+    setText,
+    attachments,
+    roundtable: rtDraft
+  } = useComposerDraft({
     draftKey,
     caps: snapshot?.promptCapabilities,
     agentName: view.agentName,
@@ -322,7 +337,8 @@ export function Composer(props: Props) {
   const canSend = view.canSendNow && hasContent
 
   const userCommands = props.userCommands ?? NO_USER_COMMANDS
-  const { agentCommands, ownCommands, commands } = useCommands(snapshot, userCommands, agentLabel)
+  const listed = useCommands(snapshot, userCommands, agentLabel, !!props.discussion)
+  const { agentCommands, ownCommands, commands } = listed
   const commandMenu = useCommandMenu(text, commands)
 
   // Mentions `@` : fichiers du dossier proposés pendant la saisie, joints au message.
@@ -348,7 +364,9 @@ export function Composer(props: Props) {
   const roleView = roleCompose.view(text)
   const roleFrame = useRoleFrame(roleView.targets)
   // Tour de table (fiche 285) : `/roundtable ` ou le bouton de la barre ; Entrée l'envoie.
-  const roundtable = useComposerRoundtable(props, { agentCommands, ownCommands, focusInput })
+  const roundtable = useComposerRoundtable(props, {
+    ...{ agentCommands, ownCommands, focusInput, text, draft: rtDraft }
+  })
 
   const changeText = (typed: string, typedCaret?: number) => {
     const [value, nextCaret] = roundtable.typed(typed, typedCaret)
@@ -372,7 +390,7 @@ export function Composer(props: Props) {
     attachments: attachments.items.length,
     ...{ textarea, changeText, placeCaret, commandMenu, mentions, tips }
   })
-  const recordSent = history.recordSent
+  const { recordSent } = history
 
   const pickEntry = (entry: MentionEntry) => {
     const { mention } = mentions
@@ -389,9 +407,8 @@ export function Composer(props: Props) {
     textarea.current?.focus()
   }
 
-  const onPaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
-    if (attachments.paste(event.clipboardData)) event.preventDefault()
-  }
+  const onPaste = (event: ClipboardEvent<HTMLTextAreaElement>) =>
+    attachments.paste(event.clipboardData) && event.preventDefault()
   /** Texte collé remis dans la saisie, au curseur (fiche 155). */
   const putBack = (value: string) => {
     const next = text.slice(0, caret) + value + text.slice(caret)
@@ -400,10 +417,7 @@ export function Composer(props: Props) {
   }
   // Fichiers déposés, suggestion de départ, message repris de la fenêtre rapide, extrait du terminal.
   useInbox(props.composerInbox, draftKey, {
-    text,
-    setText,
-    changeText,
-    attachments,
+    ...{ text, setText, changeText, attachments },
     focus: focusInput
   })
   const screenCapture = useScreenCapture({
@@ -413,10 +427,7 @@ export function Composer(props: Props) {
     onWarn: props.onWarn,
     focus: () => textarea.current?.focus()
   })
-  const pickFiles = async () => {
-    await attachments.addPaths(await props.onPickFiles())
-    textarea.current?.focus()
-  }
+  const pickFiles = async () => attachments.addPaths(await props.onPickFiles()).then(focusInput)
 
   /** Choix d'une commande : complétée si elle attend un argument, sinon envoyée telle quelle. */
   const pickCommand = (command: AgentCommand, complete: boolean) =>

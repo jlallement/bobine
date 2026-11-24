@@ -92,6 +92,8 @@ export interface RowActions {
   otherModel?: () => void
   /** « Ouvrir sa conversation » (sous l'avis déplié). */
   open?: () => void
+  /** Un geste de cette ligne est parti : ses boutons attendent la réponse du main. */
+  busy?: boolean
 }
 
 function StateIcon({ state }: { state: IconState }) {
@@ -258,7 +260,6 @@ export function RoundtableRow({
   onToggle: () => void
   actions: RowActions
 }) {
-  const { t } = useTranslation()
   const running = seat.state === 'working' || seat.state === 'waiting'
   const now = useNow(running)
   const trouble = useSeatTrouble()(seat, now)
@@ -268,77 +269,50 @@ export function RoundtableRow({
   const expandable = !!text && seat.state === 'answered'
   const meta = seatMeta(seat, { running, activity, child, trouble, digest })
   const side = seatSide(seat, { running, collecting, digest, elapsed, actions })
-  const name = (
-    <span className="work-group-text">
-      <SeatName seat={seat} />
-      {meta.length > 0 && (
-        <span
-          className="work-group-meta"
-          data-testid="roundtable-row-meta"
-          {...(trouble ? { 'data-wrap': '' } : {})}
-        >
-          <Dotted parts={meta} />
-        </span>
-      )}
-    </span>
-  )
   return (
-    <div
-      className={`work-group-item roundtable-row${open ? ' open' : ''}`}
-      data-testid="roundtable-row"
-      data-letter={seat.letter}
-      data-state={seat.state}
-      data-scroll-hold=""
-    >
-      <div className="work-group-row">
-        {expandable ? (
-          <button
-            type="button"
-            className="work-group-toggle"
-            aria-expanded={open}
-            aria-label={t('roundtable.card.toggleSeat', { name: seat.label })}
-            onClick={onToggle}
-            data-testid="roundtable-row-toggle"
-          >
-            {collecting ? (
-              <StateIcon state="answered" />
-            ) : open ? (
-              <ChevronDown size={14} aria-hidden />
-            ) : (
-              <ChevronRight size={14} aria-hidden />
-            )}
-            {name}
-          </button>
-        ) : (
-          <span className="work-group-toggle" aria-busy={running || undefined}>
-            <StateIcon state={iconOf(seat)} />
-            {name}
-          </span>
-        )}
-        <span className="roundtable-row-side" data-testid="roundtable-row-side">
+    <RoundtableRowFrame
+      seat={seat}
+      testId="roundtable-row"
+      state={seat.state}
+      running={running}
+      open={open && expandable}
+      expandable={expandable}
+      onToggle={onToggle}
+      // Pendant le recueil, un avis rendu garde sa coche ; ensuite, le chevron du dépliage.
+      lead={collecting || !expandable ? <StateIcon state={iconOf(seat)} /> : undefined}
+      meta={meta.length > 0 ? <Dotted parts={meta} /> : undefined}
+      wrap={!!trouble}
+      side={
+        <>
           {side.length > 0 && <Dotted parts={side} />}
           <ReadOnlyMark seat={seat} />
           <RowButtons seat={seat} actions={actions} />
-        </span>
-      </div>
-      {open && text && (
-        <div className="work-group-open roundtable-row-open" data-testid="roundtable-row-open">
-          <FoldedAnswer text={text} relayed={false} />
-          {actions.open && (
-            <div className="roundtable-open-links">
-              <button
-                type="button"
-                className="link-button"
-                onClick={actions.open}
-                data-testid="roundtable-open"
-              >
-                {t('roundtable.card.open')}
-              </button>
-            </div>
-          )}
+        </>
+      }
+      body={text && <OpenAnswer text={text} onOpen={actions.open} />}
+    />
+  )
+}
+
+/** L'avis (la réplique) déplié : en Markdown, replié après dix lignes, et sa conversation. */
+function OpenAnswer({ text, onOpen }: { text: string; onOpen: (() => void) | undefined }) {
+  const { t } = useTranslation()
+  return (
+    <>
+      <FoldedAnswer text={text} relayed={false} />
+      {onOpen && (
+        <div className="roundtable-open-links">
+          <button
+            type="button"
+            className="link-button"
+            onClick={onOpen}
+            data-testid="roundtable-open"
+          >
+            {t('roundtable.card.open')}
+          </button>
         </div>
       )}
-    </div>
+    </>
   )
 }
 
@@ -377,6 +351,7 @@ function RowButtons({ seat, actions }: { seat: RoundtableSeat; actions: RowActio
           aria-label={t('roundtable.card.stopSeat', { name: seat.label })}
           title={t('roundtable.card.stop')}
           onClick={actions.stop}
+          disabled={actions.busy}
           data-testid="roundtable-stop-seat"
         >
           <Square size={11} aria-hidden />
@@ -397,6 +372,7 @@ function RowButtons({ seat, actions }: { seat: RoundtableSeat; actions: RowActio
             type="button"
             className="btn small quiet"
             onClick={actions.relaunch}
+            disabled={actions.busy}
             data-testid="roundtable-relaunch"
           >
             {t('roundtable.card.relaunch')}
@@ -441,8 +417,7 @@ export function RebuttalRow({
         ? t(STOP_KEYS[rebuttal.stopped])
         : rebuttal.state === 'error'
           ? t('roundtable.state.error', {
-              reason:
-                rebuttal.detail ?? t(`roundtable.state.reason.${rebuttal.error ?? 'agent-error'}`)
+              reason: rebuttal.detail ?? t(REASON_KEYS[rebuttal.error ?? 'agent-error'])
             })
           : text && rebuttalSummary(text)
   const asRow = {
@@ -453,72 +428,88 @@ export function RebuttalRow({
   return (
     <RoundtableRowFrame
       seat={seat}
+      testId="roundtable-rebuttal-row"
+      state={rebuttal.state}
+      running={running}
       open={open && done}
       expandable={done}
       onToggle={onToggle}
-      icon={<StateIcon state={iconOf(asRow)} />}
+      lead={done ? undefined : <StateIcon state={iconOf(asRow)} />}
       meta={
         running && activity ? (
           <RowActivity activity={activity} workspace={child?.workspace} />
         ) : (
-          meta
+          meta || undefined
         )
       }
+      wrap={false}
       side={rebuttal.stance ? t(STANCE_KEYS[rebuttal.stance]) : undefined}
-      body={
-        done && text ? (
-          <>
-            <FoldedAnswer text={text} relayed={false} />
-            {onOpen && (
-              <div className="roundtable-open-links">
-                <button type="button" className="link-button" onClick={onOpen}>
-                  {t('roundtable.card.open')}
-                </button>
-              </div>
-            )}
-          </>
-        ) : undefined
-      }
+      body={done && text && <OpenAnswer text={text} onOpen={onOpen} />}
     />
   )
 }
 
-/** Cadre commun d'une ligne simple (réplique) : dépliable, une méta, un côté. */
+/**
+ * Cadre commun des lignes (avis et réplique) : cousin de la ligne lancée d'une carte de groupe.
+ * Dépliable sur la réponse quand elle est là ; le nom et la méta font le nom accessible du bouton.
+ */
 function RoundtableRowFrame({
   seat,
+  testId,
+  state,
+  running,
   open,
   expandable,
   onToggle,
-  icon,
+  lead,
   meta,
+  wrap,
   side,
   body
 }: {
   seat: RoundtableSeat
+  testId: string
+  state: string
+  running: boolean
   open: boolean
   expandable: boolean
   onToggle: () => void
-  icon: ReactNode
+  /** Icône d'état ; absente, le chevron du dépliage. */
+  lead: ReactNode
   meta: ReactNode
+  /** La méta est une raison : elle passe à la ligne plutôt que d'être coupée. */
+  wrap: boolean
   side: ReactNode
   body: ReactNode
 }) {
-  const { t } = useTranslation()
   const name = (
     <span className="work-group-text">
       <SeatName seat={seat} />
       {meta && (
-        <span className="work-group-meta" data-testid="roundtable-row-meta">
+        <span
+          className="work-group-meta"
+          data-testid="roundtable-row-meta"
+          {...(wrap ? { 'data-wrap': '' } : {})}
+        >
           {meta}
         </span>
       )}
     </span>
   )
+  const chevron = open ? (
+    <ChevronDown size={14} aria-hidden />
+  ) : (
+    <ChevronRight size={14} aria-hidden />
+  )
   return (
     <div
       className={`work-group-item roundtable-row${open ? ' open' : ''}`}
-      data-testid="roundtable-rebuttal-row"
+      data-testid={testId}
       data-letter={seat.letter}
+      data-state={state}
+      // Pointeur sur la ligne : la dépliée reste sous lui (fiches 124, 266).
+      data-scroll-hold=""
+      aria-busy={running || undefined}
     >
       <div className="work-group-row">
         {expandable ? (
@@ -526,15 +517,15 @@ function RoundtableRowFrame({
             type="button"
             className="work-group-toggle"
             aria-expanded={open}
-            aria-label={t('roundtable.card.toggleSeat', { name: seat.label })}
             onClick={onToggle}
+            data-testid="roundtable-row-toggle"
           >
-            {open ? <ChevronDown size={14} aria-hidden /> : <ChevronRight size={14} aria-hidden />}
+            {lead ?? chevron}
             {name}
           </button>
         ) : (
           <span className="work-group-toggle">
-            {icon}
+            {lead}
             {name}
           </span>
         )}
@@ -542,7 +533,11 @@ function RoundtableRowFrame({
           {side}
         </span>
       </div>
-      {open && body && <div className="work-group-open roundtable-row-open">{body}</div>}
+      {open && body && (
+        <div className="work-group-open roundtable-row-open" data-testid="roundtable-row-open">
+          {body}
+        </div>
+      )}
     </div>
   )
 }

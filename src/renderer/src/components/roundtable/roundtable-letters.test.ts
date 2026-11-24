@@ -46,7 +46,7 @@ describe('lettres des participants', () => {
       {
         type: 'element',
         tagName: 'abbr',
-        properties: { dataLetter: 'C' },
+        properties: { dataLetter: 'C', dataFirst: 'true' },
         children: [{ type: 'text', value: 'Participant C' }]
       },
       { type: 'text', value: ', ' },

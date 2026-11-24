@@ -13,9 +13,9 @@
 import * as Popover from '@radix-ui/react-popover'
 import * as Tooltip from '@radix-ui/react-tooltip'
 import { ChevronDown, X } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useReturnFocus } from '../common/Menus'
+import { focusWithoutIntent } from '../common/Menus'
 import { requestSettings } from '../../open-settings'
 import { RoundtableIcon } from './RoundtableIcon'
 import '../../roundtable.css'
@@ -55,9 +55,24 @@ function ParticipantsTip({
 }) {
   const { t } = useTranslation()
   const groups = participantGroups(roundtable.choices, roundtable.options)
+  const trigger = useRef<HTMLButtonElement>(null)
+  const [open, setOpen] = useState(false)
+  // Comme `Tip` : pas d'infobulle sur un focus rendu par le menu qui se ferme (fiche 185, F7).
+  const onOpenChange = (next: boolean) => {
+    const element = trigger.current
+    if (next && element && focusWithoutIntent(element)) return
+    setOpen(next)
+  }
   return (
-    <Tooltip.Root delayDuration={400} disableHoverableContent>
-      <Tooltip.Trigger asChild>{children}</Tooltip.Trigger>
+    <Tooltip.Root
+      delayDuration={400}
+      disableHoverableContent
+      open={open && !roundtable.menuOpen}
+      onOpenChange={onOpenChange}
+    >
+      <Tooltip.Trigger asChild ref={trigger}>
+        {children}
+      </Tooltip.Trigger>
       {groups.length > 0 && (
         <Tooltip.Portal>
           <Tooltip.Content
@@ -67,9 +82,13 @@ function ParticipantsTip({
           >
             {groups.map((g) => (
               <span key={g.agent} className="roundtable-tip-line">
-                {t('roundtable.line.by', { models: listText(g.models), agent: g.agent })}
-                {g.destinations.length > 0 &&
-                  ` ${t('roundtable.line.to', { destination: listText(g.destinations) })}`}
+                {g.destinations.length > 0
+                  ? t('roundtable.line.byTo', {
+                      models: listText(g.models),
+                      agent: g.agent,
+                      destination: listText(g.destinations)
+                    })
+                  : t('roundtable.line.by', { models: listText(g.models), agent: g.agent })}
               </span>
             ))}
             <span className="roundtable-tip-sends">
@@ -126,8 +145,10 @@ function LineStatus({ roundtable }: { roundtable: RoundtableCompose }) {
     case 'ready':
       return (
         <span className="roundtable-line-cost" data-testid="roundtable-cost">
-          {t('roundtable.line.plusSynthesis')}
-          <span aria-hidden> · </span>
+          <span className="roundtable-plus">
+            {t('roundtable.line.plusSynthesis')}
+            <span aria-hidden> · </span>
+          </span>
           <span className="roundtable-cost-full" data-testid="roundtable-cost-full">
             {t('roundtable.cost.full', { n: state.multiplier })}
           </span>
@@ -148,7 +169,9 @@ export function RoundtableLine({
   files: boolean
 }) {
   const { t } = useTranslation()
-  const returnFocus = useReturnFocus()
+  // Échap ou un choix : le focus revient à la saisie (Entrée envoie ensuite) ; un clic ailleurs
+  // le laisse où l'on a cliqué.
+  const outside = useRef(false)
   const { state } = roundtable
   const counted = state.kind === 'ready' || state.kind === 'slots'
   const label = counted
@@ -159,11 +182,7 @@ export function RoundtableLine({
       <RoundtableIcon size={15} className="roundtable-line-icon" />
       <Popover.Root open={roundtable.menuOpen} onOpenChange={roundtable.setMenuOpen}>
         <ParticipantsTip roundtable={roundtable} files={files}>
-          <Popover.Trigger
-            className="roundtable-pick"
-            data-testid="roundtable-participants"
-            aria-haspopup="listbox"
-          >
+          <Popover.Trigger className="roundtable-pick" data-testid="roundtable-participants">
             {label}
             <ChevronDown size={14} aria-hidden />
           </Popover.Trigger>
@@ -175,7 +194,17 @@ export function RoundtableLine({
             align="start"
             sideOffset={8}
             collisionPadding={12}
-            {...returnFocus}
+            onInteractOutside={() => {
+              outside.current = true
+            }}
+            onCloseAutoFocus={(event) => {
+              if (outside.current) {
+                outside.current = false
+                return
+              }
+              event.preventDefault()
+              roundtable.focus()
+            }}
             // Le focus va à la liste : `RoundtableParticipants` s'en charge.
             onOpenAutoFocus={(event) => event.preventDefault()}
           >

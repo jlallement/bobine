@@ -363,6 +363,14 @@ describe('tour de table (fiche 285)', () => {
     expect(layout.childIds.has('pC')).toBe(true)
   })
 
+  it('lancement dont la clé de carte est un tour, sans place connue : ni carte seule, ni Sous-tâches', () => {
+    const layout = workLayout([rt, launch(2, 'pZ'), answer(3, 'pZ')])
+    expect(layout.solos.size).toBe(0)
+    expect(layout.hidden.has(2)).toBe(true)
+    expect(layout.hidden.has(3)).toBe(true)
+    expect(layout.childIds.has('pZ')).toBe(true)
+  })
+
   it('sans tour de table : rien de changé', () => {
     expect(workLayout([launch(1, 'pA')]).roundtables.size).toBe(0)
   })

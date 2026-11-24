@@ -6569,7 +6569,8 @@
       "sendsFiles": "Chacun reçoit la question et les fichiers joints.",
       "sendsExchange": "Chacun reçoit la question et le dernier échange de cette conversation.",
       "sendsAll": "Chacun reçoit la question, les fichiers joints et le dernier échange de cette conversation.",
-      "to": "· vers {{destination}}"
+      "unknownAgent": "Un agent retiré",
+      "byTo": "{{models}} · par {{agent}} · vers {{destination}}"
     },
     "cost": {
       "full": "≈ {{n}} fois les jetons d’une question simple",
@@ -6581,7 +6582,9 @@
       "search": "Rechercher un modèle",
       "footer": "Chacun reçoit la question et peut lire les fichiers de ce dossier.",
       "full": "5 participants au plus",
-      "once": "Une seule fois, sans choix de modèle"
+      "once": "Une seule fois, sans choix de modèle",
+      "gone": "N’existe plus : décochez-le",
+      "modelGone": "Modèle indisponible : décochez-le"
     },
     "card": {
       "title": "Tour de table",
@@ -6623,8 +6626,6 @@
       "partial_other": "Synthèse avec {{opinions}} avis : {{count}} participants n’ont pas répondu.",
       "resume": "Reprendre",
       "stopSeat": "Arrêter {{name}}",
-      "toggleSeat": "Avis de {{name}}",
-      "reopen": "Rouvrir les avis du tour de table",
       "attachments": "Fichiers joints : {{files}}",
       "withExchange": "Avec le dernier échange de cette conversation"
     },

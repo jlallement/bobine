@@ -64,7 +64,9 @@ export function RoundtableParticipants({
 
   const onKeyDown = (event: KeyboardEvent) => {
     const count = visible.length
-    if (!count) return
+    // Seulement depuis la liste ou la recherche : Entrée et Espace sur « Autres modèles… »
+    // ouvrent la recherche (bouton), ils ne cochent rien.
+    if (!count || (event.target !== list.current && event.target !== input.current)) return
     const moves: Record<string, (i: number) => number> = {
       ArrowDown: (i) => (i + 1) % count,
       ArrowUp: (i) => (i + count - 1) % count,
@@ -110,16 +112,14 @@ export function RoundtableParticipants({
       >
         {visible.map((entry, index) => (
           <Fragment key={entry.key}>
-            {searching && index === main.length && (
-              <div className="menu-separator" role="presentation" />
-            )}
             <div
               id={optionId(index)}
               role="option"
               aria-selected={entry.checked}
               aria-disabled={entry.disabled ? true : undefined}
               aria-description={entry.reason}
-              className="menu-item roundtable-option"
+              // Premier des autres modèles : un filet au-dessus (aucun séparateur dans la liste).
+              className={`menu-item roundtable-option${searching && index === main.length ? ' roundtable-first-other' : ''}`}
               data-index={index}
               data-highlighted={index === active ? '' : undefined}
               data-disabled={entry.disabled ? '' : undefined}
@@ -143,12 +143,12 @@ export function RoundtableParticipants({
             </div>
           </Fragment>
         ))}
-        {searching && found.length === 0 && (
-          <div className="menu-item model-none" data-testid="roundtable-none">
-            {t('modelMenu.none')}
-          </div>
-        )}
       </div>
+      {searching && found.length === 0 && (
+        <div className="menu-item model-none" role="status" data-testid="roundtable-none">
+          {t('modelMenu.none')}
+        </div>
+      )}
       {others.length > 0 &&
         (searching ? (
           <label className="model-search roundtable-search">

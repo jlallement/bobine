@@ -45,16 +45,19 @@ export function useRoundtableCompose({
   conversationId,
   config,
   enabled,
-  focus
+  focus,
+  startActive = false
 }: {
   conversationId: string | undefined
   config: ComposerRoundtable | undefined
   /** La commande est à l'app (ni l'agent ni l'utilisateur n'ont de `/roundtable`), hors Discussion. */
   enabled: boolean
   focus: () => void
+  /** Le brouillon de la conversation était un tour de table (`/roundtable …`) : il le reste. */
+  startActive?: boolean
 }) {
   const usable = enabled && !!config && !!conversationId
-  const [active, setActive] = useState(false)
+  const [active, setActive] = useState(startActive && usable)
   const [menuOpen, setMenuOpen] = useState(false)
   const [options, setOptions] = useState<RoundtableOptions | undefined>()
   // Choix fait ici, en attendant que la préférence revienne du main.
@@ -63,13 +66,19 @@ export function useRoundtableCompose({
   const [sending, setSending] = useState(false)
   const choices = useMemo(() => local ?? config?.participants ?? [], [local, config?.participants])
 
+  // Lectures concurrentes (entrée, ouverture du menu, refus) : seule la dernière compte.
+  const request = useRef(0)
   const reload = useCallback(() => {
     if (!conversationId) return
+    const asked = ++request.current
+    const keep = (value: RoundtableOptions | undefined) => {
+      if (asked === request.current) setOptions(value)
+    }
     window.api.roundtable
       .options(conversationId)
-      .then(setOptions)
+      .then(keep)
       // Pas encore d'options (main pas prêt) : la ligne s'en passe, le main dira à l'envoi.
-      .catch(() => setOptions(undefined))
+      .catch(() => keep(undefined))
   }, [conversationId])
 
   // Options relues à l'entrée en tour de table, et à chaque ouverture du menu (places, agents).
@@ -92,14 +101,16 @@ export function useRoundtableCompose({
   }, [])
 
   // « Choisir un autre modèle » d'une carte du fil : la saisie passe en tour de table, menu ouvert.
-  const latestEnter = useRef(enter)
+  // Sans tour possible ici (Discussion, commande prise par l'agent), le menu ne s'arme pas.
+  const latest = useRef({ enter, usable })
   useLayoutEffect(() => {
-    latestEnter.current = enter
+    latest.current = { enter, usable }
   })
   useEffect(
     () =>
       onRoundtableMenuRequest(() => {
-        latestEnter.current()
+        if (!latest.current.usable) return
+        latest.current.enter()
         setMenuOpen(true)
       }),
     []
@@ -164,6 +175,7 @@ export function useRoundtableCompose({
   return {
     usable,
     active,
+    focus,
     enter,
     exit,
     toggleMode: () => (active ? exit() : enter()),
@@ -198,14 +210,25 @@ export function useComposerRoundtable(
     agentCommands: readonly AgentCommand[]
     ownCommands: readonly AgentCommand[]
     focusInput: () => void
+    /** Le texte de la saisie, pour ne vider que la question partie (revue QA). */
+    text: string
+    /** Brouillon : repris en tour de table, et gardé sous la forme `/roundtable …`. */
+    draft: { startActive: boolean; setPrefix: (prefix: string) => void }
   }
 ) {
   const rt = useRoundtableCompose({
     conversationId: props.draftKey,
     config: props.roundtable,
     enabled: !props.discussion && !!appCommandOf('/roundtable', c.agentCommands, c.ownCommands),
-    focus: c.focusInput
+    focus: c.focusInput,
+    startActive: c.draft.startActive
   })
+  const text = useRef(c.text)
+  useLayoutEffect(() => {
+    text.current = c.text
+  })
+  const { setPrefix } = c.draft
+  useEffect(() => setPrefix(rt.active ? '/roundtable ' : ''), [rt.active, setPrefix])
   return {
     ...rt,
     /** Texte tapé : `/roundtable ` passe en tour de table, la suite reste comme question. */
@@ -216,15 +239,22 @@ export function useComposerRoundtable(
     /** Entrée : le tour part (la saisie se vide), ou la question reste (refus, menu). */
     send: async (
       question: string,
-      attachments: { toSend: () => PromptAttachment[]; clear: () => void },
+      attachments: {
+        items: readonly { id: string }[]
+        toSend: () => PromptAttachment[]
+        remove: (id: string) => void
+      },
       recordSent: (text: string) => void,
       changeText: (value: string, caret?: number) => void
     ) => {
+      const sent = attachments.items.map((a) => a.id)
       if (!(await rt.submit(question, attachments.toSend()))) return
       // Rappelé par ↑, le message repart en tour de table (fiche 227).
       recordSent(`/roundtable ${question}`)
-      attachments.clear()
-      changeText('', 0)
+      // Pendant l'envoi, l'utilisateur a pu écrire ou joindre autre chose : seul ce qui est parti
+      // quitte la saisie.
+      for (const id of sent) attachments.remove(id)
+      if (text.current === question) changeText('', 0)
     },
     /** Bouton Envoyer : en tour de table, la ligne décide ; sinon, l'envoi ordinaire. */
     barSend: (text: string, ordinary: boolean) =>

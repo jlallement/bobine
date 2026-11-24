@@ -4,7 +4,12 @@
  * d'un participant, tours de synthèse et de décision.
  */
 import { describe, expect, it } from 'vitest'
-import { roundtableTotal, type RoundtableChoice, type RoundtableSeat } from '@shared/roundtable'
+import {
+  roundtableTotal,
+  toggleChoice,
+  type RoundtableChoice,
+  type RoundtableSeat
+} from '@shared/roundtable'
 import type { RoundtableAgentOption } from '@shared/roundtable-ipc'
 import type { TranscriptItem } from '@shared/transcript'
 import { workLayout } from '@shared/work-groups'
@@ -69,9 +74,18 @@ describe('ligne du tour de table', () => {
     const state = lineState([deep, b], opts)
     expect(state).toEqual({ kind: 'unavailable', agent: 'Agent B' })
     expect(enterAction(state)).toBe('menu')
+    // Agent retiré : un libellé générique, jamais son identifiant brut.
     expect(lineState([deep, { profileId: 'gone' }], options())).toEqual({
       kind: 'unavailable',
-      agent: 'gone'
+      agent: 'Un agent retiré'
+    })
+    // Modèle sorti du catalogue, ou modèle sur un agent qui n'en laisse pas choisir.
+    expect(lineState([deep, other('retired')], options())).toEqual({
+      kind: 'unavailable',
+      agent: 'retired'
+    })
+    expect(lineState([deep, { ...b, model: deep.model }], options())).toMatchObject({
+      kind: 'unavailable'
     })
   })
 
@@ -112,6 +126,23 @@ describe('menu des participants', () => {
       'MiMo v2.6 Flash',
       'Nemotron 3.5 Super',
       'Qwen3 32B'
+    ])
+  })
+
+  it('un retenu qui n’existe plus : en tête, coché, décochable, avec sa raison', () => {
+    const { main } = menuEntries(options(), [deep, other('retired'), { profileId: 'gone' }])
+    expect(
+      main
+        .slice(0, 2)
+        .map((e) => [e.label, e.checked, e.disabled, e.reason?.replace(/[\u00a0\u202f]/g, ' ')])
+    ).toEqual([
+      ['retired', true, undefined, 'Modèle indisponible : décochez-le'],
+      ['Un agent retiré', true, undefined, 'N’existe plus : décochez-le']
+    ])
+    // Décocher retire le couple tel qu'il est retenu, modèle compris.
+    const orphan = main[0] as (typeof main)[number]
+    expect(toggleChoice([deep, other('retired')], orphan.choice, orphan.modelChoice)).toEqual([
+      deep
     ])
   })
 

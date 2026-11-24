@@ -128,7 +128,13 @@ export function appCommandActions(
       // Tour de table (fiche 285) : la saisie le prend en charge dès `/roundtable ` ; ici, la
       // commande seule (ou depuis un travail) explique, et rien ne part.
       return info(
-        i18next.t(summary?.startedFrom ? 'roundtable.error.task' : 'roundtable.command.usage')
+        i18next.t(
+          summary?.space === 'discussion'
+            ? 'roundtable.error.discussion'
+            : summary?.startedFrom
+              ? 'roundtable.error.task'
+              : 'roundtable.command.usage'
+        )
       )
     case 'help':
       return info(

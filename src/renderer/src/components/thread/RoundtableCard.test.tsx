@@ -380,34 +380,104 @@ describe('synthèse', () => {
     )
     const letters = screen.getAllByTestId('roundtable-letter')
     expect(letters).toHaveLength(1)
-    expect(letters[0]?.textContent).toBe('Participant A (DeepSeek V4.1 Flash · Agent A)')
+    expect(letters[0]?.textContent).toBe('Participant A')
     expect(letters[0]?.getAttribute('tabindex')).toBe('0')
   })
 
-  it('au survol ou au focus d’une lettre : le vrai nom en infobulle', async () => {
+  it('une seule étape de tabulation par lettre : sa première mention', () => {
+    show(synthesized(done(), 'Participant A rejette ; Participant A encore ; Participant B aussi.'))
+    const letters = screen.getAllByTestId('roundtable-letter')
+    expect(letters.map((l) => [l.textContent, l.getAttribute('tabindex')])).toEqual([
+      ['Participant A', '0'],
+      ['Participant A', '-1'],
+      ['Participant B', '0']
+    ])
+  })
+
+  it('au focus seul d’une lettre : le vrai nom en infobulle, annoncé une fois', async () => {
     show(synthesized(done(), SYNTHESIS))
     const letter = screen.getByTestId('roundtable-letter')
-    fireEvent.focus(letter)
-    fireEvent.pointerMove(letter)
+    act(() => letter.focus())
     await waitFor(() =>
       expect(screen.getAllByRole('tooltip').map((t) => t.textContent)).toContain(
         'DeepSeek V4.1 Flash · Agent A'
       )
     )
+    // Le nom n'est pas aussi caché dans le texte (il serait lu deux fois).
+    expect(letter.textContent).toBe('Participant A')
   })
 
-  it('actions : appliquer (message ordinaire) et faire réagir, avec le rappel en jetons', () => {
+  it('pendant que l’agent écrit : la lettre reste le même nœud, son focus est gardé', () => {
+    const subtasks = info()
+    const items = synthesized(done(), SYNTHESIS)
+    const view = wrap(
+      <Transcript
+        items={items}
+        onRespondPermission={vi.fn()}
+        onRespondElicitation={vi.fn()}
+        subtasks={subtasks}
+        streaming
+      />
+    )
+    const letter = screen.getByTestId('roundtable-letter')
+    act(() => letter.focus())
+    const last = items.at(-1) as Extract<TranscriptItem, { kind: 'agent' }>
+    const next = [...items.slice(0, -1), { ...last, text: `${last.text}\nEt une phrase de plus.` }]
+    view.rerender(
+      <Transcript
+        items={next}
+        onRespondPermission={vi.fn()}
+        onRespondElicitation={vi.fn()}
+        subtasks={subtasks}
+        streaming
+      />
+    )
+    expect(screen.getByTestId('roundtable-letter')).toBe(letter)
+    expect(document.activeElement).toBe(letter)
+  })
+
+  it('actions : appliquer (message ordinaire) et faire réagir, avec le rappel en jetons', async () => {
     const subtasks = show(synthesized(done(), SYNTHESIS))
     const actions = screen.getByTestId('roundtable-actions')
     const apply = within(actions).getByTestId('roundtable-apply')
     expect(apply.textContent).toBe('Demander à Agent A de l’appliquer')
     fireEvent.click(apply)
-    expect(subtasks?.onAsk).toHaveBeenCalledWith('Applique ta recommandation du tour de table.')
+    // Un envoi à la fois : un double clic n'envoie qu'un message.
+    fireEvent.click(apply)
+    await waitFor(() =>
+      expect(subtasks?.onAsk).toHaveBeenCalledWith('Applique ta recommandation du tour de table.')
+    )
+    expect(subtasks?.onAsk).toHaveBeenCalledTimes(1)
     expect(within(actions).getByTestId('roundtable-rebut-cost').textContent).toBe(
       '≈ 4 fois les jetons d’une question simple'
     )
     fireEvent.click(within(actions).getByTestId('roundtable-rebut'))
     expect(api.rebuttal).toHaveBeenCalledWith('mother', 'rt1')
+  })
+
+  it('une réponse d’après la fin rendue de la synthèse n’est pas encadrée', () => {
+    const items = synthesized(done(), SYNTHESIS, [
+      // Compte rendu d'un travail ordinaire, puis l'agent qui en parle : un autre tour.
+      {
+        kind: 'child-report',
+        id: 0,
+        childId: 'autre',
+        title: 'autre',
+        outcome: 'done',
+        files: [],
+        fileCount: 0,
+        added: 0,
+        removed: 0,
+        excerpt: 'fait',
+        at: T0 + 5
+      },
+      { kind: 'agent', id: 0, text: 'Le travail ordinaire est fini.', at: T0 + 6 }
+    ])
+    show(items)
+    expect(screen.getAllByTestId('roundtable-answer')).toHaveLength(1)
+    expect(screen.getByTestId('roundtable-answer').textContent).not.toContain(
+      'Le travail ordinaire est fini.'
+    )
   })
 
   it('synthèse pas encore rendue : ni actions ni appliquer', () => {
@@ -420,6 +490,77 @@ describe('synthèse', () => {
     show(synthesized(rt, 'Accords…'))
     expect(screen.queryByTestId('roundtable-actions')).toBeNull()
     expect(screen.getByTestId('roundtable-answer-label')).toBeTruthy()
+  })
+})
+
+describe('gestes : un à la fois, refus dits', () => {
+  it('« Appliquer » masqué si un message suit déjà, ou si un message attend dans la file', () => {
+    const followed = synthesized(done(), SYNTHESIS, [{ kind: 'user', id: 0, text: 'Merci' }])
+    show(followed)
+    expect(screen.queryByTestId('roundtable-apply')).toBeNull()
+    // Faire réagir reste possible.
+    expect(screen.getByTestId('roundtable-rebut')).toBeTruthy()
+  })
+
+  it('« Appliquer » masqué si la file de la conversation a déjà un message', () => {
+    show(synthesized(done(), SYNTHESIS), info({ motherQueued: true }))
+    expect(screen.queryByTestId('roundtable-apply')).toBeNull()
+  })
+
+  it('un échec de « Appliquer » est dit', async () => {
+    const subtasks = info({ onAsk: vi.fn(() => Promise.reject(new Error('hors ligne'))) })
+    show(synthesized(done(), SYNTHESIS), subtasks)
+    fireEvent.click(screen.getByTestId('roundtable-apply'))
+    await waitFor(() => expect(subtasks.onWarn).toHaveBeenCalledWith('hors ligne'))
+  })
+
+  it('double clic sur « Synthétiser sans attendre » : un seul envoi', async () => {
+    let release = () => {}
+    api.synthesize.mockImplementationOnce(
+      () => new Promise<undefined>((resolve) => (release = () => resolve(undefined)))
+    )
+    show(thread(roundtable([answered('A'), answered('B')]), OPINIONS))
+    const button = screen.getByTestId('roundtable-synthesize') as HTMLButtonElement
+    fireEvent.click(button)
+    fireEvent.click(button)
+    expect(api.synthesize).toHaveBeenCalledTimes(1)
+    expect(button.disabled).toBe(true)
+    await act(async () => release())
+    expect(button.disabled).toBe(false)
+  })
+
+  it('« Faire réagir » une seconde fois : refusé, la raison dite (rebuttalOnce)', async () => {
+    const rt = done([{ type: 'rebuttal', at: T0 + 2 }])
+    // La réplique a commencé : la carte « Réplique » remplace les actions ; le geste reste refusé.
+    const { useRoundtableGestures } = await import('./RoundtableCard')
+    let out: ReturnType<typeof useRoundtableGestures> | undefined
+    function Probe() {
+      out = useRoundtableGestures(info(), rt)
+      return <span data-testid="probe">{out.refusal}</span>
+    }
+    wrap(<Probe />)
+    act(() => out?.gestures?.rebuttal())
+    expect(api.rebuttal).not.toHaveBeenCalled()
+    expect(screen.getByTestId('probe').textContent).toBe('Une seule réplique par tour de table.')
+    act(() => out?.gestures?.synthesize())
+    expect(plain(screen.getByTestId('probe').textContent)).toBe(
+      'Ce geste n’est plus possible à cette étape du tour de table.'
+    )
+  })
+
+  it('« Synthétiser » sans quorum : refusé tout de suite, la raison dite (quorum)', async () => {
+    const { useRoundtableGestures } = await import('./RoundtableCard')
+    let out: ReturnType<typeof useRoundtableGestures> | undefined
+    function Probe() {
+      out = useRoundtableGestures(info(), roundtable([answered('A')]))
+      return <span data-testid="probe">{out.refusal}</span>
+    }
+    wrap(<Probe />)
+    act(() => out?.gestures?.synthesize())
+    expect(api.synthesize).not.toHaveBeenCalled()
+    expect(screen.getByTestId('probe').textContent).toBe(
+      'Il faut au moins deux avis pour une synthèse.'
+    )
   })
 })
 
@@ -478,7 +619,10 @@ describe('réplique et décision', () => {
       'Décision du tour de table · GPT-6.1 Sol'
     ])
     expect(screen.getAllByTestId('roundtable-apply')).toHaveLength(1)
-    expect(screen.getAllByTestId('roundtable-letter')[1]?.textContent).toContain('Agent B')
+    // Lettre de la décision : C (Agent B), sa propre table.
+    expect(screen.getAllByTestId('roundtable-letter').map((l) => l.textContent)).toContain(
+      'Participant C'
+    )
   })
 
   it('après un redémarrage pendant la réplique : « Demander la décision »', async () => {

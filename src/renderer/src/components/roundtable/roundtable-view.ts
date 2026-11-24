@@ -14,7 +14,6 @@ import {
   missingSlots,
   ROUNDTABLE_MAX_SEATS,
   ROUNDTABLE_MIN_SEATS,
-  selectionProblem,
   tokenMultiplier,
   type RoundtableChoice,
   type RoundtableSeat,
@@ -46,9 +45,30 @@ export type LineState =
   | { kind: 'slots'; missing: number; count: number }
   | { kind: 'ready'; count: number; multiplier: number }
 
-/** Nom d'un agent d'après les options, sinon son identifiant. */
+/** Nom d'un agent d'après les options ; inconnu (agent retiré), un libellé générique. */
 const agentName = (options: RoundtableOptions | undefined, profileId: string): string =>
-  options?.agents.find((a) => a.profileId === profileId)?.label ?? profileId
+  options?.agents.find((a) => a.profileId === profileId)?.label ??
+  i18next.t('roundtable.line.unknownAgent')
+
+/**
+ * Pourquoi un participant retenu ne peut plus partir : agent retiré (`gone`), indisponible, ou
+ * modèle qui n'est plus au catalogue de l'agent ou qu'il ne laisse pas choisir (`model`). Les
+ * modèles d'un agent jamais lancé ne sont pas connus : rien n'est dit d'eux.
+ */
+export function choiceTrouble(
+  choice: RoundtableChoice,
+  options: RoundtableOptions
+): 'gone' | 'unavailable' | 'model' | undefined {
+  const agent = options.agents.find((a) => a.profileId === choice.profileId)
+  if (!agent) return 'gone'
+  if (!agent.available) return 'unavailable'
+  if (!choice.model) return undefined
+  if (!agent.modelChoice) return 'model'
+  const known = [...agent.recent, ...agent.others]
+  return known.length > 0 && !known.some((m) => m.value === choice.model?.value)
+    ? 'model'
+    : undefined
+}
 
 /**
  * Forme de la ligne pour les participants retenus. Sans options (pas encore lues) : seule la
@@ -59,19 +79,13 @@ export function lineState(
   options: RoundtableOptions | undefined
 ): LineState {
   if (options?.refused) return { kind: 'refused', refused: options.refused }
-  if (options) {
-    const facts = options.agents.map((a) => ({
-      id: a.profileId,
-      available: a.available,
-      modelChoice: a.modelChoice
-    }))
-    const problem = selectionProblem(choices, facts)
-    if (
-      problem?.index !== undefined &&
-      (problem.problem === 'unavailable' || problem.problem === 'unknown-agent')
-    ) {
-      const choice = choices[problem.index]
-      return { kind: 'unavailable', agent: choice ? agentName(options, choice.profileId) : '' }
+  const broken = options ? choices.find((c) => choiceTrouble(c, options)) : undefined
+  if (options && broken) {
+    // Le modèle retiré se nomme lui-même ; sinon l'agent (ou un libellé générique s'il n'est plus).
+    const agent = agentName(options, broken.profileId)
+    return {
+      kind: 'unavailable',
+      agent: choiceTrouble(broken, options) === 'model' ? choiceLabel(broken, agent) : agent
     }
   }
   if (choices.length < ROUNDTABLE_MIN_SEATS) return { kind: 'choose' }
@@ -233,6 +247,36 @@ export function menuEntries(
 ): { main: MenuEntry[]; others: MenuEntry[] } {
   const chosen = new Set(choices.map(choiceKey))
   const full = choices.length >= ROUNDTABLE_MAX_SEATS
+  const listed = listedEntries(options, chosen, full)
+  const keys = new Set([...listed.main, ...listed.others].map((e) => e.key))
+  // Retenus mais plus proposés (agent retiré, modèle sorti du catalogue) : en tête, cochés,
+  // décochables, avec leur raison ; jamais un fantôme qui part sans qu'on le voie.
+  const orphans = options
+    ? choices.filter((c) => !keys.has(choiceKey(c))).map((c) => orphanEntry(c, options))
+    : []
+  return { main: [...orphans, ...listed.main], others: listed.others }
+}
+
+function orphanEntry(choice: RoundtableChoice, options: RoundtableOptions): MenuEntry {
+  const agent = agentName(options, choice.profileId)
+  const trouble = choiceTrouble(choice, options)
+  return {
+    key: choiceKey(choice),
+    choice,
+    label: choiceLabel(choice, agent),
+    agentLabel: agent,
+    // Décocher retire le couple tel qu'il est retenu (modèle compris).
+    modelChoice: !!choice.model,
+    checked: true,
+    reason: i18next.t(trouble === 'gone' ? 'roundtable.menu.gone' : 'roundtable.menu.modelGone')
+  }
+}
+
+function listedEntries(
+  options: RoundtableOptions | undefined,
+  chosen: ReadonlySet<string>,
+  full: boolean
+): { main: MenuEntry[]; others: MenuEntry[] } {
   const main: MenuEntry[] = []
   const others: MenuEntry[] = []
   for (const agent of options?.agents ?? []) {
@@ -311,7 +355,7 @@ export function seatReports(
   const answering = (askedAt: number | undefined) =>
     askedAt === undefined
       ? undefined
-      : reports.findLast((r) => r.askedAt === askedAt && r.outcome !== 'error')
+      : reports.findLast((r) => r.askedAt === askedAt && r.outcome === 'done')
   const opinion = answering(seat.askedAt)
   const rebuttal = answering(seat.rebuttal?.askedAt)
   return { ...(opinion ? { opinion } : {}), ...(rebuttal ? { rebuttal } : {}) }
@@ -364,24 +408,46 @@ export interface RoundtableTurn {
  * Tours de l'agent ouverts par une demande du tour de table : la réponse qui suit porte l'étiquette
  * « Synthèse du tour de table » (ou « Décision… ») et ses lettres montrent les vrais noms.
  */
-export function roundtableTurns(items: readonly TranscriptItem[]): {
+export function roundtableTurns(
+  items: readonly TranscriptItem[],
+  /** Fin rendue de chaque demande (`step.answeredAt`), par tour et par étape. */
+  answeredAt: (roundtableId: string, step: RoundtableTurn['step']) => number | undefined = () =>
+    undefined
+): {
   byRequest: ReadonlyMap<number, RoundtableTurn>
   byAnswer: ReadonlyMap<number, RoundtableTurn>
 } {
   const byRequest = new Map<number, RoundtableTurn>()
   const byAnswer = new Map<number, RoundtableTurn>()
   let open: RoundtableTurn | undefined
+  let end: number | undefined
   for (const item of items) {
     if (item.kind === 'user') {
       open =
         item.from?.kind === 'roundtable'
           ? { roundtableId: item.from.id, step: item.from.step, request: item.id, answers: [] }
           : undefined
+      end = open ? answeredAt(open.roundtableId, open.step) : undefined
       if (open) byRequest.set(item.id, open)
+    } else if (TURN_BREAKS.has(item.kind)) {
+      // Un compte rendu n'est posé qu'au repos de l'agent : le tour de la demande est fini.
+      open = undefined
     } else if (item.kind === 'agent' && open) {
+      // Réponse d'après la fin rendue de la demande : un autre tour, sans rapport.
+      if (end !== undefined && item.at !== undefined && item.at > end) {
+        open = undefined
+        continue
+      }
       open.answers.push(item.id)
       byAnswer.set(item.id, open)
     }
   }
   return { byRequest, byAnswer }
 }
+
+/** Éléments qui ne s'insèrent jamais dans un tour de l'agent en cours. */
+const TURN_BREAKS: ReadonlySet<TranscriptItem['kind']> = new Set([
+  'child-report',
+  'role-request',
+  'handover'
+])

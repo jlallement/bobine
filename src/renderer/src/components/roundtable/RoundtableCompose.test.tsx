@@ -12,6 +12,7 @@ import type { RoundtableChoice } from '@shared/roundtable'
 import type { RoundtableOptions, RoundtableStartResult } from '@shared/roundtable-ipc'
 import css from '../../roundtable.css?raw'
 import { Composer } from '../composer/Composer'
+import { saveDraft } from '../../drafts'
 import { requestRoundtableMenu } from './roundtable-menu-request'
 import { options } from './test-fixtures'
 
@@ -44,6 +45,8 @@ const recordSent = vi.fn<(id: string, entry: { text: string }) => Promise<void>>
 const saved = window.api
 
 beforeEach(() => {
+  // Brouillons d'un essai à l'autre (même conversation) : chacun part d'une saisie vide.
+  saveDraft('conv-1', { text: '', attachments: [] })
   api.options.mockReset().mockResolvedValue(options())
   api.start.mockReset().mockResolvedValue({ ok: true, roundtableId: 'rt1' })
   recordSent.mockReset().mockResolvedValue(undefined)
@@ -315,6 +318,99 @@ describe('premier usage et menu des participants', () => {
     act(() => requestRoundtableMenu())
     expect(await screen.findByTestId('roundtable-menu')).toBeTruthy()
     expect(screen.getByTestId('roundtable-tag')).toBeTruthy()
+  })
+})
+
+describe('relecture : clavier, focus, envoi lent, brouillon, Discussion', () => {
+  const openMenu = async () => {
+    fireEvent.click(screen.getByTestId('roundtable-toggle'))
+    fireEvent.click(screen.getByTestId('roundtable-participants'))
+    const menu = await screen.findByTestId('roundtable-menu')
+    await waitFor(() => expect(within(menu).getAllByRole('option').length).toBeGreaterThan(0))
+    return menu
+  }
+
+  it('« Autres modèles… » au clavier : Entrée ouvre la recherche, ne coche rien', async () => {
+    const t = setup([deep, b])
+    const menu = await openMenu()
+    const others = within(menu).getByTestId('roundtable-others')
+    fireEvent.keyDown(others, { key: 'Enter' })
+    fireEvent.keyDown(others, { key: ' ' })
+    expect(t.setParticipants).not.toHaveBeenCalled()
+    // Le bouton reçoit son clic natif (Entrée, Espace) : la recherche s'ouvre.
+    fireEvent.click(others)
+    expect(await within(menu).findByTestId('roundtable-search')).toBeTruthy()
+  })
+
+  it('la liste ne contient que des options', async () => {
+    setup([deep, b])
+    const menu = await openMenu()
+    fireEvent.click(within(menu).getByTestId('roundtable-others'))
+    fireEvent.change(await within(menu).findByTestId('roundtable-search'), {
+      target: { value: 'rien du tout' }
+    })
+    const list = within(menu).getByRole('listbox')
+    expect([...list.children].every((c) => c.getAttribute('role') === 'option')).toBe(true)
+    expect(within(menu).getByTestId('roundtable-none')).toBeTruthy()
+  })
+
+  it('Échap dans le menu : le focus revient à la saisie, Entrée envoie ensuite', async () => {
+    const t = setup()
+    t.type('/roundtable Q')
+    fireEvent.click(screen.getByTestId('roundtable-participants'))
+    const list = await screen.findByTestId('roundtable-menu-list')
+    fireEvent.keyDown(list, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByTestId('roundtable-menu')).toBeNull())
+    await waitFor(() => expect(document.activeElement).toBe(t.input))
+  })
+
+  it('texte tapé pendant un envoi lent : gardé ; seule la question partie quitte la saisie', async () => {
+    let release = () => {}
+    api.start.mockImplementationOnce(
+      () => new Promise((resolve) => (release = () => resolve({ ok: true, roundtableId: 'rt1' })))
+    )
+    const t = setup()
+    t.type('/roundtable Première')
+    act(() => t.enter())
+    t.type('Première, puis une suite tapée pendant l’envoi')
+    await act(async () => release())
+    expect(t.input.value).toBe('Première, puis une suite tapée pendant l’envoi')
+  })
+
+  it('« Choisir un autre modèle » sans tour possible ici : rien ne s’arme', () => {
+    setup([deep, b], { discussion: true })
+    act(() => requestRoundtableMenu())
+    expect(screen.queryByTestId('roundtable-menu')).toBeNull()
+    expect(screen.queryByTestId('roundtable-tag')).toBeNull()
+  })
+
+  it('Discussion : la commande n’est pas proposée dans le menu « / »', () => {
+    const t = setup([deep, b], { discussion: true })
+    t.type('/round')
+    const names = screen.queryAllByTestId('command-item').map((el) => el.textContent ?? '')
+    expect(names.some((n) => n.includes('/roundtable'))).toBe(false)
+  })
+
+  it('brouillon : le mode tour de table est retrouvé en revenant dans la conversation', () => {
+    const first = setup()
+    first.type('/roundtable À reprendre')
+    first.view.unmount()
+    const again = setup()
+    expect(again.input.value).toBe('À reprendre')
+    expect(screen.getByTestId('roundtable-tag')).toBeTruthy()
+  })
+
+  it('lectures d’options concurrentes : seule la dernière réponse compte', async () => {
+    let first: (o: RoundtableOptions) => void = () => {}
+    api.options.mockImplementationOnce(() => new Promise((resolve) => (first = resolve)))
+    api.options.mockResolvedValueOnce(options({ freeSlots: 1 }))
+    const t = setup()
+    t.type('/roundtable Q')
+    fireEvent.click(screen.getByTestId('roundtable-participants'))
+    await screen.findByTestId('roundtable-slots')
+    // La première lecture (dépassée) arrive après : elle n'efface rien.
+    await act(async () => first(options()))
+    expect(screen.getByTestId('roundtable-slots')).toBeTruthy()
   })
 })
 
