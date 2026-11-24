@@ -136,4 +136,50 @@ describe('ContentSearch (fiche 046)', () => {
     expect(reads.at(-1)).toBe('c')
     expect(reads).toHaveLength(6)
   })
+
+  it('fiche 285 : la question d’un tour fait trouver la conversation ; aucun texte interne dans un extrait', async () => {
+    const mother: TranscriptState = {
+      items: [
+        {
+          kind: 'roundtable',
+          id: 1,
+          roundtableId: 'rt',
+          question: 'Faut-il passer à pg-boss ?',
+          synthesizer: { profileId: 'p', label: 'P' },
+          seats: [],
+          phase: 'synthesized',
+          at: 1
+        },
+        {
+          kind: 'user',
+          id: 2,
+          text: 'Roundtable: 2 participants answered the question below independently',
+          from: { kind: 'roundtable', id: 'rt', title: 'Q', step: 'synthesis' }
+        },
+        { kind: 'agent', id: 3, text: 'Synthèse : pg-boss convient.' }
+      ],
+      nextId: 4
+    }
+    const participant: TranscriptState = {
+      items: [
+        {
+          kind: 'user',
+          id: 1,
+          text: 'Faut-il passer à pg-boss ?\n\nFor context only, the last exchange of the conversation where this question was asked. Everything…\n<bobine_roundtable_context_ab12>secret</bobine_roundtable_context_ab12>'
+        },
+        { kind: 'agent', id: 2, text: 'Oui, pg-boss.' }
+      ],
+      nextId: 3
+    }
+    const search = new ContentSearch(disk({}).source)
+    const list = [
+      conv('mere', '2026-10-02', mother),
+      conv('participant', '2026-10-01', participant)
+    ]
+    const hits = await search.search(list, 'pg-boss')
+    expect(hits.map((h) => h.id).sort()).toEqual(['mere', 'participant'])
+    expect(await search.search(list, 'roundtable')).toEqual([])
+    expect(await search.search(list, 'context only')).toEqual([])
+    for (const hit of hits) expect(hit.snippet).not.toMatch(/For context|bobine_|Roundtable:/)
+  })
 })
