@@ -8,6 +8,8 @@ What changes for you, version by version. Shown in Settings › About.
 
 - Several pieces of work proposed at once: the card always lists them in the order the agent
   proposed them, the same every time, and a line already shown no longer changes place.
+- Outline of a long conversation: at the very bottom of the thread, the last message is the one
+  highlighted, even when the last exchanges are short.
 
 ## 1.0.0-rc.4 — November 23, 2026
 
