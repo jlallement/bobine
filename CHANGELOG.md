@@ -2,6 +2,14 @@
 
 Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrections
+
+- La boîte « Supprimer » d’une conversation fille dont la branche est déjà fusionnée n’annonce
+  plus de commits perdus ; seuls comptent ceux qu’aucune autre branche ne garde. Même correction
+  dans Réglages › Données › Worktrees orphelins.
+
 ## 1.0.0 — 24 novembre 2026
 
 ### Corrections
