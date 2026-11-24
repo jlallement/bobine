@@ -80,11 +80,16 @@ export function WorktreeSetup({
         : item.proceeded
           ? t('worktreeSetup.proceededHint')
           : ''
+  // Boutons à viser (à autoriser, en cours) : le fil ne défile pas tout seul sous le pointeur
+  // (fiche 124) ; sinon la réponse qui s'écrit dessous déplace « Autoriser » entre le survol et
+  // l'appui (macOS CI 2026-11-24, `worktree-setup`, fiche 250).
+  const actionable = item.state === 'approval' || (item.state === 'running' && !item.proceeded)
   return (
     <div
       className={`worktree-origin worktree-setup ${item.state}`}
       data-testid="worktree-setup"
       data-state={item.state}
+      {...(actionable ? { 'data-scroll-hold': '' } : {})}
     >
       <div className="worktree-origin-line">
         <Icon
