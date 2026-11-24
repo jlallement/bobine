@@ -2,6 +2,14 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- The “Delete” dialog of a child conversation whose branch is already merged no longer reports
+  lost commits; only commits that no other branch keeps are counted. Same fix in Settings › Data ›
+  Orphan worktrees.
+
 ## 1.0.0 — November 24, 2026
 
 ### Fixes

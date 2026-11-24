@@ -47,7 +47,10 @@ export interface WorktreeStatus {
   path: string
   /** Fichiers modifiés ou nouveaux, pas encore commités. */
   dirty: number
-  /** Commits faits dans la branche depuis le départ. */
+  /**
+   * Commits de la branche qui seraient perdus avec elle : faits depuis le départ et gardés par
+   * aucune autre branche, étiquette ou branche distante (D1 de la recette 1.0.0, fiche 280).
+   */
   ahead: number
   /** Le dossier a disparu (supprimé à la main). */
   missing?: boolean
@@ -59,6 +62,28 @@ const text = (buffer: Buffer) => buffer.toString('utf8').trim()
 export function worktreeName(now = new Date(), random = randomBytes(2).toString('hex')): string {
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}-${random}`
+}
+
+/**
+ * Révisions de `git rev-list --count` qui comptent les commits de `branch` qu'on perdrait en la supprimant
+ * (D1 de la recette 1.0.0, fiche 280) : ceux qu'aucune autre référence ne garde, ni branche locale
+ * (la cible où la fille a été fusionnée, celle de la mère, une petite-fille…), ni étiquette, ni
+ * branche distante. Compter depuis le seul commit de départ (`base..branch`) annonçait « perdus »
+ * des commits déjà fusionnés. `base` (facultatif) écarte en plus l'historique d'avant le départ,
+ * que la conversation n'a pas fait. Les noms de branche ne contiennent ni `*`, ni `?`, ni `[`
+ * (`git check-ref-format`) : `--exclude` les prend donc tels quels.
+ */
+export function lostRevisions(branch: string, base?: string): string[] {
+  return [
+    branch,
+    ...(base ? [`^${base}`] : []),
+    '--not',
+    `--exclude=${branch}`,
+    '--branches',
+    '--tags',
+    '--remotes',
+    '--'
+  ]
 }
 
 export class Worktrees {
@@ -223,9 +248,11 @@ export class Worktrees {
     }
     const dirty = text(porcelain.stdout).split('\n').filter(Boolean).length
     const ahead = Number(
-      await this.exec(info.root, ['rev-list', '--count', `${info.base}..${info.branch}`]).catch(
-        () => '0'
-      )
+      await this.exec(info.root, [
+        'rev-list',
+        '--count',
+        ...lostRevisions(info.branch, info.base)
+      ]).catch(() => '0')
     )
     return {
       branch: info.branch,
