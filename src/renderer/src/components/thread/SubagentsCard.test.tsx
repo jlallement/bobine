@@ -125,4 +125,33 @@ describe('Carte « Sous-agents » (fiche 117)', () => {
     fireEvent.click(within(permission).getByText('Autoriser une fois'))
     expect(onRespond).toHaveBeenCalledWith('r1', 'allow')
   })
+
+  // Remplace `e2e/suites/subagents.mjs` n° 11 : le travail reçu en direct, rien à rejouer.
+  it('OpenCode 2 : son travail reçu en direct sous la carte, sans « Voir son travail »', () => {
+    view([
+      { kind: 'user', id: 1, text: 'Explore' },
+      subagent(2, {
+        subagentRun: { startedAt: 1000, endedAt: 4000, sessionId: 'ses-enfant' },
+        work: [
+          {
+            kind: 'tool',
+            id: 21,
+            toolCallId: 'w1',
+            title: 'Lire src/app.ts',
+            toolKind: 'read',
+            status: 'completed',
+            content: [],
+            locations: [{ path: '/projet/src/app.ts' }]
+          },
+          { kind: 'agent', id: 22, text: 'Trois fichiers lus.' }
+        ]
+      })
+    ])
+    const row = screen.getByTestId('subagent') as HTMLDetailsElement
+    fireEvent.click(within(row).getByTestId('subagent-toggle'))
+    const work = within(row).getByTestId('subagent-work')
+    expect(work.textContent).toContain('Trois fichiers lus.')
+    expect(within(work).getAllByTestId('tool')).toHaveLength(1)
+    expect(within(row).queryByTestId('subagent-work-show')).toBeNull()
+  })
 })

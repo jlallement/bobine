@@ -660,6 +660,16 @@ describe('Transcript — remplaçants des e2e', () => {
     )
   })
 
+  it('tour arrêté par la limite d’étapes : la carte, pas de bilan « Terminé » sous la réponse (limite-etapes n° 2)', () => {
+    show([
+      { kind: 'user', id: 1, text: 'Refactore tout', at: 1000 },
+      { kind: 'agent', id: 2, text: 'J’avance…', at: 5000 },
+      { kind: 'turn-limit', id: 3, refused: false, reopen: false }
+    ])
+    expect(screen.getByTestId('turn-limit-card')).toBeTruthy()
+    expect(screen.queryByTestId('turn-summary')).toBeNull()
+  })
+
   it('compaction finie : « Conversation résumée » dans le fil, le résumé replié (usage n° 12)', () => {
     show([
       { kind: 'user', id: 1, text: '/compact', compaction: true },
