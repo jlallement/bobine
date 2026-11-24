@@ -157,3 +157,96 @@ describe('barre du plan (fiches 040, 124)', () => {
     height.mockRestore()
   })
 })
+
+/**
+ * Remplaçants des vérifications de composant de `e2e/suites/plan.mjs` (n° 1, 5, 9, 11). Le plan
+ * lu dans `plan.md` reste à `plan-doc.test.ts` ; la couleur réelle du surlignage, à la capture.
+ */
+describe('plan annoté — remplaçants des e2e', () => {
+  const actions = (conversationId: string) => ({
+    busy: false,
+    conversationId,
+    onSendNotes: vi.fn(),
+    onExecute: vi.fn()
+  })
+
+  it('mode plan : `plan.md` affiché comme document, version 1, Markdown rendu (plan n° 1)', () => {
+    render(<PlanDocument plan={plan} actions={actions('c-doc')} />)
+    const card = screen.getByTestId('plan-document')
+    expect(card.getAttribute('data-version')).toBe('1')
+    expect(card.querySelector('.plan-document-title')?.textContent).toBe('plan.md')
+    expect(card.querySelector('.plan-document-version')?.textContent).toBe('version 1')
+    const body = screen.getByTestId('plan-body')
+    expect(body.querySelector('h1')?.textContent).toBe('Plan')
+    expect([...body.querySelectorAll('ol > li')].map((li) => li.textContent)).toEqual([
+      'Écrire un script Node maison.',
+      'Vérifier.'
+    ])
+  })
+
+  it('passage commenté : la remarque listée, le passage surligné (plan n° 5)', () => {
+    // jsdom n'a pas la CSS Custom Highlight API : une doublure qui garde les passages.
+    const registry = new Map<string, { ranges: Range[] }>()
+    const css = globalThis.CSS as unknown as Record<string, unknown> | undefined
+    const before = {
+      highlights: css?.highlights,
+      Highlight: (globalThis as Record<string, unknown>).Highlight
+    }
+    if (css) css.highlights = registry
+    ;(globalThis as Record<string, unknown>).Highlight = class {
+      ranges: Range[]
+      constructor(...ranges: Range[]) {
+        this.ranges = ranges
+      }
+    }
+    try {
+      render(<PlanDocument plan={plan} actions={actions('c-surligne')} />)
+      addNote('script Node maison', 'Plutôt un outil existant')
+      const notes = screen.getByTestId('plan-notes')
+      expect(notes.querySelector('blockquote')?.textContent).toBe('script Node maison')
+      expect((notes.querySelector('textarea') as HTMLTextAreaElement).value).toBe(
+        'Plutôt un outil existant'
+      )
+      const ranges = registry.get('plan-notes')?.ranges ?? []
+      expect(ranges.map((r) => r.toString())).toEqual(['script Node maison'])
+      expect(screen.getByTestId('plan-document-hint').textContent).toBe('1 remarque')
+    } finally {
+      if (css) css.highlights = before.highlights
+      ;(globalThis as Record<string, unknown>).Highlight = before.Highlight
+    }
+  })
+
+  it('version 2 : « Voir ce qui a changé » montre le diff, puis revient au plan (plan n° 9)', () => {
+    render(
+      <PlanDocument
+        plan={{
+          ...plan,
+          version: 2,
+          previous: plan.text,
+          text: '# Plan\n\n1. Utiliser un outil existant.\n2. Vérifier.'
+        }}
+        actions={actions('c-diff')}
+      />
+    )
+    const toggle = screen.getByTestId('plan-diff-toggle')
+    expect(toggle.textContent?.trim()).toBe('Voir ce qui a changé')
+    fireEvent.click(toggle)
+    const diff = screen.getByTestId('plan-diff')
+    expect(diff.querySelector('.diff-del')?.textContent).toContain('Écrire un script Node maison.')
+    expect(diff.querySelector('.diff-add')?.textContent).toContain('Utiliser un outil existant.')
+    expect(screen.queryByTestId('plan-body')).toBeNull()
+    fireEvent.click(screen.getByTestId('plan-diff-toggle'))
+    expect(screen.getByTestId('plan-body')).toBeTruthy()
+  })
+
+  it('plan exécuté : « Exécuter » désactivé, « Plan déjà exécuté » (plan n° 11)', () => {
+    const a = actions('c-execute')
+    render(<PlanDocument plan={{ ...plan, executed: true }} actions={a} />)
+    const execute = screen.getByTestId('plan-execute') as HTMLButtonElement
+    expect(execute.disabled).toBe(true)
+    expect((screen.getByTestId('plan-send-notes') as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByTestId('plan-document-hint').textContent).toBe('Plan déjà exécuté')
+    fireEvent.click(execute)
+    expect(a.onExecute).not.toHaveBeenCalled()
+  })
+})

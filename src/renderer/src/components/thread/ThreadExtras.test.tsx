@@ -6,6 +6,7 @@ import type { TranscriptItem } from '@shared/transcript'
 import { Transcript } from './Transcript'
 import { ResumeCard } from './ResumeCard'
 import { EditorContext, OpenInEditorButton } from './OpenInEditor'
+import { FileLinksContext } from './FileLink'
 import { editorOutcomeNote } from '../../useEditor'
 
 function render(ui: ReactNode) {
@@ -210,5 +211,93 @@ describe('« Où en était-on ? » (fiche 156)', () => {
     window.api.changes = { git: async () => null } as unknown as Window['api']['changes']
     render(<ResumeCard conversationId="c2" items={items} />)
     expect(screen.queryByTestId('resume-card')).toBeNull()
+  })
+})
+
+/**
+ * Remplaçants des vérifications de composant de `e2e/suites/fil.mjs` (n° 2, 7, 13, 16). La ligne
+ * de commande de l'éditeur reste au main (`editors.test.ts`).
+ */
+describe('fil — remplaçants des e2e', () => {
+  afterEach(() => vi.useRealTimers())
+
+  it('copier un message envoyé : son texte dans le presse-papiers, puis « Copié » (fil n° 2)', async () => {
+    const writeText = vi.fn(async () => {})
+    const clipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard')
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    try {
+      render(
+        <Transcript
+          items={[{ kind: 'user', id: 1, text: 'Ajoute un test', at: T0 }]}
+          onRespondPermission={noop}
+          onRespondElicitation={noop}
+        />
+      )
+      const copy = screen.getByTestId('copy-message')
+      await act(async () => fireEvent.click(copy))
+      expect(writeText).toHaveBeenCalledWith('Ajoute un test')
+      expect(copy.getAttribute('aria-label')).toBe('Copié')
+    } finally {
+      if (clipboard) Object.defineProperty(navigator, 'clipboard', clipboard)
+      else delete (navigator as unknown as Record<string, unknown>).clipboard
+    }
+  })
+
+  it('lien `fichier:ligne` d’une réponse : « Ouvrir dans VS Code » juste après, à la ligne (fil n° 7)', () => {
+    const open = vi.fn()
+    render(
+      <FileLinksContext.Provider value={vi.fn()}>
+        <EditorContext.Provider value={{ name: 'VS Code', open }}>
+          <Transcript
+            items={[
+              {
+                kind: 'agent',
+                id: 1,
+                text: 'Le point d’entrée est [src/app.ts:3](src/app.ts:3).'
+              }
+            ]}
+            onRespondPermission={noop}
+            onRespondElicitation={noop}
+          />
+        </EditorContext.Provider>
+      </FileLinksContext.Provider>
+    )
+    const link = screen.getByTestId('file-link')
+    expect(link.textContent).toBe('src/app.ts:3')
+    const button = link.parentElement?.querySelector('[data-testid=open-in-editor]')
+    expect(button?.getAttribute('aria-label')).toBe('Ouvrir dans VS Code')
+    if (button) fireEvent.click(button)
+    expect(open).toHaveBeenCalledWith('src/app.ts', { line: 3 })
+  })
+
+  it('conversation sans aucun élément : pas de carte de reprise (fil n° 13)', async () => {
+    vi.useFakeTimers({ now: T0 + 3 * 86_400_000, toFake: ['Date'] })
+    window.api.changes = { git: async () => null } as unknown as Window['api']['changes']
+    render(<ResumeCard conversationId="vide" items={[]} />)
+    await act(async () => {})
+    expect(screen.queryByTestId('resume-card')).toBeNull()
+  })
+
+  it('carte de reprise repliable : ouverte, puis repliée par son titre (fil n° 16)', async () => {
+    vi.useFakeTimers({ now: T0 + 3 * 86_400_000, toFake: ['Date'] })
+    window.api.changes = { git: async () => null } as unknown as Window['api']['changes']
+    render(
+      <ResumeCard
+        conversationId="pliable"
+        items={[
+          { kind: 'user', id: 1, text: 'Ajoute la connexion', at: T0 },
+          { kind: 'agent', id: 2, text: 'En cours', at: T0 + 1000 }
+        ]}
+      />
+    )
+    await act(async () => {})
+    const card = screen.getByTestId('resume-card') as HTMLDetailsElement
+    expect(card.tagName).toBe('DETAILS')
+    expect(card.open).toBe(true)
+    expect(card.querySelector(':scope > summary')).toBeTruthy()
+    card.open = false
+    fireEvent(card, new Event('toggle'))
+    expect(card.open).toBe(false)
+    expect(screen.getByTestId('resume-card')).toBe(card)
   })
 })
