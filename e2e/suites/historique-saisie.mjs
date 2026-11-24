@@ -221,11 +221,13 @@ async function run(ui) {
   await ui.waitFor(`${input}.value === ''`)
   // Saisie étroite (maquette rc4, variante 1) : pendant une réponse, l'invite longue et le rappel.
   await narrowComposer(ui, focus)
-  await ui.send('/scenario lent')
+  // Un tour qui ne finit qu'à l'arrêt (la seconde Échap) : le rappel se fait pendant la
+  // réponse, quelle que soit la vitesse de l'agent (fiche 279).
+  await ui.send('/scenario attend-stop')
   await ui.waitFor(`!!${ui.$('stop')}`)
   await focus()
   await ui.arrow('ArrowUp')
-  await ui.waitFor(`${input}.value === '/scenario lent'`)
+  await ui.waitFor(`${input}.value === '/scenario attend-stop'`)
   await ui.press('Escape')
   await ui.waitFor(`${input}.value === '' && !${ui.$('history-pill')}`)
   await ui.press('Escape')

@@ -14,7 +14,9 @@ export async function queueSuite(scheme) {
         await ui.type(text)
         await ui.press('Enter')
       }
-      await ui.send('/scenario lent')
+      // Un tour qui ne finit qu'à l'arrêt : la file reste pleine le temps des étapes, quelle que
+      // soit la vitesse de l'agent (« Envoyer maintenant » interrompt le tour, fiche 279).
+      await ui.send('/scenario attend-stop')
       await ui.waitFor(`!!${ui.$('stop')}`)
       await queueAndEnter('Message en attente')
       await ui.waitFor(`${items}.length === 1`)
@@ -39,7 +41,7 @@ export async function queueSuite(scheme) {
       await ui.click(`${items}[0].querySelector('[data-testid=queued-send-now]')`)
       await ui.waitFor(`${users}.length === 2`)
       await ui.ready()
-      await ui.send('/scenario lent')
+      await ui.send('/scenario attend-stop')
       await ui.waitFor(`!!${ui.$('stop')}`)
       await queueAndEnter('Après arrêt')
       await ui.waitFor(`${items}.length === 1`)

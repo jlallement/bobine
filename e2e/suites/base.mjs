@@ -12,7 +12,8 @@ export async function suite(scheme) {
     await ui.shot('1-accueil')
 
     // Indicateur d'activité à la fin du fil pendant la réponse.
-    await ui.send('/scenario lent')
+    // Un tour qui ne finit qu'à l'arrêt : Stop le trouve toujours en cours (fiche 279).
+    await ui.send('/scenario attend-stop')
     await ui.waitFor(`${ui.$('working')}?.dataset.activity === 'writing'`)
     check(
       await ui.ev(

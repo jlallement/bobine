@@ -169,3 +169,14 @@ guidé par ESLint.
     fiche 115 et ADR-0071.
   - Non fait : les deux passages complets verts à 5 tâches que le plan demandait avant de changer
     le défaut (pas d'e2e locale dans ce lot), et la campagne `e2e.yml` de la branche.
+- 2026-11-24 — **Tours « assez longs » rendus sûrs** (après la campagne GitHub 45397343658) :
+  - Échec sur macOS : `queue` en clair. Avec le texte de l'agent factice à 5 ms le morceau, le tour
+    `lent` (200 morceaux) finissait avant que l'essai modifie le message en file.
+  - Correctif à la cause : les suites qui agissent pendant un tour ne comptent plus sur sa durée.
+    - `queue`, `base` et `historique-saisie` emploient `attend-stop`. Le tour ne finit qu'à
+      l'arrêt : Stop, Échap ou « Envoyer maintenant ».
+    - `parallel` et `git` posent le verrou de fin de tour (`MOCK_AGENT_TURN_LOCK`) le temps de
+      leurs étapes, puis l'enlèvent.
+  - Revue des autres suites : les journées, `finitions`, `failures`, `pannes-visibles`, `aparte`
+    et `network` emploient déjà un scénario qui attend (Stop, silence, permission, panne). Le
+    `lent` de `long-thread` n'est qu'attendu jusqu'au bout (`ready`), sans action pendant le tour.
