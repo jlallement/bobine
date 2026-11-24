@@ -952,3 +952,30 @@ le main n'a pas livré l'étape 1) :
   des données, canaux IPC et vérification de leurs arguments, clés de traduction, glossaire) ;
   plan par lot et partage des fichiers entre main et renderer. Aucune interface ni orchestration
   encore : rien de visible pour l'utilisateur.
+- 2026-11-24 : interface (renderer, branche `1.2-rt-ui`, lots 1 à 3 côté renderer), contre le
+  contrat gelé et un `window.api.roundtable` factice dans les essais. Livré :
+  - saisie : `/roundtable` (tapé, collé ou choisi dans le menu « / ») et le bouton de la barre ;
+    étiquette « Tour de table » ; ligne du tour (`RoundtableLine`) : participants, surcoût en jetons
+    et sa forme courte en saisie étroite (requête de conteneur, jamais coupée), infobulle par agent
+    avec la destination et ce qui part ; premier usage, places manquantes, participant
+    indisponible et refus du main (`selection`, `slots`, `running`, `task`, `archived`,
+    `discussion`) dits dans la ligne, la question gardée ; Échap, ✕ ou retour arrière en tête
+    ramènent à une question simple ;
+  - menu à cases (`RoundtableParticipants`) : récents puis « Autres modèles… » et sa recherche,
+    2 à 5 (cases désactivées au-delà, avec la raison), une ligne pour un agent sans choix de
+    modèle, préférence `roundtableParticipants` écrite à chaque case, liste à choix multiples au
+    clavier ;
+  - fil : `workLayout` range chaque participant dans la carte de son tour (clé de carte partagée
+    départagée par la place) ; bulle de la question et carte (`RoundtableCard`, `RoundtableRow`)
+    à place fixe, par phase ; carte repliée en une ligne à la synthèse ; pied « Consommé » ;
+    demande de l'app en ligne « Synthèse demandée · N avis » ; étiquette « Synthèse du tour de
+    table · <modèle> », lettres « Participant X » qui montrent le vrai nom (greffon rehype,
+    infobulle au survol et au focus) ; « Demander à <agent> de l'appliquer » et « Faire réagir
+    les participants » avec le rappel en jetons ; carte « Réplique » et décision
+    (`RoundtableTurn`) ;
+  - squelette de la suite e2e `e2e/suites/tour-de-table.mjs`, **hors catalogue, pas encore
+    lancée** (attend le moteur et les scénarios de l'agent factice).
+  Écarts aux maquettes : l'étiquette « Tour de table » est sur sa ligne au-dessus de la question
+  (comme les jetons de rôle), pas dans le texte ; la commande n'a pas d'icône dans le menu « / »
+  (le menu n'en montre aucune) ; « Appliquer » envoie un message ordinaire (comme la fiche 263),
+  au lieu de le poser dans la saisie. Non fait : l'état « silencieux depuis … » d'un participant.
