@@ -6,6 +6,8 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
+- Windows: a scheduled task in a folder such as `C:\Users\…\project` is saved and runs; it was
+  refused, or dropped when the list was read back.
 - Several pieces of work proposed at once: the card always lists them in the order the agent
   proposed them, the same every time, and a line already shown no longer changes place.
 - Outline of a long conversation: at the very bottom of the thread, the last message is the one
