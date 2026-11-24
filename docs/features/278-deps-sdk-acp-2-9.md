@@ -2,7 +2,7 @@
 
 - **Statut** : fait (suites e2e touchées à jouer sur GitHub)
 - **Dépend de** : 233 (lot 2, SDK ACP 2.7), 217 (avis de licence), 198 (sonde d'OpenCode en CI),
-  ADR-0057 (politique de montée de version)
+  ADR-0057 (politique de montée de version), ADR-0070 (SDK ACP pendant une rc)
 - **Agents** : les deux (aucun code propre à un agent)
 
 ## Pourquoi
@@ -29,8 +29,9 @@ Un commit pour les montées (lockfile et avis de licence), un pour la référenc
 pour la doc. Aucune nouvelle dépendance. Non montés (décisions séparées) : TypeScript 7,
 `@types/node` 26.
 
-**Écart à l'ADR-0057, point 4** (gel du SDK ACP pendant une rc) : montée décidée explicitement
-par l'utilisateur pour ce lot de maintenance, avec les deux sondes, comme le point 4 l'exige.
+**SDK ACP pendant la rc** : conforme à l'ADR-0070 (décision de l'utilisateur du 2026-11-24, qui
+remplace le gel du point 4 de l'ADR-0057) : sondes réelles de Bob et d'OpenCode vertes (contrat
+complet), suites e2e touchées à jouer sur GitHub.
 
 ## Versions
 
@@ -86,4 +87,6 @@ types `dist/v1/unstable/schema/types.gen.d.ts` comparés entre les deux versions
   référence 2.1.0. `pnpm opencode-probe --offline` (OpenCode 2.3.0 local, Homebrew ne propose pas
   encore la 2.4.1 dans son index local, non mis à jour) : contrat 12/12 ; sortie 1 attendue, seul
   écart la commande `automation` de la référence 2.4.1, absente de la 2.3.0.
+- 2026-11-24 : l'utilisateur garde le SDK 2.9.1 pendant la rc : ADR-0070 (remplace le point 4
+  de l'ADR-0057, dont seul le statut change).
 - Reste : suites e2e touchées sur GitHub ; sonde d'OpenCode 2.4.1 avec modèle gratuit.
