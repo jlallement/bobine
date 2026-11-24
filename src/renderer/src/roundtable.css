@@ -256,6 +256,14 @@
 .roundtable-row .work-group-meta[data-wrap] {
   white-space: normal;
 }
+.roundtable-readonly {
+  display: inline-flex;
+  color: var(--muted);
+  opacity: 0.8;
+}
+.roundtable-readonly:is([data-level='requested'], [data-level='unverified']) {
+  color: var(--warn);
+}
 .roundtable-row-mark {
   color: var(--warn);
 }

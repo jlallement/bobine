@@ -12,7 +12,7 @@ import type { ConversationSummary } from '@shared/agent'
 import type { Roundtable, RoundtableEvent } from '@shared/roundtable'
 import type { TranscriptItem } from '@shared/transcript'
 import { onRoundtableMenuRequest } from '../roundtable/roundtable-menu-request'
-import { answered, opinion, roundtable, T0, thread } from '../roundtable/test-fixtures'
+import { answered, opinion, rebutted, roundtable, T0, thread } from '../roundtable/test-fixtures'
 import type { SubtasksInfo } from './Subtasks'
 import { Transcript } from './Transcript'
 
@@ -158,7 +158,7 @@ describe('recueil des avis', () => {
       'a modifié des fichiers du dossier'
     )
     expect(row('B').textContent).toContain('Lecture seule demandée')
-    // Lecture seule garantie : rien de plus sur la ligne, le pied le dit.
+    // Lecture seule garantie : pas de texte sur la ligne, un bouclier discret.
     expect(row('A').textContent).not.toContain('Lecture seule')
   })
 
@@ -174,6 +174,20 @@ describe('recueil des avis', () => {
     expect(screen.queryAllByTestId('work-card')).toHaveLength(0)
     expect(screen.getAllByTestId('roundtable-row')).toHaveLength(3)
   })
+})
+
+it('les quatre niveaux de lecture seule, discrètement, avec leur nom en clair', () => {
+  const rt = roundtable()
+  const levels = ['enforced', 'native', 'unverified'] as const
+  const seats = rt.seats.map((s, i) => ({ ...s, readOnly: levels[i] ?? ('requested' as const) }))
+  show(thread({ ...rt, seats }))
+  const marks = screen.getAllByTestId('roundtable-readonly')
+  expect(marks.map((m) => [m.dataset.level, m.getAttribute('aria-label')])).toEqual([
+    ['enforced', 'Lecture seule'],
+    ['native', 'Lecture seule, tenue par le rôle Participant installé'],
+    ['unverified', 'Lecture seule demandée, non vérifiée (dossier hors git)']
+  ])
+  expect(row('C').textContent).toContain('non vérifiée (dossier hors git)')
 })
 
 describe('avis rendus et synthèse en cours', () => {
@@ -271,11 +285,34 @@ describe('pas assez d’avis, arrêt, reprise', () => {
     expect(api.relaunch).toHaveBeenCalledWith('mother', 'rt1', 'C')
   })
 
-  it('une erreur du main est dite', async () => {
-    api.synthesize.mockRejectedValueOnce(new Error('refusé'))
-    const subtasks = show(thread(roundtable([answered('A'), answered('B')]), OPINIONS))
+  it('un refus du main est dit sur la carte, en clair', async () => {
+    api.synthesize.mockRejectedValueOnce(
+      new Error(
+        "Error invoking remote method 'roundtable:synthesize': Error: Ce tour de table n’existe pas dans cette conversation."
+      )
+    )
+    show(thread(roundtable([answered('A'), answered('B')]), OPINIONS))
     await act(async () => fireEvent.click(screen.getByTestId('roundtable-synthesize')))
-    await waitFor(() => expect(subtasks?.onWarn).toHaveBeenCalled())
+    const refusal = await screen.findByTestId('roundtable-gesture-refusal')
+    expect(refusal.getAttribute('role')).toBe('alert')
+    expect(refusal.textContent).toBe('Ce tour de table n’existe pas dans cette conversation.')
+  })
+
+  it('redémarrage d’un tour avec pièces jointes : pas de « Relancer », la raison dite', async () => {
+    const { settleRoundtable } = await import('@shared/roundtable')
+    const rt = settleRoundtable(
+      { ...roundtable([answered('A'), answered('B')]), attachments: ['plan.md'] },
+      T0 + 1
+    )
+    show(thread(rt, OPINIONS))
+    expect(screen.getByTestId('roundtable-bubble').textContent).toContain('plan.md')
+    expect(plain(screen.getByTestId('roundtable-attachments-lost').textContent)).toContain(
+      'Les pièces jointes de ce tour ne sont plus disponibles'
+    )
+    expect(screen.queryByTestId('roundtable-resume')).toBeNull()
+    expect(within(row('C')).queryByTestId('roundtable-relaunch')).toBeNull()
+    // La synthèse avec les avis présents reste possible.
+    expect(screen.getByTestId('roundtable-synthesize')).toBeTruthy()
   })
 })
 
@@ -390,9 +427,9 @@ describe('réplique et décision', () => {
   it('positions par ligne, puis la décision et « Appliquer » seul', () => {
     const rt = done([
       { type: 'rebuttal', at: T0 + 2 },
-      { type: 'rebuttal-seat', letter: 'A', state: 'answered', stance: 'nuances', at: T0 + 3 },
-      { type: 'rebuttal-seat', letter: 'B', state: 'answered', stance: 'maintains', at: T0 + 3 },
-      { type: 'rebuttal-seat', letter: 'C', state: 'answered', stance: 'rallies', at: T0 + 3 },
+      rebutted('A', 'nuances'),
+      rebutted('B', 'maintains'),
+      rebutted('C', 'rallies'),
       { type: 'step-sent', step: 'verdict', at: T0 + 4 },
       { type: 'step-answered', step: 'verdict', at: T0 + 5 }
     ])
@@ -447,10 +484,7 @@ describe('réplique et décision', () => {
   it('après un redémarrage pendant la réplique : « Demander la décision »', async () => {
     const { settleRoundtable } = await import('@shared/roundtable')
     const rt = settleRoundtable(
-      done([
-        { type: 'rebuttal', at: T0 + 2 },
-        { type: 'rebuttal-seat', letter: 'A', state: 'answered', stance: 'nuances', at: T0 + 3 }
-      ]),
+      done([{ type: 'rebuttal', at: T0 + 2 }, rebutted('A', 'nuances')]),
       T0 + 9
     )
     show(thread(rt, OPINIONS))

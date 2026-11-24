@@ -33,6 +33,23 @@ export const PARTICIPANTS: RoundtableParticipant[] = [
   { profileId: 'agent-b', label: 'Agent B', agentLabel: 'Agent B' }
 ]
 
+/** Heure d'envoi de la question d'un participant (`askedAt`), et de sa réplique. */
+export const askedAtOf = (letter: RoundtableLetter) => T0 + 10 + letter.charCodeAt(0)
+export const rebuttalAskedAt = (letter: RoundtableLetter) => T0 + 500 + letter.charCodeAt(0)
+
+/** Réplique rendue d'un participant, avec l'heure d'envoi que le main redit. */
+export const rebutted = (
+  letter: RoundtableLetter,
+  stance: 'maintains' | 'nuances' | 'rallies'
+): RoundtableEvent => ({
+  type: 'rebuttal-seat',
+  letter,
+  state: 'answered',
+  stance,
+  askedAt: rebuttalAskedAt(letter),
+  at: T0 + 600
+})
+
 /** Lettres tirées sans hasard : A, B, C dans l'ordre des participants. */
 const NO_SHUFFLE = () => 0.999
 
@@ -58,7 +75,12 @@ export function roundtable(
       readOnly: 'enforced',
       at: T0
     })
-    rt = reduceRoundtable(rt, { type: 'seat-working', letter: seat.letter, at: T0 })
+    rt = reduceRoundtable(rt, {
+      type: 'seat-working',
+      letter: seat.letter,
+      at: T0,
+      askedAt: askedAtOf(seat.letter)
+    })
   }
   return events.reduce(reduceRoundtable, rt)
 }
@@ -118,6 +140,11 @@ export function thread(
         removed: 0,
         excerpt: reply.slice(0, 100),
         reply,
+        // L'avis répond à la question, la réplique à sa demande (`askedAt`, contrat du main).
+        ...(index === 0 && seat.askedAt !== undefined ? { askedAt: seat.askedAt } : {}),
+        ...(index === 1 && seat.rebuttal?.askedAt !== undefined
+          ? { askedAt: seat.rebuttal.askedAt }
+          : {}),
         at: T0 + 60_000 * (index + 1)
       })
     }

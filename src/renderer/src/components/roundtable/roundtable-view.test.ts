@@ -4,7 +4,7 @@
  * d'un participant, tours de synthèse et de décision.
  */
 import { describe, expect, it } from 'vitest'
-import { roundtableTotal, type RoundtableChoice } from '@shared/roundtable'
+import { roundtableTotal, type RoundtableChoice, type RoundtableSeat } from '@shared/roundtable'
 import type { RoundtableAgentOption } from '@shared/roundtable-ipc'
 import type { TranscriptItem } from '@shared/transcript'
 import { workLayout } from '@shared/work-groups'
@@ -181,15 +181,38 @@ describe('lettres, réponses, durées', () => {
     })
   })
 
-  it('avis et réplique d’un participant, réponses en erreur écartées', () => {
+  it('avis et réplique désignés par l’heure d’envoi (askedAt), jamais par l’ordre', () => {
     const rt = roundtable([answered('A')])
-    const items = thread(rt, { A: [opinion('pg-boss'), 'Position: maintient\nJe garde pg-boss.'] })
+    const seat = rt.seats[0] as RoundtableSeat
+    const items = thread(rt, { A: [opinion('pg-boss')] })
+    // Un compte rendu d'avant (erreur puis relance) et un d'après (message de l'utilisateur).
+    const extra = (id: number, reply: string, askedAt: number, outcome = 'done') =>
+      ({
+        kind: 'child-report',
+        id,
+        childId: 'child-A',
+        title: 'x',
+        outcome,
+        files: [],
+        fileCount: 0,
+        added: 0,
+        removed: 0,
+        excerpt: reply,
+        reply,
+        askedAt,
+        at: T0 + 99
+      }) as TranscriptItem
+    items.splice(4, 0, extra(90, 'erreur', seat.askedAt ?? 0, 'error'))
+    items.push(extra(91, 'Suite libre', T0 + 9_999))
     const work = workLayout(items).roundtables.get(1)?.works.get('A')
-    expect(seatReports(work, false).opinion?.reply).toContain('Position')
-    const both = seatReports(work, true)
-    expect(both.opinion?.reply).toContain('pg-boss')
-    expect(both.rebuttal?.reply).toContain('Position')
-    expect(seatReports(undefined, false)).toEqual({})
+    expect(seatReports(work, seat).opinion?.reply).toContain('pg-boss')
+    expect(seatReports(work, seat).rebuttal).toBeUndefined()
+    // Réplique demandée : la réponse dont l'heure d'envoi est celle de la réplique.
+    const later = { ...seat, rebuttal: { state: 'answered' as const, askedAt: T0 + 9_999 } }
+    expect(seatReports(work, later).rebuttal?.reply).toBe('Suite libre')
+    // Sans heure connue : rien n'est deviné.
+    expect(seatReports(work, { rebuttal: undefined })).toEqual({})
+    expect(seatReports(undefined, seat)).toEqual({})
   })
 
   it('résumé d’une réplique : la première ligne après sa position', () => {

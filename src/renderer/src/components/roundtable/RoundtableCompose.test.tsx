@@ -40,12 +40,18 @@ const api = {
   options: vi.fn<(id: string) => Promise<RoundtableOptions>>(),
   start: vi.fn<(id: string, request: unknown) => Promise<RoundtableStartResult>>()
 }
+const recordSent = vi.fn<(id: string, entry: { text: string }) => Promise<void>>()
 const saved = window.api
 
 beforeEach(() => {
   api.options.mockReset().mockResolvedValue(options())
   api.start.mockReset().mockResolvedValue({ ok: true, roundtableId: 'rt1' })
-  window.api = { ...saved, roundtable: api } as unknown as typeof window.api
+  recordSent.mockReset().mockResolvedValue(undefined)
+  window.api = {
+    ...saved,
+    roundtable: api,
+    conversations: { recordSent }
+  } as unknown as typeof window.api
 })
 afterEach(() => {
   window.api = saved
@@ -122,6 +128,21 @@ describe('lancement en deux gestes', () => {
     expect(t.onSend).not.toHaveBeenCalled()
     expect(t.input.value).toBe('')
     expect(screen.queryByTestId('roundtable-line')).toBeNull()
+  })
+
+  it('historique de la saisie : la question entre une seule fois, rappelée en tour de table', async () => {
+    const t = setup()
+    t.type('/roundtable Quelle file ?')
+    await act(async () => t.enter())
+    expect(api.start).toHaveBeenCalledTimes(1)
+    expect(recordSent).toHaveBeenCalledTimes(1)
+    expect(recordSent.mock.calls[0]?.[0]).toBe('conv-1')
+    expect(recordSent.mock.calls[0]?.[1]).toMatchObject({ text: '/roundtable Quelle file ?' })
+    // Refusé par le main : rien dans l'historique, la question reste.
+    api.start.mockResolvedValueOnce({ ok: false, error: 'running' })
+    t.type('/roundtable Encore ?')
+    await act(async () => t.enter())
+    expect(recordSent).toHaveBeenCalledTimes(1)
   })
 
   it('le bouton de la barre fait la même chose ; Échap ramène à une question simple', async () => {

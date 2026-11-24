@@ -36,23 +36,38 @@ import '../../roundtable.css'
 type Gesture = 'synthesize' | 'rebuttal' | 'decide' | 'relaunch' | 'stop'
 
 /**
- * Gestes de la carte (et de la synthèse) : chacun part au main, une erreur est dite. Sans
- * conversation connue (fil en lecture seule), aucun geste.
+ * Gestes de la carte (et de la synthèse) : chacun part au main ; son refus (phase dépassée, tour
+ * inconnu, pièces jointes perdues au redémarrage…) est dit sur place, en clair. Sans conversation
+ * connue (fil en lecture seule), aucun geste.
  */
-export function roundtableGestures(info: SubtasksInfo | undefined, roundtableId: string) {
+export function useRoundtableGestures(info: SubtasksInfo | undefined, roundtableId: string) {
+  const [refusal, setRefusal] = useState<string | undefined>()
   const conversationId = info?.motherId
-  if (!conversationId) return undefined
-  const run = (promise: Promise<unknown>) =>
-    void promise.catch((error: unknown) => info.onWarn?.(ipcErrorText(error)))
+  if (!conversationId) return { gestures: undefined, refusal }
+  const run = (promise: () => Promise<unknown>) => {
+    setRefusal(undefined)
+    void promise().catch((error: unknown) => setRefusal(ipcErrorText(error)))
+  }
   const api = () => window.api.roundtable
-  return {
-    synthesize: () => run(api().synthesize(conversationId, roundtableId)),
-    rebuttal: () => run(api().rebuttal(conversationId, roundtableId)),
-    decide: () => run(api().decide(conversationId, roundtableId)),
+  const gestures = {
+    synthesize: () => run(() => api().synthesize(conversationId, roundtableId)),
+    rebuttal: () => run(() => api().rebuttal(conversationId, roundtableId)),
+    decide: () => run(() => api().decide(conversationId, roundtableId)),
     relaunch: (letter: RoundtableLetter) =>
-      run(api().relaunch(conversationId, roundtableId, letter)),
-    stop: (letter?: RoundtableLetter) => run(api().stop(conversationId, roundtableId, letter))
+      run(() => api().relaunch(conversationId, roundtableId, letter)),
+    stop: (letter?: RoundtableLetter) => run(() => api().stop(conversationId, roundtableId, letter))
   } satisfies Record<Gesture, unknown>
+  return { gestures, refusal }
+}
+
+/** Refus d'un geste, sur la carte : lu à voix haute, sans fenêtre. */
+export function GestureRefusal({ text }: { text: string | undefined }) {
+  if (!text) return null
+  return (
+    <div className="roundtable-refusal" role="alert" data-testid="roundtable-gesture-refusal">
+      {text}
+    </div>
+  )
 }
 
 /** Total consommé du tour : chaque participant (sa conversation), puis la synthèse et la décision. */
@@ -108,6 +123,13 @@ export function RoundtableEntry({
   )
 }
 
+/**
+ * Après un redémarrage, les pièces jointes d'un tour ne sont plus en mémoire : le main refuse
+ * « Relancer » plutôt que de relancer sans elles (fiche 285, lot main). La carte le dit d'avance.
+ */
+const attachmentsLost = (item: RoundtableGroupData['item']) =>
+  item.phase === 'interrupted' && !!item.attachments?.length
+
 /** La synthèse est rendue (ou la réplique a commencé) : la carte se replie en une ligne. */
 const settled = (phase: string) =>
   phase === 'synthesized' || phase === 'rebutting' || phase === 'deciding' || phase === 'decided'
@@ -155,7 +177,7 @@ export function RoundtableCard({
   const [reopened, setReopened] = useState(false)
   const collapsed = folded && !reopened
   const [openLetter, setOpenLetter] = useState<RoundtableLetter | undefined>()
-  const gestures = roundtableGestures(info, item.roundtableId)
+  const { gestures, refusal } = useRoundtableGestures(info, item.roundtableId)
   const progress = useProgress(group)
   const used = useRoundtableTotal(group, info)
   const rebutted = item.seats.some((s) => s.rebuttal)
@@ -219,6 +241,7 @@ export function RoundtableCard({
         </div>
       )}
       {!collapsed && <RoundtableFoot group={group} gestures={gestures} />}
+      <GestureRefusal text={refusal} />
       {used && !rebutted && (
         <div className="roundtable-used" data-testid="roundtable-used">
           {t('roundtable.card.used', { total: used })}
@@ -245,17 +268,17 @@ function SeatRow({
   activity: Parameters<typeof RoundtableRow>[0]['activity']
   open: boolean
   onToggle: () => void
-  gestures: ReturnType<typeof roundtableGestures>
+  gestures: ReturnType<typeof useRoundtableGestures>['gestures']
 }) {
   const { item } = group
   const child = info?.children.find((c) => c.id === seat.childId)
-  const { opinion } = seatReports(work, !!seat.rebuttal)
+  const { opinion } = seatReports(work, seat)
   const collecting = item.phase === 'collecting'
   const running = seat.state === 'working' || seat.state === 'waiting'
   const modelRefused =
     seat.state === 'error' &&
     (seat.error === 'model-not-found' || seat.error === 'model-not-applied')
-  const relaunch = !!gestures && canRelaunch(item, seat.letter)
+  const relaunch = !!gestures && canRelaunch(item, seat.letter) && !attachmentsLost(item)
   const childId = seat.childId
   return (
     <RoundtableRow
@@ -284,14 +307,15 @@ function RoundtableFoot({
   gestures
 }: {
   group: RoundtableGroupData
-  gestures: ReturnType<typeof roundtableGestures>
+  gestures: ReturnType<typeof useRoundtableGestures>['gestures']
 }) {
   const { t } = useTranslation()
   const { item } = group
   const opinions = usableSeats(item).length
   const absent = item.seats.length - opinions
   const synthesize = gestures && canSynthesize(item)
-  const resumable = gestures && item.seats.some((s) => canRelaunch(item, s.letter))
+  const lost = attachmentsLost(item) && item.seats.some((s) => canRelaunch(item, s.letter))
+  const resumable = gestures && !lost && item.seats.some((s) => canRelaunch(item, s.letter))
   const from = item.interruptedFrom
   let note: string | undefined
   if (item.phase === 'insufficient')
@@ -334,9 +358,14 @@ function RoundtableFoot({
     )
   }
   const decide = gestures && (from === 'rebutting' || from === 'deciding')
-  if (item.phase === 'interrupted' && (synthesize || resumable || decide)) {
+  if (item.phase === 'interrupted' && (synthesize || resumable || decide || lost)) {
     return (
       <div className="work-group-foot roundtable-foot" data-testid="roundtable-foot">
+        {lost && (
+          <span className="roundtable-foot-note" data-testid="roundtable-attachments-lost">
+            {t('roundtable.error.attachmentsLost')}
+          </span>
+        )}
         <span className="grow" />
         {synthesize && (
           <button

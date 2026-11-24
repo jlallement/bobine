@@ -299,23 +299,22 @@ export function letterNames(seats: readonly RoundtableSeat[]): Readonly<Record<s
 }
 
 /**
- * Réponses d'un participant : son avis, et sa réplique s'il en a rendu une. Les comptes rendus en
- * erreur (avant un « Relancer ») ne comptent pas.
+ * Réponses d'un participant : son avis et sa réplique, désignés par l'heure d'envoi de la question
+ * (de la réplique) que le main garde sur la place (`askedAt`) et que porte le compte rendu qui y
+ * répond. Rien n'est deviné de l'ordre des comptes rendus : sans heure connue, pas de réponse.
  */
 export function seatReports(
   work: Pick<WorkCardData, 'steps'> | undefined,
-  rebutted: boolean
+  seat: Pick<RoundtableSeat, 'askedAt' | 'rebuttal'>
 ): { opinion?: Report; rebuttal?: Report } {
-  const reports = (work?.steps ?? []).flatMap((s) =>
-    s.kind === 'report' && s.item.outcome !== 'error' ? [s.item] : []
-  )
-  if (rebutted && reports.length >= 2) {
-    const opinion = reports.at(-2)
-    const rebuttal = reports.at(-1)
-    return { ...(opinion ? { opinion } : {}), ...(rebuttal ? { rebuttal } : {}) }
-  }
-  const opinion = reports.at(-1)
-  return opinion ? { opinion } : {}
+  const reports = (work?.steps ?? []).flatMap((s) => (s.kind === 'report' ? [s.item] : []))
+  const answering = (askedAt: number | undefined) =>
+    askedAt === undefined
+      ? undefined
+      : reports.findLast((r) => r.askedAt === askedAt && r.outcome !== 'error')
+  const opinion = answering(seat.askedAt)
+  const rebuttal = answering(seat.rebuttal?.askedAt)
+  return { ...(opinion ? { opinion } : {}), ...(rebuttal ? { rebuttal } : {}) }
 }
 
 /** Le texte d'une réponse de participant : entière si gardée, sinon son extrait. */

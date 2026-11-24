@@ -30,7 +30,12 @@ import {
   type RoundtableTurn
 } from '../roundtable/roundtable-view'
 import { MessageTime } from './MessageTime'
-import { RoundtableEntry, roundtableGestures, useRoundtableTotal } from './RoundtableCard'
+import {
+  GestureRefusal,
+  RoundtableEntry,
+  useRoundtableGestures,
+  useRoundtableTotal
+} from './RoundtableCard'
 import { RebuttalRow } from './RoundtableRow'
 import type { SubtasksInfo } from './Subtasks'
 
@@ -96,7 +101,7 @@ function RebuttalCard({
       <div className="work-group-rows">
         {seats.map((seat) => {
           const childId = seat.childId
-          const { rebuttal } = seatReports(group.works.get(seat.letter), true)
+          const { rebuttal } = seatReports(group.works.get(seat.letter), seat)
           return (
             seat.rebuttal && (
               <RebuttalRow
@@ -135,7 +140,7 @@ function RoundtableActions({
 }) {
   const { t } = useTranslation()
   const { item } = group
-  const gestures = roundtableGestures(info, item.roundtableId)
+  const { gestures, refusal } = useRoundtableGestures(info, item.roundtableId)
   const answered = (step === 'synthesis' ? item.synthesis : item.verdict)?.state === 'answered'
   if (!answered) return null
   const rebut = step === 'synthesis' && !!gestures && canRebut(item)
@@ -143,6 +148,7 @@ function RoundtableActions({
   if (!onAsk && !rebut) return null
   return (
     <div className="roundtable-actions" data-testid="roundtable-actions">
+      <GestureRefusal text={refusal} />
       {onAsk && (
         <button
           type="button"

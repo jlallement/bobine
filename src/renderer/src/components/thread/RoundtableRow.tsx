@@ -11,6 +11,8 @@ import {
   CircleCheck,
   CircleX,
   LoaderCircle,
+  ShieldAlert,
+  ShieldCheck,
   Square,
   TriangleAlert
 } from 'lucide-react'
@@ -315,6 +317,7 @@ export function RoundtableRow({
         )}
         <span className="roundtable-row-side" data-testid="roundtable-row-side">
           {side.length > 0 && <Dotted parts={side} />}
+          <ReadOnlyMark seat={seat} />
           <RowButtons seat={seat} actions={actions} />
         </span>
       </div>
@@ -336,6 +339,30 @@ export function RoundtableRow({
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * Lecture seule du participant, discrètement (décision C3) : un bouclier, plein quand elle est
+ * garantie (`enforced`, `native`), barré d'un point quand elle n'est que demandée (`requested`,
+ * `unverified`) ; le niveau en clair au survol et pour un lecteur d'écran.
+ */
+function ReadOnlyMark({ seat }: { seat: RoundtableSeat }) {
+  const level = seat.readOnly
+  if (!level || seat.removed) return null
+  const label = i18next.t(READ_ONLY_KEYS[level])
+  const Icon = level === 'enforced' || level === 'native' ? ShieldCheck : ShieldAlert
+  return (
+    <span
+      className="roundtable-readonly"
+      role="img"
+      aria-label={label}
+      title={label}
+      data-level={level}
+      data-testid="roundtable-readonly"
+    >
+      <Icon size={13} aria-hidden />
+    </span>
   )
 }
 
