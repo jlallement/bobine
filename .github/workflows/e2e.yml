@@ -1,6 +1,8 @@
-# Essais de bout en bout (fiche 105) : la suite complète (`pnpm e2e`, clair et sombre, puis en
-# anglais) sur un Mac de GitHub, lancée à la main depuis l'onglet Actions, et chaque nuit (fiche
-# 250 : dépôt public, minutes des runners standard gratuites, macOS compris). Le job Linux part
+# Essais de bout en bout (fiche 105) : toutes les suites (`pnpm e2e`, puis en anglais) sur un Mac
+# de GitHub, lancées à la main depuis l'onglet Actions, et chaque nuit (fiche 250 : dépôt public,
+# minutes des runners standard gratuites, macOS compris). Thèmes (ADR-0071) : la nuit, le clair et
+# le sombre pour toutes les suites (`--themes both`) ; à la main et à chaque poussée, le clair
+# partout et le sombre pour les suites qui vérifient un rendu sombre (`dark` du catalogue). Le job Linux part
 # aussi de lui-même à chaque poussée sur `main` (fiche 229). Pas rattachée au tag ni aux pull
 # requests : la suite Mac complète tourne en local avant chaque tag. Les captures sont gardées en
 # artefact pour être regardées.
@@ -43,6 +45,9 @@ permissions:
 # et refusées si elles contiennent autre chose que des noms et des options (`--jobs 1`).
 env:
   SUITES: ${{ inputs.suites }}
+  # La nuit : les deux thèmes pour toutes les suites (ADR-0071, `--themes both`). Sinon, vide : le
+  # sombre ciblé du lanceur, ou `--light` / `--dark` passés dans les suites demandées.
+  THEMES: ${{ github.event_name == 'schedule' && 'both' || '' }}
 
 jobs:
   e2e:
@@ -87,24 +92,30 @@ jobs:
       - name: Essais (français)
         run: |
           read -ra suites <<< "$SUITES"
+          themes=()
+          [[ -n "$THEMES" ]] && themes=(--themes "$THEMES")
           skip=()
           [[ ${#suites[@]} -eq 0 ]] && skip=(--skip perf --skip simulator --skip android --skip browser --skip parcours-outils)
-          pnpm e2e ${skip[@]+"${skip[@]}"} ${suites[@]+"${suites[@]}"}
+          pnpm e2e ${themes[@]+"${themes[@]}"} ${skip[@]+"${skip[@]}"} ${suites[@]+"${suites[@]}"}
       - name: Essais (anglais)
         run: |
           read -ra suites <<< "$SUITES"
+          themes=()
+          [[ -n "$THEMES" ]] && themes=(--themes "$THEMES")
           skip=()
           [[ ${#suites[@]} -eq 0 ]] && skip=(--skip perf --skip simulator --skip android --skip browser --skip parcours-outils)
-          pnpm e2e --lang en ${skip[@]+"${skip[@]}"} ${suites[@]+"${suites[@]}"}
+          pnpm e2e --lang en ${themes[@]+"${themes[@]}"} ${skip[@]+"${skip[@]}"} ${suites[@]+"${suites[@]}"}
       # Jouées et montrées (une annotation par contrôle en échec, `--indicative`), sans faire
       # échouer le job (voir plus haut). Français puis anglais, comme les autres.
       - name: Suites indicatives sur ce runner (perf, simulator, android, browser, parcours-outils)
         if: always() && env.SUITES == ''
         continue-on-error: true
         run: |
+          themes=()
+          [[ -n "$THEMES" ]] && themes=(--themes "$THEMES")
           rc=0
-          pnpm e2e --indicative perf simulator android browser parcours-outils || rc=1
-          pnpm e2e --indicative --lang en perf simulator android browser parcours-outils || rc=1
+          pnpm e2e --indicative ${themes[@]+"${themes[@]}"} perf simulator android browser parcours-outils || rc=1
+          pnpm e2e --indicative --lang en ${themes[@]+"${themes[@]}"} perf simulator android browser parcours-outils || rc=1
           exit $rc
       - name: Captures
         if: always()

@@ -1,22 +1,26 @@
 import { execFileSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   type CatalogEntry,
   type Task,
   countFailures,
+  defaultJobs,
+  effectiveThemes,
   failedControls,
   indicativeWarnings,
   fingerprint,
   firstMatch,
   formatDuration,
   globToRegExp,
+  isCi,
   isFullRun,
   NO_MAP,
   nextTask,
   orderTasks,
   parseArgs,
+  schemesOf,
   quarantinedOn,
   selectSuites,
   suiteSources,
@@ -36,15 +40,40 @@ describe('parseArgs', () => {
     expect(() => parseArgs(['--skip'])).toThrow('--skip : suite manquante')
   })
 
-  it('par défaut : toutes les suites, deux thèmes, 3 jobs, base main', () => {
+  it('par défaut : toutes les suites, sombre ciblé, 3 jobs, base main ; pas une suite complète', () => {
     const o = parseArgs([])
-    expect(o).toMatchObject({ suites: [], schemes: ['light', 'dark'], jobs: 3, base: 'main' })
+    expect(o).toMatchObject({ suites: [], themes: 'auto', jobs: 3, base: 'main' })
+    expect(isFullRun(o)).toBe(false)
+  })
+
+  it('--themes both : les deux thèmes partout, la suite complète (ADR-0071)', () => {
+    const o = parseArgs(['--themes', 'both'])
+    expect(o.themes).toBe('both')
     expect(isFullRun(o)).toBe(true)
+    expect(parseArgs(['--themes=light']).themes).toBe('light')
+    expect(parseArgs(['--light']).themes).toBe('light')
+    expect(() => parseArgs(['--themes', 'tous'])).toThrow(/--themes/)
+    expect(() => parseArgs(['--themes', 'both', '--dark'])).toThrow(/un seul/)
+    expect(() => parseArgs(['--light', '--dark'])).toThrow(/un seul/)
+  })
+
+  it('--if-needed (avant un tag) : les deux thèmes partout, jamais un seul', () => {
+    const o = parseArgs(['--if-needed'])
+    expect(o.themes).toBe('both')
+    expect(isFullRun(o)).toBe(true)
+    expect(parseArgs(['--if-needed', '--themes', 'both']).themes).toBe('both')
+    expect(() => parseArgs(['--if-needed', '--dark'])).toThrow(/--if-needed/)
+    expect(() => parseArgs(['--if-needed', '--themes', 'light'])).toThrow(/--if-needed/)
+  })
+
+  it('--jobs par défaut : celui de la machine, sauf --jobs explicite (fiche 279)', () => {
+    expect(parseArgs([], { jobs: 5 }).jobs).toBe(5)
+    expect(parseArgs(['--jobs', '3'], { jobs: 5 }).jobs).toBe(3)
   })
 
   it('valeurs séparées ou après =, suites nommées, thème', () => {
     const o = parseArgs(['plan', '--jobs', '5', '--lang=en', '--dark', 'history', '--base', 'x'])
-    expect(o).toMatchObject({ suites: ['plan', 'history'], jobs: 5, lang: 'en', schemes: ['dark'] })
+    expect(o).toMatchObject({ suites: ['plan', 'history'], jobs: 5, lang: 'en', themes: 'dark' })
     expect(o.base).toBe('x')
     expect(isFullRun(o)).toBe(false)
   })
@@ -138,14 +167,91 @@ describe('selectSuites', () => {
   })
 })
 
+describe('jobs par défaut (fiche 279)', () => {
+  it('en local : un job pour 3 cœurs, au plus 5, au moins 1', () => {
+    expect(defaultJobs(15, false)).toBe(5)
+    expect(defaultJobs(24, false)).toBe(5)
+    expect(defaultJobs(12, false)).toBe(4)
+    expect(defaultJobs(8, false)).toBe(2)
+    expect(defaultJobs(2, false)).toBe(1)
+  })
+
+  it('en CI : 3, quelle que soit la machine', () => {
+    expect(defaultJobs(15, true)).toBe(3)
+    expect(defaultJobs(2, true)).toBe(3)
+    expect(isCi({ GITHUB_ACTIONS: 'true' })).toBe(true)
+    expect(isCi({ CI: 'true' })).toBe(true)
+    expect(isCi({})).toBe(false)
+  })
+})
+
+describe('thèmes joués (ADR-0071)', () => {
+  const dark: CatalogEntry = {
+    name: 'aurore',
+    file: 'aurore.mjs',
+    themes: ['light', 'dark'],
+    dark: true
+  }
+  const plain: CatalogEntry = { name: 'plan', file: 'plan.mjs', themes: ['light', 'dark'] }
+  const none: CatalogEntry = { name: 'libre', file: 'libre.mjs', themes: [null] }
+
+  it('par défaut : le clair partout, le sombre seulement pour une suite déclarée sombre', () => {
+    expect(schemesOf(dark, 'auto')).toEqual(['light', 'dark'])
+    expect(schemesOf(plain, 'auto')).toEqual(['light'])
+    expect(schemesOf(none, 'auto')).toEqual([null])
+    expect(tasksFor([dark, plain, none], null, 'auto').map((t) => t.key)).toEqual([
+      'aurore:light',
+      'aurore:dark',
+      'plan:light',
+      'libre:-'
+    ])
+  })
+
+  it('--themes both (nuit, avant un tag) : les deux thèmes partout', () => {
+    expect(tasksFor([dark, plain, none], null, 'both').map((t) => t.key)).toEqual([
+      'aurore:light',
+      'aurore:dark',
+      'plan:light',
+      'plan:dark',
+      'libre:-'
+    ])
+  })
+
+  it('--light, --dark : ce thème seulement, même pour une suite non déclarée', () => {
+    expect(schemesOf(dark, 'light')).toEqual(['light'])
+    expect(schemesOf(plain, 'dark')).toEqual(['dark'])
+  })
+
+  it('un fichier de thème ou de style touché : toutes les suites en sombre', () => {
+    expect(effectiveThemes('auto', ['src/renderer/src/pr-card.css'])).toBe('both')
+    expect(effectiveThemes('auto', [])).toBe('auto')
+    // Un thème demandé explicitement l'emporte.
+    expect(effectiveThemes('light', ['src/renderer/src/styles.css'])).toBe('light')
+  })
+})
+
+describe('campagne de nuit (e2e.yml, ADR-0071)', () => {
+  it('la nuit joue les deux thèmes partout ; à la main, le sombre ciblé', () => {
+    const yml = readFileSync(join(ROOT, '.github', 'workflows', 'e2e.yml'), 'utf8')
+    expect(yml).toContain("THEMES: ${{ github.event_name == 'schedule' && 'both' || '' }}")
+    // Chaque passage du Mac (français, anglais, indicatives) reçoit les thèmes de la nuit.
+    const runs = yml.split('\n').filter((l) => /^\s+pnpm e2e /.test(l) && !l.includes('--jobs 2'))
+    expect(runs.length).toBeGreaterThanOrEqual(4)
+    for (const run of runs.filter((l) => !l.includes('pnpm e2e ${suites'))) {
+      expect(run).toContain('${themes[@]+"${themes[@]}"}')
+    }
+    expect(parseArgs(['--themes', 'both'])).toMatchObject({ themes: 'both' })
+  })
+})
+
 describe('tâches et ordonnancement', () => {
   it('une tâche par suite et par thème demandé ; sans thème, une seule', () => {
-    expect(tasksFor(CATALOG, null, ['dark']).map((t) => t.key)).toEqual([
+    expect(tasksFor(CATALOG, null, 'dark').map((t) => t.key)).toEqual([
       'subagents:dark',
       'plan:dark',
       'libre:-'
     ])
-    expect(tasksFor(CATALOG, ['plan'], ['light', 'dark']).map((t) => t.key)).toEqual([
+    expect(tasksFor(CATALOG, ['plan'], 'both').map((t) => t.key)).toEqual([
       'plan:light',
       'plan:dark'
     ])
@@ -161,10 +267,10 @@ describe('tâches et ordonnancement', () => {
     const linux = { ...ALL_FEATURES, simulator: false }
     expect(supported(ios, linux)).toBe(false)
     expect(CATALOG.every((entry) => supported(entry, linux))).toBe(true)
-    expect(tasksFor([...CATALOG, ios], null, ['light'], linux).map((t) => t.name)).not.toContain(
+    expect(tasksFor([...CATALOG, ios], null, 'light', linux).map((t) => t.name)).not.toContain(
       'simulator'
     )
-    expect(tasksFor([ios], null, ['light']).map((t) => t.key)).toEqual(['simulator:light'])
+    expect(tasksFor([ios], null, 'light').map((t) => t.key)).toEqual(['simulator:light'])
   })
 
   const t = (key: string, extra: Partial<Task> = {}): Task => ({
@@ -304,9 +410,10 @@ describe('quarantaine par système (fiche 250)', () => {
 
 describe('catalogue des suites (e2e/catalog.mjs)', async () => {
   const path = join(ROOT, 'e2e', 'catalog.mjs')
-  const { SUITES, GLOBAL_SOURCES } = (await import(path)) as {
+  const { SUITES, GLOBAL_SOURCES, THEME_SOURCES } = (await import(path)) as {
     SUITES: CatalogEntry[]
     GLOBAL_SOURCES: string[]
+    THEME_SOURCES: string[]
   }
   const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard'], {
     cwd: ROOT,
@@ -324,13 +431,38 @@ describe('catalogue des suites (e2e/catalog.mjs)', async () => {
     }
   })
 
+  it('le sombre ciblé : les suites qui vérifient un rendu sombre (ADR-0071)', () => {
+    expect(SUITES.filter((s) => s.dark).map((s) => s.name)).toEqual(
+      expect.arrayContaining(['aurore', 'settings', 'tables', 'turn-guards'])
+    )
+    for (const s of SUITES.filter((x) => x.dark)) expect(s.themes, s.name).toContain('dark')
+  })
+
+  it('les fichiers de thème et de style font jouer le sombre partout', () => {
+    const touched = (f: string) => (THEME_SOURCES.some((p) => globToRegExp(p).test(f)) ? [f] : [])
+    for (const f of [
+      'src/renderer/src/styles.css',
+      'src/renderer/src/components/scheduled/scheduled.css',
+      'src/shared/themes.ts',
+      'src/shared/theme-aurora.ts',
+      'src/renderer/src/appearance.ts',
+      'e2e/palette.mjs'
+    ])
+      expect(effectiveThemes('auto', touched(f)), f).toBe('both')
+    expect(touched('src/renderer/src/App.tsx')).toEqual([])
+  })
+
   it('chaque suite a son fichier', () => {
     for (const s of SUITES)
       expect(existsSync(join(ROOT, 'e2e', 'suites', s.file)), s.name).toBe(true)
   })
 
   it('chaque motif couvre au moins un fichier du dépôt (carte à jour après un renommage)', () => {
-    const patterns = [...GLOBAL_SOURCES, ...SUITES.flatMap((s) => s.sources ?? [])]
+    const patterns = [
+      ...GLOBAL_SOURCES,
+      ...THEME_SOURCES,
+      ...SUITES.flatMap((s) => s.sources ?? [])
+    ]
     // Une expression par motif, pas une par fichier : sous Windows, la recompiler pour chaque
     // fichier du dépôt prenait 7 à 10 s (fiche 229, revue des essais lents).
     const orphans = [...new Set(patterns)].filter((p) => {
