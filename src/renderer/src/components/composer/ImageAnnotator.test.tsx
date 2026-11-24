@@ -1,7 +1,9 @@
 /**
  * Annotation d'une image jointe (fiches 067, 094) sans vrai canevas : l'image et le contexte 2D
  * sont simulés, les gestes passent par les évènements de pointeur. Le rendu réel (pixels, texte
- * replié par la police) et la fenêtre rapide agrandie restent dans l'e2e `annotate`.
+ * replié par la police) et la fenêtre rapide agrandie restent dans l'e2e `annotate`. Remplace les
+ * vérifications de composant de `e2e/suites/annotate.mjs` (n° 1, 3) ; le dessin des formes est
+ * aussi dans `annotation.test.ts`.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -145,8 +147,17 @@ describe('annoter une image jointe (fiche 067)', () => {
     fireEvent.click(undo)
     expect(drawn).toContain('strokeRect')
     expect(drawn).not.toContain('fillText')
+    // La troisième annulation ramène à l'image seule.
+    fireEvent.click(undo)
+    expect(undo.disabled).toBe(true)
+    expect(apply.disabled).toBe(true)
 
+    // Une forme de nouveau, puis « Appliquer » : l'image est redessinée sous les formes.
+    fireEvent.click(screen.getByTestId('annotator-tool-rect'))
+    drag(canvas, [10, 10], [60, 60])
+    drawn = []
     fireEvent.click(apply)
+    expect(drawn).toContain('drawImage')
     expect(onApply).toHaveBeenCalledWith({
       kind: 'image',
       name: 'capture.png',

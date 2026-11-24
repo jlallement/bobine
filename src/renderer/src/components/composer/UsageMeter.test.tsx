@@ -1,6 +1,7 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
 import { fireEvent, render, screen } from '@testing-library/react'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { t } from 'i18next'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { endTurn, type ConversationUsage } from '@shared/usage'
 import { UsageMeter } from './UsageMeter'
 
@@ -184,5 +185,76 @@ describe('détail de la consommation : le seul endroit où le coût se voit (fic
     fireEvent.click(chip)
     expect(screen.getByTestId('usage-context-value').textContent).not.toContain('≈')
     expect(screen.queryByTestId('usage-context-estimated')).toBeNull()
+  })
+})
+
+/**
+ * Remplaçants des vérifications de composant de `e2e/suites/usage.mjs` (n° 1, 6, 11, 12) et
+ * `cout-connexion.mjs` (n° 3).
+ */
+describe('puce de consommation — remplaçants des e2e', () => {
+  it('rien d’affiché avant le premier échange (usage n° 1)', () => {
+    const { container } = render(meter({}))
+    expect(screen.queryByTestId('usage-meter')).toBeNull()
+    expect(container.textContent).toBe('')
+  })
+
+  it('« Toute la consommation… » referme le détail et mène au tableau (usage n° 6)', () => {
+    const onOpenUsage = vi.fn()
+    render(
+      <Tooltip.Provider>
+        <UsageMeter
+          usage={{ context: { used: 10, size: 100 } }}
+          agentLabel="Agent factice"
+          onOpenUsage={onOpenUsage}
+        />
+      </Tooltip.Provider>
+    )
+    fireEvent.click(screen.getByTestId('usage-meter'))
+    const all = screen.getByTestId('usage-open-board')
+    expect(all.textContent).toBe(t('usage.board.openAll'))
+    fireEvent.click(all)
+    expect(onOpenUsage).toHaveBeenCalledTimes(1)
+    expect(screen.queryByTestId('usage-details')).toBeNull()
+  })
+
+  it('contexte presque plein : la jauge en alerte ; libéré par une compaction, plus d’alerte (usage n° 11, 12)', () => {
+    const view = render(meter({ context: { used: 95_000, size: 100_000 } }))
+    expect(screen.getByTestId('usage-meter').classList.contains('full')).toBe(true)
+    view.rerender(meter({ context: { used: 12_000, size: 100_000 } }))
+    const chip = screen.getByTestId('usage-meter')
+    expect(chip.classList.contains('full')).toBe(false)
+    expect(chip.classList.contains('warn')).toBe(false)
+  })
+
+  it('coût nul d’un modèle payant : ni moyenne ni ligne d’échange à « ≈ 0,00 $US » (cout-connexion n° 3)', () => {
+    const model = { id: 'openai/gpt-6.1-sol', name: 'GPT-6.1 Sol' }
+    render(
+      meter({
+        cost: { amount: 0, currency: 'USD' },
+        tokens: {
+          input: 2000,
+          output: 400,
+          cachedRead: 0,
+          cachedWrite: 0,
+          thought: 0,
+          total: 2400,
+          turns: 2
+        },
+        turns: [
+          { at: 1, model, input: 1000, output: 200, total: 1200, costStart: 0, costEnd: 0 },
+          { at: 2, model, input: 1000, output: 200, total: 1200, costStart: 0, costEnd: 0 }
+        ]
+      })
+    )
+    fireEvent.click(screen.getByTestId('usage-meter'))
+    const details = plain(screen.getByTestId('usage-details').textContent)
+    expect(details).not.toContain('0,00')
+    expect(details).not.toContain('≈ 0')
+    for (const turn of screen.getAllByTestId('usage-turn')) {
+      expect(plain(turn.textContent)).not.toMatch(/\$US/)
+    }
+    const average = screen.queryByTestId('usage-average')
+    if (average) expect(plain(average.textContent)).not.toMatch(/\$US/)
   })
 })

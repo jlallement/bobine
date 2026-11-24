@@ -135,3 +135,20 @@ describe('apparence appliquée à la page (fiches 027, 136, 145)', () => {
     expect(html.style.getPropertyValue('--code-ligatures')).toBe('normal')
   })
 })
+
+// Remplace `e2e/suites/touches.mjs` n° 5 : la largeur du fil choisie devient `--column-width`.
+describe('largeur du fil (fiche 027)', () => {
+  it('étroite, normale, large : 640, 740, 960 px', async () => {
+    const { applyAppearance } = await import('./appearance')
+    const { DEFAULT_PREFERENCES } = await import('@shared/preferences')
+    const width = () => document.documentElement.style.getPropertyValue('--column-width')
+    for (const [threadWidth, px] of [
+      ['wide', '960px'],
+      ['narrow', '640px'],
+      ['normal', '740px']
+    ] as const) {
+      applyAppearance({ preferences: { ...DEFAULT_PREFERENCES, threadWidth } })
+      expect(width()).toBe(px)
+    }
+  })
+})

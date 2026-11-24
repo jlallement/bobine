@@ -1,5 +1,6 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { t } from 'i18next'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AgentSnapshot, ConversationSummary } from '@shared/agent'
 import type { AttentionDetails, AttentionState } from '@shared/attention'
@@ -34,6 +35,7 @@ function sidebar(
     onScheduled?: () => void
     onSearch?: () => void
     onSelect?: (id: string) => void
+    onRename?: (id: string, title: string) => void
     onLaunchChild?: (c: ConversationSummary) => void
     space?: 'code' | 'discussion'
     onSpace?: (space: 'code' | 'discussion') => void
@@ -65,7 +67,7 @@ function sidebar(
         snapshot={extra.snapshot ?? null}
         onNew={vi.fn()}
         onSelect={extra.onSelect ?? vi.fn()}
-        onRename={vi.fn()}
+        onRename={extra.onRename ?? vi.fn()}
         onRequestDelete={vi.fn()}
         onOpenBeside={vi.fn()}
         onPin={vi.fn()}
@@ -555,6 +557,10 @@ describe('conversations filles dans la liste (fiche 097)', () => {
       expect(screen.getByTestId('history-launch-child').hasAttribute('data-disabled')).toBe(true)
     )
     expect(screen.getByTestId('history-pin')).toBeTruthy()
+    // Remplace `e2e/suites/filles.mjs` n° 36 : la raison au plafond, dans l'infobulle.
+    fireEvent.focus(screen.getByTestId('history-launch-child'))
+    const tip = await screen.findByRole('tooltip')
+    expect(tip.textContent).toBe(t('children.limit', { count: 2 }))
   })
 })
 
@@ -779,5 +785,84 @@ describe('travail après le tour (fiche 255)', () => {
     expect(items()).toEqual(fromDots)
     fireEvent.keyDown(screen.getByTestId('history-pin'), { key: 'Escape' })
     expect(screen.queryByTestId('history-context-menu')).toBeNull()
+  })
+})
+
+/**
+ * Remplaçants des vérifications de composant des e2e `base` (n° 18), `history` (n° 14),
+ * `memoire` (n° 3, 6), `inbox` (n° 5) et `discussion` (n° 16). La graisse réelle d'un titre non lu
+ * reste à la capture.
+ */
+describe('barre latérale — remplaçants des e2e', () => {
+  it('« Renommer » depuis la barre latérale : en place, Entrée enregistre (base n° 18)', () => {
+    const onRename = vi.fn()
+    render(sidebar([conversation('a')], { onRename }))
+    const more = screen.getByTestId('history-more')
+    fireEvent.keyDown(more, { key: 'Enter' })
+    fireEvent.click(screen.getByTestId('history-rename'))
+    const input = screen.getByTestId('rename-input') as HTMLInputElement
+    expect(input.value).toBe('Conversation a')
+    fireEvent.change(input, { target: { value: 'Parseur' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(onRename).toHaveBeenCalledWith('a', 'Parseur')
+    expect(screen.queryByTestId('rename-input')).toBeNull()
+  })
+
+  it('regroupement par dossier : le nom et un chevron, ni icône de dossier ni compteur (history n° 14)', () => {
+    localStorage.setItem('bob:historique-regroupement', '"folder"')
+    render(
+      sidebar([
+        conversation('a', { workspace: '/depots/carnet' }),
+        conversation('b', { workspace: '/depots/carnet' })
+      ])
+    )
+    const head = screen.getAllByTestId('folder-head')[0]
+    if (!head) throw new Error('dossier absent')
+    expect(head.textContent).toBe('carnet')
+    expect(head.querySelectorAll('svg')).toHaveLength(1)
+    expect(head.querySelector('svg')?.getAttribute('class')).toContain('chevron')
+    expect(document.querySelector('.folder-count')).toBeNull()
+  })
+
+  it('proposition de mémoire en attente : pastille « Mémoire » sur la ligne, retirée une fois décidée (memoire n° 3, 6)', () => {
+    const view = render(sidebar([conversation('a', { memoryPending: 1 }), conversation('b')]))
+    const pills = screen.getAllByTestId('memory-pill')
+    expect(pills).toHaveLength(1)
+    expect(pills[0]?.closest('[data-id]')?.getAttribute('data-id')).toBe('a')
+    expect(pills[0]?.textContent).toBe('Mémoire')
+    view.rerender(sidebar([conversation('a', { memoryPending: 2 }), conversation('b')]))
+    expect(screen.getByTestId('memory-pill').textContent).toBe('Mémoire · 2')
+    view.rerender(sidebar([conversation('a'), conversation('b')]))
+    expect(screen.queryByTestId('memory-pill')).toBeNull()
+  })
+
+  it('demande en attente et réponse non lue : chacune son icône, la ligne marquée non lue (inbox n° 5)', () => {
+    render(
+      sidebar([conversation('a'), conversation('b'), conversation('c')], {
+        attention: { a: 'request', b: 'done' }
+      })
+    )
+    const row = (id: string) => document.querySelector(`[data-id=${id}]`)
+    const state = (id: string) => row(id)?.querySelector('.child-state')
+    expect(state('a')?.getAttribute('data-state')).toBe('waiting')
+    expect(state('b')?.getAttribute('data-state')).toBe('unread')
+    // Deux icônes différentes (main levée, point), pas la même teinte d'un même rond.
+    expect(state('a')?.tagName.toLowerCase()).toBe('svg')
+    expect(state('a')?.getAttribute('class')).not.toBe(state('b')?.getAttribute('class'))
+    expect(state('c')).toBeNull()
+    expect(row('a')?.classList.contains('unread')).toBe(true)
+    expect(row('b')?.classList.contains('unread')).toBe(true)
+    expect(row('c')?.classList.contains('unread')).toBe(false)
+  })
+
+  it('espace Code : les discussions n’y sont pas (discussion n° 16)', () => {
+    render(
+      sidebar([
+        conversation('c1', { title: 'Projet' }),
+        conversation('d1', { title: 'E-mail', space: 'discussion' })
+      ])
+    )
+    expect(screen.getByText('Projet')).toBeTruthy()
+    expect(screen.queryByText('E-mail')).toBeNull()
   })
 })

@@ -44,6 +44,20 @@ describe('diagrammes Mermaid (fiche 063)', () => {
     expect(screen.queryByTestId('mermaid-toggle')).toBeNull()
   })
 
+  // Remplace `e2e/suites/mermaid.mjs` n° 7 : agrandi dans une fenêtre, refermé par Échap.
+  it('agrandi dans une fenêtre au clic, refermé par Échap', async () => {
+    renderMermaid.mockResolvedValue('<svg data-testid="dessin"><text>A</text></svg>')
+    render(<Markdown text={block('flowchart LR\n  A --> B')} />)
+    await waitFor(() => expect(screen.getByTestId('mermaid-zoom')).not.toBeNull())
+    fireEvent.click(screen.getByTestId('mermaid-zoom'))
+    const dialog = screen.getByTestId('mermaid-zoom-dialog')
+    expect(dialog.querySelector('.mermaid-zoom-body svg text')?.textContent).toBe('A')
+    fireEvent.keyDown(dialog, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByTestId('mermaid-zoom-dialog')).toBeNull())
+    // Le dessin reste dans le fil.
+    expect(screen.getAllByTestId('dessin')).toHaveLength(1)
+  })
+
   it('erreur en une ligne', () => {
     expect(mermaidError(new Error('Lexical error on line 1.'))).toBe('Lexical error on line 1.')
     expect(mermaidError('Parse error on line 3:\n---^')).toBe('Parse error on line 3:')

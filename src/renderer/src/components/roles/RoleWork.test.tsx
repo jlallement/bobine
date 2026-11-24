@@ -316,6 +316,16 @@ it('en-tête de la fille : son rôle et sa lecture seule', () => {
   expect(badge.textContent).toContain('lecture seule demandée')
 })
 
+// Remplace `e2e/suites/roles-travail.mjs` n° 19 : agent qui demande avant d'écrire, lecture seule garantie.
+it('en-tête de la fille : son rôle et sa lecture seule garantie (agent qui demande)', () => {
+  render(<RoleTitleBadge child={child('a', secu)} profiles={profiles} />)
+  const badge = screen.getByTestId('role-title-badge')
+  expect(badge.textContent).toContain('Expert sécu')
+  const tag = screen.getByTestId('role-read-only')
+  expect(tag.dataset['level']).toBe('enforced')
+  expect(tag.textContent).toBe('lecture seule')
+})
+
 describe('en-tête étroit d’une fille : la pastille se réduit à son icône', () => {
   it('réduite : l’icône seule, le texte pour le lecteur d’écran et en infobulle', async () => {
     render(<RoleReadOnlyTag level="enforced" compact />)

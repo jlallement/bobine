@@ -1238,3 +1238,53 @@ describe('travail fini dont la réponse attend, activité de la ligne (maquette 
     expect(activity.getAttribute('title')).toBe('/private/tmp/wt/a/README.md')
   })
 })
+
+/**
+ * Remplaçants des vérifications de composant de `e2e/suites/filles.mjs` (n° 40, 42, 43) et
+ * `filles-tech-lead.mjs` (n° 10). Le redémarrage réel (consigne relue du disque) reste e2e.
+ */
+describe('cartes de travaux — remplaçants des e2e', () => {
+  it('consigne initiale et message de l’agent : repliés par défaut, sur la ligne du bon travail (filles n° 40, 42, 43)', async () => {
+    const items: TranscriptItem[] = [
+      ...working(),
+      {
+        kind: 'child-instruction',
+        id: 9,
+        childId: 'b',
+        title: 'Page',
+        prompt: 'Ajoute un test',
+        at: T0
+      },
+      report(10, 'b', { at: T0 + 120_000 })
+    ]
+    view(items, info([child('a', { status: 'busy' }), child('b', { role: front })]))
+    await act(async () => {})
+    const [rowA, rowB] = screen.getAllByTestId('work-row') as HTMLElement[]
+    if (!rowA || !rowB) throw new Error('lignes absentes')
+    fireEvent.click(within(rowB).getByTestId('work-row-toggle'))
+    const brief = within(rowB).getByTestId('work-brief') as HTMLDetailsElement
+    const note = within(rowB).getByTestId('work-note') as HTMLDetailsElement
+    expect(brief.open).toBe(false)
+    expect(note.open).toBe(false)
+    expect(within(rowB).getByTestId('work-note-text').textContent).toBe('Ajoute un test')
+    // Pas sur l'autre travail.
+    fireEvent.click(within(rowA).getByTestId('work-row-toggle'))
+    expect(within(rowA).queryByTestId('work-note')).toBeNull()
+  })
+
+  it('travail bavard : ses 30 modifications non commitées dites sur sa ligne (filles-tech-lead n° 10)', async () => {
+    const actions = mergeActions([
+      { ...candidate('b', 'dirty'), files: ['b.ts'], dirty: 30, added: 4, removed: 0 }
+    ])
+    view(
+      working(),
+      info([child('a', { status: 'busy' }), child('b', { role: front })], { merge: actions })
+    )
+    const rowB = () => screen.getAllByTestId('work-row')[1] as HTMLElement
+    await waitFor(() =>
+      expect(plain(within(rowB()).getByTestId('work-row-meta').textContent)).toContain(
+        '30 modifications non commitées'
+      )
+    )
+  })
+})

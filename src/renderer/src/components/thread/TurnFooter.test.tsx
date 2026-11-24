@@ -37,6 +37,12 @@ describe('travail après le tour dit une seule fois (fiche 261, revue UX)', () =
     expect(screen.getByTestId('working')).toBeTruthy()
   })
 
+  // Remplace `e2e/suites/base.mjs` n° 7 : réponse finie, plus d'indicateur en bas du fil.
+  it('réponse finie (agent prêt, rien après le tour) : indicateur retiré', () => {
+    show('ready', false, replied)
+    expect(screen.queryByTestId('working')).toBeNull()
+  })
+
   it('tour en cours : l’indicateur, comme avant', () => {
     show('busy', false, [...replied, { kind: 'user', id: 3, text: 'Encore', at: 20_000 }])
     expect(screen.getByTestId('working')).toBeTruthy()
@@ -60,6 +66,30 @@ describe('bandeaux du tour et relance (fiche 276)', () => {
       ])
     ).toBe('Ajoute un test')
     expect(lastUserText([user(1, '   ')])).toBeUndefined()
+  })
+
+  // Remplace `e2e/suites/pannes-visibles.mjs` n° 1 (côté fil) : le bandeau seul, en statut.
+  it('agent qui réessaie de joindre son modèle : le bandeau, ni indicateur ni bandeau de silence', () => {
+    render(
+      <TurnFooter
+        snapshot={
+          {
+            status: 'busy',
+            silentSince: Date.now() - 300_000,
+            unreachable: { attempt: 2, message: 'Unable to connect' },
+            info: { profileLabel: 'OpenCode' }
+          } as AgentSnapshot
+        }
+        conversationId="c-injoignable"
+        items={[user(1, 'Ajoute un test')]}
+        workspace={undefined}
+        onRetry={noop}
+        onStop={noop}
+      />
+    )
+    expect(screen.getByTestId('agent-unreachable').getAttribute('role')).toBe('status')
+    expect(screen.queryByTestId('working')).toBeNull()
+    expect(screen.queryByTestId('silence-banner')).toBeNull()
   })
 
   it('silence : l’indicateur dit « Réponse en cours », sans verbe', () => {
