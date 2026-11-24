@@ -6,6 +6,10 @@ import { OUTLINE_MAX_HEIGHT, outlineHeight, outlineLayout } from './outline-layo
 /** Place minimale à gauche du fil pour afficher le sommaire sans recouvrir le texte. */
 const MIN_GUTTER = 64
 
+/** Fil qui défile, amené tout en bas (à un pixel près : arrondis du défilement). */
+const atBottom = (el: HTMLElement) =>
+  el.scrollHeight > el.clientHeight + 1 && el.scrollHeight - el.scrollTop - el.clientHeight <= 1
+
 /**
  * Sommaire de la conversation, comme dans Claude Desktop : un trait par message de
  * l'utilisateur en haut à gauche du fil, celui qu'on lit mis en avant ; au survol, la liste des
@@ -55,6 +59,11 @@ export function ConversationOutline({
       for (const node of nodes) {
         if (node.getBoundingClientRect().top <= line) id = Number(node.dataset['itemId'])
       }
+      // Tout en bas d'un fil qui défile : le dernier message, même si son haut n'atteint jamais le
+      // premier tiers (échanges courts en fin de fil). Sans cela, ses derniers messages ne
+      // pouvaient jamais être le message lu, pas même après un clic sur eux (fiche 277).
+      const last = nodes[nodes.length - 1]
+      if (last && atBottom(el)) id = Number(last.dataset['itemId'])
       // Au-dessus du premier message rendu (long fil ouvert par la fin) : le message d'avant lui.
       const firstShown = Number(nodes[0]?.dataset['itemId'])
       setCurrent(id ?? messageIds.current.findLast((m) => m < firstShown) ?? firstId)

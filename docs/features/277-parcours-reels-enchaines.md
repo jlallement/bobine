@@ -142,6 +142,27 @@ Les étapes restent rouges tant que le défaut est là ; rien n'est contourné.
    impossible de converser. Déjà en cours de correction : branche `fix/restauration`. Les étapes
    suivantes de la journée (⌘Q, relance, la mère restaurée répond) ne sont donc pas encore jouées.
 
+Après la rc.4 (passage GitHub 45342287255, premiers essais des étapes du 2026-11-24) :
+
+3. **Erreur IPC restante après la suppression d'une mère** (`parcours-deleguer`, étape 6, clair
+   macOS seulement : intermittent). Les défauts 1 et 2 sont corrigés (`main`, rc.4) : plus de
+   `children:mergePlan`, la mère restaurée répond. Reste une fois `WARN  IPC conversation:appTools
+   : … Conversation inconnue : <id de la mère>`. Cause probable : la réponse de
+   `conversation:delete` et les évènements poussés par le main (`conversations:changed`,
+   `agent:event`) ne suivent pas la même voie IPC ; la réponse arrivée la première libérait la
+   porte du preload alors que le renderer affichait encore la mère, et l'arrêt de son agent, encore
+   en route, faisait relire ses outils de Bobine (onglet Session). Corrigé (renderer,
+   `useConversations`) : une suppression faite garde ses conversations tues jusqu'à la liste qui
+   ne les a plus ; une suppression refusée les libère tout de suite. Test unitaire rouge → vert
+   (`useConversations.remove.test.ts`). À confirmer sur GitHub (intermittent).
+4. **Sommaire : en bas du fil, le dernier message n'est jamais le courant** (`parcours-longue`,
+   étape 2, macOS et Linux, clair et sombre). Le message lu est le dernier dont le haut passe le
+   premier tiers du fil ; en fin de fil d'échanges courts, le haut des derniers messages n'y
+   arrive jamais, même tout en bas (capture : « Question 35 » en avant, « Question 36 » à l'écran) —
+   ils ne pouvaient jamais être mis en avant, pas même après un clic dessus. `sommaire` ne le
+   voyait pas : à 80 messages, un trait en regroupe deux. Corrigé : tout en bas d'un fil qui défile,
+   le dernier message est le courant (`ConversationOutline.test.tsx`, rouge → vert).
+
 Observation (pas un défaut d'essai, à juger) : un proxy saisi dans Réglages ne vaut qu'au
 « prochain lancement d'un agent » (c'est dit) ; dans une conversation déjà ouverte, le bandeau
 « n'arrive pas à joindre son modèle » conseille alors de « renseigner le proxy »… qui vient de
@@ -175,3 +196,10 @@ l'être. Le parcours vérifie donc le proxy dans une nouvelle conversation.
 - Dernière série locale (clair et sombre, `--jobs 3`, 3 min en tout) : matinée 45 s, déléguer
   36–38 s (rouge, défauts 1 et 2), réglages 38 s, outils 40 s, longue 58 s, pannes 49–50 s, par
   thème. `--lang en` non joué : e2e locales arrêtées à la demande, `e2e.yml` les jouera.
+- 2026-11-24 (passage GitHub 45342287255) : trois échecs examinés. `parcours-premier-lancement`
+  8 : essai mal écrit — la relance gardait l'agent imposé par `withApp`
+  (`BOBINE_AGENT_PROFILE=mock`), qui ouvre une nouvelle conversation au lieu de la dernière
+  affichée (fiche 243) ; relance sans agent imposé, comme les autres journées
+  (`BOBINE_MOCK_AGENT=1`), l'étape inchangée. `parcours-longue` 2 et `parcours-deleguer` 6 : vrais
+  défauts de l'app (3 et 4 ci-dessus), étapes inchangées, corrigés dans l'app. Rien joué en local
+  (ADR-0069) : suites à relancer sur GitHub.

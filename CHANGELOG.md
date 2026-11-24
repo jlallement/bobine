@@ -8,6 +8,8 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 - Plusieurs travaux proposés d’un coup : la carte les range toujours dans l’ordre où l’agent les a
   proposés, le même d’une fois à l’autre, et une ligne affichée ne change plus de place.
+- Sommaire d’une longue conversation : tout en bas du fil, le dernier message est bien celui mis en
+  avant, même quand les derniers échanges sont courts.
 
 ## 1.0.0-rc.4 — 23 novembre 2026
 
