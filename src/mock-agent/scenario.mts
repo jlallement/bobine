@@ -369,8 +369,14 @@ export interface TurnContext {
   /** Serveurs MCP fournis par le client pour cette session. */
   mcpServers?: McpServer[]
   signal: AbortSignal
-  /** Délai de base entre deux morceaux, en millisecondes. 0 = aussi vite que possible. */
+  /** Délai de base (pauses des scénarios, outils), en millisecondes. 0 = aussi vite que possible. */
   delayMs: number
+  /**
+   * Délai entre deux morceaux de texte diffusés (réponse, réflexion) ; `delayMs` à défaut. Les
+   * essais de bout en bout le réduisent (fiche 279) : le scénario `echo` rediffuse tout le contexte
+   * joint par l'app, des centaines de mots, sans que les pauses des scénarios changent.
+   */
+  chunkDelayMs?: number
   client: AgentContext
   /** Dossier de la session (étape `edit-file`). */
   cwd?: string
@@ -960,7 +966,7 @@ async function streamChunks(
       content: { type: 'text', text: chunk },
       ...(messageId ? { messageId } : {})
     })
-    await tick(ctx, 1)
+    await wait(ctx, ctx.chunkDelayMs ?? ctx.delayMs)
   }
 }
 
@@ -1152,7 +1158,11 @@ function withdrawWhen(when: AgentWithdrawal, ctx: TurnContext, withdraw: () => v
 
 /** Attend `ticks` × délai de base, en réagissant à l'annulation. */
 function tick(ctx: TurnContext, ticks: number): Promise<void> {
-  const ms = ctx.delayMs * ticks
+  return wait(ctx, ctx.delayMs * ticks)
+}
+
+/** Attend `ms` millisecondes, en réagissant à l'annulation. */
+function wait(ctx: TurnContext, ms: number): Promise<void> {
   return new Promise((resolve, reject) => {
     if (ctx.signal.aborted) return reject(new TurnCancelled())
     const onAbort = () => {

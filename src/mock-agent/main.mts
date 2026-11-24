@@ -1,7 +1,7 @@
 /**
  * Point d'entrée de l'agent ACP factice (stdio).
  *
- *   node src/mock-agent/main.mts [--scenario <nom>] [--delay <ms>]
+ *   node src/mock-agent/main.mts [--scenario <nom>] [--delay <ms>] [--pas-morceaux <ms>]
  *
  * Variables d'environnement équivalentes : MOCK_AGENT_SCENARIO, MOCK_AGENT_DELAY_MS, MOCK_AGENT_LANG,
  * MOCK_AGENT_PANNE (`--panne`, fiche 195), MOCK_AGENT_MAX_ETAPES (`--max-etapes`, fiche 209), MOCK_AGENT_SLOW_START_MS (`--demarrage-lent`), `--verrou-fin-de-tour <fichier>` (aucun tour ne finit tant que le fichier existe), MOCK_AGENT_TENACE=1 (ignore SIGTERM et la fin de la connexion, fiche 195), MOCK_AGENT_COMMIT (scénario d'une demande de message de commit, fiche 246), MOCK_AGENT_PID_FILE (pid inscrit au lancement, essais)
@@ -21,6 +21,7 @@ const { values } = parseArgs({
   options: {
     scenario: { type: 'string' },
     delay: { type: 'string' },
+    'pas-morceaux': { type: 'string' },
     list: { type: 'boolean' },
     'sans-options': { type: 'boolean' },
     'sans-historique': { type: 'boolean' },
@@ -66,6 +67,9 @@ if (values.list) {
 
 const scenario = values.scenario ?? process.env['MOCK_AGENT_SCENARIO'] ?? DEFAULT_SCENARIO
 const delayMs = Number(values.delay ?? process.env['MOCK_AGENT_DELAY_MS'] ?? 40)
+// Pas des morceaux de texte seulement (fiche 279) : `delayMs` à défaut.
+const chunkText = values['pas-morceaux'] ?? process.env['MOCK_AGENT_CHUNK_MS']
+const chunkDelayMs = chunkText === undefined || chunkText === '' ? undefined : Number(chunkText)
 
 // Demande de message de commit (fiche 246) : `MOCK_AGENT_COMMIT` choisit le scénario joué.
 const commitScenario = process.env['MOCK_AGENT_COMMIT'] ?? 'message-commit'
@@ -103,6 +107,10 @@ if (!Number.isFinite(delayMs) || delayMs < 0) {
   console.error(`[mock-agent] délai invalide : ${String(values.delay)}`)
   process.exit(2)
 }
+if (chunkDelayMs !== undefined && (!Number.isFinite(chunkDelayMs) || chunkDelayMs < 0)) {
+  console.error(`[mock-agent] pas des morceaux invalide : ${String(chunkText)}`)
+  process.exit(2)
+}
 
 const stream = ndJsonStream(
   Writable.toWeb(process.stdout) as WritableStream<Uint8Array>,
@@ -112,6 +120,7 @@ const connection = connectMockAgent(stream, {
   scenario,
   commitScenario,
   delayMs,
+  ...(chunkDelayMs !== undefined ? { chunkDelayMs } : {}),
   withConfigOptions: !values['sans-options'],
   withHistory: !values['sans-historique'],
   withReplay: !values['sans-rejeu'],
@@ -157,7 +166,9 @@ if (stubborn) {
   process.on('SIGTERM', () => {})
   setInterval(() => {}, 60_000)
 }
-console.error(`[mock-agent] prêt (scénario : ${scenario}, délai : ${delayMs} ms)`)
+console.error(
+  `[mock-agent] prêt (scénario : ${scenario}, délai : ${delayMs} ms${chunkDelayMs !== undefined ? `, morceaux : ${chunkDelayMs} ms` : ''})`
+)
 
 connection.signal.addEventListener('abort', () => {
   if (!stubborn) process.exit(0)

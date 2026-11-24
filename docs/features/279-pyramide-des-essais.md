@@ -110,3 +110,30 @@ guidé par ESLint.
     worktree introuvable ferait committer `git` hors du dossier d'essai.
   - Écart au plan : aucun. Non fait : campagne `--lang en` des journées (risque 6 du plan) ;
     campagne `e2e.yml` des suites réduites (étapes 1 et 2), à lancer avant fusion.
+- 2026-11-24 — **Durée des e2e, lots 1 et 4** (branche `test/vitesse-agent`, rien poussé) :
+  - Mesure d'abord : un lancement de l'app coûte ≈ 1,2 s avec son arrêt (11 % du temps). Le
+    temps part dans l'attente des tours de l'agent factice : le scénario `echo` rediffuse tout le
+    contexte joint par l'app (262 à 727 mots) à 3 mots par 40 ms, soit 3,8 à 10,4 s par tour.
+  - Lot 1 : option `--pas-morceaux` / `MOCK_AGENT_CHUNK_MS` de l'agent factice, pour le seul
+    texte diffusé (réponse, réflexion) ; les pauses des scénarios et les étapes d'outil gardent
+    `--delay`. Les e2e la posent à 5 ms (`NEUTRAL_ENV`). Un tour `echo` passe de 3,8 à 0,7 s
+    (10,4 à 1,7 s avec un dossier). `activity` et `subagents` gardent leurs fenêtres « en cours »
+    sans rien déclarer. Test : `mock-agent.test.ts` (pas des morceaux sans effet sur les pauses).
+  - Lot 4 : pauses fixes de `lib.mjs` remplacées par l'état réel. Une capture attend la fin des
+    animations courtes (≤ 0,5 s) puis deux images, au lieu de 250 ms. `viewport` attend la largeur
+    prise, au lieu de 300 ms. `media` attend deux images, au lieu de 150 ms. `profil` attend
+    l'écriture des messages sur le disque, au lieu de 2 s. Les pauses qui prouvent qu'il ne se
+    passe rien gardent leur durée (accueil et quota : 6 s, `profil` en lecture seule, réseau,
+    rejeu tardif, sous-agents…).
+    - Premier essai : on attendait toutes les animations finies, jusqu'à 2 s. Les captures de
+      `settings` et `onboarding` étaient plus lentes : borné aux animations courtes.
+  - Durées réelles (suite complète en clair, `--jobs 3`, sur le Mac) :
+    - temps de bout en bout : 12 min 09 s → **7 min 28 s** ;
+    - temps machine : 34,3 → 21,2 min.
+    - Les 14 suites dont les contrôles dépendent du thème sont vertes en sombre.
+  - Couverture : liste des contrôles joués par tâche, avant et après (libellés aux valeurs
+    mesurées normalisées), identique : 930 contrôles sur 115 tâches. Deux écarts, tous deux sans
+    rapport avec ce lot :
+    - le contrôle du menu « Zoom avant » de `browser-view` ne joue que si l'app est au premier
+      plan du Mac. Il est aussi sauté sans ces changements (essayé deux fois) ;
+    - un libellé de `pilote` porte une durée mesurée (« < 1 s »).

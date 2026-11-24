@@ -42,8 +42,10 @@ export interface MockAgentOptions {
    * `message-commit` par défaut (`MOCK_AGENT_COMMIT`).
    */
   commitScenario?: string
-  /** Délai de base entre deux morceaux (ms). */
+  /** Délai de base (ms) : pauses des scénarios, outils, et morceaux de texte sans `chunkDelayMs`. */
   delayMs: number
+  /** Délai entre deux morceaux de texte diffusés (ms) ; `delayMs` à défaut (fiche 279). */
+  chunkDelayMs?: number
   /** `false` : n'expose que des modes, sans options de configuration (comme certains agents). */
   withConfigOptions?: boolean
   /**
@@ -676,6 +678,7 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
           model: session.model,
           signal: turn.signal,
           delayMs: options.delayMs,
+          ...(options.chunkDelayMs !== undefined ? { chunkDelayMs: options.chunkDelayMs } : {}),
           client,
           onUpdate: (sessionId, update) => {
             if (sessionId !== session.sessionId) return
