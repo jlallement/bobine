@@ -2,7 +2,7 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
-## Next version
+## 1.0.0-rc.5 — November 24, 2026
 
 ### Fixes
 

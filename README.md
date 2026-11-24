@@ -34,7 +34,7 @@
 
 <p align="center"><a href="docs/images/readme/en/demo.mp4">▶ Watch the 20-second demo</a></p>
 
-> **Release candidate (1.0.0-rc.4).** Bobine is used every day by its author, but by few people so far: expect rough
+> **Release candidate (1.0.0-rc.5).** Bobine is used every day by its author, but by few people so far: expect rough
 > edges and please [report them](https://github.com/jlallement/bobine/issues/new/choose). The app
 > is **not notarized by Apple**, so macOS asks for one extra step the first time you open it
 > ([see Install](#install)).
