@@ -134,3 +134,37 @@ describe('Réglages › Serveurs MCP : onglet « Bobine » (fiche 099)', () => {
     expect(screen.getByTestId('app-tools-weight').textContent).toMatch(/270 jetons.*1\s375/)
   })
 })
+
+/**
+ * Famille « Mémoire » réglée dans Réglages › Mémoire (fiche 182) : remplace la vérification de
+ * composant de l'e2e `memoire` (n° 16) — pas de second interrupteur dans « Outils de Bobine ».
+ */
+describe('Outils de Bobine : famille réglée ailleurs (fiche 182)', () => {
+  it('« Mémoire » : son état et le chemin du réglage, sans interrupteur ; le lien ouvre la section', async () => {
+    const memory: AppToolFamily = {
+      id: 'memory',
+      title: 'appToolFamilies.memory.title',
+      summary: 'appToolFamilies.memory.summary',
+      condition: 'appToolFamilies.always',
+      tools: [{ name: 'remember', description: 'Propose a memory.' }],
+      tokens: 300,
+      enabled: true,
+      setting: 'memory'
+    } as AppToolFamily
+    window.api = {
+      ...window.api,
+      mcp: { ...window.api.mcp, appTools: async () => [...families, memory] }
+    } as unknown as Window['api']
+    const onSection = vi.fn()
+    render(<McpSettings workspace="/projets/demo" onSection={onSection} />)
+    await act(async () => {})
+    const rows = screen.getAllByTestId('app-tool-family')
+    const row = rows.at(-1) as HTMLElement
+    expect(row.querySelector('[data-testid="app-tool-enabled"]')).toBeNull()
+    const setting = row.querySelector('[data-testid="app-tool-setting"]') as HTMLElement
+    expect(setting.textContent).toContain('Activée')
+    expect(setting.textContent).toContain('Réglages › Mémoire')
+    fireEvent.click(setting.querySelector('button') as HTMLElement)
+    expect(onSection).toHaveBeenCalledWith('memory')
+  })
+})
