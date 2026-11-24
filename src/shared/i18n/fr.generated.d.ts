@@ -6495,6 +6495,7 @@ export type FrResources = {
       readonly unavailable: 'Le tour de table n’est pas encore disponible dans cette version.'
       readonly unknown: 'Ce tour de table n’existe pas dans cette conversation.'
       readonly attachmentsLost: 'Les pièces jointes de ce tour ne sont plus disponibles depuis le redémarrage de l’app : lancez un nouveau tour de table.'
+      readonly question: 'La question dépasse 8 000 caractères : raccourcissez-la, ou joignez le détail en fichier.'
     }
     readonly export_one: 'Tour de table à {{count}} participant'
     readonly export_many: 'Tour de table à {{count}} participants'

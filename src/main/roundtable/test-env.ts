@@ -52,11 +52,12 @@ export type MockProfile = (
 
 export const FAST: RoundtableChoice = {
   profileId: 'panel',
-  model: { controlId: 'model', value: 'factice-rapide', name: 'Factice rapide' }
+  // Nom envoyé par le renderer : jamais repris tel quel (le main prend celui de l'agent).
+  model: { controlId: 'model', value: 'factice-rapide', name: 'Nom venu du renderer' }
 }
 export const PRECISE: RoundtableChoice = {
   profileId: 'panel',
-  model: { controlId: 'model', value: 'factice-precis', name: 'Factice précis' }
+  model: { controlId: 'model', value: 'factice-precis', name: 'Autre nom du renderer' }
 }
 
 export const choice = (profileId: string, value?: string): RoundtableChoice =>

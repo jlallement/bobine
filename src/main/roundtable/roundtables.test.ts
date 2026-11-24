@@ -53,8 +53,9 @@ describe('tour de table : lancer et recueillir (fiche 285, lot 1)', () => {
     })
     expect(rt.synthesizer).toMatchObject({ profileId: 'lead', label: 'Factice lead' })
     expect(rt.seats.map((s) => [s.label, s.agentLabel, s.readOnly])).toEqual([
-      ['Factice rapide', 'Factice panel', 'enforced'],
-      ['Factice précis', 'Factice panel', 'enforced']
+      // Modèles jamais vus chez cet agent : leur identifiant, pas le nom envoyé par le renderer.
+      ['factice-rapide', 'Factice panel', 'enforced'],
+      ['factice-precis', 'Factice panel', 'enforced']
     ])
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
     // La bulle de la question vient de l'élément du tour : aucun message de plus dans le fil.
@@ -97,6 +98,24 @@ describe('tour de table : lancer et recueillir (fiche 285, lot 1)', () => {
       rt.roundtableId,
       rt.roundtableId
     ])
+  })
+
+  it('nom du modèle : celui que l’agent annonce (modèles vus), jamais celui du renderer ; question trop longue refusée', async () => {
+    const { env, mother } = await setup()
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'premier tour fini')
+    await env.roundtables.start(mother, { question: 'Encore ?', participants: [FAST, PRECISE] })
+    expect(env.rt(mother).seats.map((s) => [s.label, s.model?.name])).toEqual([
+      ['Factice rapide', 'Factice rapide'],
+      ['Factice précis', 'Factice précis']
+    ])
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'second tour fini')
+    expect(
+      await env.roundtables.start(mother, {
+        question: 'x'.repeat(8_001),
+        participants: [FAST, PRECISE]
+      })
+    ).toEqual({ ok: false, error: 'question' })
   })
 
   it('la synthèse part seule au repos, avis anonymisés par lettres, sans nom de modèle ni d’agent', async () => {

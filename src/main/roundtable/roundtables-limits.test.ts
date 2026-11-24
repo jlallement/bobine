@@ -92,6 +92,33 @@ describe('modèle strict (décision C4)', () => {
   })
 })
 
+describe('modèle relu pendant le tour, réponse entière (revue de code)', () => {
+  it('modèle changé en plein tour : en erreur, son avis n’entre pas dans la synthèse ; avis en deux morceaux gardé entier', async () => {
+    const { env, mother } = await setup({
+      lead: 'echo',
+      panel: [
+        '--scenario-par-modele',
+        'factice-precis=avis-change-modele,factice-rapide=avis-en-deux'
+      ],
+      profiles: (mock) => [mock('panel2', 'avis-participant')]
+    })
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [FAST, PRECISE, choice('panel2', 'factice-precis')]
+    })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    const changed = env
+      .rt(mother)
+      .seats.find((s) => s.profileId === 'panel' && s.model?.value === 'factice-precis')
+    expect(changed).toMatchObject({ state: 'error', error: 'model-not-applied' })
+    const received = env.replies(mother).at(-1) ?? ''
+    expect(received).toContain('answered="2" absent="1"')
+    expect(received).toContain('no opinion (error, its model could not be set)')
+    // La réponse entière du tour, pas seulement son dernier morceau.
+    expect(received).toContain('Première partie : je lis calc.js.')
+  })
+})
+
 describe('sélection et places (lot 1)', () => {
   it('un agent sans choix de modèle : une seule place, sans modèle ; ses avis comptent', async () => {
     const { env, mother } = await setup({
@@ -127,7 +154,7 @@ describe('sélection et places (lot 1)', () => {
     expect(ok.ok).toBe(true)
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
     expect(env.rt(mother).seats.map((s) => s.label)).toEqual([
-      'Factice rapide',
+      'factice-rapide',
       'Factice sans-modele'
     ])
   })

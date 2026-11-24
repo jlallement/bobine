@@ -65,6 +65,14 @@ describe('modèle strict (fiche 285, décision C4)', () => {
     expect(await reasonOf(applyModelStrict(fallback.host, 'c', model('b'), 0))).toBe(
       'model-not-applied'
     )
+    // Un `controlId` qui désigne un autre réglage (un mode) ne règle jamais rien.
+    const mode = host('a')
+    const modeView = mode.host.view() as { snapshot: { controls: SessionControl[] } }
+    for (const c of modeView.snapshot.controls) c.category = 'mode'
+    expect(await reasonOf(applyModelStrict(mode.host, 'c', model('b'), 0))).toBe(
+      'model-not-applied'
+    )
+    expect(mode.setControl).not.toHaveBeenCalled()
     const noSetting = {
       view: () => ({ snapshot: { controls: [] } }) as never,
       setControl: vi.fn() as never

@@ -44,7 +44,12 @@ import type {
   RoundtableStartRequest,
   RoundtableStartResult
 } from '@shared/roundtable-ipc'
-import { lastExchangeText, participantMessage, rebuttalMessage } from '@shared/roundtable-prompts'
+import {
+  QUESTION_CHARS,
+  lastExchangeText,
+  participantMessage,
+  rebuttalMessage
+} from '@shared/roundtable-prompts'
 import type { TranscriptItem } from '@shared/transcript'
 import { modelControl } from '../agent/models-seen'
 import type { ChildConversations } from '../conversations/children'
@@ -54,7 +59,7 @@ import { log } from '../log'
 import type { RoundtableService } from './ipc'
 import { refusalOf, roundtableOptions, type ParticipantMode } from './options'
 import { participantRole } from './participant-role'
-import { reportReply, stepReply } from './readings'
+import { reportReply, stepReply, turnReply } from './readings'
 import { SeatEvents, type SeatRef } from './seat-events'
 import { MotherSteps, titleOf } from './steps'
 
@@ -171,6 +176,7 @@ export class Roundtables implements RoundtableService {
       apply,
       live: (roundtableId) => this.live.get(roundtableId),
       participantMode: deps.participantMode,
+      cancel: (conversationId) => this.cancel(conversationId),
       now: () => this.now()
     })
     // Garde-fou de lecture seule : les participants d'un même tour forment un groupe ; un tour
@@ -347,13 +353,25 @@ export class Roundtables implements RoundtableService {
     if (kept) return kept
     const seat = rt.seats.find((s) => s.letter === letter)
     const askedAt = kind === 'opinion' ? seat?.askedAt : seat?.rebuttal?.askedAt
+    // Relu de la conversation du participant : la réponse entière au message `askedAt`.
+    const own = seat?.childId && askedAt !== undefined ? this.replyIn(seat.childId, askedAt) : ''
+    if (own) return own
     const motherId = tour?.motherId
     if (!motherId) return undefined
     try {
+      // Sinon, le compte rendu gardé dans le fil de la mère (conversation partie, fil abîmé).
       const items = this.deps.conversations.view(motherId).transcript.items
       return reportReply(items, seat?.childId, askedAt)
     } catch {
       return undefined
+    }
+  }
+
+  private replyIn(childId: string, askedAt: number): string {
+    try {
+      return turnReply(this.deps.conversations.view(childId).transcript.items, askedAt)
+    } catch {
+      return ''
     }
   }
 
@@ -481,6 +499,8 @@ export class Roundtables implements RoundtableService {
     const items = this.deps.conversations.view(motherId).transcript.items
     const refused = this.starting.has(motherId) ? 'running' : refusalOf(summary, items)
     if (refused) return { ok: false, error: refused }
+    // Même question, entière, pour les participants et pour l'arbitre : jamais coupée en silence.
+    if (request.question.length > QUESTION_CHARS) return { ok: false, error: 'question' }
     const profiles = this.deps.conversations.settingsView().profiles
     const facts = profiles.map((p) => ({
       id: p.id,
@@ -515,11 +535,22 @@ export class Roundtables implements RoundtableService {
 
   private newRoundtable(summary: ConversationSummary, request: RoundtableStartRequest): Roundtable {
     const profiles = this.deps.conversations.settingsView().profiles
+    const control = modelControl(this.deps.conversations.view(summary.id).snapshot?.controls ?? [])
+    const seen = this.deps.conversations.settings.current.models ?? {}
+    // Nom du modèle d'après ce que l'agent a annoncé (session de la conversation, sinon modèles
+    // vus), jamais d'après le renderer ; inconnu : son identifiant.
+    const nameOf = (profileId: string, value: string) =>
+      (profileId === summary.profileId
+        ? control?.options.find((o) => o.value === value)?.name
+        : undefined) ??
+      seen[profileId]?.options.find((o) => o.value === value)?.name ??
+      value
     const participants: RoundtableParticipant[] = request.participants.map((choice) => {
       const agentLabel = profiles.find((p) => p.id === choice.profileId)?.label ?? choice.profileId
-      return { ...choice, label: choice.model?.name ?? agentLabel, agentLabel }
+      if (!choice.model) return { ...choice, label: agentLabel, agentLabel }
+      const name = nameOf(choice.profileId, choice.model.value)
+      return { ...choice, model: { ...choice.model, name }, label: name, agentLabel }
     })
-    const control = modelControl(this.deps.conversations.view(summary.id).snapshot?.controls ?? [])
     const model = control?.options.find((o) => o.value === control.currentValue)?.name
     const names = (request.attachments ?? []).map(attachmentName)
     return {

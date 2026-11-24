@@ -43,8 +43,21 @@ export class StrictModelError extends Error {
 
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
+/**
+ * Le réglage de modèle de la session : de catégorie `model` (un `controlId` venu du renderer ne
+ * règle jamais autre chose, un mode par exemple).
+ */
 const modelSetting = (controls: readonly SessionControl[] | undefined, controlId: string) =>
-  controls?.find((c) => c.id === controlId && c.type === 'select')
+  controls?.find((c) => c.id === controlId && c.type === 'select' && c.category === 'model')
+
+/** Modèle courant de la session, d'après son réglage de catégorie `model` ; `undefined` sans. */
+export function sessionModel(
+  controls: readonly SessionControl[] | undefined,
+  controlId: string
+): string | undefined {
+  const value = modelSetting(controls, controlId)?.currentValue
+  return typeof value === 'string' ? value : undefined
+}
 
 /**
  * Règle le modèle d'une conversation sans repli : rend quand la session est sur `model.value`,

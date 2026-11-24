@@ -8,7 +8,7 @@
  */
 import type { AgentEvent } from '@shared/agent'
 import type { StopReason } from '@shared/acp-sdk.mts'
-import { lastReply, type MessageOrigin } from '@shared/children'
+import type { MessageOrigin } from '@shared/children'
 import { messageOf } from '@shared/errors'
 import type { CostCapReached } from '@shared/cost-cap'
 import {
@@ -23,7 +23,8 @@ import { rebuttalStance } from '@shared/roundtable-prompts'
 import type { ChildConversations } from '../conversations/children'
 import type { ConversationManager } from '../conversations/manager'
 import { expectedReadOnly, folderInGit, modeHeld, type ParticipantMode } from './options'
-import { StrictModelError } from './strict-model'
+import { sessionModel, StrictModelError } from './strict-model'
+import { turnReply } from './readings'
 
 /** La place d'un participant : son tour, dans le fil de sa mère, et sa lettre. */
 export interface SeatRef {
@@ -42,6 +43,8 @@ export interface SeatEventsHost {
     | { opinions: Map<RoundtableLetter, string>; rebuttals: Map<RoundtableLetter, string> }
     | undefined
   participantMode?: ParticipantMode | undefined
+  /** Arrête le tour en cours d'une conversation. */
+  cancel: (conversationId: string) => void
   now: () => number
 }
 
@@ -132,7 +135,7 @@ export class SeatEvents {
   onEvent(childId: string, ref: SeatRef, event: AgentEvent): void {
     switch (event.type) {
       case 'user-message':
-        return this.started(childId, ref, event.from, event.at)
+        return this.started(childId, ref, event.from, event.at, event.model?.id)
       case 'turn-end':
         return this.ended(childId, ref, event.stopReason)
       case 'turn-error':
@@ -146,11 +149,19 @@ export class SeatEvents {
     childId: string,
     ref: SeatRef,
     from: MessageOrigin | undefined,
-    sentAt?: number
+    sentAt?: number,
+    model?: string
   ): void {
     const found = this.seat(ref)
     if (!found) return
     const { rt, seat } = found
+    // Modèle relu au départ du message : la question (ou la réplique) part avec le modèle affiché.
+    if (seat.model && model !== seat.model.value) {
+      const ours =
+        (rt.phase === 'collecting' && seat.state === 'waiting') ||
+        (rt.phase === 'rebutting' && from?.kind === 'roundtable' && from.step === 'rebuttal')
+      if (ours) return this.wrongModel(ref, rt, seat, childId)
+    }
     const at = this.host.now()
     // Heure du message dans le fil du participant : celle que porte son compte rendu (`askedAt`).
     const askedAt =
@@ -190,9 +201,18 @@ export class SeatEvents {
     const found = this.seat(ref)
     if (!found) return
     const { rt, seat } = found
-    const text = lastReply(this.host.conversations.view(childId).transcript.items).trim()
+    const view = this.host.conversations.view(childId)
+    // La réponse entière du tour : tous ses textes, dans l'ordre (pas seulement le dernier).
+    const text = turnReply(view.transcript.items).trim()
     const at = this.host.now()
     const letter = ref.letter
+    // Modèle relu à la fin du tour : un modèle changé en cours de route n'est pas celui affiché.
+    if (
+      seat.model &&
+      sessionModel(view.snapshot?.controls, seat.model.controlId) !== seat.model.value
+    ) {
+      return this.wrongModel(ref, rt, seat)
+    }
     if (rt.phase === 'collecting' && seat.state === 'working') {
       if (text) this.host.live(ref.roundtableId)?.opinions.set(letter, text)
       this.apply(
@@ -213,6 +233,24 @@ export class SeatEvents {
         at
       })
     }
+  }
+
+  /** Le modèle de la session n'est plus celui affiché : en erreur, et son tour s'arrête. */
+  private wrongModel(ref: SeatRef, rt: Roundtable, seat: RoundtableSeat, childId?: string): void {
+    const at = this.host.now()
+    const letter = ref.letter
+    if (rt.phase === 'collecting' && running(seat.state)) {
+      this.apply(ref, { type: 'seat-failed', letter, error: 'model-not-applied', at })
+    } else if (rt.phase === 'rebutting' && running(seat.rebuttal?.state)) {
+      this.apply(ref, {
+        type: 'rebuttal-seat',
+        letter,
+        state: 'error',
+        error: 'model-not-applied',
+        at
+      })
+    } else return
+    if (childId) this.host.cancel(childId)
   }
 
   private stoppedByUser(ref: SeatRef): void {

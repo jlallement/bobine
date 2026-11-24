@@ -36,6 +36,24 @@ export function stepReply(
 }
 
 /**
+ * Réponse entière d'un tour : tous les textes de l'agent après le message `askedAt` (le dernier
+ * message sans `askedAt`), dans l'ordre, jusqu'au message suivant.
+ */
+export function turnReply(items: readonly TranscriptItem[], askedAt?: number): string {
+  const start =
+    askedAt === undefined
+      ? items.findLastIndex((i) => i.kind === 'user')
+      : items.findLastIndex((i) => i.kind === 'user' && i.at === askedAt)
+  if (start === -1) return ''
+  const texts: string[] = []
+  for (const item of items.slice(start + 1)) {
+    if (item.kind === 'user') break
+    if (item.kind === 'agent' && item.text.trim()) texts.push(item.text.trim())
+  }
+  return texts.join('\n\n')
+}
+
+/**
  * Dernière réponse d'un participant gardée dans le fil de la mère (compte rendu avec sa carte,
  * fiche 263) : relue après un redémarrage, quand l'orchestrateur ne l'a plus en mémoire.
  */

@@ -45,10 +45,12 @@ export interface RoundtableStartRequest {
  * - `slots` : places de travaux manquantes (`missing`) ;
  * - `running` : un tour de table est déjà en cours dans cette conversation ;
  * - `task` : la conversation est un travail (un travail n'a pas de travaux, ADR-0019) ;
- * - `archived`, `discussion` : conversation archivée, ou espace Discussion (pas de dossier de code).
+ * - `archived`, `discussion` : conversation archivée, ou espace Discussion (pas de dossier de code) ;
+ * - `question` : question plus longue que `QUESTION_CHARS` (participants et arbitre lisent la même,
+ *   entière : elle n'est jamais coupée en silence).
  */
 export type RoundtableStartError =
-  'selection' | 'slots' | 'running' | 'task' | 'archived' | 'discussion'
+  'selection' | 'slots' | 'running' | 'task' | 'archived' | 'discussion' | 'question'
 
 export type RoundtableStartResult =
   | { ok: true; roundtableId: string }
@@ -91,7 +93,7 @@ export interface RoundtableOptions {
   /** La conversation a un dernier échange, qui partira avec la question (infobulle). */
   lastExchange: boolean
   /** Le tour ne peut pas partir d'ici, quelle que soit la sélection. */
-  refused?: Exclude<RoundtableStartError, 'selection' | 'slots'>
+  refused?: Exclude<RoundtableStartError, 'selection' | 'slots' | 'question'>
 }
 
 export interface RoundtableIpcContract {

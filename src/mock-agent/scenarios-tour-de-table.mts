@@ -169,6 +169,50 @@ export const roundtableScenarios: Record<string, Scenario> = {
       ...opinion(text, model, attachments)
     ])
   },
+  'avis-change-modele': {
+    description:
+      'Tour de table : en plein tour, l’agent annonce un autre modèle (`config_option_update`), puis donne son avis : l’app le met en erreur « modèle non appliqué »',
+    steps: participant((text, model, attachments) => [
+      {
+        kind: 'update',
+        update: {
+          sessionUpdate: 'config_option_update',
+          configOptions: [
+            {
+              id: 'model',
+              name: 'Modèle',
+              category: 'model',
+              type: 'select',
+              currentValue: model === 'factice-precis' ? 'factice-rapide' : 'factice-precis',
+              options: [
+                { value: 'factice-rapide', name: 'Factice rapide' },
+                { value: 'factice-precis', name: 'Factice précis' }
+              ]
+            }
+          ]
+        }
+      },
+      ...opinion(text, model, attachments)
+    ])
+  },
+  'avis-en-deux': {
+    description:
+      'Tour de table : avis en deux morceaux de texte séparés par une lecture (outil) : l’app garde la réponse entière du tour',
+    steps: participant((text, model, attachments) => [
+      { kind: 'text', text: 'Première partie : je lis calc.js.' },
+      {
+        kind: 'update',
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'participant_read',
+          title: 'Read calc.js',
+          kind: 'read',
+          status: 'completed'
+        }
+      },
+      ...opinion(text, model, attachments)
+    ])
+  },
   'participant-lit-shell': {
     description:
       'Tour de table : participant qui lit par le shell (`tool_call` `kind: execute`, « cat calc.js »), puis donne son avis',

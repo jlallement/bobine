@@ -38,7 +38,7 @@ export interface OptionsDeps {
 export function refusalOf(
   summary: ConversationSummary,
   items: readonly TranscriptItem[]
-): Exclude<RoundtableStartError, 'selection' | 'slots'> | undefined {
+): Exclude<RoundtableStartError, 'selection' | 'slots' | 'question'> | undefined {
   if (summary.startedFrom || summary.reviewOf) return 'task'
   if (summary.archived) return 'archived'
   if (summary.space === 'discussion' || !hasFolder(summary.workspace)) return 'discussion'
