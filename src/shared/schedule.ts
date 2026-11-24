@@ -3,6 +3,7 @@
  * à l'heure dite, le main ouvre une conversation ordinaire et envoie la consigne. Ce module est
  * pur (main, renderer, essais) : types, validation, échéances à l'heure locale, estimation du coût.
  */
+import { isDriveAbsolute } from './windows-paths.ts'
 
 /** Fréquence d'une tâche, à l'heure locale du Mac. */
 export type Schedule =
@@ -298,7 +299,8 @@ export function parseTaskInput(value: unknown): ScheduledTaskInput {
   const name =
     typeof v.name === 'string' && v.name.trim() ? text(v.name, 'name', 200) : titleOf(instruction)
   const folder = text(v.folder, 'folder', 4096)
-  if (!folder.startsWith('/')) return fail('folder')
+  // Absolu : `/…` (Mac, Linux) ou `C:\…` (Windows, où `/` seul n'en est pas un).
+  if (!folder.startsWith('/') && !isDriveAbsolute(folder)) return fail('folder')
   const cap = parseCap(v.cap)
   return {
     name,

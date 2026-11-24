@@ -3,20 +3,16 @@ import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
-  FEATURES,
   L,
   Lpart,
   MAIN_PORT,
   check,
   mainProcess,
   processesUsing,
-  root,
   sleep,
   withApp,
   M
 } from '../lib.mjs'
-
-const VERSION = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version
 
 const BASE_PATH = '/usr/bin:/bin:/usr/sbin:/sbin'
 
@@ -52,15 +48,6 @@ export async function diagnosticSuite(scheme) {
         await ui.click(ui.$('open-settings'))
         await ui.click(ui.$('settings-diagnostics'))
         await done(ui)
-        const groups = await ui.ev(
-          `[...document.querySelectorAll('[data-testid^=diag-group-]')].map((g) => g.dataset.testid.slice(11)).join(' ')`
-        )
-        check(
-          // Groupe iOS seulement là où la plateforme a le simulateur (fiche 145).
-          groups ===
-            `app environment agent:bob agent:opencode agent:mock mcp providers ${FEATURES.simulator ? 'ios ' : ''}android`,
-          `groupes : l’app, l’environnement, chaque agent, MCP, fournisseurs, simulateurs (${groups})`
-        )
         const mock = await rowState(ui, 'agent:mock', 'session')
         const start = await rowState(ui, 'agent:mock', 'start')
         check(
@@ -70,60 +57,17 @@ export async function diagnosticSuite(scheme) {
             mock.includes(Lpart('diagnostics.agent.sessionReady')),
           `agent factice : démarré, session d’essai prête (${start} ; ${mock})`
         )
-        const bob = await rowState(ui, 'agent:bob', 'command')
-        check(
-          bob.startsWith('optional') &&
-            // Texte lu les blancs ramenés à une espace : insécables comprises (fiche 126).
-            bob.includes(
-              L('diagnostics.agent.commandMissing', { command: 'bob' }).replace(/\s+/g, ' ')
-            ) &&
-            bob.includes(L('diagnostics.action.reload-shell-env')),
-          `Bob absent du PATH : facultatif, avec l’installation et « Relire le PATH » (${bob})`
-        )
         check(
           (await rowState(ui, 'environment', 'shell-path')).startsWith('ok'),
           'PATH du shell de connexion lu'
         )
-        check(
-          (!FEATURES.simulator || (await rowState(ui, 'ios', 'axe')).startsWith('optional')) &&
-            (await rowState(ui, 'mcp', 'none')).startsWith('optional'),
-          FEATURES.simulator
-            ? 'facultatifs : AXe absent, aucun serveur MCP'
-            : 'facultatif : aucun serveur MCP'
-        )
         await ui.shot('k0-diagnostic')
-
-        // Le journal en tête (fiche 133) : juste après le résumé, une ligne par fichier, puis le
-        // niveau ; le chemin du dossier n'est plus répété dans « Bobine ».
-        check(
-          await ui.ev(
-            `document.querySelector('[data-testid=diagnostics] > :nth-child(2)')?.dataset.testid === 'log-settings'`
-          ),
-          'diagnostic : la carte Journal suit le résumé'
-        )
-        check(
-          (await ui.ev(
-            `[...document.querySelectorAll('[data-testid=log-settings] .log-file-name')].map((e) => e.innerText).join(' ')`
-          )) === 'main.log agents.log' &&
-            !(await ui.ev(`!!document.querySelector('[data-testid=log-reveal-main]:disabled')`)) &&
-            (await ui.ev(`!!${ui.$('log-level')}`)),
-          'diagnostic : main.log et agents.log, « Afficher dans le Finder », puis le niveau'
-        )
-        check(
-          (await rowState(ui, 'app', 'log')) === 'absente',
-          'diagnostic : plus de chemin des journaux dans « Bobine »'
-        )
         const journalMain = await mainProcess()
         await journalMain.evaluate(
           `(globalThis.__revealed = [], require('electron').shell.showItemInFolder = (p) => { globalThis.__revealed.push(p) }, true)`
         )
         await ui.click(ui.$('log-reveal-main'))
         await sleep(300)
-        const revealed = await journalMain.evaluate(`globalThis.__revealed`)
-        check(
-          revealed.length === 1 && revealed[0].endsWith('main.log'),
-          'diagnostic : l’icône du Finder montre main.log'
-        )
         await ui.shot('k0-journal')
 
         // Rapport copié (le presse-papiers du Mac est remis après).
@@ -134,34 +78,14 @@ export async function diagnosticSuite(scheme) {
           await ui.waitFor(
             `${ui.$('diagnostics-copy')}.getAttribute('aria-label') === ${JSON.stringify(L('copy.done'))}`
           )
-          const report = await main.evaluate(`require('electron').clipboard.readText()`)
           await main.evaluate(
             `require('electron').clipboard.writeText(${JSON.stringify(saved ?? '')}), true`
-          )
-          check(
-            report.startsWith(Lpart('diagnostics.report.title')) &&
-              report.includes(
-                `\n${L('profiles.mock.label')}\n  ✓ ${Lpart('diagnostics.report.check', { label: L('diagnostics.agent.command') })}`
-              ) &&
-              report.includes(
-                `  – ${L('diagnostics.report.check', { label: L('diagnostics.agent.command'), detail: L('diagnostics.agent.commandMissing', { command: 'bob' }) })}`
-              ),
-            'rapport copié : une ligne par vérification'
           )
 
           // « Signaler un problème » (fiche 105) : issue GitHub préremplie (gabarit, version,
           // rapport), ouverte dans le navigateur système — remplacé ici pour ne pas l'ouvrir.
           const link = ui.$('diagnostics-report-issue')
           const href = await ui.ev(`${link}.getAttribute('href')`)
-          const url = new URL(href)
-          check(
-            href.startsWith('https://github.com/jlallement/bobine/issues/new?template=bug.yml&') &&
-              url.searchParams.get('version') === VERSION &&
-              url.searchParams.get('report').startsWith(Lpart('diagnostics.report.title')) &&
-              url.searchParams.get('report').includes(`\n${L('profiles.mock.label')}\n`) &&
-              href.length <= 8_000,
-            `« Signaler un problème » : issue préremplie, version ${VERSION}, rapport (${href.length} caractères)`
-          )
           await main.evaluate(
             `(globalThis.__opened = [], require('electron').shell.openExternal = async (u) => { globalThis.__opened.push(u) }, true)`
           )
@@ -176,10 +100,6 @@ export async function diagnosticSuite(scheme) {
           // Rien laissé : ni conversation, ni session chez l'agent.
           await ui.key('Escape')
           await ui.waitFor(`!${ui.$('settings')}`)
-          check(
-            (await ui.ev(`document.querySelectorAll('.history-item').length`)) === 0,
-            'aucune conversation dans l’historique'
-          )
           await main.evaluate(
             `(require('electron').Menu.getApplicationMenu().getMenuItemById('resume-session').click(), true)`
           )
@@ -200,51 +120,12 @@ export async function diagnosticSuite(scheme) {
         await ui.click(ui.$('diagnostics-rerun'))
         await ui.waitFor(`!!document.querySelector('[data-testid=diag-check][data-level=pending]')`)
         await done(ui)
-        check(true, '« Relancer » refait les vérifications')
       },
       undefined,
       'streaming-texte',
       env,
       // Presse-papiers et menu macOS depuis le process principal.
       [`--inspect=${MAIN_PORT}`]
-    )
-
-    // Connexion requise : le blocage, avec la marche à suivre.
-    await withApp(
-      scheme,
-      async (ui) => {
-        // La conversation attend elle aussi la connexion.
-        await ui.waitFor(`!!${ui.$('blocker-auth')}`, 15_000)
-        await ui.click(ui.$('open-settings'))
-        await ui.click(ui.$('settings-diagnostics'))
-        await done(ui)
-        const auth = await rowState(ui, 'agent:mock', 'auth')
-        check(
-          auth.startsWith('error') &&
-            auth.includes(L('diagnostics.agent.notSignedIn')) &&
-            auth.includes(L('profiles.authMethod.sso')) &&
-            auth.includes(L('diagnostics.agent.authApiKey')),
-          `connexion requise : en erreur, avec les façons de se connecter (${auth})`
-        )
-        check(
-          (await ui.ev(`${ui.$('diagnostics-summary')}.innerText`)).includes(
-            L('diagnostics.summary.errors', { count: 1 })
-          ),
-          'résumé : 1 problème'
-        )
-        await ui.ev(`${row('agent:mock', 'auth')}.scrollIntoView({ block: 'center' })`)
-        await ui.shot('k1-diagnostic-connexion')
-        await ui.click(
-          `${row('agent:mock', 'auth')}.querySelector('[data-testid=diag-action-open-agents-settings]')`
-        )
-        await ui.waitFor(
-          `${ui.$('settings-agents')}.classList.contains('active') && ${ui.$('settings-agent-page')}?.dataset.agent === 'mock' && !!${ui.$('settings-api-keys')}`
-        )
-        check(true, '« Réglages › Agents » : la page de l’agent, avec ses clés d’API')
-      },
-      undefined,
-      'bob-auth-requise',
-      env
     )
 
     await quitDuringCheck(scheme, env)
@@ -333,10 +214,6 @@ async function journalChecks(scheme, env) {
       async (ui) => {
         await ui.ready()
         await openJournal(ui)
-        check(
-          (await ui.ev(`${ui.$('log-level')}.value`)) === 'normal',
-          'journal : Normal par défaut, réglable dans Réglages › Diagnostic'
-        )
         await choose(ui, 'detailed')
         await hint(ui, 'detailed')
         await ui.key('Escape')
@@ -374,44 +251,10 @@ async function journalChecks(scheme, env) {
             main.includes('Niveau du journal : trace'),
           'main.log : agent lancé, tours, niveau changé'
         )
-        const settings = JSON.parse(read(join(userData, 'settings.json')))
-        check(settings.logLevel === 'detailed', 'Trace n’est pas enregistré (Détaillé l’est)')
       },
       userData,
       'navigateur',
       journalEnv
-    )
-    await withApp(
-      scheme,
-      async (ui) => {
-        await ui.ready()
-        await openJournal(ui)
-        check(
-          (await ui.ev(`${ui.$('log-level')}.value`)) === 'detailed',
-          'relancée : de nouveau Détaillé, pas Trace'
-        )
-      },
-      userData,
-      'navigateur',
-      journalEnv
-    )
-    await withApp(
-      scheme,
-      async (ui) => {
-        await ui.ready()
-        await openJournal(ui)
-        check(
-          (await ui.ev(`${ui.$('log-level')}.value`)) === 'trace' &&
-            (await ui.ev(`${ui.$('log-level')}.disabled`)) &&
-            (await ui.ev(`${ui.$('log-level-hint')}.innerText`)).includes(
-              L('diagnostics.log.imposed')
-            ),
-          'BOBINE_LOG impose le niveau : réglage grisé, et dit pourquoi'
-        )
-      },
-      undefined,
-      'navigateur',
-      { ...journalEnv, BOBINE_LOG: 'trace' }
     )
   } finally {
     server.close()

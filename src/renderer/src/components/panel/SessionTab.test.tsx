@@ -10,12 +10,13 @@ import {
 } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { contextBreakdown } from '@shared/context-breakdown'
-import type { TranscriptItem } from '@shared/transcript'
+import type { PrTrack } from '@shared/pr-tracking'
+import { emptyTranscript, type TranscriptItem } from '@shared/transcript'
 import i18next from 'i18next'
 import { SessionContext } from './SessionContext'
 import { SessionEnvironment } from './SessionEnvironment'
 import { SessionRunning } from './SessionRunning'
-import { useMcpTokens } from './SessionTab'
+import { SessionTab, useMcpTokens, type SessionTabData } from './SessionTab'
 
 const items: TranscriptItem[] = [{ kind: 'user', id: 1, text: 'x'.repeat(4000) }]
 const wrap = (node: React.ReactNode) => render(<Tooltip.Provider>{node}</Tooltip.Provider>)
@@ -237,5 +238,120 @@ describe('onglet « Session » : dossier d’une discussion (fiche 224)', () => 
   it('espace Code : le nom du dossier, comme avant', () => {
     env(false)
     expect(screen.getByTestId('session-folder').textContent).toBe('3973c57d-c6ab-4c06')
+  })
+})
+
+/**
+ * Onglet entier, l'app simulée par `window.api` : remplaçant des vérifications de composant des
+ * suites e2e `session` (inventaire C, #3, #4) et `pr-ci` (inventaire B, #12).
+ */
+describe('onglet « Session » rendu entier (fiches 166, 176)', () => {
+  const originalApi = window.api
+  afterEach(() => {
+    cleanup()
+    window.api = originalApi
+  })
+
+  const select = (category: string, current: string, values: string[]) => ({
+    id: category,
+    name: category,
+    category,
+    type: 'select' as const,
+    currentValue: current,
+    options: values.map((value) => ({ value, name: value }))
+  })
+  const snapshot = {
+    status: 'ready',
+    info: { profileId: 'mock', profileLabel: 'Agent factice', agentName: 'Agent factice' },
+    controls: [
+      select('model', 'mock/rapide', ['mock/rapide', 'mock/lent']),
+      select('mode', 'code', ['code', 'plan'])
+    ],
+    commands: [],
+    promptCapabilities: {},
+    queued: []
+  } as unknown as SessionTabData['snapshot']
+
+  function show(pr: PrTrack = { status: 'none', checkedAt: 0 }) {
+    window.api = {
+      ...originalApi,
+      conversations: { appTools: async () => ({ tokens: 0 }) },
+      changes: { git: async () => null },
+      pr: { status: async () => pr, onChanged: () => () => {} }
+    } as unknown as Window['api']
+    const onOpenGit = vi.fn()
+    const data: SessionTabData = {
+      snapshot,
+      settings: null,
+      transcript: emptyTranscript,
+      workspace: '/Users/moi/demo',
+      gitBranch: 'main',
+      running: { running: [], finished: [] },
+      onSetControl: () => {},
+      onRevealWorkspace: () => {},
+      onRevealFolder: () => {},
+      onWarn: () => {},
+      onOpenGit,
+      onOpenConversationChanges: () => {},
+      onOpenConversation: () => {},
+      onLoadMcp: async () => undefined
+    }
+    wrap(<SessionTab conversationId="c1" data={data} />)
+    return { onOpenGit }
+  }
+
+  it('environnement : agent, modèle, mode, dossier et branche', () => {
+    globalThis.ResizeObserver ??= class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver
+    const { onOpenGit } = show()
+    const env = screen.getByTestId('session-environment')
+    expect(screen.getByTestId('session-agent').textContent).toBe('Agent factice')
+    expect(env.querySelector('[data-testid=model-chip]')?.textContent).toContain('rapide')
+    expect(env.querySelector('[data-testid=mode-chip]')?.textContent).toContain('code')
+    expect(screen.getByTestId('session-folder').textContent).toBe('demo')
+    expect(screen.getByTestId('session-branch').textContent).toBe('main')
+    fireEvent.click(screen.getByTestId('session-branch'))
+    expect(onOpenGit).toHaveBeenCalledTimes(1)
+    // La puce du modèle ouvre le même menu que dans la zone de saisie.
+    fireEvent.click(env.querySelector('[data-testid=model-chip]') as HTMLElement)
+    expect(screen.getByTestId('control-model-mock/lent')).toBeTruthy()
+  })
+
+  it('PR suivie : ligne « Pull request » avec l’état des contrôles, qui ouvre la vue Git', async () => {
+    const { onOpenGit } = show({
+      status: 'found',
+      checkedAt: 0,
+      options: { autoFix: false, autoMerge: false },
+      pr: {
+        number: 7,
+        url: 'https://github.com/o/r/pull/7',
+        title: 'x',
+        state: 'open',
+        draft: false,
+        head: 'h1',
+        checks: [
+          { name: 'CI / test', state: 'failed' },
+          { name: 'CI / lint', state: 'passed' }
+        ],
+        summary: 'failed',
+        comments: 0,
+        mergeable: 'mergeable',
+        base: 'main',
+        mergeState: 'clean'
+      }
+    })
+    const line = await screen.findByTestId('session-pr-line')
+    expect(line.textContent).toContain(`#7 · ${i18next.t('prTrack.checks.failed', { count: 1 })}`)
+    fireEvent.click(line)
+    expect(onOpenGit).toHaveBeenCalledTimes(1)
+  })
+
+  it('sans PR : pas de ligne « Pull request »', async () => {
+    show()
+    await waitFor(() => expect(screen.getByTestId('session-tab')).toBeTruthy())
+    expect(screen.queryByTestId('session-pr')).toBeNull()
   })
 })

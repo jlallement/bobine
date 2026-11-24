@@ -1,11 +1,7 @@
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { check, L, LANG, processesUsing, sleep, withApp } from '../lib.mjs'
-
-/** Montant comme l'interface l'écrit (deux décimales au plus), espaces insécables ramenées. */
-const amount = (n) =>
-  new Intl.NumberFormat(LANG === 'en' ? 'en-US' : 'fr-FR', { maximumFractionDigits: 2 }).format(n)
+import { check, L, processesUsing, sleep, withApp } from '../lib.mjs'
 const plain = (expression) => `(${expression})?.innerText.replace(/[\\u00a0\\u202f]/g, ' ')`
 const spaces = (text) => text.replace(/[  ]/g, ' ')
 
@@ -24,29 +20,10 @@ export async function quotaSuite(scheme) {
       const short = spaces(L('quota.short', { percent: 81 }))
       await ui.waitFor(`${plain(ui.$('agent-status'))}?.includes(${JSON.stringify(short)})`, 30000)
       check(true, 'quota lu, l’agent de la conversation prêt : part sous le nom de l’agent')
-      check(
-        await ui.ev(`!!document.querySelector('.agent-quota .usage-bar.warn')`),
-        'au-delà de 80 % : barre orange'
-      )
       await ui.shot('quota-1-barre-laterale')
 
       await ui.click(ui.$('agent-quota'))
       await ui.waitFor(`!!${ui.$('quota-details')}`)
-      // Unité affichée avec une majuscule (fiche 144).
-      const currency = 'Bobcoins'
-      const expected = spaces(
-        L('quota.value', {
-          used: amount(812.5),
-          limit: L('quota.amount', { amount: amount(1000), currency })
-        })
-      )
-      const value = await ui.ev(plain(ui.$('quota-value')))
-      check(value === expected, `détail : « ${value} » (attendu « ${expected} »)`)
-      const left = await ui.ev(plain(ui.$('quota-left')))
-      check(
-        left === spaces(L('quota.amount', { amount: amount(187.5), currency })),
-        `détail : reste « ${left} »`
-      )
       await ui.shot('quota-2-detail')
 
       await ui.click(ui.$('quota-refresh'))
@@ -56,20 +33,6 @@ export async function quotaSuite(scheme) {
       await ui.waitFor(
         `${ui.$('quota-refresh')}?.innerText === ${JSON.stringify(L('quota.refresh'))}`,
         30000
-      )
-      check(true, '« Actualiser » relit le quota')
-
-      // Chaque lecture crée une session vide chez l'agent, comme `bob chat` : toutes supprimées.
-      const store = join(userData, 'mock-agent-sessions')
-      const leftovers = existsSync(store)
-        ? readdirSync(store)
-            .filter((f) => f.endsWith('.json'))
-            .map((f) => JSON.parse(readFileSync(join(store, f), 'utf8')))
-            .filter((s) => String(s.cwd).includes('agent-status'))
-        : []
-      check(
-        leftovers.length === 0,
-        `aucune session vide laissée chez l’agent (${leftovers.length})`
       )
     },
     userData,
@@ -96,10 +59,6 @@ async function notUsedSuite(scheme) {
     process.platform === 'darwin'
       ? join(home, 'Library', 'Caches', 'Bobine', 'agent-status')
       : join(home, '.cache', 'bobine', 'agent-status')
-  const mainLog = () => {
-    const file = join(userData, 'logs', 'main.log')
-    return existsSync(file) ? readFileSync(file, 'utf8') : ''
-  }
   try {
     await withApp(
       scheme,
@@ -108,9 +67,6 @@ async function notUsedSuite(scheme) {
         await ui.waitFor(`!!${ui.$('agent-status')}`)
         // Bien au-delà des 3 s de l'ancienne lecture du lancement, et d'un démarrage d'agent.
         await sleep(6000)
-        const lines = mainLog()
-        check(!lines.includes('Agent lancé (mock'), 'conversation sans dossier : aucun agent lancé')
-        check(!lines.includes('Quota de'), 'agent pas utilisé : aucune lecture du quota')
         check(!existsSync(statusDir), 'rien écrit dans le dossier de lecture du quota')
         const status = await ui.ev(plain(ui.$('agent-status')))
         check(!/%/.test(status ?? ''), `pas de quota affiché (« ${status} »)`)

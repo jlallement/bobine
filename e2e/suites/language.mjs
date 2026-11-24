@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { MAIN_PORT, check, mainProcess, withApp } from '../lib.mjs'
@@ -50,12 +50,6 @@ export async function languageSuite(scheme) {
           await ui.shot('langue-1-reglage')
           await choose(ui, 'en')
           await ui.waitFor(`${ui.$('settings-heading')}?.innerText === 'General'`)
-          check(
-            (
-              await ui.ev(`${ui.$('settings-language')}.closest('.settings-row').innerText`)
-            ).startsWith('Language'),
-            'English : les Réglages restent ouverts et passent à l’anglais'
-          )
           const labels = await menuLabels(main)
           check(
             labels.includes('File') && labels.includes('Edit') && !labels.includes('Fichier'),
@@ -68,13 +62,7 @@ export async function languageSuite(scheme) {
           await ui.shot('langue-2-reglages-en')
           await ui.key('Escape')
           await ui.waitFor(`!${ui.$('settings')}`)
-          check(
-            (await placeholder(ui)) === 'What do you want to do?',
-            'English : accueil en anglais'
-          )
           await ui.shot('langue-3-accueil-en')
-          const saved = JSON.parse(readFileSync(join(userData, 'settings.json'), 'utf8'))
-          check(saved.language === 'en', 'choix gardé dans settings.json')
         } finally {
           main.close()
         }

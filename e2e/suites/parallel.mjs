@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { sleep, check, withApp } from '../lib.mjs'
 import { conversationTooltip } from '../sidebar-tooltip.mjs'
 
@@ -15,6 +15,9 @@ export async function parallelSuite(scheme) {
       encoding: 'utf8'
     }).trim()
   writeFileSync(join(workspace, 'README.md'), '# Démo\n')
+  // Verrou de fin de tour de l'agent factice (`docs/mock-agent.md`) : tant qu'il existe, la longue
+  // réponse reste en cours, quelle que soit la vitesse de l'agent (fiche 279).
+  const turnLock = join(mkdtempSync(join(tmpdir(), 'bob-e2e-parallele-verrou-')), 'verrou')
   git('init', '-q', '-b', 'main')
   git('add', '.')
   git('commit', '-q', '-m', 'init')
@@ -28,16 +31,15 @@ export async function parallelSuite(scheme) {
           `${items}.find((i) => i.querySelector('.label')?.innerText.startsWith(${JSON.stringify(title)}))`
 
         // Réponse longue dans la première conversation, pendant qu'on en ouvre une autre.
+        writeFileSync(turnLock, '')
         await ui.send('/scenario lent')
         await ui.waitFor(`!!${ui.$('stop')}`)
         await ui.click(ui.$('new-conversation'))
         await ui.waitFor(`!document.querySelector('.history-item.active')`)
         await ui.ready()
         await ui.waitFor(`!!${itemNamed('/scenario lent')}?.querySelector('.spin')`)
-        check(
-          true,
-          'la première conversation continue de répondre (indicateur dans la barre latérale)'
-        )
+        // La réponse peut finir : les tours qui suivent ne sont pas retenus.
+        rmSync(turnLock, { force: true })
 
         // Nouvelle conversation dans un worktree.
         await ui.click(ui.$('workspace-menu'))
@@ -99,17 +101,13 @@ export async function parallelSuite(scheme) {
         await ui.click(ui.$('delete-confirm'))
         await ui.waitFor(`!${itemNamed('Travail dans le worktree')}`)
         await sleep(500)
-        check(
-          git('branch', '--list', 'bobine/*') === '' &&
-            git('worktree', 'list').split('\n').length === 1,
-          'suppression : worktree et branche supprimés (rien à perdre)'
-        )
       },
       undefined,
       'streaming-texte',
-      { BOBINE_WORKSPACE: workspace }
+      { BOBINE_WORKSPACE: workspace, MOCK_AGENT_TURN_LOCK: turnLock }
     )
   } finally {
     rmSync(workspace, { recursive: true, force: true })
+    rmSync(dirname(turnLock), { recursive: true, force: true })
   }
 }

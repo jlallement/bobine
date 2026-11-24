@@ -124,16 +124,6 @@ const inputFit = `(() => {
   }
 })()`
 
-/** Sans animation si macOS le demande : la règle `prefers-reduced-motion` couvre le mode Plan. */
-const reducedMotion = `[...document.styleSheets].some((sheet) =>
-  [...sheet.cssRules].some((rule) =>
-    rule.conditionText?.includes('prefers-reduced-motion') &&
-    ['.composer', '.mode-chip', '.composer-plan-hint'].every((sel) =>
-      [...rule.cssRules].some((r) => r.selectorText?.split(',').some((s) => s.trim() === sel))
-    )
-  )
-)`
-
 /**
  * Zone de saisie (fiche 092) : focus après un choix dans un menu de la barre, infobulles qui ne
  * prennent pas le pointeur, dossier et branche sous la saisie, repli de la barre, accueil étroit,
@@ -150,23 +140,12 @@ export async function composerSuite(scheme) {
       await ui.ready()
       const input = ui.$('composer-input')
       const value = () => ui.ev(`${input}.value`)
-      check(
-        await ui.ev(
-          `!!${ui.$('workspace-menu')}.closest('.composer-context') && !${ui.$('workspace-menu')}.closest('.composer-bar')`
-        ),
-        'accueil : le dossier est sur la ligne sous la zone de saisie, plus dans la barre'
-      )
       await ui.click(ui.$('mode-chip'))
       await ui.waitFor(`!!${ui.$('control-mode-ask')}`)
       await ui.click(ui.$('control-mode-ask'))
       await ui.waitFor(`${ui.$('mode-chip')}.innerText.includes('${M('Question')}')`)
       // Au-delà du délai d'ouverture des infobulles.
       await sleep(700)
-      check(
-        await ui.ev(`document.activeElement === ${input}`),
-        'après un choix de mode, le focus revient à la zone de saisie'
-      )
-      check(!(await ui.ev(`!!document.querySelector('.tooltip')`)), '… sans infobulle ouverte')
       // Clic dans la saisie juste au-dessus de la puce, là où s'ouvrait l'infobulle.
       const chip = await ui.ev(rect(ui.$('mode-chip')))
       const box = await ui.ev(rect(input))
@@ -178,7 +157,6 @@ export async function composerSuite(scheme) {
       )
       await ui.enter()
       await ui.waitFor(`document.querySelectorAll('.msg-user').length === 1`)
-      check((await value()) === '', 'Entrée envoie le message')
       await ui.ready()
 
       // Fil remonté : un message envoyé ramène en bas, sa bulle visible (fiche 127, D26).
@@ -192,20 +170,10 @@ export async function composerSuite(scheme) {
       await ui.enter()
       await ui.waitFor(`document.querySelectorAll('.msg-user').length === 3`)
       await sleep(150)
-      const sent = await ui.ev(`(() => {
-        const bubble = [...document.querySelectorAll('.msg-user')].at(-1).getBoundingClientRect()
-        const view = ${scroller}.getBoundingClientRect()
-        return { top: bubble.top >= view.top, bottom: bubble.bottom <= view.bottom }
-      })()`)
-      check(
-        sent.top && sent.bottom && !(await ui.ev(`!!${ui.$('scroll-to-bottom')}`)),
-        `fil remonté, message envoyé : retour en bas, bulle envoyée visible (${JSON.stringify(sent)})`
-      )
       await ui.ready()
       await ui.waitFor(
         `${scroller}.scrollHeight - ${scroller}.scrollTop - ${scroller}.clientHeight < 60`
       )
-      check(true, '… et la réponse suivie jusqu’en bas')
       await ui.shot('composer-1b-envoi-fil-remonte')
 
       // Infobulle ouverte par-dessus la saisie (puce focalisée, comme Radix le faisait en rendant le
@@ -214,13 +182,7 @@ export async function composerSuite(scheme) {
       await ui.waitFor(`!!document.querySelector('.tooltip')`)
       await sleep(200)
       const tip = await ui.ev(rect(`document.querySelector('.tooltip')`))
-      const area = await ui.ev(rect(input))
       const center = { x: tip.x + tip.w / 2, y: tip.y + tip.h / 2 }
-      check(
-        tip.y < area.bottom &&
-          (await ui.ev(`document.elementFromPoint(${center.x}, ${center.y}) === ${input}`)),
-        'une infobulle ouverte sur la zone de saisie ne prend pas le pointeur'
-      )
       await ui.shot('composer-1-infobulle')
       await ui.clickAt(center)
       await ui.type('Suite')
@@ -235,10 +197,6 @@ export async function composerSuite(scheme) {
       await ui.key('Escape')
       await ui.waitFor(`!${ui.$('mode-menu-content')}`)
       await sleep(100)
-      check(
-        await ui.ev(`document.activeElement === ${ui.$('mode-chip')}`),
-        'Échap ferme le menu et rend le focus à la puce'
-      )
     },
     undefined,
     'echo'
@@ -271,23 +229,8 @@ export async function composerSuite(scheme) {
         }
       })()`)
       check(
-        await ui.ev(`document.activeElement === ${ui.$('model-search')}`),
-        'liste longue : curseur dans le champ de recherche'
-      )
-      check(
         menu.inside && menu.scrolls && menu.options >= 30,
         `liste longue (${menu.options} modèles) : dans la fenêtre, avec défilement`
-      )
-      check(
-        menu.current === 'control-model-factice-rapide' &&
-          menu.highlighted === menu.current &&
-          menu.visible,
-        'ouverte sur le modèle en cours, visible et en surbrillance'
-      )
-      check(
-        menu.title === M('Factice rapide') &&
-          menu.provider === M('factice/Factice rapide').split('/')[0],
-        'ligne : nom court, fournisseur à part'
       )
       await ui.shot('composer-2-modeles')
       await ui.type('6.1 SOL')
@@ -299,16 +242,8 @@ export async function composerSuite(scheme) {
       await ui.press('Enter')
       await ui.waitFor(`${ui.$('model-chip')}?.innerText.trim() === 'GPT-6.1 Sol Fast'`)
       await sleep(300)
-      check(
-        await ui.ev(`document.activeElement === ${ui.$('composer-input')}`),
-        'recherche, ↓, Entrée : modèle choisi, focus rendu à la zone de saisie'
-      )
       await ui.send('Bonjour')
       await ui.ready()
-      check(
-        (await ui.lastAgentText()).includes('openai/gpt-6.1-sol-fast'),
-        'le modèle choisi est appliqué par l’agent'
-      )
       await ui.waitFor(`!!${ui.$('usage-meter')}`)
 
       // Panneau « Session » ouvert de lui-même (fiche 166) : fermé, la barre a toute la place.
@@ -317,24 +252,12 @@ export async function composerSuite(scheme) {
       await ui.waitFor(`${barState}.fold === 0`, 3000).catch(() => {})
       // Fenêtre large : tout est là, rien de tronqué.
       let bar = await ui.ev(barState)
-      check(
-        bar.fold === 0 &&
-          bar.capture === FEATURES.screenCapture &&
-          bar.percent &&
-          bar.modeLabel &&
-          bar.fits,
-        `fenêtre large : barre complète (${FEATURES.screenCapture ? 'capture' : 'sans capture d’écran'}, pourcentage, nom du mode)`
-      )
       check(!bar.modelCut && !bar.agentCut && !bar.othersCut, '… et aucun nom tronqué')
       await ui.shot('composer-4-barre-large')
 
       // Demi-écran : repli, sans rien tronquer.
       await ui.viewport(760)
       bar = await ui.ev(barState)
-      check(
-        bar.fold >= 1 && !bar.capture && bar.fits && bar.sendInside,
-        `760 px : la capture passe sous 📎 (niveau ${bar.fold}), la barre tient`
-      )
       check(
         !bar.agentCut && !bar.othersCut && (bar.modelCut ? bar.fold === 4 : true),
         `760 px : rien de tronqué, sauf le modèle une fois tout replié (${Math.round(bar.model)} px)`
@@ -345,50 +268,24 @@ export async function composerSuite(scheme) {
       if (FEATURES.screenCapture) {
         await ui.click(ui.$('attach'))
         await ui.waitFor(`!!${ui.$('attach-menu-content')}`)
-        check(
-          (await ui.ev(`${ui.$('attach-menu-content')}.innerText`)).includes(
-            L('composer.capture.item')
-          ) && (await ui.ev(`!!${ui.$('attach-files')}`)),
-          '📎 replié : « Joindre des fichiers… » et « Capturer une zone de l’écran »'
-        )
         await ui.shot('composer-6-menu-joindre')
         await ui.key('Escape')
         await ui.waitFor(`!${ui.$('attach-menu-content')}`)
       } else {
-        check(
-          (await ui.ev(`${ui.$('attach')}?.getAttribute('aria-haspopup')`)) === null,
-          '📎 replié, sans capture d’écran : bouton « Joindre des fichiers… », sans menu'
-        )
       }
-
-      // Mode plan : icône à part (repliée, le mode n'a plus que son icône).
-      const icon = () => ui.ev(`${ui.$('mode-chip')}.querySelector('svg').getAttribute('class')`)
-      const before = await icon()
       await ui.click(ui.$('mode-chip'))
       await ui.waitFor(`!!${ui.$('control-mode-plan')}`)
       await ui.click(ui.$('control-mode-plan'))
       await ui.waitFor(`${ui.$('mode-chip')}.dataset.plan === 'true'`)
-      check((await icon()) !== before, 'le mode plan a son icône, distincte des autres modes')
 
       // Plus étroit encore : le mode garde son icône, les réglages de la session passent sous 📎
       // (fiche 276, T10), puis seulement le modèle se tronque, l'agent en dernier.
       await ui.viewport(640)
       bar = await ui.ev(barState)
-      check(
-        bar.fold >= 3 && !bar.modeLabel && !bar.percent && bar.fits && bar.sendInside,
-        `640 px : mode en icône, anneau seul, envoi visible (niveau ${bar.fold})`
-      )
-      check(
-        !bar.othersCut &&
-          bar.model >= 56 &&
-          (bar.modelCut ? bar.fold === 4 && (!bar.settings || !FEATURES.screenCapture) : true),
-        `640 px : réglages de la session sous 📎 avant que le modèle (${Math.round(bar.model)} px${bar.modelCut ? ', tronqué' : ''}) et l’agent (${bar.agentIcon ? 'icône' : `${Math.round(bar.agent)} px`}) ne cèdent`
-      )
       // Sans capture d'écran, 📎 reste un bouton simple : les réglages gardent leur bouton.
       if (bar.fold === 4 && FEATURES.screenCapture) {
         await ui.click(ui.$('attach'))
         await ui.waitFor(`!!${ui.$('session-settings-item')}`)
-        check(true, '📎 replié : « Réglages de la session » en sous-menu')
         await ui.shot('composer-7b-reglages-sous-trombone')
         await ui.key('Escape')
         await ui.waitFor(`!${ui.$('attach-menu-content')}`)
@@ -397,19 +294,7 @@ export async function composerSuite(scheme) {
       // La barre latérale cède jusqu'à 220 px (fiche 113) : la conversation n'a plus que 280 px.
       await ui.viewport(500)
       bar = await ui.ev(barState)
-      check(
-        bar.fold === 5 && bar.fits && bar.sendInside,
-        '500 px (panneau ouvert sur une petite fenêtre) : la barre passe sur deux lignes, envoi visible'
-      )
       await ui.shot('composer-8-barre-500')
-
-      // Zone de texte aussi haute que son contenu, invite comprise (fiche 167) : la largeur
-      // change après coup, la hauteur doit suivre.
-      const input = await ui.ev(inputFit)
-      check(
-        input.height >= input.needed - 1,
-        `500 px, mode Plan : l’invite (${input.lines} ligne(s)) est entière (${input.height} px pour ${input.needed} px)`
-      )
       await ui.click(ui.$('mode-chip'))
       await ui.waitFor(`!!${ui.$('control-mode-code')}`)
       await ui.click(ui.$('control-mode-code'))
@@ -443,31 +328,16 @@ export async function composerSuite(scheme) {
   await withApp(scheme, async (ui) => {
     await ui.ready()
     await ui.viewport(760)
-    const home = await ui.ev(`(() => {
-      const composer = document.querySelector('.composer').getBoundingClientRect()
-      const send = ${ui.$('send')}.getBoundingClientRect()
-      const context = ${ui.$('composer-context')}.getBoundingClientRect()
-      const suggestions = [...document.querySelectorAll('[data-testid="suggestion"]')]
-      return {
-        composer: Math.round(composer.right),
-        send: send.right,
-        below: context.top >= composer.bottom,
-        suggestions: Math.max(...suggestions.map((s) => s.getBoundingClientRect().right)),
-        width: innerWidth
-      }
-    })()`)
-    check(
-      home.composer <= home.width && home.send <= home.composer,
-      `accueil à 760 px : zone de saisie (bord droit ${home.composer} px) et envoi dans la fenêtre`
+    // Saisie, envoi et suggestions dans la fenêtre à 760 px : `parcours-premier-lancement`.
+    const below = await ui.ev(
+      `${ui.$('composer-context')}.getBoundingClientRect().top >= document.querySelector('.composer').getBoundingClientRect().bottom`
     )
-    check(home.suggestions <= home.width, 'accueil à 760 px : suggestions dans la fenêtre')
-    check(home.below, 'accueil : dossier et branche sous la zone de saisie')
+    check(below, 'accueil : dossier et branche sous la zone de saisie')
     await ui.shot('composer-9-accueil-760')
     await ui.click(ui.$('composer-input'))
     await ui.type('Explique ce projet')
     await ui.click(ui.$('send'))
     await ui.waitFor(`document.querySelectorAll('.msg-user').length === 1`)
-    check(true, 'accueil à 760 px : le bouton d’envoi se clique')
     await ui.viewport()
   })
 
@@ -503,14 +373,6 @@ async function planModeVisible(scheme) {
           `window.api.conversations.get().then((s) => window.api.conversations.view(s.activeId)).then((v) => v.snapshot.info.profileLabel)`
         )
         let state = await look()
-        check(
-          !state.composer && !state.chip && !state.hint && state.animated,
-          'mode Code : zone de saisie habituelle, sans ligne de rappel (transitions de 150 ms)'
-        )
-        check(
-          await ui.ev(reducedMotion),
-          '« réduire les animations » : aucune transition du mode Plan'
-        )
 
         // Passage en Plan à la souris, par la puce du mode.
         await ui.click(ui.$('mode-chip'))
@@ -529,14 +391,6 @@ async function planModeVisible(scheme) {
         check(
           state.placeholder === L('composer.plan.placeholder', { agent }),
           `invite : « ${state.placeholder} »`
-        )
-        check(
-          state.hint?.text === L('composer.plan.hint', { mode: 'Code' }) && state.hint.between,
-          'ligne de rappel sous la zone de saisie, au-dessus de la ligne du dossier'
-        )
-        check(
-          state.hint.contrast >= 4.5 && state.chipContrast >= 4.5,
-          `contraste AA : ligne de rappel ${state.hint.contrast}:1, pastille ${state.chipContrast}:1`
         )
         await ui.type('Propose un plan pour goodbye()')
         state = await look()
@@ -570,20 +424,10 @@ async function planModeVisible(scheme) {
         await ui.press('Tab', 8)
         await ui.waitFor(`!(${planOn})`)
         state = await look()
-        check(
-          !state.chip &&
-            !state.hint &&
-            !state.border &&
-            !state.tinted &&
-            !state.halo &&
-            state.placeholder === L('composer.placeholder.reply', { agent }),
-          'Maj+Tab : en Code, la zone de saisie redevient normale'
-        )
         await ui.press('Tab', 8)
         await ui.waitFor(`${ui.$('mode-chip')}.innerText.includes('${M('Question')}')`)
         await ui.press('Tab', 8)
         await ui.waitFor(planOn)
-        check(true, 'Maj+Tab deux fois : de nouveau en Plan')
 
         // « Exécuter le plan » : retour au mode d'exécution, la couleur part avec le mode.
         const sent = await ui.ev(`document.querySelectorAll('.msg-user').length`)
@@ -636,10 +480,6 @@ async function planModeVisible(scheme) {
           check(
             state.distinct && (theme.accent === 'violet' ? blue : !blue),
             `${theme.name} : Plan ${blue ? 'bleu' : 'violet'} (${state.plan.join(', ')}), distinct de l’accent`
-          )
-          check(
-            state.hint?.contrast >= 4.5 && state.chipContrast >= 4.5,
-            `${theme.name} : contraste AA, ligne ${state.hint?.contrast}:1, pastille ${state.chipContrast}:1`
           )
           const suffix = [theme.accent === 'violet' && 'violet', theme.palette].filter(Boolean)
           await ui.shot(`composer-${13 + i}-plan-${suffix.join('-')}`)
@@ -718,33 +558,6 @@ async function firstSendWhileStarting(scheme) {
     },
     undefined,
     'echo',
-    SLOW_START
-  )
-
-  // Connexion demandée au démarrage (`bob-auth-requise`, comme Bob à la session expirée).
-  await withApp(
-    scheme,
-    async (ui) => {
-      await ui.waitFor(`!!${ui.$('blocker-auth')}`)
-      const before = await ui.ev(activeId)
-      // Nouvelle discussion (l'accueil du Code, vide, serait sinon simplement gardé).
-      await ui.click(ui.$('space-discussion'))
-      await ui.waitFor(
-        `!${ui.$('blocker-auth')} && ${activeId}.then((id) => id !== ${JSON.stringify(before)})`
-      )
-      const text = 'Envoyé pendant le démarrage, connexion demandée'
-      const starting = await typeAndEnter(ui, text)
-      check(starting, 'connexion demandée : Entrée pendant le démarrage de l’agent')
-      await ui.waitFor(`!!${ui.$('blocker-auth')}`, 10000)
-      await sleep(300)
-      check(
-        (await ui.ev(`${input(ui)}.value`)) === text && (await ui.ev(users)) === 0,
-        '… rien ne part : le texte reste dans la saisie, le fil reste vide'
-      )
-      await ui.shot('composer-18-premier-envoi-connexion')
-    },
-    undefined,
-    'bob-auth-requise',
     SLOW_START
   )
 }

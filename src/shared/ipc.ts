@@ -817,6 +817,11 @@ export interface IpcEventContract {
   'pr:changed': { id: string; track: PrTrack }
   /** La forge du dépôt distant d'une conversation a répondu après `worktree:info` : à relire (fiche 189). */
   'worktree:forge': { id: string }
+  /**
+   * Une conversation est partie à la corbeille, en est revenue ou y a été effacée : les worktrees
+   * orphelins sont à relire (Réglages › Données, fiche 228).
+   */
+  'worktree:orphansChanged': null
   'attention:detailsChanged': AttentionDetails
   'conversation:childLaunchesChanged': ChildLaunchState
   'notifications:status': NotificationStatus

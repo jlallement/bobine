@@ -3,7 +3,7 @@
   "bundled": [
     {
       "name": "@agentclientprotocol/sdk",
-      "version": "2.8.0",
+      "version": "2.9.1",
       "in": ["main"]
     },
     {
@@ -473,7 +473,7 @@
     },
     {
       "name": "i18next",
-      "version": "27.2.2",
+      "version": "27.2.4",
       "in": ["main", "renderer"]
     },
     {

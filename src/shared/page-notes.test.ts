@@ -100,6 +100,54 @@ describe('captures envoyées (fiche 146)', () => {
 })
 
 describe('message envoyé (fiches 132 et 146)', () => {
+  it('parcours de browser-annotate : bas de page défilé, puis le haut à 150 % qui reprend 1, 2 et 4', () => {
+    // Remarques 1 et 2 en haut à 100 %, 3 en bas (défilée de 1300), 4 en haut à 150 %.
+    const bas = { tag: 'button', selector: 'button#bas', text: 'Bas', field: false, label: '' }
+    const champ = {
+      tag: 'input',
+      selector: 'body > form.recherche > input',
+      text: '',
+      field: true,
+      label: 'Rechercher'
+    }
+    const notes = [
+      note({
+        id: 'a',
+        comment: 'Le bouton est trop petit.',
+        element: { ...bas, selector: 'button#cible', text: 'Cible' }
+      }),
+      note({ id: 'b', comment: 'Champ trop étroit.', element: champ }),
+      note({ id: 'c', comment: 'Bouton du bas.', element: bas }),
+      note({
+        id: 'd',
+        comment: 'Agrandi',
+        element: { ...bas, selector: 'button#cible', text: 'Cible' }
+      })
+    ]
+    const top = { a: { x: 120, y: 144 }, b: { x: 140, y: 230 } }
+    const shots = [
+      shot('a', { a: top.a }),
+      shot('b', top),
+      shot('c', { c: { x: 80, y: 24 } }, { scrollY: 1300 }),
+      shot('d', { ...top, d: { x: 120, y: 144 } }, { zoom: 1.5, width: 533.3, height: 400 })
+    ]
+    const { images, loose } = pageImages(shots, notes)
+    expect(loose).toEqual([])
+    expect(images.map((i) => i.notes.map((n) => n.n))).toEqual([[3], [1, 2, 4]])
+    const text = pageFeedback(images, loose)
+    expect(text).toContain('en 2 captures jointes')
+    expect(text).toContain(
+      'Capture 1 (fenêtre de 800 × 600 px CSS, défilée de 0 × 1300 px) :\n' +
+        '3. Point (80, 24) :\n   Élément : button#bas, texte « Bas »\n   Remarque : Bouton du bas.'
+    )
+    expect(text).toContain(
+      'Capture 2 (fenêtre de 533 × 400 px CSS, haut de la page, zoom 150 %) :\n' +
+        '1. Point (120, 144) :\n   Élément : button#cible, texte « Cible »\n   Remarque : Le bouton est trop petit.\n' +
+        '2. Point (140, 230) :\n   Élément : champ de saisie body > form.recherche > input « Rechercher » (valeur non citée)\n   Remarque : Champ trop étroit.\n' +
+        '4. Point (120, 144) :\n   Élément : button#cible, texte « Cible »\n   Remarque : Agrandi'
+    )
+  })
+
   it('la page, puis chaque capture et ses remarques numérotées : point, élément, remarque', () => {
     const notes = [
       note({ id: 'a' }),

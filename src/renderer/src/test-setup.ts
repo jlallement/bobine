@@ -20,7 +20,12 @@ window.api = {
     onQuotasChanged: () => () => {}
   },
   files: { pathFor: () => '' },
-  worktree: { info: async () => null, orphans: async () => [], onForge: () => () => {} },
+  worktree: {
+    info: async () => null,
+    orphans: async () => [],
+    onForge: () => () => {},
+    onOrphansChanged: () => () => {}
+  },
   // Fin de tour d'un agent : relit la barre du worktree (fiche 176, D15).
   agent: { onEvent: () => () => {} },
   // Suivi de la PR (fiche 176) : pas de `gh`, pas de carte.

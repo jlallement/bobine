@@ -4,7 +4,7 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ## Prochaine version
 
-### Corrigé
+### Corrections
 
 - Après un clic sur un lien vers un fichier disparu, « Fichier introuvable » ne s’affiche plus
   deux fois (la bulle et une infobulle par-dessus) quand la souris reste sur place.
@@ -30,6 +30,35 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   sans avis rouge dans le fil ; si le fichier revient, le lien aussi.
 - Simulateur iOS : l’agent voit aussi les champs de saisie vides et sans nom (« TextField
   (vide) »), et peut les toucher pour y écrire.
+## 1.0.0-rc.5 — 24 novembre 2026
+
+### Corrections
+
+- Réglages › Données › Worktrees orphelins : le worktree d’une conversation restaurée de la
+  corbeille (ou encore dans la corbeille) n’est plus listé, et « Nettoyer » ne peut plus le
+  supprimer avec son travail non commité. Seule une conversation effacée pour de bon de la
+  corbeille laisse son worktree orphelin ; la liste se met à jour d’elle-même.
+- Windows : une tâche planifiée dans un dossier comme `C:\Users\…\projet` s’enregistre et se
+  lance ; elle était refusée, ou oubliée à la relecture de la liste.
+- Navigateur intégré : un onglet neuf qui ne finit pas de s’ouvrir ne bloque plus l’agent sans fin ;
+  au bout de 20 secondes, l’agent apprend que la page n’a pas fini de se charger et continue son
+  travail ; l’onglet reste utilisable et peut être rechargé.
+- Navigateur intégré : un clic ou une saisie de l’agent juste après l’ouverture d’une page, ou dans
+  un onglet que le panneau ne montre pas, n’est plus perdu sans erreur ; l’agent attend que la page
+  soit affichée.
+- Plusieurs travaux proposés d’un coup : la carte les range toujours dans l’ordre où l’agent les a
+  proposés, le même d’une fois à l’autre, et une ligne affichée ne change plus de place.
+- Sommaire d’une longue conversation : tout en bas du fil, le dernier message est bien celui mis en
+  avant, même quand les derniers échanges sont courts.
+- **Arrêter** une conversation fille qui vient d’être lancée (son agent démarre encore) l’arrête
+  bien : le tour ne va plus à son terme.
+- Préparation d’un worktree à autoriser : la carte ne bouge plus sous le pointeur pendant que
+  la réponse s’écrit dessous, « Autoriser » n’est plus manqué.
+- Fichier vide déjà présent, réécrit par l’agent : Modifications › Conversation ne le marque plus
+  « créé » (la carte de l’outil disait déjà « Modification »), et **Annuler cette modification**
+  ou **Repartir de ce message** le remettent vide au lieu de le supprimer.
+- Annotation d’une image : **Échap** pendant la saisie d’un texte abandonne seulement ce texte ;
+  l’annotation reste ouverte (elle se fermait entièrement). Hors saisie, Échap la ferme comme avant.
 
 ## 1.0.0-rc.4 — 23 novembre 2026
 

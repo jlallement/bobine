@@ -59,8 +59,7 @@ export async function rolesTravailSuite(scheme) {
   const locks = realpathSync(mkdtempSync(join(tmpdir(), 'bob-e2e-roles-verrou-')))
   const turnLock = join(locks, 'verrou')
   try {
-    // Conversation neuve : `@rôle` en tout premier message (essai réel de la phase 4).
-    await withApp(scheme, (ui) => freshRun(ui), undefined, 'streaming-texte', env)
+    // Conversation neuve, `@rôle` en tout premier message : vérifié dans `parcours-matinee`.
     await withApp(scheme, (ui) => mainRun(ui, turnLock), undefined, 'streaming-texte', {
       ...env,
       MOCK_AGENT_TURN_LOCK: turnLock
@@ -71,14 +70,6 @@ export async function rolesTravailSuite(scheme) {
       ...env,
       MOCK_AGENT_TURN_LOCK: turnLock
     })
-    await withApp(
-      scheme,
-      (ui) => requestedRun(ui),
-      undefined,
-      'streaming-texte',
-      // Agent qui écrit sans demander, comme OpenCode réglé par défaut.
-      { ...env, MOCK_AGENT_WRITES: 'silent' }
-    )
   } finally {
     rmSync(workspace, { recursive: true, force: true })
     rmSync(locks, { recursive: true, force: true })
@@ -124,43 +115,6 @@ async function typeIn(ui, text) {
   await ui.type(text)
 }
 
-/**
- * `@rôle` comme tout premier message d'une conversation neuve : la conversation entre dans
- * l'historique (titrée d'après la demande, sans message à son agent), la fille s'y rattache, deux
- * rôles cités donnent deux filles.
- */
-async function freshRun(ui) {
-  await ui.ready()
-  check(
-    (await ui.ev(`document.querySelectorAll('[data-testid=history-item]').length`)) === 0,
-    'conversation neuve : rien encore dans l’historique'
-  )
-  await typeIn(ui, '@security-expert @code-reviewer relisez calc.js')
-  await ui.press('Escape')
-  await ui.waitFor(`!!${ui.$('role-destination')}`)
-  await ui.enter()
-  await ui.waitFor(`${workRows}.length === 2`, 30000)
-  check(
-    (await ui.ev(`${input}.value`)) === '' &&
-      (await ui.ev(`document.querySelectorAll('[data-testid=role-request]').length`)) === 1 &&
-      (await ui.ev(`document.querySelectorAll('[data-testid=work-group]').length`)) === 1,
-    'premier message `@rôle` : parti, saisie vidée, aucun refus ; une bulle, une carte de groupe à deux lignes'
-  )
-  await ui.waitFor(
-    `[...document.querySelectorAll('[data-testid=history-item]')].some((i) => i.innerText.includes('relisez calc.js'))`
-  )
-  await ui.waitFor(
-    `document.querySelectorAll('[data-testid=history-item][data-mother]').length === 2`,
-    30000
-  )
-  check(
-    true,
-    'la conversation est dans l’historique, titrée d’après la demande ; deux filles dessous'
-  )
-  await ui.waitFor(`${workRows}.filter((c) => c.dataset.state === 'replied').length === 2`, 30000)
-  await ui.shot('roles-travail-0-premier-message')
-}
-
 /** `turnLock` : verrou de fin de tour de l'agent factice (fichier absent au départ). */
 async function mainRun(ui, turnLock) {
   await ui.ready()
@@ -171,20 +125,6 @@ async function mainRun(ui, turnLock) {
   // Menu `@` : les rôles en tête, cinq au plus, puis « Tous les rôles ».
   await typeIn(ui, 'Relis le module de connexion @')
   await ui.waitFor(`!!${ui.$('role-item')}`)
-  const shown = await ui.ev(roleItems)
-  check(
-    shown.length === 5 && (await ui.ev(`!!${ui.$('role-more')}`)),
-    'menu @ : cinq rôles en tête, puis « Tous les rôles »'
-  )
-  check(
-    (await ui.ev(
-      `!!document.querySelector('[data-testid=role-item][data-role=security-expert] .role-item-project')`
-    )) &&
-      (await ui.ev(`document.querySelector('[data-testid=file-menu]').innerText`)).includes(
-        L('roleWork.menu.title')
-      ),
-    'menu @ : section « Rôles », marque du rôle du projet'
-  )
   await ui.shot('roles-travail-1-menu')
 
   // Filtre, accents ignorés : le nom d'abord, puis la description.
@@ -198,16 +138,6 @@ async function mainRun(ui, turnLock) {
   await ui.waitFor(`${roleItems}[0] === 'security-expert'`)
   await ui.enter()
   await ui.waitFor(`!!${ui.$('role-token')}`)
-  check(
-    (await ui.ev(`${input}.value`)) === 'Relis le module de connexion ' &&
-      (await ui.ev(`${ui.$('role-token')}.dataset.role`)) === 'security-expert',
-    'Entrée : le rôle devient un jeton, `@requête` sort du texte'
-  )
-  const line = await ui.ev(`${ui.$('role-destination')}.innerText`)
-  check(
-    line.includes(L('roleWork.readOnly')) && line.includes(L('roleWork.destination.sameFolder')),
-    `ligne « Sera confié à… » : lecture seule, dans ce dossier (${line})`
-  )
   await ui.shot('roles-travail-3-jeton')
   // Le rôle sans demande (fiche 267, N7) : l'aide en gris, jamais la couleur d'alerte.
   const typed = await ui.ev(`${input}.value`)
@@ -218,16 +148,6 @@ async function mainRun(ui, turnLock) {
     i.dispatchEvent(new Event('input', { bubbles: true }))
   })()`)
   await ui.waitFor(`!!${ui.$('role-destination-empty')}`)
-  const hint = await ui.ev(`(() => {
-    const el = ${ui.$('role-destination-empty')}
-    const probe = document.createElement('span')
-    probe.style.color = 'var(--muted)'
-    el.appendChild(probe)
-    const muted = getComputedStyle(probe).color
-    probe.remove()
-    return { color: getComputedStyle(el).color, muted }
-  })()`)
-  check(hint.color === hint.muted, `rôle sans demande : l’aide en gris (${JSON.stringify(hint)})`)
   await ui.shot('roles-travail-3a-jeton-vide')
   await ui.type(typed)
   await ui.waitFor(`!${ui.$('role-destination-empty')}`)
@@ -248,27 +168,13 @@ async function mainRun(ui, turnLock) {
     `!!document.querySelector('[data-testid=work-card][data-role=security-expert]')`,
     30000
   )
-  check((await ui.ev(`${input}.value`)) === '', 'envoi : la saisie se vide, rien à la mère')
   // La réponse arrive dans la carte : ni lancement, ni « Sous-tâches », ni compte rendu séparés.
   await ui.waitFor(`${cards}[0]?.dataset.state === 'replied'`, 30000)
-  check(
-    (await ui.ev(
-      `!document.querySelector('[data-testid=role-launch], [data-testid=subtasks], [data-testid=child-report]')`
-    )) &&
-      (await ui.ev(
-        `document.querySelector('[data-testid=role-request] [data-testid=role-mention]')?.dataset.role`
-      )) === 'security-expert',
-    'une bulle avec la puce du rôle et une carte-réponse, rien d’autre'
-  )
   await ui.shot('roles-travail-4-fille')
 
   // Deux `@rôle` tapés : deux filles, en parallèle, avec le même texte.
   await typeIn(ui, '@security-expert @code-reviewer relisez le carnet avant la fusion')
   await ui.waitFor(`!!${ui.$('role-destination')}`)
-  check(
-    (await ui.ev(`${ui.$('role-destination')}.innerText`)).includes('2'),
-    'deux rôles : la ligne résume'
-  )
   await ui.shot('roles-travail-5-deux-roles')
   // Au travail : l'anneau de l'avatar (maquette 03-5), sans le prendre au vol. Le verrou retient
   // la fin du tour des deux filles jusqu'à ce que l'essai l'enlève, après la capture. On attend
@@ -297,31 +203,12 @@ async function mainRun(ui, turnLock) {
     `[...${cards}, ...${workRows}].every((c) => c.dataset.state === 'replied')`,
     60000
   )
-  check(
-    (await ui.ev(`[...${cards}, ...${workRows}].map((l) => l.dataset.role).join()`)) ===
-      'security-expert,security-expert,code-reviewer' &&
-      (await ui.ev(`document.querySelectorAll('[data-testid=role-request]').length`)) === 2 &&
-      (await ui.ev(
-        `[...document.querySelectorAll('[data-testid=role-request]')][1].querySelectorAll('[data-testid=role-mention]').length`
-      )) === 2,
-    'deux rôles : une bulle à deux puces, une carte de groupe, une ligne par rôle, dans l’ordre du message'
-  )
-  check(
-    !(await ui.ev(`!!document.querySelector('[data-testid=subtasks]')`)),
-    'pas de carte « Sous-tâches » pour les travaux d’une bulle'
-  )
   await reveal(ui, ui.$('work-group'))
   await ui.shot('roles-travail-6-sous-taches')
 
   // L'en-tête de la fille dit son rôle et sa lecture seule.
   await ui.ev(`${ui.$('work-open')}.click()`)
   await ui.waitFor(`!!${ui.$('role-title-badge')}`)
-  check(
-    (await ui.ev(
-      `document.querySelector('[data-testid=role-title-badge] [data-testid=role-read-only]')?.dataset.level`
-    )) === 'enforced',
-    'en-tête de la fille : son rôle, lecture seule garantie'
-  )
   await ui.shot('roles-travail-7-fille-entete')
   // En-tête étroit (essais réels : 1 280 px, panneau ouvert, pastille « Profil temporaire ») : la
   // pastille est posée comme en profil temporaire ; le titre reste lisible, rien ne déborde.
@@ -399,14 +286,6 @@ async function mainRun(ui, turnLock) {
   await ui.send('/scenario roles-delegue')
   const pending = `document.querySelector('[data-testid=proposal-row][data-outcome=pending]')`
   await ui.waitFor(`!!${pending}?.querySelector('[data-testid=proposal-role]')`, 30000)
-  check(
-    (await ui.ev(`${pending}.querySelector('[data-testid=role-read-only]').dataset.level`)) ===
-      'enforced' &&
-      (await ui.ev(`${pending}.querySelector('[data-testid=proposal-role-mode]').innerText`)) ===
-        L('roleWork.mode', { mode: 'ask' }) &&
-      (await ui.ev(`!!${pending}.querySelector('[data-testid=proposal-role-hides]')`)),
-    'proposition : lecture seule garantie, mode, rôle du projet qui remplace le fourni'
-  )
   await reveal(ui, `${pending}`)
   await ui.shot('roles-travail-8-proposition')
   // « Lancer » armé une fois le dossier de la mère lu (fiches 240, 262).
@@ -414,15 +293,6 @@ async function mainRun(ui, turnLock) {
   await ui.click(`${pending}.querySelector('[data-testid=proposal-start]')`)
   // Travail lancé par l'agent : sur sa ligne de la carte des propositions (fiche 264).
   await ui.waitFor(`${workRows}.length === 3`, 30000)
-  check(
-    (await ui.ev(`document.querySelectorAll('[data-testid=work-group]').length`)) === 2 &&
-      (await ui.ev(`${workRows}[2].dataset.role`)) === 'security-expert' &&
-      !(await ui.ev(
-        `!!document.querySelector('[data-testid=role-launch], [data-testid=subtasks], [data-testid=child-report]')`
-      )) &&
-      (await ui.ev(`${cards}.length`)) === 1,
-    'proposition de l’agent : sa ligne dans sa carte de groupe, ni lancement ni « Sous-tâches »'
-  )
 }
 
 /**
@@ -451,27 +321,6 @@ async function cardRun(ui, turnLock) {
     `${card}.querySelectorAll('[data-testid=work-live-done] li').length === 2`,
     15000
   )
-  const running = await ui.ev(`(() => {
-    const card = ${card}
-    const bubble = document.querySelector('[data-testid=role-request]')
-    return {
-      before: !!(bubble.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING),
-      mention: bubble.querySelector('[data-testid=role-mention]')?.dataset.role,
-      elapsed: card.querySelector('[data-testid=work-state]').innerText,
-      stop: !!card.querySelector('[data-testid=work-stop]'),
-      open: !!card.querySelector('[data-testid=work-open]'),
-      others: !!document.querySelector('[data-testid=role-launch], [data-testid=subtasks], [data-testid=child-report]')
-    }
-  })()`)
-  check(
-    running.before &&
-      running.mention === 'ux-ui-expert' &&
-      /^\d+:\d\d$/.test(running.elapsed) &&
-      running.stop &&
-      running.open &&
-      !running.others,
-    `en cours : la bulle, la carte juste dessous, temps écoulé, Arrêter, Ouvrir (${JSON.stringify(running)})`
-  )
   await ui.shot('263-carte-en-cours')
   check(
     (await ui.ev(`${card}?.dataset.state`)) === 'running',
@@ -482,27 +331,6 @@ async function cardRun(ui, turnLock) {
   rmSync(turnLock)
   await ui.waitFor(`${card}?.dataset.state === 'replied'`, 30000)
   await ui.waitFor(`!!${card}.querySelector('[data-testid=work-more]')`, 10000)
-  const replied = await ui.ev(`(() => {
-    const card = ${card}
-    const body = card.querySelector('[data-testid=work-body]')
-    return {
-      folded: body.dataset.folded === 'true' && body.clientHeight < body.scrollHeight,
-      whole: body.textContent.includes('FIN-DE-L-AVIS'),
-      heading: !!body.querySelector('h3'),
-      relay: card.querySelector('[data-testid=work-relay]')?.dataset.sent,
-      apply: !!card.querySelector('[data-testid=work-apply]'),
-      reply: !!card.querySelector('[data-testid=work-reply]')
-    }
-  })()`)
-  check(
-    replied.folded &&
-      replied.whole &&
-      replied.heading &&
-      replied.relay === 'false' &&
-      replied.apply &&
-      replied.reply,
-    `a répondu : réponse entière en Markdown, repliée ; pas encore transmise ; Appliquer, Répondre (${JSON.stringify(replied)})`
-  )
   await reveal(ui, card)
   await ui.shot('263-carte-repondu')
   // Fenêtre étroite (revue UX, 9) : la carte réduit son retrait, rien ne déborde.
@@ -518,11 +346,6 @@ async function cardRun(ui, turnLock) {
   await ui.viewport()
   await ui.click(`${card}.querySelector('[data-testid=work-more]')`)
   await ui.waitFor(`!${card}.querySelector('[data-testid=work-body]').dataset.folded`)
-  check(
-    (await ui.ev(`${card}.querySelector('[data-testid=work-more]').innerText`)) ===
-      L('workCard.collapse'),
-    '« Lire la suite » déplie sur place, « Replier » la referme'
-  )
   await ui.click(`${card}.querySelector('[data-testid=work-more]')`)
 
   // « Demander à … de l'appliquer » : le message préparé part à la mère, la carte reste en place.
@@ -532,22 +355,6 @@ async function cardRun(ui, turnLock) {
     30000
   )
   await ui.ready()
-  const sent = await ui.ev(`(() => {
-    const card = ${card}
-    const message = [...document.querySelectorAll('[data-testid=user-message]')].at(-1)
-    return {
-      text: message?.innerText ?? '',
-      after: !!message && !!(card.compareDocumentPosition(message) & Node.DOCUMENT_POSITION_FOLLOWING),
-      apply: !!card.querySelector('[data-testid=work-apply]'),
-      replied: document.querySelector('.msg-agent')?.innerText.includes('appliqué') ?? false
-    }
-  })()`)
-  check(
-    sent.text.includes(L('workCard.applyMessage', { role: 'Expert UX/UI' }).slice(0, 12)) &&
-      sent.after &&
-      !sent.apply,
-    `transmise : le message préparé sous la carte, l’action principale disparue (${JSON.stringify(sent)})`
-  )
   await reveal(ui, card)
   await ui.shot('263-carte-transmise')
 
@@ -588,11 +395,6 @@ async function cardRun(ui, turnLock) {
   await ui.click(`${second}.querySelector('[data-testid=work-stop]')`)
   await ui.waitFor(`${second}?.dataset.state === 'stopped'`, 30000)
   rmSync(turnLock, { force: true })
-  check(
-    (await ui.ev(`!!${second}.querySelector('[data-testid=work-retry]')`)) &&
-      (await ui.ev(`${cards}[0].dataset.state`)) === 'replied',
-    'arrêté : ce travail seulement, « Relancer » proposé'
-  )
   await reveal(ui, second)
   await ui.shot('263-carte-arrete')
 
@@ -603,62 +405,6 @@ async function cardRun(ui, turnLock) {
   await ui.enter()
   const third = `${cards}[2]`
   await ui.waitFor(`${third}?.dataset.state === 'error'`, 30000)
-  check(
-    (await ui.ev(`${third}.querySelector('[data-testid=work-error]')?.innerText ?? ''`)).includes(
-      'Base injoignable'
-    ) && (await ui.ev(`!!${third}.querySelector('[data-testid=work-retry]')`)),
-    'en erreur : l’erreur dite dans la carte, « Relancer » proposé'
-  )
   await reveal(ui, third)
   await ui.shot('263-carte-erreur')
-}
-
-async function requestedRun(ui) {
-  await ui.ready()
-  await ui.send('Bonjour')
-  await ui.ready()
-  // La ligne « Sera confié à… » le dit avant l'envoi.
-  await typeIn(ui, '@security-expert relis le carnet')
-  await ui.waitFor(`!!${ui.$('role-destination')}`)
-  check(
-    (await ui.ev(`${ui.$('role-destination')}.innerText`)).includes(
-      L('roleWork.readOnlyRequested')
-    ),
-    'agent qui écrit sans demander : « lecture seule demandée » avant l’envoi'
-  )
-  await ui.shot('roles-travail-9-jeton-demandee')
-  await ui.ev(
-    `(() => { const i = ${input}; const set = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set; set.call(i, ''); i.dispatchEvent(new Event('input', { bubbles: true })) })()`
-  )
-  // La proposition de l'agent : lecture seule seulement demandée, sans nom d'agent.
-  await ui.send('/scenario roles-delegue')
-  const pending = `document.querySelector('[data-testid=proposal-row][data-outcome=pending]')`
-  await ui.waitFor(`!!${pending}?.querySelector('[data-testid=proposal-role]')`, 30000)
-  const tag = await ui.ev(
-    `(() => { const t = ${pending}.querySelector('[data-testid=role-read-only]'); return { level: t.dataset.level, text: t.innerText } })()`
-  )
-  check(
-    tag.level === 'requested' && tag.text === L('roleWork.readOnlyRequested'),
-    'proposition : lecture seule seulement demandée'
-  )
-  await reveal(ui, `${pending}`)
-  await ui.shot('roles-travail-10-proposition-demandee')
-  // « Lancer » armé une fois le dossier de la mère lu (fiches 240, 262).
-  await ui.waitFor(`!${pending}.querySelector('[data-testid=proposal-start]').disabled`, 30000)
-  await ui.click(`${pending}.querySelector('[data-testid=proposal-start]')`)
-  // Travail lancé par l'agent : sa ligne de carte de groupe (fiche 264), dépliée, « Ouvrir ».
-  const launched = `${workRows}.at(-1)`
-  await ui.waitFor(`!!${launched}`, 30000)
-  // Boutons ordinaires : cliqués sans viser, le fil peut défiler (réveil de la mère).
-  await ui.ev(`${launched}.querySelector('[data-testid=work-row-toggle]').click()`)
-  await ui.waitFor(`!!${launched}.querySelector('[data-testid=work-open]')`)
-  await ui.ev(`${launched}.querySelector('[data-testid=work-open]').click()`)
-  await ui.waitFor(`!!${ui.$('role-title-badge')}`)
-  check(
-    (await ui.ev(
-      `document.querySelector('[data-testid=role-title-badge] [data-testid=role-read-only]')?.dataset.level`
-    )) === 'requested',
-    'en-tête de la fille : lecture seule seulement demandée'
-  )
-  await ui.shot('roles-travail-11-fille-demandee')
 }

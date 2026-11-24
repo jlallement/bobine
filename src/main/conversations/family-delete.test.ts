@@ -3,7 +3,7 @@
  * deviennent ordinaires ; aucun envoi vers une conversation partie ne lève.
  */
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { t } from 'i18next'
@@ -11,6 +11,8 @@ import { describe, expect, it, vi } from 'vitest'
 import type { TranscriptItem } from '@shared/transcript'
 import { MOCK_AGENT_ENTRY } from '../../mock-agent/testing.mts'
 import type { AgentProfile } from '../agent/profiles'
+import { WorktreeCycle } from '../changes/worktree-cycle'
+import { worktreeHandlers, type WorktreeCycleDeps } from '../changes/worktree-ipc'
 import { Worktrees } from '../changes/worktrees'
 import { gitCommand, queuedGit } from '../git/git-queue'
 import { ChildConversations } from './children'
@@ -41,7 +43,10 @@ function environment(dirs?: { root: string; repo: string }) {
     env: {}
   })
   const holder: { children?: ChildConversations } = {}
+  // La même corbeille que l'app donne au gestionnaire et aux canaux (index.ts).
+  const trash = new ConversationTrash(join(root, 'conversations'))
   const manager = new ConversationManager({
+    trash,
     profiles: [
       mock('echo', 'echo'),
       // Commence à répondre puis attend Stop : une fille « au travail ».
@@ -89,7 +94,19 @@ function environment(dirs?: { root: string; repo: string }) {
     JSON.parse(
       readFileSync(join(root, 'conversations', 'index.json'), 'utf8')
     ) as ConversationRecord[]
-  return { root, repo, manager, children: module, waitFor, items, listed, mother, child, index }
+  return {
+    root,
+    repo,
+    manager,
+    trash,
+    children: module,
+    waitFor,
+    items,
+    listed,
+    mother,
+    child,
+    index
+  }
 }
 
 const notices = (items: TranscriptItem[]) =>
@@ -361,5 +378,73 @@ describe('« Supprimer aussi chez… » d’une famille (fiche 228)', () => {
       ['f2', { fromAgent: false, removeWorktree: false, deletedWith: 'm' }],
       ['m', { fromAgent: false }]
     ])
+  })
+})
+
+describe('worktrees des travaux supprimés puis restaurés (chasse rc.5, perte de données)', () => {
+  /** Réglages › Données › Worktrees orphelins, par les vrais canaux du main. */
+  function orphanChannels(env: ReturnType<typeof environment>) {
+    const deps = {
+      cycle: new WorktreeCycle(gitCommand),
+      conversations: env.manager,
+      worktrees: new Worktrees(gitCommand),
+      recentWorkspaces: () => [env.repo],
+      trashed: () => env.trash.worktrees()
+    } as unknown as WorktreeCycleDeps
+    const handlers = worktreeHandlers(deps)
+    return {
+      listed: async () => (await handlers['worktree:orphans']()).map((o) => o.path),
+      clean: (orphan: { root: string; path: string; branch: string }) =>
+        handlers['worktree:removeOrphan'](orphan)
+    }
+  }
+
+  it('jamais orphelin tant que sa conversation existe, corbeille comprise ; « Nettoyer » refusé', async () => {
+    const env = environment()
+    const channels = orphanChannels(env)
+    const mother = await env.mother()
+    const work = await env.child(mother, 'Importer les données')
+    const worktree = env.manager.worktreeOf(work)?.worktree
+    if (!worktree) throw new Error('travail sans worktree')
+    // Du travail non commité : ce que « Nettoyer » détruirait.
+    const draft = join(worktree.path, 'brouillon.md')
+    writeFileSync(draft, 'en cours\n')
+    const orphan = { root: worktree.root, path: worktree.path, branch: worktree.branch }
+    const refused = t('worktrees.orphanHeld', { path: worktree.path })
+    const kept = () => {
+      expect(existsSync(draft)).toBe(true)
+      expect(
+        execFileSync('git', ['branch', '--list', worktree.branch], { cwd: env.repo }).toString()
+      ).not.toBe('')
+    }
+
+    // Conversation de l'historique.
+    expect(await channels.listed()).toEqual([])
+    await expect(channels.clean(orphan)).rejects.toThrow(refused)
+    kept()
+
+    // Mère et travaux à la corbeille, worktrees gardés (ce que promet la boîte de suppression).
+    await deleteConversation(env.manager, mother, { children: 'delete', fromAgent: false })
+    expect(env.listed(work)).toBeUndefined()
+    expect(await channels.listed()).toEqual([])
+    await expect(channels.clean(orphan)).rejects.toThrow(refused)
+    kept()
+
+    // Restaurée avec sa mère : une liste périmée qui la désignerait encore est refusée.
+    env.manager.restoreFromTrash(mother)
+    expect(env.listed(work)).toBeDefined()
+    expect(await channels.listed()).toEqual([])
+    await expect(channels.clean(orphan)).rejects.toThrow(refused)
+    kept()
+
+    // Effacée pour de bon de la corbeille : alors seulement, orphelin, et « Nettoyer » le supprime.
+    await env.manager.delete(work, { fromAgent: false })
+    expect(await channels.listed()).toEqual([])
+    env.trash.erase(work)
+    expect(await channels.listed()).toEqual([worktree.path])
+    expect(await channels.clean(orphan)).toEqual([])
+    expect(existsSync(worktree.path)).toBe(false)
+    await env.manager.settled()
+    env.manager.stopAll()
   })
 })

@@ -4,7 +4,7 @@ What changes for you, version by version. Shown in Settings › About.
 
 ## Next version
 
-### Fixed
+### Fixes
 
 - After clicking a link to a file that no longer exists, “File not found” no longer shows twice
   (the bubble plus a tooltip on top of it) when the mouse stays put.
@@ -28,6 +28,34 @@ What changes for you, version by version. Shown in Settings › About.
   code, a “File not found” bubble shows under it for a few seconds (hovering says it again), with
   no red notice in the conversation; if the file comes back, so does the link.
 - iOS Simulator: the agent also sees empty, unnamed text fields and can tap them to type.
+## 1.0.0-rc.5 — November 24, 2026
+
+### Fixes
+
+- Settings › Data › Orphan worktrees: the worktree of a conversation restored from the trash (or
+  still in the trash) is no longer listed, and “Clean up” can no longer delete it along with its
+  uncommitted work. Only a conversation erased for good from the trash leaves its worktree
+  orphaned; the list now updates by itself.
+- Windows: a scheduled task in a folder such as `C:\Users\…\project` is saved and runs; it was
+  refused, or dropped when the list was read back.
+- Built-in browser: a new tab that never finishes opening no longer blocks the agent forever;
+  after 20 seconds, the agent is told the page did not finish loading and carries on, and the tab
+  can still be used and reloaded.
+- Built-in browser: a click or keystroke from the agent right after a page opens, or in a tab the
+  panel is not showing, is no longer silently lost; the agent waits for the page to be displayed.
+- Several pieces of work proposed at once: the card always lists them in the order the agent
+  proposed them, the same every time, and a line already shown no longer changes place.
+- Outline of a long conversation: at the very bottom of the thread, the last message is the one
+  highlighted, even when the last exchanges are short.
+- **Stop** on a child conversation that was just started (its agent still starting) now stops
+  it: the turn no longer runs to the end.
+- Worktree setup awaiting approval: the card no longer moves under the pointer while the reply
+  is written below it, so “Allow” is no longer missed.
+- An existing empty file rewritten by the agent: Changes › Conversation no longer marks it
+  “created” (its tool card already said it was edited), and **Revert this change** or **Branch from
+  this message** now leave it empty instead of deleting it.
+- Image annotation: **Esc** while typing a text now discards only that text; the annotation stays
+  open (it used to close entirely). Outside text entry, Esc closes it as before.
 
 ## 1.0.0-rc.4 — November 23, 2026
 

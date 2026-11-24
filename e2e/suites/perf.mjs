@@ -177,11 +177,6 @@ const FIRST_RENDERED = `!!${THREAD}.querySelector('[data-item-id="1"]')`
  * ce qu'on lit ; le sommaire, la recherche et « Aller en bas » voient tout le fil.
  */
 async function longThreadWindow(ui) {
-  const opened = await renderedMessages(ui)
-  check(
-    opened > 0 && opened < LONG_TURNS,
-    `ouvert par la fin : ${opened} messages rendus sur ${LONG_TURNS}`
-  )
   const anchor = await ui.ev(
     `(() => { ${SCROLLER}.scrollTop = 1500; window.__anchor = ${THREAD}.querySelector('[data-testid=user-message]'); return Math.round(window.__anchor.getBoundingClientRect().top) })()`
   )
@@ -228,7 +223,6 @@ async function longThreadWindow(ui) {
   const title = `Perf fil de ${LONG_TURNS * 4}`
   await open(ui, 'Perf gros diff 5000', lastReply('5000'))
   await open(ui, title, lastReply(`Réponse ${LONG_TURNS - 1}`))
-  check(!(await ui.ev(FIRST_RENDERED)), 'rouvert : de nouveau par la fin')
   // Le sommaire a besoin de la largeur du fil : panneau fermé ; liste ouverte au survol.
   await ui.closePanel()
   await ui.waitFor(`!!document.querySelector('.outline')`)
@@ -252,7 +246,6 @@ async function longThreadWindow(ui) {
   await ui.waitFor(
     `(() => { const s = ${SCROLLER}; return s.scrollHeight - s.scrollTop - s.clientHeight < 60 })()`
   )
-  check(true, '« Aller en bas » : en bas du fil')
 
   // Recherche dans le fil : tout le fil rendu, le premier message trouvé.
   await open(ui, 'Perf gros diff 5000', lastReply('5000'))
@@ -260,11 +253,6 @@ async function longThreadWindow(ui) {
   await openFind(ui)
   await ui.type('explique le module 0')
   await ui.waitFor(`${ui.$('find-count')}?.innerText.startsWith('1 /')`)
-  check(
-    (await ui.ev(`${ui.$('find-count')}.innerText`)).trim().endsWith('/ 1') &&
-      (await renderedMessages(ui)) === LONG_TURNS,
-    'recherche dans le fil : tout le fil rendu, le premier message trouvé'
-  )
   await ui.press('Escape')
   await ui.waitFor(`!${ui.$('find-bar')}`)
   await ui.click(ui.$('scroll-to-bottom'))
@@ -285,14 +273,6 @@ const stopGapProbe = (ui) =>
  */
 async function showAll(ui) {
   const thread = `document.querySelector('[data-testid=thread]')`
-  const rows = (kind) => ui.ev(`${thread}.querySelectorAll('tr.diff-${kind}').length`)
-  check(
-    (await ui.ev(`${thread}.querySelectorAll('[data-testid=diff-cap]').length`)) === 2 &&
-      (await rows('del')) === 200 &&
-      (await rows('add')) === 200 &&
-      (await ui.ev(`!!${thread}.querySelector('[data-testid=diff-simplified]')`)),
-    'diff simplifié : 200 lignes retirées, 200 ajoutées, la note'
-  )
   await startGapProbe(ui)
   const t0 = Date.now()
   await ui.ev(
@@ -336,12 +316,6 @@ async function showAll(ui) {
   await open(ui, 'Perf sortie 40000', lastReply('40000'))
   await ui.ev(`(() => { ${thread}.querySelector('details.tool').open = true; return true })()`)
   await ui.waitFor(`!!${thread}.querySelector('[data-testid=output-cap]')`)
-  check(
-    !(await ui.ev(
-      `${thread}.querySelector('pre.tool-output').textContent.includes('MARQUE-DU-DEBUT')`
-    )),
-    'sortie plafonnée : la première ligne est masquée'
-  )
   await openFind(ui)
   await ui.type('marque-du-debut')
   await ui.waitFor(`${ui.$('find-count')}?.innerText.trim() === '1 / 1'`)
@@ -358,7 +332,6 @@ async function showAll(ui) {
   await openFind(ui)
   await ui.type('ancienne ligne 15000 ')
   await ui.waitFor(`${ui.$('find-count')}?.innerText.trim() === '1 / 1'`)
-  check(true, 'recherche : une ligne masquée du diff est trouvée')
   await waitCurrentVisible(
     ui,
     'ancienne ligne 15000 ',

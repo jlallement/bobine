@@ -329,6 +329,11 @@ export const NEUTRAL_ENV = {
   BOBINE_LANG: LANG,
   // L'agent factice parle la même langue (fiche 167) : ses textes ne sont pas traduits par l'app.
   MOCK_AGENT_LANG: LANG,
+  // Texte de l'agent factice diffusé à 5 ms le morceau au lieu de 40 (fiche 279) : le scénario
+  // `echo` rediffuse tout le contexte joint par l'app (jusqu'à 700 mots, 10 s par tour). Les
+  // pauses des scénarios gardent le délai de base : les fenêtres « en cours » ne changent pas.
+  // Une suite qui a besoin d'une diffusion lente le redit dans son environnement.
+  MOCK_AGENT_CHUNK_MS: '5',
   // Fenêtre montrée sans prendre le focus de la machine (fiche 106) : l'utilisateur continue de
   // travailler à côté, ses frappes ne tombent pas dans l'app d'essai.
   BOBINE_SHOW_INACTIVE: '1',
@@ -352,6 +357,32 @@ export const NEUTRAL_ENV = {
  * suivants. L'app packagée et ses réglages n'en savent rien.
  */
 export const APPKIT_ARGS = ['-ApplePersistenceIgnoreState', 'YES']
+
+/**
+ * Attente d'une page posée (voir `settled` dans `withApp`) : les animations qui finissent dans la
+ * demi-seconde (fondu, menu qui s'ouvre, transition) sont terminées, puis deux images. Les plus
+ * longues (avis qui s'efface en quelques secondes, décor) et les animations sans fin ne sont pas
+ * attendues : une capture ne les attendait pas non plus. Fenêtre cachée : aucune image n'arrive,
+ * chacune est bornée à 250 ms.
+ */
+const SETTLED = `(async () => {
+  const moving = document.getAnimations().filter((a) => {
+    if (a.playState !== 'running') return false
+    const left = a.effect?.getComputedTiming().endTime - (Number(a.currentTime) || 0)
+    return Number.isFinite(left) && left <= 500
+  })
+  await Promise.race([
+    Promise.all(moving.map((a) => a.finished.catch(() => {}))),
+    new Promise((r) => setTimeout(r, 1000))
+  ])
+  for (let i = 0; i < 2; i++) {
+    await new Promise((r) => {
+      setTimeout(r, 250)
+      requestAnimationFrame(() => r())
+    })
+  }
+  return true
+})()`
 
 /** Lance l'app. `keep` : réutilise / conserve ce dossier de données (pour simuler un redémarrage). */
 export async function withApp(
@@ -509,6 +540,13 @@ export async function withApp(
     /** Une image du renderer : les évènements envoyés avant sont traités (fiche 115). */
     const frame = () => ev(`new Promise((r) => requestAnimationFrame(() => r(true)))`)
     /**
+     * Page posée avant une capture (fiche 279, au lieu d'un quart de seconde fixe) : les animations
+     * courtes en cours terminées, puis deux images rendues (`SETTLED`).
+     */
+    const settled = () => ev(SETTLED)
+    /** Largeur de la fenêtre avant toute émulation (`ui.viewport`). */
+    let naturalWidth
+    /**
      * Centre d'un élément amené dans la partie visible de son conteneur, et immobile : une boîte de
      * dialogue ou un menu qui s'ouvre encore (animation) déplacerait la cible sous le pointeur.
      */
@@ -558,6 +596,55 @@ export async function withApp(
      */
     const inspected = extraArgs.some((arg) => String(arg).startsWith('--inspect'))
     let main
+    /**
+     * État réel des pages du navigateur intégré, joint aux échecs (macOS CI 2026-11-24 : onglet neuf
+     * resté « en chargement », cause non établie) : processus de rendu lancé (`pid`), page validée
+     * ou non (`url`), réponse attendue, débogueur attaché (`cdp-tab.ts`, `whenReady`). Les pages
+     * des fenêtres sont écartées par leur `id` : celles d'un `WebContentsView` (onglets) ont aussi le
+     * type `window` (relevé sur Electron 45, fiche 250), le filtre par type les cachait toutes.
+     */
+    const mainPages = async () => {
+      try {
+        main ??= await mainProcess()
+        const found = await main.evaluate(`(() => {
+          const { BrowserWindow, webContents } = require('electron')
+          const windows = BrowserWindow.getAllWindows()
+          const own = new Set(windows.map((w) => w.webContents.id))
+          const shown = new Map()
+          for (const w of windows) {
+            for (const v of w.contentView.children) if (v.webContents) shown.set(v.webContents.id, v.getVisible())
+          }
+          const pages = webContents.getAllWebContents().filter((w) => !own.has(w.id)).map((w) => ({ id: w.id, type: w.getType(), url: w.getURL(), title: w.getTitle(), loading: w.isLoading(), waitingForResponse: w.isWaitingForResponse(), crashed: w.isCrashed(), pid: w.getOSProcessId(), debugger: w.debugger.isAttached(), viewVisible: shown.get(w.id), backgroundThrottling: w.getBackgroundThrottling() }))
+          return { pages, windowPids: windows.map((w) => w.webContents.getOSProcessId()) }
+        })()`)
+        const pages = found?.pages ?? []
+        if (!pages.length) return '(aucune)'
+        // Priorité des processus de rendu des onglets, à côté de celle des fenêtres (macOS : un
+        // rendu caché peut passer en arrière-plan, CPU et disque bridés) : piste de la page cachée
+        // qui ne finit pas de charger sur une VM chargée (fiche 250).
+        const pids = [...pages.map((p) => p.pid), ...(found?.windowPids ?? [])].filter(
+          (pid) => pid > 0
+        )
+        let priorities = ''
+        try {
+          if (pids.length) {
+            priorities = execFileSync('ps', ['-o', 'pid=,pri=,stat=,%cpu=', '-p', pids.join(',')], {
+              encoding: 'utf8'
+            })
+          }
+        } catch (error) {
+          priorities = `(ps illisible : ${error.message})`
+        }
+        return [
+          ...pages.map((p) => JSON.stringify(p)),
+          priorities.trim() && `ps (pid pri stat %cpu) :\n${priorities.trim()}`
+        ]
+          .filter(Boolean)
+          .join('\n')
+      } catch (error) {
+        return `(illisible : ${error.message})`
+      }
+    }
     const withNativeViews = async (png) => {
       if (!inspected) return png
       main ??= await mainProcess()
@@ -655,7 +742,7 @@ export async function withApp(
       ready: () => waitFor(`!!document.querySelector('${AGENT_DOT}.ready')`),
       reveal,
       shot: async (name) => {
-        await sleep(250)
+        await settled()
         const r = await cdp('Page.captureScreenshot', { format: 'png' })
         const png = await withNativeViews(r.result.data)
         writeFileSync(captureFile(name, scheme, 'png'), Buffer.from(png, 'base64'))
@@ -758,7 +845,9 @@ export async function withApp(
        */
       media: async (features = {}) => {
         await cdp('Emulation.setEmulatedMedia', { features: mediaFeatures(scheme, features) })
-        await sleep(150)
+        // Styles recalculés au rendu des deux images suivantes (fiche 279, au lieu de 150 ms fixes).
+        await frame()
+        await frame()
       },
       /**
        * Deux images rendues (fiche 250) : ce qui ne se met à jour qu'au rendu d'une image (lignes
@@ -770,6 +859,8 @@ export async function withApp(
         await frame()
       },
       viewport: async (width, height = 820) => {
+        // Largeur de la vraie fenêtre, relevée avant la première émulation : celle qui revient.
+        naturalWidth ??= await ev('innerWidth')
         if (width) {
           await cdp('Emulation.setDeviceMetricsOverride', {
             width,
@@ -778,7 +869,9 @@ export async function withApp(
             mobile: false
           })
         } else await cdp('Emulation.clearDeviceMetricsOverride')
-        await sleep(300)
+        // La page a pris sa nouvelle largeur (fiche 279, au lieu de 300 ms fixes) ; sans largeur,
+        // celle de la vraie fenêtre.
+        await waitFor(`innerWidth === ${width || naturalWidth}`, 5000)
         // Deux images rendues à la nouvelle taille (fiche 250) : les `ResizeObserver` de la page
         // (repli de la barre de saisie…) ne passent qu'au rendu d'une image, et une machine chargée
         // n'en produit parfois aucune en 300 ms (runner macOS de GitHub).
@@ -953,7 +1046,8 @@ export async function withApp(
           [
             `--- Texte de la fenêtre ---\n${text ?? ''}`,
             `--- Console du renderer (${consoleLines.length} dernières lignes) ---\n${consoleLines.join('\n')}`,
-            `--- Sortie de l'app (journal du main) ---\n${output}`
+            `--- Sortie de l'app (journal du main) ---\n${output}`,
+            ...(inspected ? [`--- Pages du main (hors fenêtres) ---\n${await mainPages()}`] : [])
           ].join('\n\n')
         )
       }
@@ -986,19 +1080,33 @@ export async function withApp(
     // ou le temps de son propre arrêt sur une machine chargée. On l'attend plus longtemps (10 s)
     // avant de supprimer le dossier qu'il utilise, sans échouer pour lui ; resté au-delà, il est
     // arrêté (il cite ce dossier jetable : c'est bien le nôtre).
+    //
+    // Restent seuls des processus de Chromium nés de l'app (`--type=`, service réseau…) : ils
+    // sortent d'eux-mêmes après elle, parfois au-delà de 3 s sur un runner chargé (macOS CI,
+    // `filles-tech-lead` 2026-11-23, `parcours-outils` 2026-11-24, fiche 250). Attendus 10 s en
+    // tout, comme crashpad ; encore là ensuite, l'essai échoue comme pour les autres.
     let survivors = processesUsing(userData)
-    for (let i = 0; i < 30 && survivors.some((line) => !isCrashpad(line)); i++) {
+    const lingering = () => survivors.filter((line) => !isCrashpad(line))
+    let waited = 0
+    for (; waited < 3000 && lingering().length > 0; waited += 100) {
       await sleep(100)
       survivors = processesUsing(userData)
     }
-    const ours = survivors.filter((line) => !isCrashpad(line))
+    while (waited < 10_000 && lingering().length > 0 && lingering().every(isChromiumHelper)) {
+      await sleep(100)
+      waited += 100
+      survivors = processesUsing(userData)
+    }
+    const ours = lingering()
     if (ours.length > 0 && !keep) {
       // Les nôtres (ils citent ce dossier jetable) : arrêtés, puis l'essai échoue en les nommant.
       killAll(ours)
       await sleep(200)
       await settleCrashpad(userData)
       removeUserData(userData)
-      throw new Error(`processus encore vivants 3 s après l'app :\n    ${ours.join('\n    ')}`)
+      throw new Error(
+        `processus encore vivants ${Math.round(waited / 1000)} s après l'app :\n    ${ours.join('\n    ')}`
+      )
     }
     if (!keep) await settleCrashpad(userData)
     if (!keep) removeUserData(userData)
@@ -1007,6 +1115,9 @@ export async function withApp(
 
 /** L'assistant de plantages d'Electron (voir la fin de `withApp`). */
 const isCrashpad = (line) => line.includes('chrome_crashpad_handler')
+
+/** Processus de Chromium lancé par Electron pour l'app (utilitaire, rendu, GPU) : pas par Bobine. */
+const isChromiumHelper = (line) => !isCrashpad(line) && /\s--type=[a-z-]+/.test(line)
 
 function killAll(lines) {
   for (const line of lines) {
@@ -1159,7 +1270,7 @@ export async function attachPage(part, scheme) {
       })
     },
     shot: async (name) => {
-      await sleep(250)
+      await ev(SETTLED)
       const r = await cdp('Page.captureScreenshot', { format: 'png' })
       writeFileSync(captureFile(name, scheme, 'png'), Buffer.from(r.result.data, 'base64'))
     },

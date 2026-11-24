@@ -521,6 +521,32 @@ describe('Mon activité (fiches 137 et 144)', () => {
     expect(screen.getAllByTestId('usage-model-row')[0]?.textContent).toContain('gratuit')
   })
 
+  // Remplace `e2e/suites/cout-connexion.mjs` n° 4 : la tuile compte les échanges sans coût.
+  it('échanges sans coût communiqué : la tuile du coût les compte, d’après les mêmes chiffres', async () => {
+    api['stats']?.mockImplementation(async (query: UsageQuery) => ({
+      ...STATS,
+      totals: { ...STATS.totals, costs: { USD: 0.5 }, turnsWithoutCost: 2 },
+      comparison: undefined,
+      byModel: [
+        {
+          key: 'opencode:openai/gpt-6.1-sol',
+          model: 'GPT-6.1 Sol',
+          profileId: 'opencode',
+          agentLabel: 'OpenCode',
+          turns: 5,
+          input: 1410,
+          output: 145,
+          turnsWithoutTokens: 0,
+          costs: { USD: 0.5 },
+          costTurns: { USD: 3 }
+        }
+      ],
+      query
+    }))
+    await shown()
+    expect(text('usage-kpi-cost')).toContain('2 échanges sans coût communiqué')
+  })
+
   it('période vide, journal non vide : chiffres à zéro, « — » plutôt que « non communiqué »', async () => {
     api['stats']?.mockImplementation(async (query: UsageQuery) => ({ ...EMPTY_STATS, query }))
     await shown()

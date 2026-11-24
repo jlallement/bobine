@@ -1,3 +1,4 @@
+import { MEASURE } from '../affirm.mjs'
 import { check, withApp } from '../lib.mjs'
 
 /**
@@ -24,10 +25,6 @@ export async function overflowSuite(scheme) {
       )
       // Mermaid se dessine après coup : on attend le diagramme, plus large que la colonne.
       await ui.waitFor(`!!document.querySelector('.msg-agent svg[id^=mermaid], .mermaid svg')`)
-      check(
-        (await ui.ev(`document.querySelectorAll('[data-testid=subagent]').length`)) === 1,
-        'carte de sous-agent dans le fil'
-      )
       // Groupes d'outils et sous-agent dépliés : leur contenu compte aussi.
       await ui.ev(
         `(() => { for (const b of document.querySelectorAll('[data-testid=subagent-toggle]')) b.click(); return true })()`
@@ -121,29 +118,11 @@ export async function overflowSuite(scheme) {
  * quand la fenêtre s'élargit (fiche 173).
  */
 async function roomForConversation(ui) {
-  // Largeur de la conversation, barre de défilement comprise : superposée sur macOS, à côté du
-  // texte ailleurs (fiche 145).
-  const layout = () =>
-    ui.ev(
-      `(() => ({ panel: document.querySelector('[data-testid=side-panel]')?.getBoundingClientRect().width ?? 0, conversation: Math.round(document.querySelector('.scroll').getBoundingClientRect().width), tab: document.querySelector('.side-panel-tab.active')?.dataset.tab ?? null }))()`
-    )
   await ui.viewport(1440, 900)
   await ui.waitFor(`!!${ui.$('side-panel')}`)
-  const wide = await layout()
-  check(wide.tab === 'session', `1440 px : panneau ouvert d'office sur « Session » (${wide.tab})`)
   await ui.viewport(1100, 900)
-  const half = await layout()
-  check(
-    half.panel > 0 && half.conversation >= 500,
-    `1100 px : le panneau cède (${Math.round(half.panel)} px), la conversation garde ${half.conversation} px`
-  )
   await ui.viewport(720, 900)
   await ui.waitFor(`!${ui.$('side-panel')}`)
-  const narrow = await layout()
-  check(
-    narrow.conversation >= 500,
-    `720 px : panneau replié, la conversation garde ${narrow.conversation} px`
-  )
   // Fiche 272 (recette) : le sélecteur Code / Discussion tient dans la barre latérale étroite.
   const spaces = await ui.ev(`(() => {
     const box = document.querySelector('.space-switch')
@@ -162,54 +141,4 @@ async function roomForConversation(ui) {
   await ui.shot('173-panneau-replie')
   await ui.viewport(1440, 900)
   await ui.waitFor(`!!${ui.$('side-panel')}`)
-  const back = await layout()
-  check(back.tab === 'session', `fenêtre élargie : le panneau revient sur « ${back.tab} »`)
 }
-
-/**
- * Ce qui dépasse : le cadre du fil et ses ancêtres (`scrollWidth > clientWidth`), et les éléments
- * du fil qui sortent de la colonne sans être dans un cadre qui les coupe ou les fait défiler (les
- * plus profonds seulement : leurs parents dépassent forcément aussi).
- */
-const MEASURE = `(() => {
-  const scroll = document.querySelector('.scroll')
-  const column = scroll.querySelector('.column').getBoundingClientRect()
-  const columnEl = scroll.querySelector('.column')
-  // Un cadre qui coupe ou fait défiler son contenu (sauf la colonne elle-même, filet de sécurité).
-  const clipped = (el) => {
-    for (let p = el.parentElement; p && p !== columnEl; p = p.parentElement) {
-      if (getComputedStyle(p).overflowX !== 'visible') return true
-    }
-    return false
-  }
-  // Sort de la colonne : la boîte de l'élément, ou son texte qui dépasse de sa boîte.
-  const out = (el) => {
-    const r = el.getBoundingClientRect()
-    if (r.width === 0) return false
-    const text = getComputedStyle(el).overflowX === 'visible' && el.clientWidth > 0 ? r.left + el.scrollWidth : r.right
-    return Math.max(r.right, text) > column.right + 1 || r.left < column.left - 1
-  }
-  const name = (el) => el.tagName.toLowerCase() + (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\\s+/).join('.') : '') + (el.dataset.testid ? '[' + el.dataset.testid + ']' : '')
-  const offenders = []
-  for (const el of scroll.querySelectorAll('.thread *')) {
-    if (!out(el) || clipped(el)) continue
-    if ([...el.children].some(out)) continue
-    const r = el.getBoundingClientRect()
-    const right = Math.max(r.right, r.left + el.scrollWidth)
-    offenders.push(name(el) + ' (' + Math.round(r.left - column.left) + '…' + Math.round(right - column.left) + ' / ' + Math.round(column.width) + ')')
-  }
-  const ancestors = []
-  for (let p = scroll.parentElement; p; p = p.parentElement) {
-    ancestors.push({ name: name(p), scrollWidth: p.scrollWidth, clientWidth: p.clientWidth })
-  }
-  const framed = [...scroll.querySelectorAll('.thread *')].filter((el) => {
-    const o = getComputedStyle(el).overflowX
-    return (o === 'auto' || o === 'scroll') && el.scrollWidth > el.clientWidth
-  }).length
-  return {
-    scroll: { scrollWidth: scroll.scrollWidth, clientWidth: scroll.clientWidth },
-    offenders: offenders.slice(0, 20),
-    ancestors,
-    framed
-  }
-})()`

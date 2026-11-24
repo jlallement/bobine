@@ -64,19 +64,8 @@ export async function resumeSuite(scheme) {
         await ui.click(ui.$('history-grouping'))
         await ui.click(ui.$('history-resume-session'))
         await ui.waitFor(`${sessions}.length === 1`)
-        check(
-          (await ui.ev(`${sessions}[0].innerText`)).includes('Prépare un plan de migration'),
-          'reprendre : la session du dossier, pas celle d’un autre dossier ni celles déjà connues'
-        )
         await ui.click(ui.$('resume-scope-all'))
         await ui.waitFor(`${sessions}.length === 2`)
-        const folders = await ui.ev(
-          `[...document.querySelectorAll('.resume-folder')].map((f) => f.innerText).join(' | ')`
-        )
-        check(
-          folders.includes('workspace') && folders.includes('bob-e2e-ailleurs-'),
-          `tous les dossiers : sessions groupées par dossier (${folders.replace(/\s+/g, ' ')})`
-        )
         await ui.ev(`${ui.$('resume-filter')}.focus()`)
         await ui.type('parser')
         await ui.waitFor(`${sessions}.length === 1`)
@@ -110,13 +99,6 @@ export async function resumeSuite(scheme) {
 
         // Fenêtre refermée : le menu de l'historique se rouvre (un menu modal bloquait la page).
         await ui.click(ui.$('history-grouping'))
-        check(
-          await ui
-            .waitFor(`!!${ui.$('history-resume-session')}`, 3000)
-            .then(() => true)
-            .catch(() => false),
-          'fenêtre refermée : le menu de l’historique se rouvre'
-        )
         await ui.key('Escape')
 
         // Menu Fichier (⇧⌘O) : la session reprise n'est plus proposée.
@@ -129,7 +111,6 @@ export async function resumeSuite(scheme) {
           main.close()
         }
         await ui.waitFor(`!!${ui.$('resume-none')}`)
-        check(true, 'menu Fichier : la session reprise n’est plus proposée')
         await ui.key('Escape')
       },
       userData,

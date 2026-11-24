@@ -155,6 +155,27 @@ export async function parcoursPannesSuite(scheme) {
           )
           await ui.shot('276-pannes-relance')
         })
+
+        await journee.step(
+          'une panne réseau passagère, puis la réponse',
+          async () => {
+            // Inventaire `network` n° 3 : « fetch failed » deux fois (reprises de l'app), puis le
+            // message passe, sans nouvelle bulle ni avis d'erreur.
+            const users = await userCount(ui)
+            const errors = await ui.ev(`${notices}.length`)
+            await ui.send('/scenario reseau-instable')
+            await ui.waitFor(`${ui.$('turn-retry')}?.dataset.attempt === '1'`, 10000)
+            await ui.waitFor(`!${ui.$('turn-retry')}`, 20000)
+            await ui.ready()
+            check(
+              (await ui.lastAgentText()).includes('Réseau revenu') &&
+                (await userCount(ui)) === users + 1 &&
+                (await ui.ev(`${notices}.length`)) === errors,
+              'réseau revenu : le message part, sans nouvelle bulle ni avis d’erreur'
+            )
+          },
+          { allow: [/fetch failed|ECONNRESET|Internal error/i] }
+        )
       },
       userData,
       'echo',

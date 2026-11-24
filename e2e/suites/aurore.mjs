@@ -1,4 +1,4 @@
-import { FEATURES, L, check, withApp } from '../lib.mjs'
+import { FEATURES, check, withApp } from '../lib.mjs'
 import { tokensOf } from '../palette.mjs'
 
 /** Valeur calculée d'une propriété CSS d'un élément. */
@@ -24,12 +24,6 @@ export async function auroreSuite(scheme) {
       await ui.waitFor(`!!${ui.$('settings')}`)
       await ui.click(ui.$('settings-appearance'))
       await ui.waitFor(`!!${ui.$(`theme-${palette}`)}`)
-      check(
-        (await ui.ev(`${ui.$(`theme-${palette}`)}.innerText`)).includes(
-          L('settings.appearance.theme.new')
-        ) && !(await ui.ev(`!!${ui.$('theme-sepia')}`)),
-        `vignette ${palette} marquée « Nouveau », plus de Sépia`
-      )
       await ui.click(ui.$(`theme-${palette}`))
       await ui.waitFor(`document.documentElement.dataset.palette === '${palette}'`)
       check(

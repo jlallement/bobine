@@ -10,29 +10,7 @@ export async function tablesSuite(scheme) {
     await ui.ready()
     const tables = `document.querySelectorAll('[data-testid=markdown-table]')`
     await ui.waitFor(`${tables}.length === 2`)
-    const style = await ui.ev(`(() => {
-      const [small] = ${tables}
-      const th = [...small.querySelectorAll('th')].map((c) => getComputedStyle(c).textAlign)
-      const td = getComputedStyle(small.querySelector('td'))
-      return { th, left: td.borderLeftWidth, bottom: td.borderBottomWidth }
-    })()`)
-    check(
-      style.th.join() === 'left,right,center,left',
-      `alignements Markdown respectés, à gauche par défaut (${style.th.join()})`
-    )
-    check(
-      style.left === '0px' && style.bottom === '1px',
-      'pas de grille : seulement des lignes horizontales'
-    )
-    const wide = await ui.ev(`(() => {
-      const wrap = ${tables}[1]
-      const column = wrap.closest('.markdown').clientWidth
-      return { wrap: wrap.clientWidth, column, scroll: wrap.scrollWidth }
-    })()`)
-    check(
-      wide.wrap <= wide.column,
-      `tableau large : reste dans le fil (${wide.wrap} ≤ ${wide.column} px), défile dans son cadre`
-    )
+    // Sans grille, tableau large qui reste dans le fil : mesurés dans `parcours-longue`.
     await ui.ev(`${tables}[0].scrollIntoView({ block: 'start' })`)
     await ui.shot('h0-tableaux')
 

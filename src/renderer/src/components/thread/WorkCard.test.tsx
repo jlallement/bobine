@@ -383,6 +383,16 @@ describe('bulle et carte-réponse (fiche 263)', () => {
     expect(facts).not.toContain('$')
   })
 
+  // Remplace `e2e/suites/filles.mjs` n° 5 : le coût en dollars de la fille, estimé, au pied.
+  it('coût en dollars de la fille : « ≈ » au pied de sa réponse', () => {
+    fakeAgent()
+    view(answered({ usage: usd(0.0125) }), info([child('a', ux)]))
+    const facts = (
+      within(screen.getByTestId('work-card')).getByTestId('work-facts').textContent ?? ''
+    ).replace(/[\u00a0\u202f]/g, ' ')
+    expect(facts).toContain('≈ 0,0125 $US')
+  })
+
   it('a répondu : la réponse entière, repliée, « Lire la suite » ; pied « heure · durée · gratuit »', () => {
     fakeAgent()
     overflowing()

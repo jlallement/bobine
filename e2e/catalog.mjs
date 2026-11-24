@@ -7,6 +7,10 @@
  * pour tout un dossier. Le fichier de la suite s'y ajoute toujours. Une suite sans `sources` est
  * jouée à chaque `--changed`. Un fichier de `GLOBAL_SOURCES` modifié fait jouer toutes les suites.
  * Une carte incomplète n'est pas grave : `pnpm e2e --if-needed` joue tout avant le push.
+ *
+ * Thèmes (ADR-0071) : chaque suite est jouée en clair ; en sombre seulement si elle a `dark: true`
+ * (un contrôle qui dépend du thème sombre, pas une simple capture), sauf en `--themes both` (nuit,
+ * `--if-needed`) ou quand un fichier de `THEME_SOURCES` est touché : le sombre partout.
  */
 
 const BOTH = ['light', 'dark']
@@ -70,6 +74,21 @@ export const GLOBAL_SOURCES = [
   'package.json',
   'pnpm-lock.yaml',
   'electron.vite.config.ts'
+]
+
+/**
+ * Fichiers de thème et de style (ADR-0071) : touché par `--changed`, l'un d'eux fait jouer le
+ * sombre à toutes les suites jouées, pas seulement à celles marquées `dark`.
+ */
+export const THEME_SOURCES = [
+  'src/renderer/**/*.css',
+  'src/shared/themes.ts',
+  'src/shared/theme-aurora.ts',
+  `${R}theme.ts`,
+  `${R}appearance.*`,
+  `${C}settings/Appearance*.tsx`,
+  'scripts/themes-css.mts',
+  'e2e/palette.mjs'
 ]
 
 /** Cartes d'outils de l'agent (permission, sortie, groupes). */
@@ -151,7 +170,13 @@ const REPLAY = [
 ]
 
 /** Parcours réels enchaînés (fiche 277) : leurs outils, la barre latérale, le fil. */
-const PARCOURS = ['e2e/parcours.mjs', `${C}sidebar/`, `${C}thread/`, `${R}useConversations.ts`]
+const PARCOURS = [
+  'e2e/parcours.mjs',
+  'e2e/affirm.mjs',
+  `${C}sidebar/`,
+  `${C}thread/`,
+  `${R}useConversations.ts`
+]
 
 /**
  * Suites, dans l'ordre de `pnpm e2e --jobs 1`. `run` : nom de la fonction exportée par le fichier.
@@ -184,6 +209,8 @@ export const SUITES = [
     file: 'composer.mjs',
     run: 'composerSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : Plan distinct de l'accent sur Nuit noire et Fjord nuit.
+    dark: true,
     sources: [
       `${C}composer/`,
       `${C}common/`,
@@ -210,14 +237,6 @@ export const SUITES = [
       `${C}sidebar/SidebarSection.tsx`,
       `${C}composer/UsageMeter.tsx`
     ]
-  },
-  {
-    // Relance après avoir quitté en plein tour : la conversation qui travaillait (fiche 243).
-    name: 'reprise',
-    file: 'reprise.mjs',
-    run: 'repriseSuite',
-    themes: BOTH,
-    sources: [...REPLAY, 'src/main/conversations/shown-at-launch.ts', 'src/main/quit-guard.ts']
   },
   {
     name: 'startup',
@@ -267,13 +286,6 @@ export const SUITES = [
       'src/main/mcp/ask-user-tool.ts',
       'src/main/agent/pending-requests.ts'
     ]
-  },
-  {
-    name: 'usage',
-    file: 'usage.mjs',
-    run: 'usageSuite',
-    themes: BOTH,
-    sources: [`${C}composer/UsageMeter.tsx`, 'src/shared/usage.ts']
   },
   {
     name: 'cout-connexion',
@@ -453,6 +465,8 @@ export const SUITES = [
     file: 'command-output.mjs',
     run: 'terminalSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : fond et vert ANSI de Nuit noire.
+    dark: true,
     sources: [
       ...TOOLS,
       `${C}thread/TerminalView.tsx`,
@@ -638,6 +652,8 @@ export const SUITES = [
     file: 'browser-annotate.mjs',
     run: 'browserAnnotateSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : épingle dessinée dans la page à l'accent du sombre.
+    dark: true,
     sources: [
       `${C}panel/BrowserTab.tsx`,
       `${C}panel/PageAnnotator.tsx`,
@@ -737,25 +753,6 @@ export const SUITES = [
       'src/main/android/',
       'src/shared/android.ts',
       'e2e/fixtures/android*'
-    ]
-  },
-  {
-    name: 'acp',
-    file: 'acp.mjs',
-    run: 'acpSuite',
-    themes: BOTH,
-    sources: [
-      `${C}panel/AcpTab.tsx`,
-      `${C}common/CopyButton.tsx`,
-      ...PANEL,
-      `${R}acp-view.ts`,
-      `${R}useAcpExchanges.ts`,
-      'src/main/agent/acp-exchanges.ts',
-      'src/main/agent/acp-exchanges-ipc.ts',
-      'src/main/agent/acp-log.ts',
-      'src/main/log-redact.ts',
-      'src/shared/acp-exchanges.ts',
-      'src/shared/panel.ts'
     ]
   },
   {
@@ -862,6 +859,8 @@ export const SUITES = [
     file: 'settings.mjs',
     run: 'settingsSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : fond de Fjord nuit ; menu ☰ opaque sur Aurore nuit hors macOS.
+    dark: true,
     sources: [
       `${C}settings/`,
       `${C}dialogs/SearchDialog.tsx`,
@@ -1197,36 +1196,6 @@ export const SUITES = [
     ]
   },
   {
-    // Filles en worktree et non commité de la mère (fiches 240, 262) : ligne discrète et
-    // « Changer… » (rôle, Tâches proposées), Entrée envoie sans elles, juste un avis, rappel.
-    name: 'filles-non-commite',
-    file: 'filles-non-commite.mjs',
-    run: 'fillesNonCommiteSuite',
-    themes: BOTH,
-    sources: [
-      `${C}thread/LaunchLine.tsx`,
-      `${R}launch-choice.ts`,
-      `${C}panel/CommitChooser.tsx`,
-      `${C}panel/CommitForm.tsx`,
-      `${R}commit-chooser.css`,
-      `${C}thread/ChildProposals.tsx`,
-      `${C}thread/Subtasks.tsx`,
-      `${C}thread/WorkGroup.tsx`,
-      `${C}thread/WorkCard.tsx`,
-      `${C}roles/`,
-      `${C}sidebar/ChildDialog.tsx`,
-      `${C}composer/Composer.tsx`,
-      `${R}useComposerRoles.ts`,
-      'src/shared/launch-folder.ts',
-      'src/shared/children.ts',
-      'src/main/conversations/children.ts',
-      'src/main/conversations/launch-folder.ts',
-      'src/main/roles/invoke.ts',
-      'src/main/mcp/children-tools.ts',
-      'src/mock-agent/scenarios-filles.mts'
-    ]
-  },
-  {
     // Repère en bas du fil (fiche 261, écran E) : un rôle répond hors de l'écran, « Voir ».
     name: 'repere',
     file: 'repere.mjs',
@@ -1248,21 +1217,6 @@ export const SUITES = [
       'src/shared/children.ts',
       'src/shared/role-request.ts',
       'src/mock-agent/scenarios-roles.mts'
-    ]
-  },
-  {
-    // Deux rôles de même icône, collisions de noms (fiche 268) : capture `268-deux-roles-meme-icone`.
-    name: 'roles-meme-icone',
-    file: 'roles-meme-icone.mjs',
-    run: 'rolesMemeIconeSuite',
-    themes: BOTH,
-    sources: [
-      `${C}roles/`,
-      `${R}roles/`,
-      `${R}roles.css`,
-      'src/shared/roles.ts',
-      'src/shared/roles-ipc.ts',
-      'src/main/roles/'
     ]
   },
   {
@@ -1588,27 +1542,6 @@ export const SUITES = [
     ]
   },
   {
-    name: 'providers',
-    file: 'providers.mjs',
-    run: 'providersSuite',
-    themes: BOTH,
-    sources: [
-      ...SETTINGS,
-      `${C}settings/ProvidersSettings.tsx`,
-      `${C}settings/NetworkSettings.tsx`,
-      `${C}settings/DiagnosticsSettings.tsx`,
-      ...AGENT_PAGES,
-      'src/main/agent-config/provider*.ts',
-      'src/main/agent-config/opencode-providers.ts',
-      'src/main/agent-config/network-env.ts',
-      'src/main/agent-config/api-keys.ts',
-      'src/main/shell-env.ts',
-      'src/main/diagnostics.ts',
-      'src/shared/providers.ts',
-      'e2e/fixtures/openai-compatible.mts'
-    ]
-  },
-  {
     // « Autoriser cette commande ? » : la commande entière avant d'accepter (0.11, M1) ; cartes
     // « commande » et « fichier » de la recette OpenCode (fiche 203) ; cartes à risque (fiche 211).
     name: 'autorisation-commande',
@@ -1689,32 +1622,13 @@ export const SUITES = [
     ]
   },
   {
-    name: 'touches',
-    file: 'touches.mjs',
-    run: 'touchesSuite',
-    themes: BOTH,
-    // Copie dans le presse-papiers de la machine, relu ensuite (comme `diagnostic`).
-    locks: ['presse-papiers'],
-    sources: [
-      `${C}common/CopyButton.tsx`,
-      `${C}composer/ComposerBar.tsx`,
-      `${C}composer/ComposerContext.tsx`,
-      `${C}sidebar/ConversationMenu.tsx`,
-      ...SETTINGS,
-      `${C}settings/ConversationSettings.tsx`,
-      `${C}settings/GeneralSettings.tsx`,
-      ...AGENT_PAGES,
-      ...APPEARANCE,
-      `${R}time.ts`,
-      'src/main/quit-guard.ts'
-    ]
-  },
-  {
     // Thème Aurore (fiche 226) : vignette, touches, verre, repli d'accessibilité de macOS.
     name: 'aurore',
     file: 'aurore.mjs',
     run: 'auroreSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : Aurore nuit : fond `--bg` aux jetons d'`auroraNight`.
+    dark: true,
     sources: [
       ...SETTINGS,
       ...APPEARANCE,
@@ -1728,6 +1642,8 @@ export const SUITES = [
     file: 'fun.mjs',
     run: 'funSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : fond de Nuit noire.
+    dark: true,
     sources: [
       ...SETTINGS,
       ...APPEARANCE,
@@ -1815,7 +1731,15 @@ export const SUITES = [
       'src/shared/subagent.ts'
     ]
   },
-  { name: 'tables', file: 'tables.mjs', run: 'tablesSuite', themes: BOTH, sources: [] },
+  {
+    name: 'tables',
+    file: 'tables.mjs',
+    run: 'tablesSuite',
+    themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : couleurs `hljs` aux jetons du sombre et de Nuit noire.
+    dark: true,
+    sources: []
+  },
   {
     // Fiche 145 (D9) : Inter et JetBrains Mono livrées, ligatures du code (Réglages › Apparence).
     name: 'polices',
@@ -1831,6 +1755,7 @@ export const SUITES = [
     themes: BOTH,
     // Fiche 173 : tout ce que le fil affiche peut déborder ; styles.css est déjà global.
     sources: [
+      'e2e/affirm.mjs',
       ...TOOLS,
       `${C}thread/SubagentsCard.tsx`,
       `${C}thread/MermaidBlock.tsx`,
@@ -1885,18 +1810,6 @@ export const SUITES = [
       'src/main/conversations/history-writer.ts',
       'src/main/scheduler/scheduler-ipc.ts',
       'src/shared/profile.ts'
-    ]
-  },
-  {
-    name: 'export',
-    file: 'export.mjs',
-    run: 'exportSuite',
-    themes: [null],
-    sources: [
-      `${C}settings/GeneralSettings.tsx`,
-      'src/main/conversations/backup.ts',
-      'src/main/dialogs.ts',
-      'src/shared/export.ts'
     ]
   },
   {
@@ -1970,40 +1883,6 @@ export const SUITES = [
     ]
   },
   {
-    // Fil (fiche 156) : durée du tour, copie d'un message, images, éditeur, « Où en était-on ? ».
-    name: 'fil',
-    file: 'fil.mjs',
-    run: 'filSuite',
-    themes: BOTH,
-    // Copie dans le presse-papiers de la machine, relu ensuite (comme `touches`).
-    locks: ['presse-papiers'],
-    sources: [
-      `${C}common/CopyButton.tsx`,
-      `${C}thread/MessageTime.tsx`,
-      `${C}thread/ImageZoom.tsx`,
-      `${C}thread/OpenInEditor.tsx`,
-      `${C}thread/ResumeCard.tsx`,
-      `${C}thread/ConversationScope.tsx`,
-      `${C}thread/FileLink.tsx`,
-      `${C}thread/DiffView.tsx`,
-      `${C}thread/ToolCall.tsx`,
-      `${C}settings/EditorRow.tsx`,
-      `${C}settings/GeneralSettings.tsx`,
-      `${R}useEditor.ts`,
-      `${R}thread-extras.css`,
-      `${R}time.ts`,
-      'src/main/editors/',
-      'src/main/images/',
-      'src/main/thread-ipc.ts',
-      'src/main/thread-ipc-electron.ts',
-      'src/shared/editors.ts',
-      'src/shared/images.ts',
-      'src/shared/resume-card.ts',
-      'src/shared/turn-duration.ts',
-      ...GIT
-    ]
-  },
-  {
     name: 'resume',
     file: 'resume.mjs',
     run: 'resumeSuite',
@@ -2022,24 +1901,6 @@ export const SUITES = [
       'src/main/agent-config/rules.ts',
       'src/main/agent-config/*-rules.ts',
       'src/shared/rules.ts'
-    ]
-  },
-  {
-    name: 'mentions',
-    file: 'mentions.mjs',
-    run: 'mentionsSuite',
-    themes: BOTH,
-    sources: [
-      `${C}composer/FileMenu.tsx`,
-      `${C}composer/ComposerAttachments.tsx`,
-      `${R}useMentions.ts`,
-      'src/shared/context-mentions.ts',
-      'src/main/terminal/terminal-context.ts',
-      'src/main/changes/git-context.ts',
-      'src/main/agent/prompt-content.ts',
-      'src/main/workspace-files.ts',
-      'src/main/agent-config/exclusions.ts',
-      'src/main/agent-config/bob-exclusions.ts'
     ]
   },
   {
@@ -2091,6 +1952,8 @@ export const SUITES = [
     file: 'mermaid.mjs',
     run: 'mermaidSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : diagramme redessiné aux couleurs de Nuit noire puis du sombre.
+    dark: true,
     sources: [`${C}thread/MermaidBlock.tsx`, `${R}mermaid-render.ts`, `${R}theme.ts`]
   },
   {
@@ -2125,25 +1988,6 @@ export const SUITES = [
       'src/main/menu.ts',
       'src/main/window-chrome.ts',
       'src/shared/shortcuts.ts'
-    ]
-  },
-  {
-    // Textes de Linux et de Windows (fiches 145, 229) : Réglages sans Mac, Finder ni Dock ; clé
-    // d'API en clair sous Linux sans trousseau (D4), dite.
-    name: 'textes-plateforme',
-    file: 'textes-plateforme.mjs',
-    run: 'textesPlateformeSuite',
-    themes: BOTH,
-    sources: [
-      'src/shared/i18n/system-texts.ts',
-      'src/shared/i18n/locales/',
-      'src/main/agent-config/api-keys.ts',
-      'src/main/agent-config/keychain-cipher.ts',
-      `${C}settings/ApiKeys.tsx`,
-      `${C}settings/AgentPage.tsx`,
-      `${C}settings/GeneralSettings.tsx`,
-      `${C}settings/NotificationsSettings.tsx`,
-      'src/main/platform.ts'
     ]
   },
   {
@@ -2192,25 +2036,6 @@ export const SUITES = [
     ]
   },
   {
-    // Astuces de Bobine (fiche 191) : aparté, contexte, réglage, relance.
-    name: 'astuces',
-    file: 'astuces.mjs',
-    run: 'tipsSuite',
-    themes: BOTH,
-    sources: [
-      `${C}tips/`,
-      `${R}useTips.ts`,
-      `${R}tips.css`,
-      `${C}settings/TipsRow.tsx`,
-      `${C}settings/GeneralSettings.tsx`,
-      `${C}composer/Composer.tsx`,
-      'src/shared/tips.ts',
-      'src/main/settings-store.ts',
-      'src/main/settings.ts',
-      'src/main/ipc.ts'
-    ]
-  },
-  {
     // Avis de nouvelle version (fiche 274) contre un faux serveur local.
     name: 'nouvelle-version',
     file: 'nouvelle-version.mjs',
@@ -2250,6 +2075,8 @@ export const SUITES = [
     file: 'pendant-tour.mjs',
     run: 'turnGuardsSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : couleur d'alerte du compteur aux jetons du sombre.
+    dark: true,
     sources: [
       `${C}thread/StalledNotice.tsx`,
       `${C}thread/CostCapCard.tsx`,
@@ -2321,6 +2148,11 @@ export const SUITES = [
       ...TOOLS,
       `${C}panel/`,
       `${C}composer/`,
+      // Rôle qui écrit, dossier modifié (étape 16, ancienne suite `filles-non-commite`).
+      `${R}launch-choice.ts`,
+      `${R}useComposerRoles.ts`,
+      'src/shared/launch-folder.ts',
+      'src/main/roles/invoke.ts',
       'src/main/approvals.ts',
       'src/main/conversations/'
     ]
@@ -2362,11 +2194,21 @@ export const SUITES = [
     file: 'parcours-outils.mjs',
     run: 'parcoursOutilsSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : sortie de commande aux jetons du sombre.
+    dark: true,
     sources: [
       ...PARCOURS,
       ...PANEL,
       ...APP_TOOLS,
       `${C}panel/`,
+      // `@terminal` (étape 1, ancienne suite `mentions`) et échanges ACP (étape 9, ancienne `acp`).
+      `${R}useMentions.ts`,
+      'src/shared/context-mentions.ts',
+      'src/main/agent/prompt-content.ts',
+      `${R}acp-view.ts`,
+      `${R}useAcpExchanges.ts`,
+      'src/main/agent/acp-exchanges*.ts',
+      'src/shared/acp-exchanges.ts',
       'src/main/quick-entry*.ts',
       'src/main/browser/',
       'src/main/terminal/',
@@ -2391,6 +2233,21 @@ export const SUITES = [
       'src/main/conversations/',
       'src/main/quit-guard.ts',
       'src/main/agent/'
+    ]
+  },
+  {
+    name: 'parcours-premier-lancement',
+    file: 'parcours-premier-lancement.mjs',
+    run: 'parcoursPremierLancementSuite',
+    themes: BOTH,
+    sources: [
+      ...PARCOURS,
+      `${C}onboarding/`,
+      `${R}onboarding.css`,
+      `${C}composer/`,
+      'src/shared/onboarding.ts',
+      'src/main/onboarding/',
+      'src/main/conversations/'
     ]
   }
 ]

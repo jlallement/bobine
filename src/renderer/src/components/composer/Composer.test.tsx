@@ -1,8 +1,10 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ComponentProps } from 'react'
-import { describe, expect, it, vi } from 'vitest'
-import type { AgentSnapshot } from '@shared/agent'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
+import type { AgentSettingsView, AgentSnapshot } from '@shared/agent'
+import i18next from 'i18next'
+import { ComposerInbox } from '../../useFileDrop'
 import { Composer } from './Composer'
 
 // Le terminal (xterm.js) n'a rien à faire ici : seule sa constante d'évènement est utilisée.
@@ -401,5 +403,291 @@ describe('Composer : texte collé, fichiers exclus, brouillon (fiche 155)', () =
     t.enter()
     expect(t.onSend).toHaveBeenCalledWith('', [{ kind: 'file', path: '/tmp/projet/.env.png' }])
     pathFor.mockRestore()
+  })
+})
+
+/**
+ * Remplaçants des vérifications de composant des e2e `queue`, `startup`, `composer`, `commands`,
+ * `git` et `quick` (inventaire `docs/tests/inventaire-e2e-*.md`). Ce qui tient à la mise en page
+ * réelle (clic à travers une infobulle, repli mesuré) reste e2e ou en capture.
+ */
+describe('Composer — remplaçants des e2e', () => {
+  beforeAll(() => {
+    globalThis.ResizeObserver ??= class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver
+  })
+
+  const settings = {
+    profileId: 'mock',
+    profiles: [{ id: 'mock', label: 'Agent factice', available: true, capabilities: {} }],
+    workspace: '/tmp/projet',
+    recentWorkspaces: ['/tmp/projet'],
+    inGitRepo: true
+  } as unknown as AgentSettingsView
+
+  it('conversation neuve : l’invite demande quoi faire (queue n° 1)', () => {
+    const t = setup({}, { fresh: true })
+    expect(t.input.placeholder).toBe(i18next.t('composer.placeholder.new'))
+  })
+
+  it('« Modifier » d’un message en attente : retiré pour modification, remis dans la saisie (queue n° 4)', async () => {
+    const onUnqueue = vi.fn(async () => ({ text: 'Suite à faire', attachments: [] }))
+    const t = setup(
+      { status: 'busy', queued: [{ id: 'q1', text: 'Suite à faire', attachments: [] }] },
+      { onUnqueue }
+    )
+    await act(async () => fireEvent.click(screen.getByTestId('queued-edit')))
+    expect(onUnqueue).toHaveBeenCalledWith('q1', true)
+    expect(t.input.value).toBe('Suite à faire')
+    expect(document.activeElement).toBe(t.input)
+  })
+
+  it('pas encore de dossier : saisie inactive, « Choisissez d’abord un dossier » (startup n° 2)', () => {
+    const t = setup({ status: 'needs-action', blocker: { kind: 'workspace' } })
+    expect(t.input.placeholder).toBe('Choisissez d’abord un dossier')
+    expect(t.input.disabled).toBe(true)
+  })
+
+  it('dossier et branche sur la ligne sous la saisie, pas dans la barre (composer n° 1, git n° 1)', () => {
+    setup(
+      {},
+      {
+        settings,
+        fresh: true,
+        gitBranch: { name: 'main', dirty: 2, ahead: 0, behind: 0, onOpen: vi.fn() }
+      }
+    )
+    const context = screen.getByTestId('composer-context')
+    const bar = screen.getByTestId('composer-bar')
+    expect(context.contains(screen.getByTestId('workspace-menu'))).toBe(true)
+    expect(bar.contains(screen.getByTestId('workspace-menu'))).toBe(false)
+    const branch = screen.getByTestId('git-branch')
+    expect(context.contains(branch)).toBe(true)
+    expect(branch.textContent).toBe('main')
+    expect(branch.getAttribute('data-dirty')).toBe('true')
+  })
+
+  it('mode choisi dans le menu : focus rendu à la saisie, sans infobulle ouverte (composer n° 2, 3)', async () => {
+    const t = setup({ controls: modes('code') })
+    screen.getByTestId('mode-chip').focus()
+    fireEvent.keyDown(screen.getByTestId('mode-chip'), { key: 'Enter' })
+    await act(async () => fireEvent.click(screen.getByTestId('control-mode-ask')))
+    // Laisse passer le tour où Radix rendrait le focus à la puce : il doit rester à la saisie.
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 10)))
+    expect(t.onSetControl).toHaveBeenCalledWith('mode', 'ask')
+    expect(screen.queryByTestId('mode-menu-content')).toBeNull()
+    expect(document.activeElement).toBe(t.input)
+    expect(document.querySelector('.tooltip')).toBeNull()
+  })
+
+  it('Échap ferme le menu du mode et rend le focus à la puce (composer n° 10)', async () => {
+    setup({ controls: modes('code') })
+    const chip = screen.getByTestId('mode-chip')
+    chip.focus()
+    fireEvent.keyDown(chip, { key: 'Enter' })
+    expect(screen.getByTestId('mode-menu-content')).toBeTruthy()
+    await act(async () =>
+      fireEvent.keyDown(screen.getByTestId('mode-menu-content'), { key: 'Escape' })
+    )
+    expect(screen.queryByTestId('mode-menu-content')).toBeNull()
+    // Radix rend le focus au tour suivant (FocusScope, `setTimeout`).
+    await waitFor(() => expect(document.activeElement).toBe(chip))
+  })
+
+  it('le mode Plan a son icône, distincte des autres modes (composer n° 23)', () => {
+    setup({ controls: modes('code') })
+    const icon = () => screen.getByTestId('mode-chip').querySelector('svg')?.getAttribute('class')
+    const code = icon()
+    expect(screen.getByTestId('mode-chip').getAttribute('data-plan')).toBeNull()
+    cleanup()
+    setup({ controls: modes('plan') })
+    expect(screen.getByTestId('mode-chip').getAttribute('data-plan')).toBe('true')
+    expect(icon()).not.toBe(code)
+  })
+
+  it('accueil : un clic sur Envoyer envoie le message (composer n° 34)', () => {
+    const t = setup({}, { fresh: true })
+    t.type('Lance les tests')
+    fireEvent.click(screen.getByTestId('send'))
+    expect(t.onSend).toHaveBeenCalledWith('Lance les tests', [])
+  })
+
+  it('commande de l’app : badge au nom de l’agent de la conversation, pas « Bobine » (commands n° 2)', () => {
+    const t = setup()
+    t.type('/help')
+    const item = screen.getAllByTestId('command-item')[0]
+    expect(item?.querySelector('.command-source.from-app')?.textContent).toBe('Agent factice')
+    expect(item?.textContent).not.toContain('Bobine')
+  })
+
+  it('« / » : `/btw` (aparté) proposée parmi les commandes de l’app (aparte n° 2)', () => {
+    const t = setup()
+    t.type('/bt')
+    const names = screen
+      .getAllByTestId('command-item')
+      .map((el) => el.querySelector('.command-name')?.textContent)
+    expect(names).toEqual(['/btw [question]'])
+  })
+
+  it('« / » : commandes de l’agent et de l’app, chacune avec son origine (commands n° 1)', () => {
+    const t = setup()
+    t.type('/')
+    const items = screen.getAllByTestId('command-item')
+    const source = (name: string) =>
+      items
+        .find((el) => el.querySelector('.command-name')?.textContent?.startsWith(name))
+        ?.querySelector('.command-source')
+    expect(source('/scenario')?.classList.contains('from-app')).toBe(false)
+    expect(source('/help')?.classList.contains('from-app')).toBe(true)
+    expect(source('/revue')?.textContent).toBe('Projet')
+  })
+
+  it('commande avec son argument : envoyée telle quelle, saisie vidée (commands n° 6)', () => {
+    const t = setup()
+    t.type('/scenario refus')
+    fireEvent.keyDown(t.input, { key: 'Escape' })
+    t.enter()
+    expect(t.onSend).toHaveBeenCalledWith('/scenario refus', [])
+    expect(t.input.value).toBe('')
+  })
+
+  it('« / » sans correspondance : le menu le dit (commands n° 8)', () => {
+    const t = setup()
+    t.type('/zzzz')
+    expect(screen.getByTestId('command-menu').textContent).toContain(
+      'Aucune commande ne correspond.'
+    )
+    expect(screen.queryAllByTestId('command-item')).toHaveLength(0)
+  })
+
+  it('brouillon par conversation : vide ailleurs, retrouvé en revenant, texte collé compris (history n° 8, 9, 10)', () => {
+    const paste = (input: HTMLTextAreaElement, text: string) =>
+      fireEvent.paste(input, { clipboardData: { files: [], getData: () => text } })
+    const key = `c-brouillon-${Math.random()}`
+    const long = Array.from({ length: 41 }, (_, i) => `ligne ${i}`).join('\n')
+    const first = setup({}, { draftKey: key })
+    paste(first.input, long)
+    first.type('à finir')
+    cleanup()
+    // Autre conversation : la zone de saisie est vide.
+    const other = setup({}, { draftKey: `${key}-autre` })
+    expect(other.input.value).toBe('')
+    expect(screen.queryByTestId('attachment')).toBeNull()
+    cleanup()
+    // De retour : le texte et la pièce jointe (texte collé) reviennent.
+    const back = setup({}, { draftKey: key })
+    expect(back.input.value).toBe('à finir')
+    expect(screen.getByTestId('attachment-pasted').textContent).toContain('41 lignes')
+  })
+
+  it('image collée : sa vignette dans la saisie (attachments n° 1)', async () => {
+    const t = setup()
+    const image = new File([new Uint8Array([137, 80, 78, 71])], 'collée.png', { type: 'image/png' })
+    await act(async () => {
+      fireEvent.paste(t.input, { clipboardData: { files: [image], getData: () => '' } })
+    })
+    await waitFor(() => expect(screen.getAllByTestId('attachment')).toHaveLength(1))
+    const img = screen.getByTestId('attachment').querySelector('img')
+    expect(img?.getAttribute('src')).toMatch(/^data:image\/png;base64,/)
+  })
+
+  it('`@app` : le fichier du dossier proposé ; Entrée insère son chemin et le joint (attachments n° 2, 4)', async () => {
+    const onSearchFiles = vi.fn(async () => [
+      { path: '/tmp/projet/src/app.ts', relative: 'src/app.ts' }
+    ])
+    const t = setup({}, { onSearchFiles })
+    fireEvent.change(t.input, { target: { value: 'Relis @app', selectionStart: 10 } })
+    fireEvent.keyUp(t.input, { key: 'p' })
+    await waitFor(() => expect(screen.getAllByTestId('file-item')).toHaveLength(1))
+    expect(onSearchFiles).toHaveBeenCalledWith('app')
+    expect(screen.getByTestId('file-item').textContent).toContain('app.ts')
+    fireEvent.keyDown(t.input, { key: 'Enter' })
+    expect(t.input.value).toBe('Relis @src/app.ts ')
+    expect(screen.getAllByTestId('attachment')).toHaveLength(1)
+    t.enter()
+    expect(t.onSend).toHaveBeenCalledWith('Relis @src/app.ts ', [
+      { kind: 'file', path: '/tmp/projet/src/app.ts' }
+    ])
+  })
+
+  it('`@git-changes` et `@terminal` : proposés, joints en pièces jointes de contexte (mentions n° 2)', async () => {
+    const t = setup()
+    const mention = async (typed: string) => {
+      const value = `${t.input.value}${typed}`
+      fireEvent.change(t.input, { target: { value, selectionStart: value.length } })
+      fireEvent.keyUp(t.input, { key: 'x' })
+      await waitFor(() => expect(screen.getAllByTestId('context-item').length).toBeGreaterThan(0))
+      fireEvent.keyDown(t.input, { key: 'Enter' })
+    }
+    await mention('@git')
+    await mention('@term')
+    expect(t.input.value).toBe('@git-changes @terminal ')
+    expect(screen.getAllByTestId('attachment')).toHaveLength(2)
+    t.enter()
+    expect(t.onSend).toHaveBeenCalledWith('@git-changes @terminal ', [
+      { kind: 'context', source: 'git-changes' },
+      { kind: 'context', source: 'terminal' }
+    ])
+  })
+
+  it('demande de lancement : le premier message posé dans la saisie, jamais envoyé (command n° 7)', () => {
+    const composerInbox = new ComposerInbox()
+    const key = `c-lancement-${Math.random()}`
+    composerInbox.prefill({ id: key, text: 'Corrige le parseur', attachments: [] })
+    const t = setup({}, { composerInbox, draftKey: key })
+    expect(t.input.value).toBe('Corrige le parseur')
+    expect(t.onSend).not.toHaveBeenCalled()
+  })
+
+  it('modèle choisi dans « Réglages de la session » : demandé à l’agent, la puce suit (base n° 14)', async () => {
+    const model = (currentValue: string): AgentSnapshot['controls'] => [
+      {
+        id: 'model',
+        name: 'Modèle',
+        category: 'model',
+        type: 'select',
+        currentValue,
+        options: [
+          { value: 'fast', name: 'Rapide' },
+          { value: 'deep', name: 'Réfléchi' }
+        ]
+      }
+    ]
+    const t = setup({ controls: model('fast') })
+    expect(screen.getByTestId('model-chip').textContent).toContain('Rapide')
+    fireEvent.keyDown(screen.getByTestId('session-settings'), { key: 'Enter' })
+    await act(async () => {})
+    fireEvent.keyDown(screen.getByTestId('control-model'), { key: 'ArrowRight' })
+    await act(async () => {})
+    fireEvent.click(screen.getByTestId('control-model-deep'))
+    expect(t.onSetControl).toHaveBeenCalledWith('model', 'deep')
+    // L'agent confirme : la puce et le menu lisent le même réglage.
+    cleanup()
+    setup({ controls: model('deep') })
+    expect(screen.getByTestId('model-chip').textContent).toContain('Réfléchi')
+  })
+
+  it('capture d’écran : l’image est jointe dans la zone de saisie (quick n° 12)', async () => {
+    const image = {
+      kind: 'image' as const,
+      name: 'capture.png',
+      mimeType: 'image/png',
+      data: 'AA=='
+    }
+    setup({}, { onCaptureScreen: vi.fn(async () => image) })
+    await act(async () => fireEvent.click(screen.getByTestId('capture')))
+    const [chip, ...others] = screen.getAllByTestId('attachment')
+    expect(others).toHaveLength(0)
+    expect(chip?.querySelector('img')?.getAttribute('src')).toContain('AA==')
+    expect(chip?.innerHTML).toContain('capture.png')
+  })
+
+  it('sans capture d’écran (plateforme) : pas de bouton de capture dans la saisie (quick n° 14)', () => {
+    setup()
+    expect(screen.queryByTestId('capture')).toBeNull()
+    expect(screen.getByTestId('attach')).toBeTruthy()
   })
 })

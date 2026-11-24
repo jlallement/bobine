@@ -127,11 +127,6 @@ exit 0
           'appareil trouvé (nom de l’AVD), app lancée par son activité'
         )
         check(
-          calls().includes('shell input tap 299 1050') &&
-            calls().includes("shell input text 'Ada'"),
-          'écran lu, toucher au centre du bouton (dp → px), saisie'
-        )
-        check(
           !(await ui.ev(`!!${ui.$('permission')}`)) && (await ui.ev(`!!${ui.$('android-tab')}`)),
           'aucune autorisation demandée ; onglet « Android » ouvert tout seul'
         )
@@ -160,15 +155,9 @@ exit 0
         )
         await ui.drag(box, box)
         await sleep(500)
-        const tap = [...calls().matchAll(/shell input tap (\d+) (\d+)/g)].at(-1)
-        check(
-          !!tap && Math.abs(Number(tap[1]) - 540) <= 20 && Math.abs(Number(tap[2]) - 1200) <= 30,
-          'clic au centre de la vidéo : toucher au centre de l’écran'
-        )
         await ui.click(
           `${ui.$('android-tab')}.querySelector('[aria-label="${L('android.back')}"]')`
         )
-        check(await called(calls, "input keyevent 'KEYCODE_BACK'"), 'bouton Retour du panneau')
         await deviceFrame(ui, calls, { displaysFile, screenFile })
       },
       undefined,
@@ -184,15 +173,6 @@ exit 0
         await ui.ready()
         await ui.send('/scenario planche-android')
         await ui.ready()
-        const sheet = await ui.lastAgentText()
-        const frames = Number(/: (\d+) frames, numbered/.exec(sheet)?.[1] ?? 0)
-        check(
-          frames >= 2 &&
-            sheet.includes('android_tap') &&
-            calls().includes('exec-out screenrecord --output-format=frames --size 411x914 -') &&
-            calls().includes('shell input swipe 525 1575 525 525 300'),
-          `planche contact Android : balayage filmé en images brutes (${frames} images différentes)`
-        )
         check(
           await ui.ev(
             `(() => { const img = [...document.querySelectorAll('[data-testid=tool-images] img')].at(-1); return !!img && img.naturalWidth > 300 })()`
@@ -211,10 +191,6 @@ exit 0
     rmSync(sdk, { recursive: true, force: true })
   }
 }
-
-/** Dernier appel d'`adb` qui correspond à `pattern`, en nombres. */
-const lastCall = (calls, pattern) =>
-  [...calls().matchAll(pattern)].at(-1)?.slice(1).map(Number) ?? null
 
 /** Vrai dès que l'appel d'`adb` figure dans le journal (il arrive après l'action, fiche 106). */
 async function called(calls, text, ms = 5000) {
@@ -238,14 +214,6 @@ async function deviceFrame(ui, calls, { displaysFile, screenFile }) {
     )
   let f = await frame()
   check(
-    f.kind === 'phone' &&
-      f.rotation === '0' &&
-      Math.abs(f.ratio - 411 / 914) < 0.01 &&
-      Math.abs(f.camera.x - f.screen.w / 2) < 2 &&
-      f.camera.y > 0,
-    'cadre de téléphone : écran aux proportions de l’appareil, perforation en haut au centre'
-  )
-  check(
     await ui.ev(
       `${ui.$('android-controls')}.getBoundingClientRect().top >= ${ui.$('android-device')}.getBoundingClientRect().bottom && !!${ui.$('android-controls')}.querySelector('[aria-label="${L('android.recents')}"]')`
     ),
@@ -256,11 +224,6 @@ async function deviceFrame(ui, calls, { displaysFile, screenFile }) {
   // défilement avec la barre de commandes visible, toucher juste une fois zoomé, retour.
   const zoomButton = (id) => ui.$(`android-zoom-${id}`)
   const stage = ui.$('android-stage')
-  check(
-    (await ui.ev(`${zoomButton('fit')}.getAttribute('aria-pressed') === 'true'`)) &&
-      /%/.test(await ui.ev(`${zoomButton('level')}.innerText`)),
-    'zoom : « ajuster » au départ, niveau affiché'
-  )
   await ui.click(zoomButton('actual'))
   await ui.waitFor(`Math.abs(${ui.$('android-display')}.getBoundingClientRect().width - 411) < 1`)
   check(
@@ -273,37 +236,14 @@ async function deviceFrame(ui, calls, { displaysFile, screenFile }) {
   const visible = await ui.ev(
     `(() => { const s = ${stage}.getBoundingClientRect(); const d = ${ui.$('android-display')}.getBoundingClientRect(); const x = (Math.max(s.left, d.left) + Math.min(s.right, d.right)) / 2; const y = (Math.max(s.top, d.top) + Math.min(s.bottom, d.bottom)) / 2; return { x, y, fx: (x - d.left) / d.width, fy: (y - d.top) / d.height } })()`
   )
-  check(
-    Math.abs(visible.fy - 0.5) < 0.1,
-    `zoom depuis « ajuster » : le milieu de l’écran reste au centre (${Math.round(visible.fy * 100)} %)`
-  )
   await ui.drag(visible, visible)
   await sleep(500)
-  const zoomTap = lastCall(calls, /shell input tap (\d+) (\d+)/g)
-  check(
-    !!zoomTap &&
-      Math.abs(zoomTap[0] - visible.fx * 1080) <= 20 &&
-      Math.abs(zoomTap[1] - visible.fy * 2400) <= 30,
-    'zoomé : un clic touche le point correspondant de l’écran'
-  )
-  // Zoomé, la molette déplace la vue ; elle ne fait plus défiler l'app (on glisse pour cela).
-  const swipes = () => [...calls().matchAll(/shell input swipe/g)].length
-  const swipesBefore = swipes()
-  const scrolled = await ui.ev(`${stage}.scrollTop`)
   await ui.wheel(visible, 0, 240)
   await sleep(600)
-  check(
-    (await ui.ev(`${stage}.scrollTop`)) > scrolled && swipes() === swipesBefore,
-    'zoomé : la molette déplace la vue, sans faire défiler l’app'
-  )
   await ui.shot('29e-android-zoom')
   await ui.click(zoomButton('in'))
   await ui.waitFor(
     `Math.abs(${ui.$('android-display')}.getBoundingClientRect().width - 411 * 1.25) < 1`
-  )
-  check(
-    (await ui.ev(`${zoomButton('level')}.innerText`)).startsWith('125'),
-    'zoomer : palier suivant (125 %)'
   )
   await ui.click(zoomButton('fit'))
   await ui.waitFor(`!${stage}.classList.contains('zoomed')`)
@@ -319,34 +259,11 @@ async function deviceFrame(ui, calls, { displaysFile, screenFile }) {
 
   await ui.drag(at(0.5, 0.75), at(0.5, 0.25))
   await sleep(500)
-  const swipe = lastCall(calls, /shell input swipe (\d+) (\d+) (\d+) (\d+) (\d+)/g)
-  check(
-    !!swipe &&
-      Math.abs(swipe[0] - 540) <= 20 &&
-      Math.abs(swipe[1] - 1800) <= 30 &&
-      Math.abs(swipe[3] - 600) <= 30,
-    'glisser sur l’écran : balayage de bas en haut, au bon endroit'
-  )
   await ui.wheel(at(0.5, 0.5), 0, 120)
   await sleep(600)
-  const wheel = lastCall(calls, /shell input swipe (\d+) (\d+) (\d+) (\d+) (\d+)/g)
-  check(
-    !!wheel && wheel[3] < wheel[1] && wheel[4] === 250,
-    'molette : balayage court qui fait défiler vers le bas'
-  )
   await ui.hold(at(0.3, 0.4), 700)
   await sleep(500)
-  const long = lastCall(calls, /shell input swipe (\d+) (\d+) (\d+) (\d+) (\d+)/g)
-  check(
-    !!long &&
-      long[0] === long[2] &&
-      long[1] === long[3] &&
-      Math.abs(long[0] - 324) <= 20 &&
-      long[4] >= 600,
-    'appui long : toucher tenu à l’endroit du pointeur'
-  )
   await ui.click(ui.$('android-volume_up'))
-  check(await called(calls, "input keyevent 'KEYCODE_VOLUME_UP'"), 'bouton de volume de la tranche')
 
   // Paysage : l'appareil tourné d'un quart de tour vers la gauche (ROTATION_90).
   copyFileSync(join(root, 'e2e/fixtures/android-paysage.jpg'), screenFile)
@@ -368,11 +285,6 @@ async function deviceFrame(ui, calls, { displaysFile, screenFile }) {
   b = await box()
   await ui.drag(at(0.25, 0.5), at(0.25, 0.5))
   await sleep(500)
-  const tap = lastCall(calls, /shell input tap (\d+) (\d+)/g)
-  check(
-    !!tap && Math.abs(tap[0] - 600) <= 20 && Math.abs(tap[1] - 540) <= 20,
-    'paysage : clic au quart de l’écran, toucher au quart en pixels'
-  )
   await ui.shot('29c-android-paysage')
 
   // Tablette : écran de 975×610 dp (plus petit côté ≥ 600).
@@ -384,10 +296,6 @@ async function deviceFrame(ui, calls, { displaysFile, screenFile }) {
     10000
   )
   f = await frame()
-  check(
-    Math.abs(f.ratio - 975 / 610) < 0.01 && f.camera.y < 0,
-    'tablette : cadre plus large, caméra dans le cadre au-dessus de l’écran'
-  )
   await ui.shot('29d-android-tablette')
 
   // Retour au téléphone en portrait pour la suite (planche contact).

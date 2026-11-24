@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ALL_FEATURES } from '@shared/platform'
 import { DEFAULT_PREFERENCES } from '@shared/preferences'
@@ -38,5 +38,49 @@ describe('compteur sur l’icône du Dock (fiches 119, 145)', () => {
     expect(searchSettings('compteur').map((e) => e.label)).not.toContain(
       'Compteur sur l’icône du Dock'
     )
+  })
+})
+
+/**
+ * Rebond du Dock (fiche 101) : remplace les vérifications de composant de l'e2e `settings`
+ * (n° 18 à 21). Le moteur du rebond est dans `dock-bounce.test.ts` (main).
+ */
+describe('rebond du Dock (fiche 101)', () => {
+  const bounce = () => screen.getByTestId('settings-dock-bounce') as HTMLInputElement
+
+  it('activé par défaut, en retrait sous « Notifications »', () => {
+    show()
+    expect(DEFAULT_PREFERENCES.dockBounce).toBe(true)
+    expect(bounce().checked).toBe(true)
+    expect(bounce().closest('.settings-row')?.classList.contains('sub')).toBe(true)
+  })
+
+  it('le réglage s’enregistre', () => {
+    const onPreferences = vi.fn()
+    render(
+      <NotificationsSettings
+        preferences={DEFAULT_PREFERENCES}
+        notifications
+        onPreferences={onPreferences}
+        onNotifications={vi.fn()}
+        onOpenNotificationSettings={vi.fn()}
+      />
+    )
+    fireEvent.click(bounce())
+    expect(onPreferences).toHaveBeenCalledWith({ dockBounce: false })
+  })
+
+  it('notifications coupées : rebond grisé, sa valeur gardée', () => {
+    render(
+      <NotificationsSettings
+        preferences={DEFAULT_PREFERENCES}
+        notifications={false}
+        onPreferences={vi.fn()}
+        onNotifications={vi.fn()}
+        onOpenNotificationSettings={vi.fn()}
+      />
+    )
+    expect(bounce().disabled).toBe(true)
+    expect(bounce().checked).toBe(true)
   })
 })

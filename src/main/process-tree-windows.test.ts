@@ -194,6 +194,37 @@ describe('arbres de processus sous Windows (ADR-0050)', () => {
     expect(log).toHaveBeenCalledWith('En quittant : 1 arbre(s) de processus arrêté(s)')
   })
 
+  it('arrêté de force (grâce 0, comme dans les essais) : attendu jusqu’à la sortie du chef', async () => {
+    const jobs = fakeJobs()
+    const trees = new WindowsTrees({ jobs: jobs.api, taskkill: vi.fn(), log: vi.fn(), graceMs: 0 })
+    const { child, exit } = fakeChild(10)
+    trees.adopt(child)
+    trees.stop(child)
+    expect(jobs.log.slice(-2)).toEqual(['terminate 1', 'close 1'])
+    // `TerminateJobObject` n'attend pas : le chef vit encore, et tient son dossier courant.
+    expect(trees.stopping()).toBe(1)
+    const settled = trees.settle(1000, 10)
+    await vi.advanceTimersByTimeAsync(30)
+    exit()
+    await vi.advanceTimersByTimeAsync(20)
+    expect(await settled).toBe(0)
+    expect(trees.stopping()).toBe(0)
+    // Jamais arrêté une seconde fois (poignée réattribuable).
+    expect(jobs.log.filter((line) => line.startsWith('terminate'))).toEqual(['terminate 1'])
+  })
+
+  it('arrêté de force, chef encore là au bout de l’attente : compté, pas re-terminé', async () => {
+    const jobs = fakeJobs()
+    const trees = new WindowsTrees({ jobs: jobs.api, taskkill: vi.fn(), log: vi.fn(), graceMs: 0 })
+    const { child } = fakeChild(10)
+    trees.adopt(child)
+    trees.stop(child)
+    const settled = trees.settle(100, 10)
+    await vi.advanceTimersByTimeAsync(150)
+    expect(await settled).toBe(1)
+    expect(jobs.log.filter((line) => line.startsWith('terminate'))).toEqual(['terminate 1'])
+  })
+
   it('repli sans objets de tâche : taskkill /T sur le chef vivant, jamais sur un pid sorti', () => {
     const taskkill = vi.fn()
     const trees = new WindowsTrees({ taskkill, log: vi.fn(), graceMs: 3000 })

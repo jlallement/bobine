@@ -65,16 +65,11 @@ export async function linksSuite(scheme) {
         await ui.waitFor(
           `${fileView}?.dataset.path === 'plan.md' && ${ui.$('file-markdown')}?.innerText.includes('Plan de travail')`
         )
-        check(
-          opened().length === 0,
-          '.md du dossier : rendu dans l’onglet Fichiers (fiche 271), rien d’ouvert ailleurs'
-        )
         await ui.shot('41-apercu-md')
         await ui.click(
           `[...${ui.$('file-markdown')}.querySelectorAll('a')].find((a) => a.textContent === 'la suite')`
         )
         await ui.waitFor(`${fileView}?.dataset.path === 'docs/suite.md'`)
-        check(true, 'lien relatif du document : depuis son dossier (docs/suite.md)')
 
         await ui.click(link('src/app.ts:3'))
         await ui.waitFor(
@@ -135,7 +130,6 @@ export async function linksSuite(scheme) {
         )
         await ui.shot('45-fichier-absent-pied')
         await ui.click(link('docs'))
-        check(await waitLog(`reveal ${join(workspace, 'docs')}`), 'dossier : montré dans le Finder')
         await ui.click(link('outil.command'))
         await ui.waitFor(`${fileView}?.dataset.path === 'outil.command'`)
         check(

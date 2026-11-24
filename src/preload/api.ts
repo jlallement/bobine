@@ -503,7 +503,9 @@ export function createApi(
         invoke('worktree:removeOrphan', orphan),
       /** La forge a répondu après coup (hôte lent) : l'état est à relire (fiche 189). */
       onForge: (listener: (change: IpcEventContract['worktree:forge']) => void) =>
-        subscribe('worktree:forge', listener)
+        subscribe('worktree:forge', listener),
+      /** Corbeille changée : la liste des worktrees orphelins est à relire (fiche 228). */
+      onOrphansChanged: (listener: () => void) => subscribe('worktree:orphansChanged', listener)
     },
     /** Suivi de la PR et de la CI d'une conversation en worktree (fiche 176). */
     pr: {

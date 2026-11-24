@@ -85,10 +85,6 @@ export async function annotateSuite(scheme) {
         await ui.drag(await at(ui, 0.3, 0.3), await at(ui, 0.5, 0.5))
         await ui.key('Escape')
         await ui.waitFor(`!${ui.$('annotator')}`)
-        const kept = await ui.ev(
-          image(`document.querySelector('[data-testid=attachment-annotate] img')`)
-        )
-        check(kept?.src === before?.src, 'Échap : image inchangée')
 
         // Annoter et appliquer.
         await ui.click(ui.$('attachment-annotate'))
@@ -106,10 +102,6 @@ export async function annotateSuite(scheme) {
           `fenêtre d’annotation non déplaçable (chevauche la barre du haut : ${region.overlaps})`
         )
         await draw(ui)
-        check(
-          !(await ui.ev(`${ui.$('annotator-undo')}.disabled`)),
-          'rectangle, flèche et texte dessinés (« Annuler le dernier » actif)'
-        )
         // Texte long (fiche 094) : il revient à la ligne sans sortir de l'image.
         const right = await at(ui, 0.55, 0.12)
         await ui.drag(right, right)

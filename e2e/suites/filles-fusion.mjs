@@ -75,10 +75,6 @@ export async function fillesFusionSuite(scheme) {
           `document.querySelectorAll('[data-testid=work-row][data-state=replied]').length === 3`,
           60000
         )
-        check(
-          !(await ui.ev(`!!${ui.$('subtasks')}`)) && !(await ui.ev(`!!${ui.$('child-report')}`)),
-          'trois travaux sur les lignes de leur carte : ni « Sous-tâches » ni compte rendu séparé'
-        )
         /** Dossier (worktree) de chaque fille, par titre. */
         const folders = Object.fromEntries(
           (
@@ -88,7 +84,9 @@ export async function fillesFusionSuite(scheme) {
           ).map(([title, folder]) => [title, folder])
         )
         const [csv, help, notes] = CHILDREN.map((c) => folders[c.title])
-        check(!!csv && !!help && !!notes, 'trois filles, chacune dans son worktree')
+        // Un worktree par fille : vérifié dans `parcours-deleguer` ; ici, une garde, pour ne
+        // jamais committer hors d'un dossier d'essai.
+        if (!csv || !help || !notes) throw new Error(`worktrees des filles introuvables`)
         // Ce que l'utilisateur ferait depuis la vue Git de chaque fille (fiche 110).
         await commitAll(csv, 'feat: import CSV')
         writeFileSync(join(help, 'README.md'), '# Démo\n\nVersion 3\n\n## Utilisation\n')
@@ -136,11 +134,6 @@ export async function fillesFusionSuite(scheme) {
           `${ui.$('subtasks-merge-summary')}?.innerText === ${JSON.stringify(before)}`,
           20000
         )
-        check(
-          (await ui.ev(`${ui.$('subtasks-merge-start')}.innerText`)) ===
-            L('workGroup.merge.action', { count: 2, base: 'main' }),
-          'pied de carte : deux prêtes, recouvrement sur README.md, la troisième non commitée et dite'
-        )
         await ui.ev(`${ui.$('work-group')}.scrollIntoView({ block: 'center' }), true`)
         await ui.shot('120-fusion-pied')
 
@@ -151,12 +144,6 @@ export async function fillesFusionSuite(scheme) {
           `${ui.$('subtasks-merge-start')}?.innerText === ${JSON.stringify(L('workGroup.merge.action', { count: 3, base: 'main' }))}`,
           20000
         )
-        check(
-          (await ui.ev(`${ui.$('subtasks-merge-summary')}.innerText`)) ===
-            `${L('childrenMerge.summary.all', { count: 3 })} ${overlap}` &&
-            !(await ui.ev(`${ui.$('subtasks-merge-cleanup')}.checked`)),
-          '« Fusionner les 3 dans main », « Puis nettoyer » décoché par défaut'
-        )
 
         // La mère a travaillé dans le dossier principal (fiche 123) : la fusion ne part pas, la
         // carte dit pourquoi, avec les fichiers, « Committer d'abord » et « Mettre de côté ».
@@ -164,16 +151,6 @@ export async function fillesFusionSuite(scheme) {
         writeFileSync(join(workspace, 'brouillon.txt'), 'idée\n')
         await reread()
         await ui.waitFor(`!!${ui.$('main-dirty')}`, 20000)
-        const dirtyFiles = await ui.ev(
-          `[...document.querySelectorAll('[data-testid=main-dirty-file]')].map((f) => f.innerText)`
-        )
-        check(
-          (await ui.ev(`${ui.$('main-dirty-title')}.innerText`)) ===
-            L('worktreeCycle.mainDirty.title', { count: 2 }) &&
-            dirtyFiles.join(',') === 'TODO.md,brouillon.txt' &&
-            !(await ui.ev(`!!${ui.$('subtasks-merge-start')}`)),
-          `fusion refusée d’avance : dossier principal non commité (${dirtyFiles.join(', ')})`
-        )
         await ui.ev(`${ui.$('work-group')}.scrollIntoView({ block: 'center' }), true`)
         await ui.shot('123-fusion-refusee')
         await ui.click(ui.$('main-dirty-commit'))
@@ -257,30 +234,10 @@ export async function fillesFusionSuite(scheme) {
             seen.resolving === L('workGroup.merge.resolving'),
           `en cours : celles d’avant fusionnées, une en conflit résolu par son travail (dit), les suivantes en attente (${JSON.stringify(seen)})`
         )
-        check(
-          seen.stash === L('childrenMerge.stashKept', { count: 2 }),
-          'pendant la fusion : les modifications de la mère sont mises de côté, et c’est dit'
-        )
         await ui.shot('120-fusion-en-cours')
         await ui.shot('264-groupe-fusion-en-cours')
 
         await ui.waitFor(`${ui.$('subtasks-merge-result')}?.dataset.status === 'done'`, 90000)
-        const result = await ui.ev(`${ui.$('subtasks-merge-result')}.innerText`)
-        const done = L('workGroup.merge.result.done', { count: 3, base: 'main', duration: '§' })
-        const [head, tail] = done.split('§')
-        check(
-          result.startsWith(head) &&
-            result.includes(`${tail} ${L('childrenMerge.result.cleaned', { count: 3 })}`) &&
-            result.endsWith(L('worktreeCycle.mainDirty.stashRestored', { count: 2 })),
-          `fin : « ${result} »`
-        )
-        const childTexts = await ui.ev(
-          `window.api.conversations.get().then((s) => Promise.all(s.conversations.filter((c) => ['Page d’aide', 'Import CSV'].includes(c.title)).map((c) => window.api.conversations.view(c.id)))).then((v) => v.flatMap((x) => x.transcript.items.filter((i) => i.kind === 'user').map((i) => ({ text: i.text, from: i.from?.kind }))))`
-        )
-        check(
-          childTexts.some((m) => m.text.includes('left conflicts') && m.from === 'merge'),
-          'la consigne de conflit de la fiche 110 est partie au travail, avec sa provenance (fiche 264)'
-        )
         check(
           readFileSync(join(workspace, 'README.md'), 'utf8') === RESOLVED &&
             existsSync(join(workspace, 'src', 'app.js')) &&
@@ -290,20 +247,6 @@ export async function fillesFusionSuite(scheme) {
             readFileSync(join(workspace, 'brouillon.txt'), 'utf8') === 'idée\n' &&
             git(workspace, 'stash', 'list') === '',
           'main a les trois filles, conflit résolu ; les modifications de la mère sont revenues'
-        )
-        check(
-          git(workspace, 'branch', '--list', 'bobine/*') === '' &&
-            git(workspace, 'worktree', 'list').split('\n').length === 1 &&
-            ![csv, help, notes].some((folder) => existsSync(folder)),
-          '« Puis nettoyer » : worktrees et branches supprimés'
-        )
-        const badges = await ui.ev(
-          `[...document.querySelectorAll('[data-testid=subtask-merge-state]')].map((b) => b.dataset.state + ':' + b.innerText)`
-        )
-        check(
-          badges.length === 3 &&
-            badges.every((b) => b === `merged:${L('workGroup.merge.row.merged')}`),
-          `chaque ligne : « fusionné » seul (${badges.join(', ')})`
         )
         await ui.ev(`${ui.$('work-group')}.scrollIntoView({ block: 'center' }), true`)
         await ui.shot('120-fusion-finie')

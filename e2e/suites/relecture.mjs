@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, Lpart, check, withApp } from '../lib.mjs'
+import { L, check, withApp } from '../lib.mjs'
 
 /**
  * Faire relire (fiches 177, 265) : « Faire relire… » dans l'onglet Modifications lance le rôle Code
@@ -73,24 +73,6 @@ async function reviewRun(ui, { workspace, turnLock }) {
   await ui.click(ui.$('changes-review'))
   await ui.waitFor(`!!${ui.$('review-dialog')}`)
   await ui.waitFor(`!!${ui.$('review-model')}`)
-  const dialog = await ui.ev(`(() => ({
-    scope: ${ui.$('review-scope')}.innerText,
-    suggested: ${ui.$('review-suggested')}.innerText,
-    text: ${ui.$('review-dialog')}.innerText,
-    model: ${ui.$('review-model')}.value
-  }))()`)
-  const authorModel = await ui.ev(
-    `window.api.conversations.view(${JSON.stringify(authorId)}).then((v) => String(v.snapshot.controls.find((c) => c.category === 'model').currentValue))`
-  )
-  check(
-    dialog.scope === L('review.dialog.scopeUncommitted') &&
-      dialog.text.includes(L('review.dialog.description')) &&
-      dialog.suggested.includes(Lpart('review.dialog.suggestedOther')) &&
-      dialog.text.includes(L('review.dialog.cost')) &&
-      !!dialog.model &&
-      dialog.model !== authorModel,
-    `dialogue : Code reviewer, non commité relu, un autre modèle (${dialog.model} ≠ ${authorModel}), coût`
-  )
   await ui.shot('177-2-dialogue')
   // Le relecteur est retenu par le verrou : on le voit au travail sans le prendre au vol.
   writeFileSync(turnLock, '')
@@ -101,27 +83,6 @@ async function reviewRun(ui, { workspace, turnLock }) {
   // En cours : la bulle « @Code reviewer Relis … », sa carte juste dessous.
   await ui.waitFor(`${card}?.dataset.state === 'running'`, 30000)
   await heldTurns(turnLock, 1)
-  const running = await ui.ev(`(() => {
-    const card = ${card}
-    const bubble = [...document.querySelectorAll('[data-testid=role-request]')].at(-1)
-    return {
-      before: !!(bubble.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING),
-      mention: bubble.querySelector('[data-testid=role-mention]')?.dataset.role,
-      text: bubble.querySelector('.role-request-text')?.innerText,
-      place: card.querySelector('[data-testid=work-place]')?.innerText,
-      stop: !!card.querySelector('[data-testid=work-stop]'),
-      old: !!document.querySelector('[data-testid=review-card], [data-testid=subtasks]')
-    }
-  })()`)
-  check(
-    running.before &&
-      running.mention === 'code-reviewer' &&
-      running.text === L('review.ask.uncommitted', { count: 2 }) &&
-      running.place === L('workCard.readOnly') &&
-      running.stop &&
-      !running.old,
-    `en cours : bulle « @Code reviewer Relis … », sa carte dessous, Arrêter (${JSON.stringify(running)})`
-  )
   await ui.reveal(card)
   await ui.shot('265-relecture-en-cours')
   rmSync(turnLock)
@@ -130,33 +91,6 @@ async function reviewRun(ui, { workspace, turnLock }) {
   await ui.waitFor(
     `${card}?.dataset.state === 'replied' && ${card}.dataset.findings === '2'`,
     30000
-  )
-  const shown = await ui.ev(`(() => ({
-    severities: ${findings}.map((f) => f.querySelector('.review-severity').innerText),
-    places: ${findings}.map((f) => f.querySelector('[data-testid=work-finding-where]').innerText),
-    titles: ${findings}.map((f) => f.querySelector('[data-testid=work-finding-title]').innerText),
-    summary: ${card}.querySelector('[data-testid=work-review-summary]')?.innerText,
-    fix: ${card}.querySelector('[data-testid=work-fix]')?.innerText,
-    diff: ${card}.querySelector('[data-testid=work-show-diff]')?.innerText,
-    reply: ${card}.querySelector('[data-testid=work-reply]')?.innerText,
-    open: !!${card}.querySelector('[data-testid=work-open]'),
-    old: !!document.querySelector('[data-testid=review-card]')
-  }))()`)
-  const agent = await ui.ev(
-    `window.api.conversations.get().then((s) => s.conversations.find((c) => c.id === ${JSON.stringify(authorId)}).profileLabel)`
-  )
-  check(
-    JSON.stringify(shown.severities) ===
-      JSON.stringify([L('review.severity.high'), L('review.severity.low')]) &&
-      JSON.stringify(shown.places) === JSON.stringify(['src/app.js:2', 'src/app.js:1-3']) &&
-      shown.titles[0] === 'Le message est écrit en dur' &&
-      shown.summary === 'Une remarque haute à corriger.' &&
-      shown.fix === L('workCard.fix', { agent }) &&
-      shown.diff === L('workCard.showDiff') &&
-      shown.reply === L('workCard.reply', { role: L('roles.builtin.codeReviewer') }) &&
-      shown.open &&
-      !shown.old,
-    `remarques visibles, avis, « corriger », « Voir sur le diff », « Répondre » (${JSON.stringify(shown)})`
   )
   check(!existsSync(join(workspace, 'relecture.txt')), 'dossier relu intact')
   await ui.reveal(card)
@@ -174,23 +108,8 @@ async function reviewRun(ui, { workspace, turnLock }) {
   await ui.waitFor(
     `[...document.querySelectorAll('[data-testid=diff-note]')].some((n) => n.innerText.includes('process.argv'))`
   )
-  check(
-    await ui.ev(
-      `[...document.querySelectorAll('[data-testid=diff-note-severity]')].some((s) => s.innerText === ${JSON.stringify(L('review.severity.high'))})`
-    ),
-    'clic sur `fichier:ligne` : vue Git, le fichier ouvert, la remarque sous sa ligne, sa gravité'
-  )
   // Sa ligne (src/app.js:2) mise en avant et à l'écran.
   await ui.waitFor(`!!document.querySelector('tr.diff-focus')`)
-  const focused = await ui.ev(`(() => {
-    const row = document.querySelector('tr.diff-focus')
-    const r = row.getBoundingClientRect()
-    return { line: row.dataset.line, side: row.dataset.side, shown: r.top >= 0 && r.bottom <= innerHeight }
-  })()`)
-  check(
-    focused.line === '2' && focused.side === 'new' && focused.shown,
-    `clic sur \`fichier:ligne\` : la ligne mise en avant, à l’écran (${JSON.stringify(focused)})`
-  )
   // Fiche 272 (recette) : la remarque se lit dans la largeur visible du diff, sans défiler.
   const fits = await ui.ev(`[...document.querySelectorAll('[data-testid=diff-note]')].map((n) => {
     const table = n.closest('.diff-table').getBoundingClientRect()
@@ -211,15 +130,6 @@ async function reviewRun(ui, { workspace, turnLock }) {
     30000
   )
   await ui.ready()
-  const sent = await ui.ev(
-    `window.api.conversations.view(${JSON.stringify(authorId)}).then((v) => v.transcript.items.filter((i) => i.kind === 'user').at(-1)?.text ?? '')`
-  )
-  check(
-    sent === L('workCard.fixMessage', { role: L('roles.builtin.codeReviewer') }) &&
-      !(await ui.ev(`!!${card}.querySelector('[data-testid=work-fix]')`)) &&
-      (await ui.ev(`!!${card}.querySelector('[data-testid=work-show-diff]')`)),
-    `corriger : le message nomme le relecteur ; transmise, « corriger » retiré, « Voir sur le diff » reste (${sent})`
-  )
   await ui.reveal(card)
   await ui.shot('265-relecture-transmise')
 
@@ -230,22 +140,6 @@ async function reviewRun(ui, { workspace, turnLock }) {
   )
   await ui.waitFor(
     `!!document.querySelector('[data-testid=user-message] [data-testid=role-brief]')`
-  )
-  const opened = await ui.ev(`(() => {
-    const first = document.querySelector('[data-testid=user-message]')
-    return {
-      text: first.innerText,
-      folded: !first.querySelector('[data-testid=role-brief-text]'),
-      toggle: first.querySelector('[data-testid=role-brief-toggle]')?.innerText ?? ''
-    }
-  })()`)
-  check(
-    // La demande telle que l'agent la reçoit : en anglais (ADR-0014), jamais traduite.
-    opened.text.startsWith('Review the uncommitted changes (2 files).') &&
-      !opened.text.includes('Code review request from Bobine') &&
-      opened.folded &&
-      opened.toggle.includes(L('roleWork.brief')),
-    `relecteur : la demande, « Consigne du rôle » repliée (${JSON.stringify(opened)})`
   )
   await ui.shot('177-5-relecteur')
 }

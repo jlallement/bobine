@@ -3,7 +3,7 @@
  * des processus (`launchSystem()`, ADR-0050), jamais `BOBINE_PLATFORM` : sur macOS et sous Linux,
  * chaque fonction rend exactement ce qu'elle reçoit. N'importe pas `electron`.
  */
-import { basename, win32 } from 'node:path'
+import { basename, resolve, win32 } from 'node:path'
 import { launchSystem, type ProcessSystem } from '../process-launch'
 
 /**
@@ -35,6 +35,11 @@ export function samePath(a: string, b: string, system: ProcessSystem = launchSys
   const key = (p: string) =>
     win32.normalize(nativeGitPath(p, system)).replace(/\\+$/, '').toLowerCase()
   return key(a) === key(b)
+}
+
+/** L'un de ces chemins (résolus) désigne-t-il `path` ? Ex. : un worktree tenu par une conversation. */
+export function samePathIn(paths: Iterable<string>, path: string): boolean {
+  return [...paths].some((known) => samePath(resolve(known), resolve(path)))
 }
 
 /**

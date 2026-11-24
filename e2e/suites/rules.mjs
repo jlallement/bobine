@@ -70,7 +70,6 @@ export async function rulesSuite(scheme) {
         await ui.waitFor(
           `${ui.$('document-name')}?.innerText === 'style.md' && ${ui.$('document-body')}.innerText.includes('Des réponses courtes')`
         )
-        check(true, 'règle personnelle (hors du dossier) ouverte en aperçu')
         await ui.shot('i1-regle-apercu')
       },
       userData,

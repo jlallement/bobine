@@ -50,6 +50,12 @@ const exited = (child: ChildProcess) => child.exitCode !== null || child.signalC
 
 export class WindowsTrees {
   private readonly trees = new Map<ChildProcess, Tree>()
+  /**
+   * Arbres arrêtés de force dont le chef n'est pas encore sorti : `TerminateJobObject` (ou
+   * `taskkill`) lance l'arrêt sans l'attendre. Encore attendus par `stopping` et `settle` (jusque-là,
+   * le processus tient son dossier courant : EPERM à l'effacement), jamais arrêtés une seconde fois.
+   */
+  private readonly ending = new Set<ChildProcess>()
   private readonly deps: WindowsTreeDeps
 
   constructor(deps: WindowsTreeDeps) {
@@ -106,6 +112,11 @@ export class WindowsTrees {
     if (tree.finished) return
     tree.finished = true
     this.trees.delete(tree.child)
+    const { child } = tree
+    if (!exited(child)) {
+      this.ending.add(child)
+      child.once('exit', () => this.ending.delete(child))
+    }
     const { jobs } = this.deps
     if (tree.job && jobs) {
       jobs.terminate(tree.job)
@@ -144,9 +155,16 @@ export class WindowsTrees {
     tree.timer.unref()
   }
 
-  /** Arbres en cours d'arrêt dont le chef vit encore. */
+  /** Arbres en cours d'arrêt (ou arrêtés de force) dont le chef vit encore. */
   stopping(): number {
-    return [...this.trees.values()].filter((t) => t.stopping && !exited(t.child)).length
+    return this.stoppingChildren().size
+  }
+
+  private stoppingChildren(): Set<ChildProcess> {
+    const children = new Set<ChildProcess>()
+    for (const tree of this.trees.values()) if (tree.stopping) children.add(tree.child)
+    for (const child of this.ending) children.add(child)
+    return new Set([...children].filter((child) => !exited(child)))
   }
 
   /**
@@ -160,7 +178,7 @@ export class WindowsTrees {
     }
     const alive = [...this.trees.values()].filter((t) => t.stopping)
     for (const tree of alive) this.finish(tree, true)
-    return alive.filter((t) => !exited(t.child)).length
+    return this.stoppingChildren().size
   }
 
   /** En quittant (fiche 208) : tout ce qui reste, arrêté de force. Rend le nombre d'arbres. */

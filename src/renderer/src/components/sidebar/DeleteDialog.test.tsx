@@ -52,6 +52,40 @@ describe('supprimer une conversation : vers la corbeille (fiche 196)', () => {
   })
 })
 
+// Remplace `e2e/suites/parallel.mjs` n° 4 : rien à perdre, la suppression du worktree est cochée.
+describe('supprimer une conversation en worktree (fiche 036)', () => {
+  const open = (status: { dirty: number; ahead: number }) => {
+    const onConfirm = vi.fn()
+    render(
+      <DeleteDialog
+        conversation={conversation({ branch: 'bobine/essai' })}
+        onWorktreeStatus={async () => ({ branch: 'bobine/essai', path: '/w/.wt', ...status })}
+        onClose={() => {}}
+        onConfirm={onConfirm}
+      />
+    )
+    return onConfirm
+  }
+
+  it('rien à perdre : « supprimer le worktree » coché d’office, et part avec la conversation', async () => {
+    const onConfirm = open({ dirty: 0, ahead: 0 })
+    const box = screen.getByTestId('delete-worktree') as HTMLInputElement
+    await waitFor(() => expect(box.checked).toBe(true))
+    expect(box.disabled).toBe(false)
+    expect(screen.queryByTestId('delete-worktree-losses')).toBeNull()
+    fireEvent.click(screen.getByTestId('delete-confirm'))
+    expect(onConfirm).toHaveBeenCalledWith({ fromAgent: false, removeWorktree: true })
+  })
+
+  it('travail non commité : pas coché, ce qui serait perdu est dit', async () => {
+    const onConfirm = open({ dirty: 2, ahead: 1 })
+    await screen.findByTestId('delete-worktree-losses')
+    expect((screen.getByTestId('delete-worktree') as HTMLInputElement).checked).toBe(false)
+    fireEvent.click(screen.getByTestId('delete-confirm'))
+    expect(onConfirm).toHaveBeenCalledWith({ fromAgent: false, removeWorktree: false })
+  })
+})
+
 describe('supprimer une mère : ses filles (fiche 228)', () => {
   const family = [
     { id: 'pf', title: 'Relire les tests', motherId: 'f2', profileLabel: 'Agent factice' },

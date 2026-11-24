@@ -92,11 +92,13 @@ describe('conversationChanges', () => {
     ])
   })
 
-  it('fichier créé par Bob : ancien texte vide plutôt qu’absent', () => {
+  it('ancien texte vide : fichier vide existant réécrit, pas une création (fiches 140, 203)', () => {
+    // Le main remet à `null` le `oldText: ""` d'un fichier constaté absent (fiche 203) ; un
+    // `oldText: ""` qui reste est donc un fichier qui existait (vide), comme le dit la carte.
     const [file] = conversationChanges([
       tool(1, 'completed', [{ path: '/p/hello.js', oldText: '', newText: 'a\nb\n' }])
     ])
-    expect(file).toMatchObject({ created: true, added: 2, removed: 0 })
+    expect(file).toMatchObject({ created: false, added: 2, removed: 0 })
   })
 
   it('extraits qui ne s’enchaînent pas : une entrée par modification', () => {

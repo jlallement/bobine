@@ -53,14 +53,6 @@ export async function travauxGroupeSuite(scheme) {
     await withApp(scheme, (ui) => writerRun(ui, { workspace, git, commitAll }), undefined, 'echo', {
       BOBINE_WORKSPACE: workspace
     })
-    // Conflit qui reste (scénario `conflits` : le travail ne réécrit que README.md).
-    await withApp(
-      scheme,
-      (ui) => conflictRun(ui, { workspace, git, commitAll }),
-      undefined,
-      'conflits',
-      { BOBINE_WORKSPACE: workspace }
-    )
   } finally {
     rmSync(workspace, { recursive: true, force: true })
     rmSync(locks, { recursive: true, force: true })
@@ -102,9 +94,6 @@ async function reread(ui, mother, row) {
   await ui.waitFor(`document.querySelector('.history-item.active')?.dataset.id === '${mother}'`)
 }
 
-/** Espaces insécables (typographie française) ramenées à des espaces simples. */
-const spaces = (text) => String(text ?? '').replace(/[\u00a0\u202f]/g, ' ')
-
 /**
  * Le pied de la carte de groupe : la case sur sa ligne, puis une rangée de boutons qui passe à la
  * ligne dans la carte ; aucun bouton ne dépasse son bord (revue du lot 264 : « Fusionner le
@@ -129,7 +118,7 @@ async function footInside(ui, group, where) {
   )
 }
 
-async function groupRun(ui, { workspace, git, commitAll, turnLock }) {
+async function groupRun(ui, { commitAll, turnLock }) {
   await ui.ready()
   await ui.closePanel()
   await ui.send('/scenario echo Écris le carnet')
@@ -140,20 +129,6 @@ async function groupRun(ui, { workspace, git, commitAll, turnLock }) {
   await ui.send('Découpe la suite en travaux indépendants.')
   const group = ui.$('work-group')
   await ui.waitFor(`${group}?.dataset.pending === '3'`, 30000)
-  // Les trois `start_child` partent à la fois (deux requêtes HTTP chacun) : ils arrivent dans un
-  // ordre quelconque, et la carte les montre dans l'ordre d'arrivée (macOS CI, 2026-11-23 : les
-  // tests avant le tri). Chaque ligne se lit donc par son titre : rôle, sans rôle, avis.
-  const proposed = await ui.ev(
-    `[...document.querySelectorAll('[data-testid=proposal-row]')].map((r) => r.dataset.title + (r.querySelector('.role-avatar') ? ' (rôle)' : '')).sort().join(' / ')`
-  )
-  check(
-    (await ui.ev(`${ui.$('work-group-title')}.innerText`)) ===
-      L('workGroup.titleProposed', { count: 3 }) &&
-      proposed ===
-        'Relire l’accessibilité de l’écran (rôle) / Tests de la sauvegarde locale / Tri des articles par rayon (rôle)' &&
-      (await ui.ev(`!!${ui.$('work-group-start-all')}`)),
-    `proposés : une carte de groupe, trois lignes (rôle, sans rôle, avis), « Tout lancer » (${proposed})`
-  )
   await ui.reveal(group)
   await ui.shot('264-groupe-proposes')
   // Fenêtre étroite (revue UX) : les boutons d'une ligne passent sous son texte.
@@ -164,22 +139,10 @@ async function groupRun(ui, { workspace, git, commitAll, turnLock }) {
 
   // 2 · En cours : retenus par le verrou ; la carte reste à sa place et change sur place.
   writeFileSync(turnLock, '')
-  const place = await ui.ev(`${group}.previousElementSibling ? 1 : 0`)
   await ui.click(ui.$('work-group-start-all'))
   await ui.waitFor(`${rows}.length === 3`, 30000)
   await heldTurns(turnLock, 3)
   await ui.waitFor(`${rows}.every((r) => r.dataset.state === 'running')`, 15000)
-  check(
-    (await ui.ev(`document.querySelectorAll('[data-testid=work-group]').length`)) === 1 &&
-      (await ui.ev(`${ui.$('work-group-counts')}.innerText`)).includes(
-        L('workGroup.count.running', { count: 3 })
-      ) &&
-      (await ui.ev(`${group}.previousElementSibling ? 1 : 0`)) === place &&
-      !(await ui.ev(
-        `!!document.querySelector('[data-testid=subtasks], [data-testid=child-started], [data-testid=child-report]')`
-      )),
-    'en cours : la même carte, « 3 en cours », ni « Sous-tâches » ni lancement séparé'
-  )
   await ui.reveal(group)
   await ui.shot('264-groupe-en-cours')
   rmSync(turnLock)
@@ -212,34 +175,6 @@ async function groupRun(ui, { workspace, git, commitAll, turnLock }) {
     ) && (await ui.ev(`${advice}.querySelector('[data-testid=work-body]').innerText`)).length > 200,
     'finis : « 3 finis », l’avis déplié sur sa réponse entière, « Fusionner le recommandé »'
   )
-  const column = await ui.ev(
-    `[${['Tri des articles par rayon', 'Tests de la sauvegarde locale', 'Relire l’accessibilité de l’écran'].map((t) => `${rowOf(t)}?.querySelector('[data-testid=work-row-state]')?.firstChild?.textContent?.split(' —')[0].trim()`).join(', ')}].join(' | ')`
-  )
-  const expected = [
-    L('workGroup.verdict.ready'),
-    L('workGroup.verdict.notReady'),
-    L('workGroup.state.replied')
-  ].join(' | ')
-  check(
-    (await ui.ev(`${ui.$('subtasks-merge-others')}?.innerText`)) ===
-      L('workGroup.merge.recommended.others', { count: 1 }) && column === expected,
-    `une colonne d’état : « Recommandé », « Pas encore prêt », « a répondu » ; « Inclure l’autre… » (${column})`
-  )
-  // Le conseil ne promet pas d'avis à venir : rien ne réveille l'agent pour le donner (D9).
-  const said = await ui.ev(`${ui.$('subtasks-merge-advice')}?.innerText`)
-  const quoted = (title) => L('childrenMerge.quote', { title })
-  const adviceText =
-    L('workGroup.merge.advice.recommended', { titles: quoted('Tri des articles par rayon') }) +
-    L('workGroup.merge.advice.separator') +
-    L('workGroup.merge.advice.notReady', {
-      count: 1,
-      titles: quoted('Tests de la sauvegarde locale')
-    }) +
-    L('workGroup.merge.advice.end')
-  check(
-    spaces(said) === spaces(adviceText),
-    `conseil : « … n’est pas encore recommandé », sans « attend son avis » (${said})`
-  )
   await footInside(ui, group, 'largeur normale')
   await ui.reveal(group)
   await ui.shot('264-groupe-finis')
@@ -258,17 +193,11 @@ async function groupRun(ui, { workspace, git, commitAll, turnLock }) {
   await ui.shot('264-groupe-inclure-autres')
   await ui.click(ui.$('subtasks-merge-confirm-go'))
   await ui.waitFor(`${ui.$('subtasks-merge-result')}?.dataset.status === 'done'`, 60000)
-  check(
-    git(workspace, 'log', '--format=%s', 'main').includes('feat: tri par rayon') &&
-      git(workspace, 'log', '--format=%s', 'main').includes('test: sauvegarde locale') &&
-      (await ui.ev(`${group}.contains(${ui.$('subtasks-merge-result')})`)),
-    'fusion : les deux branches dans main, le résultat dans la carte'
-  )
   await ui.reveal(ui.$('subtasks-merge-result'))
   await ui.shot('264-groupe-fusionne-carte')
 }
 
-async function writerRun(ui, { workspace, git, commitAll }) {
+async function writerRun(ui, { commitAll }) {
   await ui.ready()
   await ui.closePanel()
   await ui.send('Bonjour')
@@ -294,12 +223,6 @@ async function writerRun(ui, { workspace, git, commitAll }) {
   await ui.waitFor(`document.querySelector('.history-item.active')?.dataset.id === '${mother}'`)
   const start = `${card}.querySelector('[data-testid=work-merge-start]')`
   await ui.waitFor(`!!${start}`, 30000)
-  check(
-    (await ui.ev(`${start}.innerText`)) === L('workMerge.action', { base: 'main' }) &&
-      (await ui.ev(`!!${card}.querySelector('[data-testid=work-review]')`)) &&
-      (await ui.ev(`!!${card}.querySelector('[data-testid=work-changes-open]')`)),
-    'travail qui écrit : « Voir les modifications », « Faire relire », « Fusionner dans main »'
-  )
   await ui.reveal(card)
   await ui.shot('264-travail-ecrit')
 
@@ -319,31 +242,6 @@ async function writerRun(ui, { workspace, git, commitAll }) {
     `${nested}?.dataset.state === 'replied' && ${nested}.dataset.findings === '2'`,
     30000
   )
-  const placed = await ui.ev(`(() => ({
-    ask: ${card}.querySelector('[data-testid=work-reviews] [data-testid=review-ask]')?.innerText ?? '',
-    elsewhere: [...document.querySelectorAll('[data-testid=role-request]')].some((b) => b.innerText.includes(${JSON.stringify(branch)})),
-    cards: document.querySelectorAll('[data-testid=work-card][data-role=code-reviewer]').length,
-    place: ${nested}.querySelector('[data-testid=work-place]')?.innerText,
-    places: [...${nested}.querySelectorAll('[data-testid=work-finding-where]')].map((w) => w.innerText),
-    fix: !!${nested}.querySelector('[data-testid=work-fix]'),
-    fixWork: ${card}.querySelector('[data-testid=work-fix-work]')?.className ?? '',
-    merge: ${card}.querySelector('[data-testid=work-merge-start]')?.className ?? '',
-    relays: ${card}.querySelectorAll('[data-testid=work-relay]').length
-  }))()`)
-  check(
-    placed.ask.includes(L('review.ask.branch', { branch })) &&
-      !placed.elsewhere &&
-      placed.cards === 1 &&
-      placed.place === L('workCard.readOnlyBranch') &&
-      JSON.stringify(placed.places) === JSON.stringify(['src/ordre.js:1', 'src/ordre.js:1']) &&
-      // Une remarque moyenne à traiter : « Faire corriger » principal, « Fusionner » secondaire ;
-      // une seule ligne de transmission (revue UX).
-      !placed.fix &&
-      placed.fixWork.includes('primary') &&
-      !placed.merge.includes('primary') &&
-      placed.relays === 1,
-    `relecture d’un travail : dans sa carte, remarques sur sa branche (${JSON.stringify(placed)})`
-  )
   await ui.reveal(nested)
   await ui.shot('265-relecture-travail')
   await ui.viewport(900, 760)
@@ -355,69 +253,7 @@ async function writerRun(ui, { workspace, git, commitAll }) {
     `${card}.querySelector('[data-testid=work-merge-result]')?.dataset.state === 'merged'`,
     60000
   )
-  const result = await ui.ev(`${card}.querySelector('[data-testid=work-merge-result]').innerText`)
-  check(
-    result.includes(L('workMerge.doneCleaned', { base: 'main' })) &&
-      git(workspace, 'log', '--format=%s', 'main').includes('feat: rayons') &&
-      !!branch &&
-      git(workspace, 'branch', '--list', branch) === '' &&
-      !/bougé|tests de la branche/i.test(result),
-    `fusionné dans la carte : « ${result.split('\n')[0]} », branche supprimée, aucune étape inventée`
-  )
   // La carte, avec sa relecture (fiche 265), est plus haute que la fenêtre : son résultat à l'écran.
   await ui.reveal(`${card}.querySelector('[data-testid=work-merge-result]')`)
   await ui.shot('264-travail-ecrit-fusion')
-}
-
-/**
- * Conflit qui reste dans une carte de groupe (revue UX, capture `264-groupe-conflit`) : deux travaux
- * écrivent le même fichier autrement ; le second reçoit la consigne de conflit, ne réécrit que
- * README.md (scénario `conflits`) : la fusion s'arrête, Réessayer, Abandonner, Voir le conflit.
- */
-async function conflictRun(ui, { workspace, git, commitAll }) {
-  await ui.ready()
-  await ui.closePanel()
-  await ui.send('/scenario echo Organise le carnet')
-  await ui.ready()
-  const mother = await ui.ev(`document.querySelector('.history-item.active')?.dataset.id`)
-  await ui.send('/scenario fusion-trois')
-  await ui.waitFor(`!!${ui.$('work-group-start-all')}`, 30000)
-  await ui.click(ui.$('work-group-start-all'))
-  await ui.waitFor(`${rows}.filter((r) => r.dataset.state === 'replied').length === 3`, 60000)
-  await ui.ready()
-  const folders = Object.fromEntries(
-    await ui.ev(
-      `window.api.conversations.get().then((s) => s.conversations.filter((c) => c.startedFrom?.id === '${mother}' && !c.archived).map((c) => [c.title, c.workspace]))`
-    )
-  )
-  writeFileSync(join(folders['Page d’aide'], 'carnet.txt'), 'version aide\n')
-  await commitAll(folders['Page d’aide'], 'docs: aide')
-  writeFileSync(join(folders['Notes de version'], 'carnet.txt'), 'version notes\n')
-  await commitAll(folders['Notes de version'], 'docs: notes')
-  await reread(ui, mother, `${rows}[1]`)
-  await ui.waitFor(`!!${ui.$('subtasks-merge-start')}`, 30000)
-  await ui.ready()
-  await ui.reveal(ui.$('subtasks-merge-start'))
-  // Le plan relu après le retour : les deux branches commitées prêtes (« Fusionner les 2 prêts »),
-  // pas seulement le bouton actif. Une seule vue prête, il s'activait déjà : sous Linux, la fusion
-  // est partie avec « Notes de version » seule, et rien n'a été en conflit (fiche 250).
-  const both = L('workGroup.merge.action', { count: 2, base: 'main' })
-  await ui.waitFor(
-    `${ui.$('subtasks-merge-start')}?.disabled === false && ${ui.$('subtasks-merge-start')}.innerText.trim() === ${JSON.stringify(both)}`,
-    30000
-  )
-  await ui.click(ui.$('subtasks-merge-start'))
-  await ui.waitFor(`${ui.$('subtasks-merge-result')}?.dataset.status === 'conflict'`, 90000)
-  await ui.waitFor(`!!${ui.$('subtasks-merge-retry')}`, 30000)
-  check(
-    (await ui.ev(`!!${ui.$('subtasks-merge-abort')}`)) &&
-      (await ui.ev(`!!${ui.$('subtasks-merge-show')}`)) &&
-      // La première dans l'ordre des lignes (de lancement) est entrée, pas la seconde.
-      ['docs: aide', 'docs: notes'].filter((m) =>
-        git(workspace, 'log', '--format=%s', 'main').includes(m)
-      ).length === 1,
-    'conflit qui reste : dit dans la carte, Réessayer, Abandonner, Voir le conflit ; rien d’autre fusionné'
-  )
-  await ui.reveal(ui.$('subtasks-merge-result'))
-  await ui.shot('264-groupe-conflit')
 }

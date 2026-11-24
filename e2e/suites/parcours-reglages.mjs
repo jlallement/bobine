@@ -2,6 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { L, LANG, MAIN_PORT, check, mainProcess, withApp } from '../lib.mjs'
+import { NETWORK_BACK_MARKER } from '../../src/mock-agent/scenarios-opencode-2-3.mts'
 import {
   ROWS,
   choose,
@@ -17,8 +18,13 @@ import {
 
 const FIRST = '/scenario echo Prépare la démo'
 const BUSY = '/scenario attend-stop'
-/** Proxy injoignable (port fermé), sans identifiants : cité tel quel. */
-const PROXY = 'http://127.0.0.1:9'
+/**
+ * Proxy injoignable (port fermé), avec des identifiants : cité masqué, et son mot de passe nulle part
+ * dans la page (inventaire C, risque « sécurité » : contrôle global, pas composant par composant).
+ */
+const SECRET = 's3cr3t-parcours'
+const PROXY = `http://jean:${SECRET}@127.0.0.1:9`
+const MASKED = 'http://•••@127.0.0.1:9'
 const memoryEntry = `document.querySelector('[data-testid=memory-entry][data-name=tests-e2e]')`
 const memoryCards = `[...document.querySelectorAll('[data-testid=memory-card]')]`
 const navItem = (key) =>
@@ -144,8 +150,21 @@ export async function parcoursReglagesSuite(scheme) {
             await ui.waitFor(`!!${ui.$('agent-unreachable')}`, 15000)
             const hint = await ui.ev(`${ui.$('agent-unreachable-hint')}.innerText`)
             check(
-              hint === L('agentRetry.proxy', { proxy: PROXY }),
-              `modèle injoignable : le proxy réglé est cité (${hint})`
+              hint === L('agentRetry.proxy', { proxy: MASKED }),
+              `modèle injoignable : le proxy réglé est cité, identifiants masqués (${hint})`
+            )
+            const leaks = await ui.ev(`(() => {
+              const secret = ${JSON.stringify(SECRET)}
+              const where = []
+              if (document.documentElement.outerHTML.includes(secret)) where.push('DOM')
+              if (document.body.innerText.includes(secret)) where.push('texte')
+              if (document.title.includes(secret)) where.push('titre')
+              for (const field of document.querySelectorAll('input, textarea')) if (field.value.includes(secret)) where.push(field.dataset.testid ?? field.tagName)
+              return where
+            })()`)
+            check(
+              leaks.length === 0,
+              `le mot de passe du proxy n’est nulle part dans la page (${leaks.join(', ') || 'rien'})`
             )
             await ui.shot('276-reglages-proxy')
             await ui.click(ui.$('agent-unreachable-stop'))
@@ -155,10 +174,15 @@ export async function parcoursReglagesSuite(scheme) {
           await journee.step('proxy retiré : l’agent revient', async () => {
             await setProxy(ui, '')
             await newConversation(ui)
-            await ui.send('/scenario reseau-revenu-2-3')
+            // Le réseau revient quand l'essai a vu le bandeau (fichier lu par l'agent factice à
+            // chaque reprise) : un bandeau de quelques centaines de millisecondes échappait au
+            // relevé sur un runner chargé (macOS CI 2026-11-24, fiche 278).
+            await ui.send('/scenario reseau-revenu-au-signal-2-3')
             await ui.waitFor(`!!${ui.$('agent-unreachable')}`, 15000)
             const hint = await ui.ev(`${ui.$('agent-unreachable-hint')}.innerText`)
+            writeFileSync(join(workspace, NETWORK_BACK_MARKER), '')
             await ui.waitFor(`!${ui.$('agent-unreachable')}`, 30000)
+            rmSync(join(workspace, NETWORK_BACK_MARKER), { force: true })
             await ui.ready()
             check(
               hint === L('agentRetry.noProxy') && (await ui.lastAgentText()).length > 0,

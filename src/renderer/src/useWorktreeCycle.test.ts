@@ -1,5 +1,5 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ConversationEvent } from '@shared/agent'
 import type { WorktreeCycleView } from '@shared/worktree-cycle'
 import { useWorktreeCycle } from './useWorktreeCycle'
@@ -61,6 +61,26 @@ describe('useWorktreeCycle (fiche 176, D15 : commit fait hors de la barre)', () 
     )
     await waitFor(() => expect(result.current.info?.ahead).toBe(2))
     expect(result.current.info?.unpushed).toBe(1)
+  })
+
+  it('commit fait hors de la barre, sans signal : pas relu de lui-même (pas de relève minutée)', async () => {
+    // Remplaçant de la vérification de composant n° 10 de la suite e2e `pr-ci` (inventaire B) :
+    // l'état n'est relu que sur un signal (fin de tour, fenêtre reprise, « Actualiser »).
+    const { result } = renderHook(() => useWorktreeCycle('c1', 0))
+    await waitFor(() => expect(result.current.info?.ahead).toBe(1))
+    ahead = 2
+    // Dix minutes sans signal (horloges simulées) : aucune relecture.
+    vi.useFakeTimers()
+    try {
+      act(() => void vi.advanceTimersByTime(10 * 60_000))
+    } finally {
+      vi.useRealTimers()
+    }
+    expect(calls).toHaveLength(1)
+    expect(result.current.info?.ahead).toBe(1)
+    // « Actualiser » : le commit est vu.
+    act(() => result.current.refresh(true))
+    await waitFor(() => expect(result.current.info?.ahead).toBe(2))
   })
 
   it('relit l’état quand la fenêtre reprend la main (commit fait dans un terminal)', async () => {

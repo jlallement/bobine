@@ -24,7 +24,7 @@ and Rolldown are, for the small runtime helpers they add to the build output.
 
 | Package | Version | License | Used by | License text |
 |---|---|---|---|---|
-| [@agentclientprotocol/sdk](https://github.com/agentclientprotocol/typescript-sdk) | 2.8.0 | Apache-2.0 | main process | [T2](#t2) |
+| [@agentclientprotocol/sdk](https://github.com/agentclientprotocol/typescript-sdk) | 2.9.1 | Apache-2.0 | main process | [T2](#t2) |
 | [@braintree/sanitize-url](https://github.com/braintree/sanitize-url) | 7.1.2 | MIT | interface | [T3](#t3) |
 | [@chevrotain/gast](https://github.com/Chevrotain/chevrotain) | 13.2.0 | Apache-2.0 | interface | [T4](#t4) |
 | [@chevrotain/regexp-to-ast](https://github.com/Chevrotain/chevrotain) | 13.2.0 | Apache-2.0 | interface | [T4](#t4) |
@@ -120,7 +120,7 @@ and Rolldown are, for the small runtime helpers they add to the build output.
 | [highlight.js](https://github.com/highlightjs/highlight.js) | 11.11.2 | BSD-3-Clause | interface | [T43](#t43) |
 | [html-parse-stringify](https://github.com/i18next/html-parse-stringify) | 4.0.1 | MIT | interface | [T44](#t44) |
 | [html-url-attributes](https://github.com/rehypejs/rehype-minify/tree/main/packages/html-url-attributes) | 3.0.1 | MIT | interface | [T45](#t45) |
-| [i18next](https://github.com/i18next/i18next) | 27.2.2 | MIT | main process, interface | [T46](#t46) |
+| [i18next](https://github.com/i18next/i18next) | 27.2.4 | MIT | main process, interface | [T46](#t46) |
 | [ignore](https://github.com/kaelzhang/node-ignore) | 7.0.16 | MIT | main process | [T47](#t47) |
 | [inline-style-parser](https://github.com/remarkablemark/inline-style-parser) | 0.2.7 | MIT | interface | [T48](#t48) |
 | [internmap](https://github.com/mbostock/internmap) | 2.0.3 | ISC | interface | [T49](#t49) |
@@ -326,7 +326,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ### T2
 
-Used by: @agentclientprotocol/sdk 2.8.0.
+Used by: @agentclientprotocol/sdk 2.9.1.
 
 ```text
 
@@ -2193,7 +2193,7 @@ THE SOFTWARE.
 
 ### T46
 
-Used by: i18next 27.2.2.
+Used by: i18next 27.2.4.
 
 ```text
 The MIT License (MIT)

@@ -1,12 +1,14 @@
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { describeSettings } from '../../src/mock-agent/langue.mts'
+import { affirm, probes } from '../affirm.mjs'
 import { L, M, MAIN_PORT, MOCK_LANG, check, mainProcess, withApp } from '../lib.mjs'
 import {
   ROWS,
   activeId,
   day,
+  eventually,
   git,
   newConversation,
   open,
@@ -22,6 +24,9 @@ const SECOND = 'Deuxième chantier : la page d’aide'
 const card = `document.querySelector('[data-testid=permission]')`
 const items = `document.querySelectorAll('[data-testid=queued-item]')`
 const reviewer = `document.querySelector('[data-testid=work-card][data-role=code-reviewer]')`
+const workRows = `[...document.querySelectorAll('[data-testid=work-row]')]`
+/** Réponses des travaux dans l'ordre du fil (cartes-réponses, lignes dépliées des groupes). */
+const workAnswers = `[...document.querySelectorAll('[data-testid=work-answer]')]`
 
 /**
  * « Matinée de dev » (fiche 277) : un projet git ouvert, une demande, des autorisations (une fois,
@@ -36,6 +41,8 @@ export async function parcoursMatineeSuite(scheme) {
   const userData = mkdtempSync(join(tmpdir(), 'bob-e2e-matinee-data-'))
   const journee = day('matinée')
   let usersInFirst = 0
+  /** La jauge de consommation était-elle là avant de quitter ? */
+  let meterBefore = false
   try {
     await withApp(
       scheme,
@@ -124,6 +131,11 @@ export async function parcoursMatineeSuite(scheme) {
               git(workspace, 'status', '--porcelain').includes('README.md'),
             'Modifications : README.md et src/app.js, le diff de README sur le disque'
           )
+          // Inventaire `git` n° 2 : la puce de branche le dit aussi, après le tour de l'agent.
+          check(
+            await eventually(ui, `${ui.$('git-branch')}?.dataset.dirty === 'true'`),
+            'après le tour de l’agent : point sur la branche (non commité)'
+          )
           await ui.shot('276-matinee-modifications')
         })
 
@@ -186,7 +198,7 @@ export async function parcoursMatineeSuite(scheme) {
         )
 
         await journee.step(
-          'revenir à la première et envoyer une suite pendant le tour',
+          'revenir à la première, envoyer une suite et poser un aparté pendant le tour',
           async () => {
             await open(ui, FIRST)
             await ui.waitFor(`!!${ui.$('stop')}`)
@@ -199,6 +211,32 @@ export async function parcoursMatineeSuite(scheme) {
               (await userCount(ui)) === usersInFirst && (await ui.ev(`!!${ui.$('stop')}`)),
               'retour : le tour continue, la suite attend dans la file'
             )
+            // Inventaire `aparte` n° 5 et 7 : une question à côté pendant le tour (fiche 180).
+            await ui.ev(`${ui.$('composer-input')}.focus()`)
+            await ui.type('/btw C’est quoi déjà ce flag ?')
+            await ui.waitFor(`!${ui.$('command-menu')}`)
+            await ui.enter()
+            await ui.waitFor(
+              `${ui.$('aside-card')}?.dataset.status === 'ready' && !!${ui.$('aside-answer')}`,
+              20000
+            )
+            await affirm(ui, '277-matinee-aparte', [
+              probes.above(
+                '[data-testid=aside-card]',
+                '.thread-dock .composer',
+                -1,
+                'carte d’aparté au-dessus de la saisie'
+              )
+            ])
+            check(
+              (await ui.ev(`${ui.$('composer-input')}.value`)) === '' &&
+                (await userCount(ui)) === usersInFirst &&
+                (await ui.ev(`${items}.length`)) === 1 &&
+                (await ui.ev(`!!${ui.$('stop')}`)),
+              'aparté : réponse à côté, saisie vide, rien dans le fil ; le tour et la file attendent'
+            )
+            await ui.click(ui.$('aside-close'))
+            await ui.waitFor(`!${ui.$('aside-card')}`)
           }
         )
 
@@ -239,6 +277,7 @@ export async function parcoursMatineeSuite(scheme) {
             'modèle et mode appliqués par l’agent'
           )
           usersInFirst = await userCount(ui)
+          meterBefore = await eventually(ui, `!!${ui.$('usage-meter')}`)
           await ui.shot('276-matinee-avant-relance')
         })
 
@@ -278,6 +317,11 @@ export async function parcoursMatineeSuite(scheme) {
               seen.mode?.includes(M('Question')),
             `relance : la conversation affichée, son fil (relecture comprise), son modèle et son mode (${JSON.stringify(seen)})`
           )
+          // Inventaire `restart` n° 2 : relue avant tout nouveau tour (qui la rendrait de toute façon).
+          check(
+            meterBefore && (await eventually(ui, `!!${ui.$('usage-meter')}`)),
+            `relance : la consommation de la conversation est gardée (avant : ${meterBefore})`
+          )
           await ui.send('/scenario echo On reprend')
           await ui.ready()
           check(
@@ -300,6 +344,64 @@ export async function parcoursMatineeSuite(scheme) {
               (await userCount(ui)) === 2 &&
               (await ui.lastAgentText()).includes('Et la suite ?'),
             'deuxième conversation : son historique, et elle répond après la relance'
+          )
+        })
+
+        await journee.step('deux rôles cités en tout premier message', async () => {
+          // Inventaire `roles-travail` n° 2-3 : renderer → preload → main → filles, sans message à
+          // l'agent de la mère ; la conversation neuve entre dans l'historique.
+          await newConversation(ui)
+          await ui.ev(`${ui.$('composer-input')}.focus()`)
+          await ui.type('@code-reviewer @ux-ui-expert relisez le README')
+          await ui.press('Escape')
+          await ui.waitFor(`!!${ui.$('role-destination')}`)
+          await ui.enter()
+          await ui.waitFor(`${workRows}.length === 2`, 30000)
+          check(
+            (await ui.ev(`${ui.$('composer-input')}.value`)) === '' &&
+              (await ui.ev(`document.querySelectorAll('[data-testid=role-request]').length`)) ===
+                1 &&
+              (await ui.ev(`document.querySelectorAll('[data-testid=work-group]').length`)) === 1,
+            'premier message `@rôle` : parti, saisie vidée ; une bulle, une carte de groupe à deux lignes'
+          )
+          await ui.waitFor(`${ROWS}.some((i) => i.innerText.includes('relisez le README'))`, 15000)
+          const mother = await activeId(ui)
+          await ui.waitFor(
+            `document.querySelectorAll('[data-testid=history-item][data-mother="${mother}"]').length === 2`,
+            30000
+          )
+          await ui.waitFor(
+            `${workRows}.filter((c) => c.dataset.state === 'replied').length === 2`,
+            30000
+          )
+          check(
+            true,
+            'la conversation est dans l’historique, ses deux filles dessous ; elles répondent'
+          )
+        })
+
+        await journee.step('un rôle qui écrit, dossier modifié : il part du commit', async () => {
+          // Inventaire `filles-non-commite` n° 3 (choix de lancement de bout en bout) : le dossier
+          // de la mère lu avant « Lancer », le choix affiché (« Partir sans elles ») porté par l'IPC.
+          writeFileSync(join(workspace, 'plan.md'), '# Plan\n')
+          const before = await ui.ev(`${workAnswers}.length`)
+          await ui.ev(`${ui.$('composer-input')}.focus()`)
+          await ui.type('@front-architect construisez la page\n/scenario voit-le-plan')
+          await ui.press('Escape')
+          await ui.waitFor(`!!${ui.$('role-destination')}`)
+          await ui.waitFor(`${ui.$('launch-line')}?.dataset.count === '1'`, 10000)
+          check(
+            (await ui.ev(`${ui.$('launch-line')}.innerText`)).includes(
+              L('launchLine.without', { count: 1 })
+            ),
+            'rôle qui écrit sur un dossier modifié : la ligne dit qu’il partira sans la modification'
+          )
+          await ui.enter()
+          await ui.waitFor(`${workAnswers}.length > ${before}`, 30000)
+          check(
+            (await ui.ev(`${workAnswers}.at(-1).innerText`)).includes('je ne trouve pas plan.md') &&
+              (await ui.ev(`!!${ui.$('work-left-behind')}`)),
+            'Entrée : la fille part du dernier commit, sans plan.md ; rappel sur sa carte'
           )
         })
       },

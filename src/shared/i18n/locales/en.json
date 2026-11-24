@@ -1534,7 +1534,7 @@
       },
       "orphans": {
         "label": "Orphan worktrees",
-        "hint": "Worktrees whose conversation was deleted. “Clean up” erases them with their contents.",
+        "hint": "No conversation uses them, even in the trash. “Clean up” erases them with their contents.",
         "none": "None.",
         "clean": "Clean up",
         "cleanLabel": "Clean up {{path}}",
@@ -3541,6 +3541,7 @@
     "noCommit": "The repository has no commit yet: a worktree starts from a commit.",
     "lockedWindows": "A program is keeping files of the worktree open (dev server, editor, antivirus): close it, then try again.\n{{error}}",
     "outside": "Worktree outside {{root}}: {{path}}",
+    "orphanHeld": "This worktree is still used by a conversation (in the history or in the trash): it was not deleted. {{path}}",
     "notice": {
       "start": "Worktree created from {{branch}} at commit {{hash}} ({{date}}): “{{subject}}”.",
       "startDetached": "Worktree created from commit {{hash}} ({{date}}): “{{subject}}”.",

@@ -8,6 +8,7 @@ import {
   closeSettings,
   day,
   git,
+  ipcTrace,
   open,
   openSettings,
   project,
@@ -178,17 +179,27 @@ export async function parcoursDeleguerSuite(scheme) {
           )
         })
 
-        await journee.step('supprimer la mère (et ses travaux)', async () => {
-          await trash(ui, MOTHER)
-          await ui.waitFor(`!${row(MOTHER)}`)
-          await ui.waitFor(`!${row('Import CSV')} && !${row('Page d’aide')}`)
-          check(
-            !(await ui.ev(
-              `window.api.conversations.get().then((s) => s.conversations.some((c) => c.id === '${mother}'))`
-            )),
-            'mère et travaux à la corbeille : plus dans la barre latérale'
-          )
-        })
+        // Diagnostic de l'étape 6 (fiche 277, défaut 3), montré seulement en cas d'échec.
+        let deleteTrace
+        await journee.step(
+          'supprimer la mère (et ses travaux)',
+          async () => {
+            deleteTrace = await ipcTrace(main, mother)
+            await trash(ui, MOTHER)
+            await ui.waitFor(`!${row(MOTHER)}`)
+            await ui.waitFor(`!${row('Import CSV')} && !${row('Page d’aide')}`)
+            check(
+              !(await ui.ev(
+                `window.api.conversations.get().then((s) => s.conversations.some((c) => c.id === '${mother}'))`
+              )),
+              'mère et travaux à la corbeille : plus dans la barre latérale'
+            )
+            // Inventaire `restart` n° 4 : la suppression se confirme dans l'app (fiche 026), jamais
+            // par une boîte du navigateur (`confirm()`).
+            check(ui.dialogs.length === 0, 'suppression confirmée dans l’app : aucune boîte native')
+          },
+          { trace: () => deleteTrace?.read() ?? Promise.resolve([]) }
+        )
 
         await journee.step('restaurer la mère depuis la corbeille', async () => {
           await openSettings(ui, 'settings-data')
@@ -202,6 +213,46 @@ export async function parcoursDeleguerSuite(scheme) {
           await ui.waitFor(`!!${row(MOTHER)}`)
           check(true, 'restaurée : de retour dans la barre latérale')
         })
+
+        // Chasse rc.5 (fiche 228) : la liste des orphelins comptait les worktrees des travaux
+        // restaurés, et « Nettoyer » les supprimait avec leur travail non commité.
+        await journee.step(
+          'restaurer puis Nettoyer : le worktree d’un travail restauré n’est ni listé ni supprimé',
+          async () => {
+            const kept = folders['Page d’aide']
+            const draft = join(kept, 'brouillon.md')
+            writeFileSync(draft, 'en cours\n')
+            const branch = git(kept, 'rev-parse', '--abbrev-ref', 'HEAD')
+            await openSettings(ui, 'settings-data')
+            // Liste lue (pendant la recherche, la liste est là, vide) : « Aucun. » ou des lignes.
+            await ui.waitFor(
+              `!!${ui.$('orphans-none')} || !!document.querySelector('[data-testid=orphans] li')`
+            )
+            const listed = await ui.ev(
+              `[...document.querySelectorAll('[data-testid=orphans] [title]')].map((e) => e.title)`
+            )
+            check(
+              Object.values(folders).every((f) => !listed.includes(f)) &&
+                (await ui.ev(`!!${ui.$('orphans-none')}`)),
+              'Worktrees orphelins : ni les travaux restaurés ni celui encore à la corbeille'
+            )
+            await ui.ev(`${ui.$('orphans-none')}.scrollIntoView({ block: 'center' }), true`)
+            await ui.shot('276-deleguer-orphelins')
+            // « Nettoyer » d'une liste périmée : le main revérifie et refuse.
+            const refused = await ui.ev(
+              `window.api.worktree.removeOrphan(${JSON.stringify({ root: workspace, path: kept, branch })}).then(() => '', (e) => String(e.message))`
+            )
+            check(
+              refused.includes(L('worktrees.orphanHeld', { path: kept })) &&
+                existsSync(draft) &&
+                git(workspace, 'branch', '--list', branch) !== '',
+              'Nettoyer refusé par le main : dossier, travail non commité et branche gardés'
+            )
+            await closeSettings(ui)
+          },
+          // Le refus voulu, consigné par le main.
+          { allow: [/worktree:removeOrphan/] }
+        )
 
         await journee.step('rouvrir la mère restaurée et continuer à converser', async () => {
           await open(ui, MOTHER)

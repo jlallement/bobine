@@ -965,7 +965,7 @@ export class ChildConversations {
       // Envoi retenu sans tour (plafond de coût, fiche 157) : la fille n'est plus « démarre ».
       this.conversations.holdStarting(childId, false)
     } catch (error) {
-      this.conversations.holdStarting(childId, false)
+      this.conversations.holdStarting(childId, false, true)
       launched()
       this.readOnly.unprepare(childId)
       // La consigne n'a pas pu partir (agent à connecter…) : rendue dans le fil de la fille, et

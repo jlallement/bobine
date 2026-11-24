@@ -115,6 +115,39 @@ describe('script de la page en mode Annoter (fiche 146)', () => {
     document.removeEventListener('click', onPage)
   })
 
+  it('curseur en croix sur toute la page, même contre un style de la page ; parti à l’arrêt', () => {
+    const page = document.createElement('style')
+    page.textContent = 'button { cursor: pointer } #cible { cursor: grab }'
+    document.head.append(page)
+    const button = document.getElementById('cible') as HTMLButtonElement
+    const host = document.querySelector('bobine-notes') as HTMLElement
+    // Hors de la racine fermée : sinon la règle ne toucherait pas la page.
+    const rule = host.querySelector(':scope > style')?.textContent ?? ''
+    expect(rule).toContain('cursor: crosshair !important')
+    expect(getComputedStyle(button).cursor).toBe('crosshair')
+    layer.stop()
+    expect(getComputedStyle(button).cursor).toBe('grab')
+    page.remove()
+  })
+
+  it('page défilée : point en pixels CSS de la fenêtre, position dans le document en plus', () => {
+    const scroll = { x: 0, y: 1300 }
+    const sx = Object.getOwnPropertyDescriptor(window, 'scrollX')
+    const sy = Object.getOwnPropertyDescriptor(window, 'scrollY')
+    Object.defineProperty(window, 'scrollX', { configurable: true, get: () => scroll.x })
+    Object.defineProperty(window, 'scrollY', { configurable: true, get: () => scroll.y })
+    try {
+      click(document.getElementById('cible') as Element, 80.44, 24.62)
+      const message = sent[0] as { point: unknown; doc: unknown }
+      // Au dixième de pixel près.
+      expect(message.point).toEqual({ x: 80.4, y: 24.6 })
+      expect(message.doc).toEqual({ x: 80.4, y: 1324.6 })
+    } finally {
+      if (sx) Object.defineProperty(window, 'scrollX', sx)
+      if (sy) Object.defineProperty(window, 'scrollY', sy)
+    }
+  })
+
   it('page zoomée : épingles et bulles gardent leur taille à l’écran', () => {
     layer.pins([{ id: 'na1', n: 1, text: 'Trop petit', doc: { x: 30, y: 40 } }])
     ;(scope['__bobineLayer'] as Layer & { zoom: (z: number) => boolean }).zoom(2)

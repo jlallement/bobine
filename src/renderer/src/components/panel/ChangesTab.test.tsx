@@ -648,3 +648,178 @@ describe('onglet Modifications d’une discussion (fiche 276, T14)', () => {
     expect(git).toHaveBeenCalled()
   })
 })
+
+/**
+ * Vue « Conversation » : ce que l'agent a modifié, et « Ouvrir » qui n'exécute rien. Remplaçant des
+ * vérifications de composant des suites e2e `changes` (inventaire B, #3, #11) et `replay-changes`
+ * (inventaire B, #6, #7). Le refus d'exécuter lui-même est choisi par le main
+ * (`file-links.test.ts`) ; ici, la note que l'onglet en tire.
+ */
+describe('vue Conversation de l’onglet Modifications (fiches 021, 071, 272)', () => {
+  const api = window.api
+  const open = vi.fn()
+  beforeEach(() => {
+    open.mockReset()
+    window.api = {
+      ...api,
+      changes: { git: async () => ({ ...REPO, files: [] }), gitFile: vi.fn(), open },
+      settings: { get: async () => ({ preferences: {} }), onChanged: () => () => {} }
+    } as unknown as Window['api']
+  })
+  afterEach(() => {
+    cleanup()
+    window.api = api
+  })
+
+  const edit = (id: number, path: string, oldText: string | null, newText: string) =>
+    ({
+      kind: 'tool',
+      id,
+      toolCallId: `t${id}`,
+      title: 'Edit',
+      toolKind: 'edit',
+      status: 'completed',
+      content: [{ type: 'diff', path, oldText, newText }],
+      locations: []
+    }) as TranscriptItem
+  /** `write` d'OpenCode qui réécrit un fichier : abouti, sans diff (fiche 272). */
+  const rewrite = (id: number, path: string) =>
+    ({
+      kind: 'tool',
+      id,
+      toolCallId: `t${id}`,
+      title: 'write',
+      toolKind: 'edit',
+      status: 'completed',
+      content: [{ type: 'content', content: { type: 'text', text: 'Wrote file successfully' } }],
+      locations: [{ path }]
+    }) as TranscriptItem
+
+  // Une conversation neuve par essai : la vue choisie est retenue par conversation (fiche 185).
+  let id = 0
+  const show = (items: TranscriptItem[]) =>
+    render(
+      <Tooltip.Provider>
+        <ChangesTab conversationId={`vue-${++id}`} workspace="/depot" items={items} />
+      </Tooltip.Provider>
+    )
+  const names = () =>
+    screen.getAllByTestId('changes-file').map((f) => f.querySelector('.changes-name')?.textContent)
+
+  it('README.md puis src/app.js créé (« A »), dans l’ordre ; deux modifications, un seul fichier', async () => {
+    show([
+      edit(1, '/depot/README.md', '# Démo\n', '# Démo\nUn\n'),
+      edit(2, '/depot/src/app.js', null, 'a\nb\nc\n'),
+      edit(3, '/depot/README.md', '# Démo\nUn\n', '# Démo\nUn\nDeux\n')
+    ])
+    await waitFor(() => expect(names()).toEqual(['README.md', 'app.js']))
+    const [readme, app] = screen.getAllByTestId('changes-file')
+    expect(readme?.querySelector('.changes-badge')).toBeNull()
+    expect(app?.querySelector('.changes-badge')?.textContent).toBe('A')
+    expect(app?.querySelector('.changes-dir')?.textContent).toContain('src')
+    expect(screen.getByTestId('changes-summary').textContent).toMatch(/2 fichiers/)
+  })
+
+  it('fichier réécrit sans diff : « modifié », sans totaux inventés, et pas d’« Annuler »', async () => {
+    show([rewrite(1, '/depot/README.md'), edit(2, '/depot/a.txt', 'x\n', 'y\n')])
+    await waitFor(() => expect(names()).toEqual(['README.md', 'a.txt']))
+    const [readme, other] = screen.getAllByTestId('changes-file')
+    expect(readme?.querySelector('.changes-stats')?.textContent).toBe('modifié')
+    expect(readme?.textContent).not.toMatch(/\+0|−0/)
+    expect(readme?.querySelector('[data-testid=changes-revert]')).toBeNull()
+    // Un fichier avec son diff garde ses totaux et son « Annuler ».
+    expect(other?.querySelector('.changes-stats')?.textContent).toBe('+1 −1')
+    expect(other?.querySelector('[data-testid=changes-revert]')).toBeTruthy()
+  })
+
+  it('« Ouvrir » un exécutable : l’onglet dit pourquoi il a été montré plutôt qu’ouvert', async () => {
+    open.mockResolvedValue({
+      kind: 'revealed',
+      path: '/depot/lancer.command',
+      reason: 'executable'
+    })
+    show([edit(1, '/depot/lancer.command', null, 'echo hi\n')])
+    await waitFor(() => expect(names()).toEqual(['lancer.command']))
+    expect(screen.queryByTestId('changes-note')).toBeNull()
+    fireEvent.click(screen.getByTestId('changes-open'))
+    await waitFor(() => expect(open).toHaveBeenCalledWith(`vue-${id}`, '/depot/lancer.command'))
+    expect((await screen.findByTestId('changes-note')).textContent).toContain('lancer.command')
+    expect(screen.getByTestId('changes-note').textContent).toContain('peut s’exécuter')
+  })
+
+  it('« Ouvrir » un fichier ordinaire : ouvert, rien à dire', async () => {
+    open.mockResolvedValue({ kind: 'opened', path: '/depot/README.md' })
+    show([edit(1, '/depot/README.md', 'a\n', 'b\n')])
+    await waitFor(() => expect(names()).toEqual(['README.md']))
+    fireEvent.click(screen.getByTestId('changes-open'))
+    await waitFor(() => expect(open).toHaveBeenCalled())
+    expect(screen.queryByTestId('changes-note')).toBeNull()
+  })
+})
+
+/** Vue Git d'une conversation en worktree : la barre du worktree, une case par fichier (fiche 110). */
+describe('vue Git d’un worktree (fiche 110)', () => {
+  const api = window.api
+  afterEach(() => {
+    cleanup()
+    window.api = api
+  })
+
+  it('barre du worktree en tête, une case cochée par fichier modifié', async () => {
+    window.api = {
+      ...api,
+      changes: {
+        git: async () => ({
+          root: '/depot/.worktrees/x',
+          branch: 'bobine/x',
+          files: [
+            { path: 'README.md', status: 'modified', added: 1, removed: 0 },
+            { path: 'notes.txt', status: 'untracked', added: 1, removed: 0 }
+          ]
+        }),
+        gitFile: vi.fn()
+      },
+      worktree: {
+        ...api.worktree,
+        info: async () => ({
+          title: 'x',
+          branch: 'bobine/x',
+          path: '/depot/.worktrees/x',
+          root: '/depot',
+          base: 'abc1234',
+          baseShort: 'abc1234',
+          baseBranch: 'main',
+          dirtyAtStart: 1,
+          dirty: 2,
+          ahead: 0,
+          behind: 0,
+          commits: [],
+          merged: false,
+          pr: { ok: false, reason: 'noRemote' },
+          noRemote: true
+        })
+      },
+      settings: { get: async () => ({ preferences: {} }), onChanged: () => () => {} }
+    } as unknown as Window['api']
+    render(
+      <Tooltip.Provider>
+        <ChangesTab
+          conversationId="wt"
+          workspace="/depot/.worktrees/x"
+          items={[]}
+          initialView="git"
+          initialViewSeq={1}
+        />
+      </Tooltip.Provider>
+    )
+    expect(await screen.findByTestId('worktree-bar')).toBeTruthy()
+    expect(screen.getByTestId('worktree-dirty-at-start')).toBeTruthy()
+    await waitFor(() => expect(screen.getAllByTestId('changes-check')).toHaveLength(2))
+    expect(
+      screen.getAllByTestId('changes-check').every((box) => (box as HTMLInputElement).checked)
+    ).toBe(true)
+    // Sans dépôt distant : ni « Ouvrir une PR » ni raison.
+    expect(screen.queryByTestId('worktree-pr')).toBeNull()
+    expect(screen.queryByTestId('worktree-pr-blocker')).toBeNull()
+  })
+})

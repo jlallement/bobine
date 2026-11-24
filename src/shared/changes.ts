@@ -124,11 +124,11 @@ export function conversationChanges(items: readonly TranscriptItem[]): Conversat
       added += stats.added
       removed += stats.removed
     }
-    // Règle générique (fiche 140) : un ancien texte vide vaut un fichier créé, comme `null` (certains
-    // agents envoient `oldText: ""` pour un fichier qu'ils créent).
-    const first = diffs[0]?.oldText
+    // Règle générique : seul un ancien texte nul est une création (convention de l'app, comme la
+    // carte d'outil, `createsFile`). Un `oldText: ""` d'un fichier constaté absent est déjà remis à
+    // `null` par le main (fiche 203) ; celui qui reste est un fichier vide existant réécrit.
     if (diffs.length === 0) return { path, diffs, created: false, added, removed, unknown: true }
-    return { path, diffs, created: first === null || first === '', added, removed }
+    return { path, diffs, created: diffs[0]?.oldText === null, added, removed }
   })
 }
 

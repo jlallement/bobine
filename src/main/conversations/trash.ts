@@ -14,6 +14,7 @@ import { t } from 'i18next'
 import type { AgentEvent } from '@shared/agent'
 import type { TranscriptState } from '@shared/transcript'
 import type { TrashEntry } from '@shared/profile'
+import type { WorktreeInfo } from '../changes/worktrees'
 import { log } from '../log'
 import { fsyncDir, isReadOnly, readJson, writeFileAtomic } from '../storage'
 import { discussionFolder, eraseDiscussionFolder, sweepDiscussionFolders } from './discussion-space'
@@ -44,9 +45,39 @@ interface TrashMeta {
 
 export class ConversationTrash {
   readonly dir: string
+  /**
+   * Conversations en route vers la corbeille (sorties de l'historique, fiche pas encore écrite) :
+   * leur worktree reste tenu pendant ce temps, jamais compté orphelin.
+   */
+  private readonly pending = new Map<string, ConversationRecord>()
+  private readonly listeners = new Set<() => void>()
 
   constructor(conversationsDir: string) {
     this.dir = join(conversationsDir, '.trash')
+  }
+
+  /** Prévient à chaque entrée, sortie ou effacement (la liste des worktrees orphelins en dépend). */
+  onChange(listener: () => void): () => void {
+    this.listeners.add(listener)
+    return () => this.listeners.delete(listener)
+  }
+
+  private changed(): void {
+    for (const listener of [...this.listeners]) listener()
+  }
+
+  /** Cette conversation part à la corbeille : son worktree reste tenu d'ici à `put`. */
+  incoming(record: ConversationRecord): void {
+    this.pending.set(record.id, record)
+  }
+
+  /**
+   * Worktrees des conversations de la corbeille (et de celles en route) : « gardés » tant qu'elles
+   * y sont (fiche 228), jamais orphelins. Effacées pour de bon, ils le deviennent.
+   */
+  worktrees(): WorktreeInfo[] {
+    const records = [...this.metas().map((meta) => meta.record), ...this.pending.values()]
+    return records.flatMap((record) => record.worktree ?? [])
   }
 
   /**
@@ -77,6 +108,8 @@ export class ConversationTrash {
     else if (existsSync(file)) renameSync(file, target)
     rmSync(file, { force: true })
     fsyncDir(this.dir)
+    this.pending.delete(id)
+    this.changed()
   }
 
   /**
@@ -139,6 +172,7 @@ export class ConversationTrash {
     const source = join(this.dir, `${id}.json`)
     if (existsSync(source)) renameSync(source, targetFile)
     rmSync(join(this.dir, `${id}.meta.json`), { force: true })
+    this.changed()
     return { record: meta.record, agentDeleted: meta.agentDeleted === true }
   }
 
@@ -171,6 +205,7 @@ export class ConversationTrash {
       if (name.startsWith(`${id}.json.corrupt-`)) rmSync(join(conversations, name), { force: true })
     }
     forgetInBackupIndex(join(conversations, 'index.json.bak'), id)
+    this.changed()
   }
 
   /** Efface ce qui est dans la corbeille depuis plus de `TRASH_DAYS` jours ; rend leur nombre. */
@@ -263,6 +298,8 @@ export class TrashLink {
     deletedWith?: string
   ): Promise<void> {
     const { id } = conversation.record
+    // Avant toute attente : sortie de l'historique, elle tient encore son worktree.
+    this.trash.incoming(conversation.record)
     this.store.setGone(id, true)
     await this.writer.forget(id)
     // Fil d'une version plus récente : déplacé tel quel, jamais réécrit dans ce format-ci.

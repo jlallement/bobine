@@ -131,7 +131,7 @@ beforeEach(() => {
       providers: { list: async () => [] },
       settings: { network: async () => ({ settings: {}, fromShell: {} }) },
       // Worktrees orphelins (fiche 110) : aucun.
-      worktree: { orphans: async () => [] },
+      worktree: { orphans: async () => [], onOrphansChanged: () => () => {} },
       // Éditeurs installés (fiche 156) : aucun.
       editors: { list: async () => [] },
       // Corbeille (fiche 196) : vide.

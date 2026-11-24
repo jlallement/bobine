@@ -24,6 +24,7 @@ pnpm mock-agent --scenario permission     # parle ACP sur stdin/stdout
 |---|---|---|---|
 | `--scenario <nom>` | `MOCK_AGENT_SCENARIO` | `demo` | Scénario joué à chaque prompt |
 | `--delay <ms>` | `MOCK_AGENT_DELAY_MS` | `40` | Délai entre deux morceaux (0 dans les tests) |
+| `--pas-morceaux <ms>` | `MOCK_AGENT_CHUNK_MS` | celui de `--delay` | Délai entre deux morceaux de **texte** diffusés (réponse, réflexion) seulement ; les pauses des scénarios et les étapes d'outil gardent `--delay`. Les e2e le posent à 5 ms (`NEUTRAL_ENV`, fiche 279) : le scénario `echo` rediffuse tout le contexte joint par l'app, jusqu'à 700 mots |
 | `--sans-options` | `MOCK_AGENT_OPTIONS=none` (app, fiche 210) | non | N'expose que des modes, sans options de configuration (simule un agent comme Bob pourrait l'être) |
 | `--store <dossier>` | `MOCK_AGENT_STORE` | dossier temporaire | Où les sessions sont mémorisées (pour `session/load` après redémarrage) |
 | `--sans-historique` | — | non | Aucune capacité de reprise (`loadSession` faux, pas de `sessionCapabilities`) |
@@ -244,6 +245,7 @@ profil factice déclare alors `roleExport` comme Bob ou OpenCode et passe ces op
 | `sous-agent-hors-tour-explo-2-3` | Séquence réelle d'OpenCode 2.3.0 (exploration du 2026-11-19, fiche 255) : sous-agent `explore` en arrière-plan (`in_progress` deux fois, `completed` + `status: "running"`), son « shell » relayé jamais fini, `end_turn` aussitôt ; sa session finit 4 s après, le parent répond hors tour 0,5 s plus tard, en deux morceaux. Un message contenant « où en est » reçoit une réponse courte, dans son propre tour (comme l'utilisateur à 19:41:36) |
 | `reseau-injoignable-2-3` | Relevé d'OpenCode 2.3.0 derrière un proxy injoignable (2026-11-23, fiche 275) : aucune erreur ni contenu, seulement des `session_info_update` (`_meta["opencode/retry"]` à `null`, puis tentative, heure réelle de la suivante dans 30 s et erreur `provider.transport`, étape `opencode-retry`) toutes les 10 pauses, pendant 10 min au plus ; `session/cancel` arrête le tour. Bandeau « n'arrive pas à joindre son modèle » (profil factice avec `retryStatus`, comme OpenCode) |
 | `reseau-revenu-2-3` | Comme `reseau-injoignable-2-3`, mais le réseau revient après deux reprises : la réponse arrive, le bandeau part (fiche 275) |
+| `reseau-revenu-au-signal-2-3` | Comme `reseau-injoignable-2-3`, mais le réseau revient dès que le fichier `.mock-reseau-revenu` est dans le dossier (vu à chaque reprise, 5 min au plus) : l'essai le pose une fois le bandeau vu (`parcours-reglages`, fiche 278) |
 | `silence-annulable` | Commence à répondre puis ne dit plus rien pendant 10 min, mais s'arrête à Stop : bandeau de silence, avec la piste du proxy quand un proxy est défini (fiche 275) |
 | `bob-licence-requise` | `session/new` refusé (`-32600`, message de Bob 2.0.6) tant que le fichier `.mock-agent-license` n'est pas dans le dossier |
 | `bob-licence-formulaire` | Bob 2.0.9 : licence demandée au premier message par un formulaire (case `accept`) ; cochée → réponse, refusée → `-32600` licence (fiche 163) |

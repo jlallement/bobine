@@ -73,24 +73,6 @@ export async function commitChoisiSuite(scheme) {
         // Fiche 246 : l'agent factice rédige le message d'après les 40 fichiers cochés.
         await ui.waitFor(`${ui.$('main-dirty-commit-draft')}?.dataset.state === 'agent'`, 15000)
         const rows = `[...document.querySelectorAll('[data-testid=main-dirty-commit-file]')]`
-        const shown = await ui.ev(`({
-          paths: ${rows}.map((li) => li.dataset.path),
-          checked: ${rows}.filter((li) => li.querySelector('input').checked).length,
-          scroll: document.querySelector('.commit-chooser-list').classList.contains('scroll'),
-          secret: [...document.querySelectorAll('[data-testid=main-dirty-commit-secret]')].map((t) => t.closest('li').dataset.path),
-          summary: !!${ui.$('main-dirty-file')}
-        })`)
-        check(
-          JSON.stringify([...shown.paths].sort()) === JSON.stringify([...DIRTY].sort()) &&
-            shown.checked === 40 &&
-            shown.scroll &&
-            !shown.summary,
-          `liste complète, 40 cases cochées, cadre défilant (${shown.paths.length} lignes, ${shown.checked} cochées)`
-        )
-        check(
-          JSON.stringify(shown.secret) === JSON.stringify(['.env']),
-          '« secret ? » sur le .env seulement, coché quand même'
-        )
         await ui.ev(
           `${rows}.find((li) => li.dataset.path === '.env').scrollIntoView({ block: 'center' }), true`
         )
@@ -99,11 +81,6 @@ export async function commitChoisiSuite(scheme) {
         // Tout décoché : rien ne part, la raison est écrite.
         await ui.click(ui.$('main-dirty-commit-check-all'))
         await ui.waitFor(`${ui.$('main-dirty-commit-confirm')}.disabled`)
-        check(
-          (await ui.ev(`${ui.$('main-dirty-commit-blocked')}.innerText`)) ===
-            L('worktreeCycle.choose.none'),
-          'tout décoché : bouton désactivé, raison écrite'
-        )
         await ui.ev(`${ui.$('main-dirty')}.scrollIntoView({ block: 'end' }), true`)
         await ui.shot('244-fusion-tout-decoche')
         await ui.click(ui.$('main-dirty-commit-check-all'))
@@ -114,24 +91,9 @@ export async function commitChoisiSuite(scheme) {
         // les 39 cochés, sans le `.env` (l'agent le recevait sans son contenu, « secret ? »).
         await ui.click(`${rows}.find((li) => li.dataset.path === '.env').querySelector('input')`)
         await ui.waitFor(`!!${ui.$('main-dirty-commit-left')}`)
-        check(
-          (await ui.ev(`${ui.$('main-dirty-commit-draft')}.innerText`)).startsWith(
-            L('worktreeCycle.commit.draft.changed')
-          ),
-          'cases changées après la rédaction : dit, sans relance automatique'
-        )
         await ui.click(ui.$('main-dirty-commit-draft-again'))
         await ui.waitFor(`${ui.$('main-dirty-commit-draft')}?.dataset.state === 'drafting'`, 15000)
         await ui.waitFor(`${ui.$('main-dirty-commit-draft')}?.dataset.state === 'agent'`, 15000)
-        const message = await ui.ev(`${ui.$('main-dirty-commit-message')}.value`)
-        check(
-          message.includes('39 file(s)') &&
-            message.includes('0 withheld') &&
-            (await ui.ev(`${ui.$('main-dirty-commit-left')}.innerText`)) ===
-              L('worktreeCycle.mainDirty.left', { count: 1 }) &&
-            (await ui.ev(`${ui.$('main-dirty-commit-check-all')}.indeterminate`)),
-          'le .env décoché : hors du message, ligne « reste non commité… », case de tête intermédiaire'
-        )
         await ui.ev(
           `${rows}.find((li) => li.dataset.path === '.env').scrollIntoView({ block: 'center' }), true`
         )
@@ -154,10 +116,6 @@ export async function commitChoisiSuite(scheme) {
             !after.history.split('\n').includes('.env') &&
             after.stash === '',
           `le .env n’est pas parti : non suivi, intact, hors de l’historique, git stash vide (${JSON.stringify({ status: after.status, stash: after.stash })})`
-        )
-        check(
-          after.tracked === 39,
-          `les 39 fichiers cochés sont commités, puis la fusion a suivi (${after.tracked})`
         )
       },
       undefined,

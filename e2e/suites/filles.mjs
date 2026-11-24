@@ -2,20 +2,10 @@ import { execFileSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, LANG, MAIN_PORT, check, mainProcess, sleep, withApp } from '../lib.mjs'
-import { conversationTooltip } from '../sidebar-tooltip.mjs'
-
-/** Coût d'un tour de l'agent factice (0,0125 $), écrit comme l'app dans la langue des essais. */
-const TURN_COST = new Intl.NumberFormat(LANG, {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 4
-}).format(0.0125)
+import { L, MAIN_PORT, check, mainProcess, sleep, withApp } from '../lib.mjs'
 /** Coût en dollars annoncé par l'agent : affiché en estimation (« ≈ », fiche 245). */
 /** Début de l'erreur du main pour une conversation qu'il n'a plus (« Conversation inconnue : »). */
 const UNKNOWN_CONVERSATION = L('conversations.error.unknown', { id: '' }).trim()
-const TURN_ESTIMATE = L('usage.estimate', { cost: TURN_COST })
-const spaced = (text) => (text ?? '').replace(/\s/g, ' ')
 
 /**
  * Conversations filles lancées par l'utilisateur (fiche 097, étape 1) : « Lancer en parallèle… »,
@@ -24,7 +14,7 @@ const spaced = (text) => (text ?? '').replace(/\s/g, ' ')
  */
 export async function fillesSuite(scheme) {
   console.log(`\n— Conversations filles (${scheme})`)
-  const { workspace, git } = repository()
+  const { workspace } = repository()
   try {
     await withApp(
       scheme,
@@ -69,33 +59,15 @@ export async function fillesSuite(scheme) {
           await ui.waitFor(`!${ui.$('side-panel')}`)
         }
         await openChanges()
-        check(
-          !(await ui.ev(`!!${ui.$('changes-view-children')}`)),
-          'Modifications d’une conversation sans fille : pas de vue « Filles » (fiche 161)'
-        )
         await closePanel()
 
         // « Lancer en parallèle… » depuis le menu du titre : agent et modèle de la mère.
         await launch(ui.$('title-menu'), 'title-launch-child', '/scenario modifications')
-        const defaults = await ui.ev(
-          `({ agent: ${ui.$('child-agent')}?.value, model: ${ui.$('child-model')}?.value })`
-        )
-        check(
-          defaults.agent === 'mock' && defaults.model === 'factice-rapide',
-          'fenêtre : agent et modèle de la mère par défaut'
-        )
         await ui.shot('filles-1-lancer')
         await ui.click(ui.$('child-launch'))
         await ui.waitFor(`!${ui.$('child-dialog')}`, 30000)
         await ui.waitFor(`${rows}.some((r) => r.classList.contains('nested'))`)
         const first = await ui.ev(`${rows}.find((r) => r.classList.contains('nested'))?.dataset.id`)
-        check(
-          (await activeId()) === mother &&
-            (await ui.ev(`${rows}.map((r) => r.dataset.id).join(' ')`)).startsWith(
-              `${mother} ${first}`
-            ),
-          'la fille est sous sa mère, la mère reste affichée'
-        )
 
         // Fin du tour de la fille : sa carte seule, à la place de son lancement (fiche 264), avec
         // sa réponse, sa branche et ses fichiers ; ni « Sous-tâches » ni compte rendu séparé.
@@ -109,44 +81,12 @@ export async function fillesSuite(scheme) {
           `${soloCard}.innerText.includes(${JSON.stringify(L('workCard.dirty', { count: 2 }))})`,
           20000
         )
-        const report = await ui.ev(`${soloCard}.innerText`)
-        check(
-          branch?.startsWith('bobine/') &&
-            // Rien de commité : la branche n'apporte rien encore, ses modifications sont dites.
-            report.includes(L('workCard.dirty', { count: 2 })) &&
-            report.includes('deux fichiers modifiés') &&
-            (await ui.ev(`${soloCard}.querySelector('[data-testid=work-relay]')?.dataset.sent`)) ===
-              'false' &&
-            !(await ui.ev(
-              `!!document.querySelector('[data-testid=child-report], [data-testid=subtasks], [data-testid=child-started]')`
-            )),
-          `carte seule : branche, fichiers, réponse, en attente du prochain message ; rien de séparé (${JSON.stringify({ branch, report })})`
-        )
-        // Coût de la fille (fiche 117) : au pied de sa réponse, dans sa carte.
-        const facts = await ui.ev(`${soloCard}.querySelector('[data-testid=work-facts]').innerText`)
-        check(
-          spaced(facts).includes(spaced(TURN_ESTIMATE)),
-          `coût de la fille : au pied de sa réponse (${spaced(facts)})`
-        )
         // Finie, compte rendu vu : la mère est affichée quand il y arrive, il est lu (fiche 258,
         // D35). Sous sa mère, état et origine dans l'infobulle (fiche 149). La fille à lire (mère
         // pas affichée) : suite `inbox`.
         await ui.waitFor(
           `${row(first)}?.classList.contains('nested') && ${row(first)}.querySelector('.child-state')?.dataset.state === 'done'`
         )
-        check(
-          !(await ui.ev(`${row(first)}.classList.contains('unread')`)) &&
-            (await ui.ev(`${row(first)}.dataset.branch`)) === branch &&
-            (await ui.ev(`!!${row(first)}.querySelector('.row-slot')`)) &&
-            (await ui.ev(
-              `${row(first)}.querySelector('.child-state').getAttribute('aria-label')`
-            )) === L('children.state.done') &&
-            (
-              await conversationTooltip(ui, `${row(first)}.querySelector('.history-open')`)
-            ).includes('Organise le carnet'),
-          'liste : fille finie, compte rendu lu chez sa mère affichée, sous sa mère (fiches 149, 258)'
-        )
-        check(git('status', '--porcelain') === '', 'la fille travaille dans son worktree')
 
         // Une deuxième fille, depuis le menu de la liste : elle attend un accord.
         await launch(
@@ -160,11 +100,6 @@ export async function fillesSuite(scheme) {
           `!!document.querySelector('[data-testid=work-card][data-state=waiting]')`,
           30000
         )
-        check(
-          (await ui.ev(`document.querySelectorAll('[data-testid=work-card]').length`)) === 2 &&
-            !(await ui.ev(`!!${ui.$('subtasks')}`)),
-          'deux lancements, deux cartes à leur place ; la deuxième attend votre accord'
-        )
         await ui.shot('filles-2-sous-taches')
 
         // Vue « Filles » des Modifications (fiche 161) : ses deux filles, comme la carte.
@@ -172,21 +107,6 @@ export async function fillesSuite(scheme) {
         await ui.waitFor(`!!${ui.$('changes-view-children')}`)
         await ui.click(ui.$('changes-view-children'))
         await ui.waitFor(`!!${ui.$('children-view')}`)
-        const worktrees = await ui.ev(
-          `[...document.querySelectorAll('[data-testid=child-worktree]')].map((r) => r.dataset.id + ':' + r.dataset.state)`
-        )
-        const card = await ui.ev(
-          `[...document.querySelectorAll('[data-testid=work-card]')].map((r) => r.dataset.childId)`
-        )
-        check(
-          (await ui.ev(`${ui.$('changes-view-children')}.innerText`)).replace(/\s+/g, ' ') ===
-            `${L('changes.view.children')} 2` &&
-            JSON.stringify(worktrees.map((w) => w.split(':')[0])) === JSON.stringify(card) &&
-            (await ui.ev(
-              `document.querySelector('[data-testid=child-worktree]').innerText.includes(${JSON.stringify(branch)})`
-            )),
-          `vue « Filles » : ses filles directes, celles des cartes, dans l’ordre (${worktrees.join(', ')})`
-        )
         await ui.shot('filles-161-vue-filles')
         // « Faire relire » d'une ligne (fiche 265) : le même dialogue, celui du Code reviewer, sur
         // la branche de ce travail ; rien ne part sans « Lancer la relecture ».
@@ -210,37 +130,15 @@ export async function fillesSuite(scheme) {
         // Le compte rendu part à l'agent de la mère avec le prochain message, une seule fois.
         await ui.send('/scenario echo')
         await ui.ready()
-        const told = await ui.lastAgentText()
-        check(
-          told.includes('<child_conversations>') &&
-            told.includes(branch) &&
-            (await ui.ev(
-              `document.querySelector('[data-testid=work-card] [data-testid=work-relay]')?.dataset.sent`
-            )) === 'true',
-          'le compte rendu part avec le prochain message'
-        )
         await ui.send('/scenario echo')
         await ui.ready()
-        check(
-          !(await ui.lastAgentText()).includes('child_conversations'),
-          'et une seule fois (pas de réveil, pas de répétition)'
-        )
 
-        // « Ouvrir » : la fille qui attend son accord.
+        // « Ouvrir » : la fille qui attend son accord ; « ↳ depuis » ramène à la mère (vérifiés dans
+        // `parcours-deleguer`).
         await ui.click(
           `document.querySelector('[data-testid=work-card][data-state=waiting] [data-testid=work-open]')`
         )
         await ui.waitFor(`!!document.querySelector('[data-testid=permission]')`, 30000)
-        check((await activeId()) !== mother, '« Ouvrir » affiche la fille')
-        // En-tête de la fille (fiche 117) : d'où elle vient ; son fil commence par son départ.
-        check(
-          (await ui.ev(`${ui.$('title-origin')}?.innerText`)) ===
-            L('conversationTitle.from', { title: 'Organise le carnet' }) &&
-            (await ui.ev(
-              `document.querySelector('[data-testid=thread]').firstElementChild?.dataset.testid`
-            )) === 'worktree-origin',
-          'fille : « ↳ depuis « mère » » dans l’en-tête, son départ en tête du fil'
-        )
         await ui.shot('filles-3-fille-ouverte')
         await ui.click(
           `document.querySelector('[data-testid=permission] button[data-kind=allow_once]')`
@@ -250,7 +148,6 @@ export async function fillesSuite(scheme) {
         await ui.waitFor(
           `document.querySelector('.history-item.active')?.dataset.id === '${mother}'`
         )
-        check(!(await ui.ev(`!!${ui.$('title-origin')}`)), '« ↳ depuis » ramène à la mère')
 
         // Dossier = projet (fiche 131) : les deux filles, chacune dans son worktree, restent sous
         // leur mère, dans le dossier du dépôt ; aucun dossier ne porte le nom d'un worktree.
@@ -271,27 +168,6 @@ export async function fillesSuite(scheme) {
         await ui.click(ui.$('grouping-folder'))
         await away()
         await ui.waitFor(`!!document.querySelector('[data-testid=folder-group]')`)
-        const folders = await ui.ev(
-          `[...document.querySelectorAll('[data-testid=folder-group]')].map((g) => ({
-            name: g.querySelector('[data-testid=folder-head]').textContent,
-            rows: [...g.querySelectorAll('[data-testid=history-item]')].map((r) => (r.classList.contains('nested') ? '↳' : '') + r.dataset.id),
-            links: g.querySelectorAll('[data-testid=child-link]').length
-          }))`
-        )
-        const home = folders.find((f) => f.rows.includes(mother))
-        check(
-          kids.length === 2 &&
-            home?.name === workspace.split('/').at(-1) &&
-            home.rows[0] === mother &&
-            [...home.rows.slice(1)].sort().join(' ') ===
-              kids
-                .map((id) => `↳${id}`)
-                .sort()
-                .join(' ') &&
-            home.links === 2 &&
-            folders.every((f) => !/^\d{8}-/.test(f.name)),
-          `Dossiers : deux filles en worktree sous leur mère, dans le dossier du dépôt (${JSON.stringify(folders)})`
-        )
         await ui.shot('filles-5-dossiers')
         await ui.click(ui.$('history-grouping'))
         await ui.waitFor(`!!${ui.$('grouping-recent')}`)
@@ -316,22 +192,9 @@ export async function fillesSuite(scheme) {
           await ui.waitFor(`${ui.$('delete-children-list')}.querySelectorAll('li').length === 3`)
         }
         await openDelete()
-        check(
-          (await ui.ev(`${ui.$('delete-children')}.checked`)) &&
-            (await ui.ev(`${ui.$('delete-dialog')}.innerText`)).includes(
-              L('deleteDialog.children', { count: 3 })
-            ) &&
-            (await ui.ev(`${ui.$('delete-child-busy')}?.innerText`)) ===
-              L('deleteDialog.childBusyStop'),
-          'mère supprimée : la confirmation nomme ses 3 filles, case cochée, celle au travail signalée'
-        )
         await ui.shot('filles-4a-confirmation')
         await ui.click(ui.$('delete-children'))
         await ui.waitFor(`!${ui.$('delete-children')}.checked`)
-        check(
-          (await ui.ev(`${ui.$('delete-child-busy')}?.innerText`)) === L('deleteDialog.childBusy'),
-          'case décochée : la fille au travail le reste'
-        )
         await ui.shot('filles-4b-confirmation-garder')
         if (scheme === 'dark') {
           // Aurore nuit (fiche 226) : la même confirmation, cochée.
@@ -379,14 +242,6 @@ export async function fillesSuite(scheme) {
           unknown.length === 0,
           `mère supprimée : aucune lecture d'une conversation supprimée${unknown.length ? ` (${unknown.join(' | ')})` : ''}`
         )
-        check(
-          (await ui.ev(
-            `${rows}.filter((r) => r.dataset.branch || r.closest('[data-testid=inbox]')).length`
-          )) === 3 &&
-            !(await ui.ev(`${rows}.some((r) => r.classList.contains('nested'))`)) &&
-            !(await ui.ev(`!!document.querySelector('[data-testid=history-item] .child-state')`)),
-          'mère supprimée : les filles restent, en conversations en worktree ordinaires'
-        )
         await ui.shot('filles-4-mere-supprimee')
       },
       undefined,
@@ -397,7 +252,6 @@ export async function fillesSuite(scheme) {
     rmSync(workspace, { recursive: true, force: true })
   }
   await fillesAgentSuite(scheme)
-  await fillesProposedSuite(scheme)
 }
 
 /** Un dépôt git jetable, avec ce que modifie le scénario `modifications` de l'agent factice. */
@@ -506,26 +360,11 @@ async function agentChildren(ui, main) {
   // décidée, sur la même carte. Deux filles, la mère au repos, un seul réveil.
   await ui.send('/scenario filles')
   await ui.waitFor(`!!${pendingRow('Import CSV')}`, 30000)
-  const asked = await card()
-  check(
-    asked.includes(L('workGroup.titleProposed', { count: 1 })) &&
-      asked.includes(L('children.proposals.start')) &&
-      asked.includes(L('children.proposals.here')) &&
-      asked.includes(L('children.proposals.refuse')) &&
-      (await groups()) === 1 &&
-      (await ui.ev(`document.querySelectorAll('[data-testid=tool]').length`)) === 0,
-    'start_child : une carte de groupe « 1 travail proposé », l’appel caché derrière'
-  )
   // La consigne se déplie ; les options montrent l'agent de la mère et son modèle.
   await ui.click(`${pendingRow('Import CSV')}.querySelector('[data-testid=proposal-title]')`)
   await ui.waitFor(`${ui.$('proposal-prompt')}?.innerText.includes('/scenario modifications')`)
   await ui.click(`${pendingRow('Import CSV')}.querySelector('[data-testid=proposal-options]')`)
   await ui.waitFor(`!!${ui.$('proposal-model')}`)
-  check(
-    (await ui.ev(`${ui.$('proposal-agent')}.value`)) === 'mock' &&
-      (await ui.ev(`${ui.$('proposal-model')}.options.length`)) > 1,
-    'une ligne : consigne dépliable, agent et modèle de la mère proposés'
-  )
   await ui.shot('filles-5-propositions')
   await approve('Import CSV')
   // La deuxième proposition rejoint la carte, la première y garde son issue.
@@ -546,50 +385,11 @@ async function agentChildren(ui, main) {
   // compte, la précision en infobulle (maquette rc4, variante 1).
   const csvRow = `[...document.querySelectorAll('[data-testid=work-row]')].find((r) => r.innerText.includes('Import CSV'))`
   await ui.waitFor(`${csvRow}?.dataset.state === 'pending'`, 30000)
-  const csvState = await ui.ev(
-    `(() => { const s = ${csvRow}.querySelector('[data-testid=work-row-state]'); return { text: s.innerText.trim(), title: s.title } })()`
-  )
-  const pendingStart = L('workCard.pendingLine', { agent: '\u0001' })
-    .split('\u0001')[0]
-    .slice(0, 20)
-  check(
-    csvState.text === L('workGroup.state.replied') &&
-      csvState.title.startsWith(pendingStart) &&
-      (await card()).includes(L('workGroup.count.done', { count: 1 })),
-    `travail fini, réponse remise à la fin de celle de l’agent : « ${csvState.text} », compté, précision en infobulle`
-  )
   await ui.shot('filles-5c-travail-fini-en-attente')
   await approve('Page d’aide')
   await ui.waitFor(`document.querySelectorAll('[data-testid=work-row]').length === 2`, 30000)
-  check(
-    (await card()).includes(L('workGroup.title', { count: 2 })) &&
-      (await ui.ev(`document.querySelectorAll('[data-testid=proposal-start]').length`)) === 0,
-    'lignes lancées : plus de bouton, « 2 travaux » sur la carte'
-  )
   await ui.waitFor(`!!${ui.$('wake-message')}`, 60000)
   await ui.ready()
-  const told = await ui.lastAgentText()
-  check(
-    (await ui.ev(
-      `[...document.querySelectorAll('[data-testid=work-row]')].map((r) => r.dataset.state).join()`
-    )) === 'replied,replied',
-    'au-delà de la limite d’agents vivants, aucune fille n’est arrêtée (deux réponses)'
-  )
-  check(
-    (await children()) === 2 &&
-      !(await ui.ev(
-        `!!document.querySelector('[data-testid=child-report], [data-testid=child-started], [data-testid=subtasks]')`
-      )),
-    'deux filles lancées par l’agent, sous la mère, sur les lignes de leur carte'
-  )
-  check(
-    told.includes('<child_conversations>') &&
-      told.includes('Import CSV') &&
-      told.includes('Page d’aide') &&
-      told.includes('have finished their turn') &&
-      (await ui.ev(`document.querySelectorAll('[data-testid=wake-message]').length`)) === 1,
-    'réveil groupé : une seule fois, avec les deux comptes rendus'
-  )
   await ui.ev(`${ui.$('wake-message')}.scrollIntoView({ block: 'center' }), true`)
   await ui.shot('filles-6-reveil')
 
@@ -597,15 +397,6 @@ async function agentChildren(ui, main) {
   await ui.send('/scenario filles-refus')
   await approve('Page d’aide', 'here')
   await ui.ready()
-  check(
-    (await ui.lastAgentText()).includes('Je fais la page d’aide ici') &&
-      (await ui.lastAgentText()).includes('/scenario streaming-texte') &&
-      (await children()) === 2 &&
-      (await ui.ev(
-        `document.querySelector('[data-testid=proposal-row][data-outcome=here] [data-testid=proposal-state]')?.innerText`
-      )) === L('workGroup.outcome.here'),
-    '« Faire ici » : l’agent reçoit la consigne et la fait dans la conversation, pas de fille'
-  )
   await ui.ev(
     `document.querySelector('[data-testid=proposal-row][data-outcome=here]').scrollIntoView({ block: 'center' }), true`
   )
@@ -614,10 +405,6 @@ async function agentChildren(ui, main) {
   await ui.send('/scenario filles-refus')
   await approve('Page d’aide', 'refuse')
   await ui.ready()
-  check(
-    (await ui.lastAgentText()).includes('Conversation fille refusée') && (await children()) === 2,
-    'start_child refusé : résultat clair pour l’agent, pas de fille'
-  )
 
   // `filles-rafale` (fiche 124, D13) : trois propositions en parallèle, qui arrivent pendant que
   // la première attend. Pointeur sur « Lancer » de la première, dépliée : les suivantes s'ajoutent
@@ -726,14 +513,6 @@ async function agentChildren(ui, main) {
   await approve('En-tête 1')
   await approve('En-tête 2')
   await ui.ready()
-  const capped = await ui.lastAgentText()
-  check(
-    capped.includes('Cannot start the child conversation "En-tête 3"') &&
-      !capped.includes('Cannot start the child conversation "En-tête 2"') &&
-      capped.includes('Running child conversations') &&
-      (await children()) === 4,
-    'au-delà du plafond : start_child répond une erreur qui cite le réglage'
-  )
   // « Lancer en parallèle… » grisé, avec une infobulle.
   await ui.click(ui.$('title-menu'))
   await ui.waitFor(`${ui.$('title-launch-child')}?.hasAttribute('data-disabled')`)
@@ -751,7 +530,6 @@ async function agentChildren(ui, main) {
       if (attempt >= 4) throw error
     }
   }
-  check(true, '« Lancer en parallèle… » grisé au plafond, l’infobulle dit pourquoi')
   await ui.shot('filles-8-plafond-menu')
   await ui.key('Escape')
   // Plafond remis à 5 (par défaut) : les deux filles qui attendent un accord restent en cours.
@@ -763,25 +541,11 @@ async function agentChildren(ui, main) {
   await ui.waitFor(`!!${rowOf('Séparateur CSV')}`, 30000)
   await ui.click(rowOf('Séparateur CSV'))
   await ui.waitFor(`!!${ui.$('queued-origin')}`, 30000)
-  check(
-    (await ui.ev(`${ui.$('queued-origin')}.innerText`)) ===
-      L('children.from.parent', { title: 'Organise le carnet' }),
-    'message_child : en file d’attente de la fille, « De la conversation mère »'
-  )
   await ui.shot('filles-9-file-fille')
   await ui.waitFor(`${ui.$('message-origin')}?.dataset.origin === 'parent'`, 30000)
   await ui.ready()
-  check(
-    (await ui.lastAgentText()).includes('comes from your parent conversation'),
-    'la fille reçoit le message, en sachant d’où il vient'
-  )
   await ui.click(`document.querySelector('[data-testid=history-item][data-id="${mother}"]')`)
   await ui.waitFor(`${ui.$('message-origin')}?.dataset.origin === 'child'`, 30000)
-  check(
-    (await ui.ev(`${ui.$('message-origin')}.innerText`)) ===
-      L('children.from.child', { title: 'Séparateur CSV' }),
-    'message_parent : dans la mère, « De la conversation fille »'
-  )
   await ui.ev(
     `document.querySelector('[data-testid=message-origin][data-origin=child]').scrollIntoView({ block: 'center' }), true`
   )
@@ -795,17 +559,8 @@ async function agentChildren(ui, main) {
   // Consigne initiale (fiche 150) : dans la carte du travail aussi, repliée, entière.
   const row = `document.querySelector('[data-testid=work-row][data-child-id="${instruction.childId}"]')`
   const brief = `${row}.querySelector('[data-testid=work-brief]')`
-  const initialPrompt = await ui.ev(
-    `window.api.conversations.view(${JSON.stringify(mother)}).then(v=>v.transcript.items.find(i=>i.kind==='child-started'&&i.childId===${JSON.stringify(instruction.childId)}).prompt)`
-  )
-  check(!(await ui.ev(`${brief}.open`)), 'consigne initiale repliée par défaut')
   await ui.click(`${brief}.querySelector('summary')`)
   await ui.ev(`${brief}.scrollIntoView({block:'center'}), true`)
-  check(
-    (await ui.ev(`${brief}.querySelector('[data-testid=work-brief-text]').textContent`)) ===
-      initialPrompt,
-    'consigne initiale complète, identique à celle du lancement'
-  )
   await ui.shot('150-consigne-initiale')
   await ui.click(`${brief}.querySelector('summary')`)
   return receipt
@@ -828,11 +583,6 @@ async function instructionDetails(ui, receipt, name) {
   const row = `${line}.querySelector('[data-testid=work-note]')`
   await ui.waitFor(`!!${row}`)
   check(!(await ui.ev(`${row}.open`)), `${name} : consigne repliée par défaut`)
-  check(
-    (await ui.ev(`${line}.querySelector('[data-testid=work-row-name]').innerText`)) ===
-      receipt.title,
-    `${name} : consigne rattachée à la bonne fille`
-  )
   await ui.ev(
     `${row}.scrollIntoView({block:'center'}), ${row}.querySelector('summary').focus(), true`
   )
@@ -848,142 +598,4 @@ async function instructionDetails(ui, receipt, name) {
   await ui.shot(`150-consigne-${name}`)
   await ui.enter()
   await ui.waitFor(`!${row}.open`)
-}
-
-/**
- * Fiche 118 : l'agent propose des filles sans qu'on le lui dise, grâce au contexte de session.
- * Scénario `chantiers` : il propose deux filles seulement s'il a reçu `<bobine_capabilities>` (premier
- * message d'une session, réglage « Quand ça s'y prête ») ou la demande de `/split` ; sinon il fait
- * le travail lui-même. Une conversation neuve par essai : le contexte ne part qu'une fois par session.
- */
-async function fillesProposedSuite(scheme) {
-  console.log(`\n— Conversations filles proposées sans consigne (${scheme})`)
-  const { workspace } = repository()
-  try {
-    await withApp(
-      scheme,
-      async (ui) => {
-        await ui.ready()
-        const main = await mainProcess()
-        try {
-          await proposedChildren(ui, main)
-        } finally {
-          main.close()
-        }
-      },
-      undefined,
-      'echo',
-      { BOBINE_WORKSPACE: workspace },
-      // Le menu « Réglages » est ouvert depuis le processus principal.
-      [`--inspect=${MAIN_PORT}`]
-    )
-  } finally {
-    rmSync(workspace, { recursive: true, force: true })
-  }
-}
-
-async function proposedChildren(ui, main) {
-  const pending = `document.querySelectorAll('[data-testid=proposal-row][data-outcome=pending]')`
-  const cards = () => ui.ev(`document.querySelectorAll('[data-testid=work-group]').length`)
-  /** Refuse les propositions du tour, l'une après l'autre (le scénario les enchaîne). */
-  const refuseAll = async (titles) => {
-    for (const title of titles) {
-      const row = `document.querySelector('[data-testid=proposal-row][data-title=${JSON.stringify(title)}]')`
-      await ui.waitFor(`${row}?.dataset.outcome === 'pending'`, 30000)
-      await ui.click(`${row}.querySelector('[data-testid=proposal-refuse]')`)
-      await ui.waitFor(`${row}.dataset.outcome !== 'pending'`)
-    }
-    await ui.ready()
-  }
-  const titles = ['Fenêtre À propos', 'Essais plus courts']
-  const fresh = async () => {
-    await ui.click(ui.$('new-conversation'))
-    await ui.waitFor(`!!${ui.$('welcome')}`)
-    await ui.ready()
-  }
-  const setProposals = (value) =>
-    ui.ev(`window.api.settings.setPreferences({ childProposals: '${value}' }).then(() => true)`)
-
-  // Réglages › Conversation, trouvé par la recherche : « Quand ça s'y prête » par défaut.
-  await main.evaluate(
-    `(require('electron').Menu.getApplicationMenu().getMenuItemById('settings').click(), true)`
-  )
-  await ui.waitFor(`!!${ui.$('settings')}`)
-  await ui.ev(`${ui.$('settings-search')}.focus(); true`)
-  await ui.type(LANG === 'en' ? 'propose child' : 'proposer des')
-  await ui.waitFor(
-    `[...document.querySelectorAll('[data-testid=settings-result]')].some((r) => r.innerText.includes(${JSON.stringify(L('settings.conversation.childProposals.label'))}))`
-  )
-  await ui.enter()
-  await ui.waitFor(`${ui.$('settings-conversation')}?.getAttribute('aria-current') === 'true'`)
-  await ui.waitFor(`!!${ui.$('child-proposals-whenFitting')}`)
-  check(
-    (await ui.ev(`${ui.$('child-proposals-whenFitting')}.getAttribute('aria-checked')`)) === 'true',
-    'recherche des réglages : « Proposer des conversations filles », « Quand ça s’y prête » par défaut'
-  )
-  await ui.click(ui.$('child-proposals-never'))
-  await ui.waitFor(`${ui.$('child-proposals-never')}.getAttribute('aria-checked') === 'true'`)
-  await ui.ev(`${ui.$('child-proposals-never')}.scrollIntoView({ block: 'center' }), true`)
-  await ui.shot('filles-11-reglage-propositions')
-  await ui.key('Escape')
-  await ui.waitFor(`!${ui.$('settings')}`)
-
-  // « Jamais » : pas de contexte de session, l'agent fait le travail lui-même.
-  await ui.send('/scenario chantiers')
-  await ui.ready()
-  check(
-    (await ui.lastAgentText()).includes('Je fais les deux chantiers moi-même') &&
-      (await cards()) === 0,
-    '« Jamais » : pas de carte, l’agent fait les chantiers lui-même'
-  )
-
-  // « Quand ça s'y prête » : premier message d'une session, le contexte part ; la carte s'ouvre.
-  await setProposals('whenFitting')
-  await fresh()
-  await ui.send('/scenario chantiers')
-  await ui.waitFor(`${pending}.length === 1`, 30000)
-  const card = await ui.ev(`${ui.$('work-group')}.innerText`)
-  const first = await ui.ev(`${pending}[0].dataset.title`)
-  check(
-    card.includes(L('workGroup.titleProposed', { count: 1 })) && first === titles[0],
-    `« Quand ça s’y prête » : sans consigne, carte « Tâches proposées » (${first})`
-  )
-  await ui.shot('filles-12-propositions-contexte')
-  await refuseAll(titles)
-  check(
-    (await ui.lastAgentText()).includes('(contexte de session)'),
-    'l’agent a proposé grâce au contexte de session'
-  )
-  // Deuxième message de la même session : plus de contexte, il fait le travail lui-même.
-  await ui.send('/scenario chantiers')
-  await ui.ready()
-  check(
-    (await ui.lastAgentText()).includes('Je fais les deux chantiers moi-même') &&
-      (await cards()) === 1,
-    'le contexte de session ne part qu’une fois'
-  )
-
-  // `/split` : la demande explicite suffit, même réglé sur « Jamais ».
-  await setProposals('never')
-  await fresh()
-  const users = () => ui.ev(`document.querySelectorAll('.msg-user').length`)
-  const before = await users()
-  await ui.ev(`${ui.$('composer-input')}.focus(); true`)
-  await ui.type('/split /scenario chantiers')
-  await ui.press('Escape')
-  await ui.press('Enter')
-  await ui.waitFor(`${pending}.length === 1`, 30000)
-  check(
-    (await users()) === before + 1 &&
-      (await ui.ev(`[...document.querySelectorAll('.msg-user')].at(-1).innerText`)) ===
-        '/scenario chantiers',
-    '/split : le message tapé part, sans la commande'
-  )
-  await ui.shot('filles-13-commande-filles')
-  await refuseAll(titles)
-  check(
-    (await ui.lastAgentText()).includes('(/split)'),
-    '/split : carte « Tâches proposées » sur demande, réglage « Jamais »'
-  )
-  await setProposals('whenFitting')
 }

@@ -68,7 +68,8 @@ function waitFor(predicate: () => boolean, timeoutMs = 5000): Promise<void> {
     const started = Date.now()
     const check = () => {
       if (predicate()) return resolve()
-      if (Date.now() - started > timeoutMs) return reject(new Error('waitFor : délai dépassé'))
+      if (Date.now() - started > timeoutMs)
+        return reject(new Error(`waitFor : délai dépassé (${timeoutMs} ms) : ${predicate}`))
       setTimeout(check, 10)
     }
     check()
@@ -1275,6 +1276,22 @@ describe('AgentHost', () => {
       expect(userTexts(transcript())).toEqual(['Longue réponse', 'Suite'])
     })
 
+    it('Arrêter pendant la préparation du message : le tour part, puis s’arrête (fiche 278)', async () => {
+      const { host, events } = createHost(mockProfile('attend-stop', 20))
+      await host.start()
+      const turn = host.prompt('Longue réponse')
+      // Le message n'est pas encore chez l'agent : rien à annuler, l'arrêt doit le suivre.
+      await host.cancel()
+      await turn
+      host.stop()
+      expect(events).toContainEqual({ type: 'cancel-requested' })
+      expect(events).toContainEqual({
+        type: 'turn-end',
+        stopReason: 'cancelled',
+        at: expect.any(Number)
+      })
+    })
+
     it('« Envoyer maintenant » : interrompt la réponse, ce message part en premier', async () => {
       const { host, events, transcript } = createHost(mockProfile('lent', 20))
       await host.start()
@@ -1609,11 +1626,13 @@ describe('AgentHost', () => {
         const { host } = failing('plantage-avec-enfant', {}, [])
         await host.start()
         await host.prompt('Compile')
-        await waitFor(() => host.snapshot().status === 'exited', 10_000)
+        // Délais par défaut (5 s chacun, cumul sous la limite de 15 s). Mesuré (30 passages en
+        // parallèle) : 1 ms au plus pour la sortie, 0,4 s pour la fin de la commande.
+        await waitFor(() => host.snapshot().status === 'exited')
         expect(host.snapshot().detail).toContain('SIGKILL')
         // Dit en clair (fiche 272, recette).
         expect(host.snapshot().detail).toContain('arrêt forcé')
-        await waitFor(() => sleeping().length === 0, 8000)
+        await waitFor(() => sleeping().length === 0)
         expect(sleeping()).toEqual([])
         host.stop()
       }

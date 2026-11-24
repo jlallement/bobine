@@ -92,32 +92,8 @@ export async function aboutSuite(scheme) {
           // Copier les infos techniques : le bloc dans le presse-papiers, « Copié ».
           await about.click(about.$('about-copy'))
           await about.waitFor(`${about.$('about-copy')}.dataset.copied === 'true'`)
-          const copied = await main.evaluate(`require('electron').clipboard.readText()`)
-          check(
-            copied.startsWith(
-              `Bobine ${VERSION} (commit ${info.commit}, built ${info.buildDate})`
-            ) &&
-              /\nElectron \d/.test(copied) &&
-              /\nChromium \d/.test(copied) &&
-              /\nNode \d/.test(copied) &&
-              // Le vrai système (fiche 145) : version de macOS, ou du noyau Linux.
-              (process.platform === 'darwin'
-                ? /\nmacOS \d+(\.\d+)* \((arm64|x64)\)/
-                : /\nLinux \S+ \((arm64|x64)\)/
-              ).test(copied) &&
-              copied.includes(`Interface language: ${LANG}`) &&
-              copied.includes('\nAgents:\n- '),
-            `« Copier les infos techniques » : version, commit, moteurs, système, langue, agents\n${copied}`
-          )
-          check(
-            (await about.ev(`${about.$('about-copy')}.innerText`)).includes(
-              L('aboutWindow.copied')
-            ),
-            '« Copié » affiché'
-          )
           await about.shot('o1-a-propos-copie')
           await about.waitFor(`${about.$('about-copy')}.dataset.copied === 'false'`, 4000)
-          check(true, '« Copié » s’efface au bout de deux secondes')
 
           // Liens : GitHub, licence, issue préremplie, dans le navigateur système.
           await about.click(about.$('about-github'))

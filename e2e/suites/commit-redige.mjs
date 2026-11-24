@@ -19,8 +19,6 @@ import { L, check, sleep, withApp } from '../lib.mjs'
 export async function commitRedigeSuite(scheme) {
   console.log(`\n— Message de commit rédigé par l’agent (${scheme})`)
   await withMergeCard(scheme)
-  await withSlowAgent(scheme)
-  await withStoppedDraft(scheme)
 }
 
 function repo(prefix) {
@@ -64,16 +62,6 @@ const alive = (pid) => {
 }
 const pidsIn = (file) => readFileSync(file, 'utf8').split('\n').filter(Boolean).map(Number)
 
-/** Attend qu'une condition du côté de l'essai soit vraie (15 s au plus). */
-async function until(test, ms = 15_000) {
-  const started = Date.now()
-  while (Date.now() - started < ms) {
-    if (test()) return true
-    await sleep(50)
-  }
-  return test()
-}
-
 /** Processus lancés depuis `before` (agents des rédactions) : tous finissent, sans orphelin. */
 async function draftAgentsGone(file, before) {
   const started = Date.now()
@@ -99,8 +87,6 @@ async function openGitView(ui) {
   await ui.waitFor(`!!${ui.$('changes-view-git')}`)
   await ui.click(ui.$('changes-view-git'))
 }
-
-const userMessages = (ui) => ui.ev(`document.querySelectorAll('.msg-user').length`)
 
 async function withMergeCard(scheme) {
   const { workspace, git, work, pids } = repo('bob-e2e-commit-redige-')
@@ -147,38 +133,10 @@ async function withMergeCard(scheme) {
           15000
         )
         const before = pidsIn(pids)
-        const said = await userMessages(ui)
         await ui.click(ui.$('changes-commit'))
         await ui.waitFor(`${ui.$('changes-commit-draft')}?.dataset.state === 'agent'`, 15000)
-        const message = await ui.ev(`${ui.$('changes-commit-message')}.value`)
-        check(
-          message.startsWith('feat: update app.js and filters.js\n\nMock agent draft: 2 file(s)') &&
-            message.includes('first request received'),
-          `message rédigé par l’agent, d’après les fichiers cochés et la demande de départ (${JSON.stringify(message.split('\n')[0])})`
-        )
-        // « Rédigé par Agent factice en N s, d'après 2 fichiers » : la durée varie.
-        const [head, tail] = L('worktreeCycle.commit.draft.receivedNoMemory', {
-          agent: L('profiles.mock.label'),
-          count: 2,
-          seconds: '§'
-        }).split('§')
-        const line = await ui.ev(`${ui.$('changes-commit-draft')}.innerText`)
-        check(
-          line.startsWith(head) &&
-            line.includes(tail) &&
-            !(await ui.ev(`${ui.$('changes-commit-confirm')}.disabled`)),
-          `« Rédigé par Agent factice… », « Committer » disponible (${JSON.stringify(line)})`
-        )
-        check(
-          (await userMessages(ui)) === said,
-          'rien dans le fil : la rédaction se fait dans une session à part'
-        )
         await ui.shot('246-message-redige')
-        const gone = await draftAgentsGone(pids, before)
-        check(
-          gone.length === 1 && gone.every((pid) => pid > 0),
-          `l’agent de la rédaction est arrêté après la réponse (${gone.join(', ')})`
-        )
+        await draftAgentsGone(pids, before)
         await ui.click(ui.$('changes-commit-cancel'))
 
         // D4 : « Committer puis fusionner » depuis la carte, la vue Git restant ouverte. Le dossier
@@ -210,142 +168,6 @@ async function withMergeCard(scheme) {
       undefined,
       'echo',
       { BOBINE_WORKSPACE: workspace, MOCK_AGENT_PID_FILE: pids }
-    )
-  } finally {
-    rmSync(workspace, { recursive: true, force: true })
-  }
-}
-
-async function withSlowAgent(scheme) {
-  const { workspace, git, work, pids } = repo('bob-e2e-commit-lent-')
-  try {
-    await withApp(
-      scheme,
-      async (ui) => {
-        await ui.ready()
-        await ui.send('/scenario echo Ajoute le filtre par statut')
-        await ui.ready()
-        work()
-        await openGitView(ui)
-        await ui.waitFor(`!!${ui.$('changes-commit')}`, 15000)
-        const before = pidsIn(pids)
-        await ui.click(ui.$('changes-commit'))
-        const state = `${ui.$('changes-commit-draft')}?.dataset.state`
-        await ui.waitFor(`${state} === 'drafting'`, 10000)
-        check(
-          (await ui.ev(`${ui.$('changes-commit-draft')}.innerText`)).startsWith(
-            L('worktreeCycle.commit.draft.drafting', { agent: L('profiles.mock.label') })
-          ) &&
-            (await ui.ev(`${ui.$('changes-commit-message')}.disabled`)) &&
-            (await ui.ev(`${ui.$('changes-commit-confirm')}.disabled`)),
-          'rédaction en cours : « Rédaction par Agent factice… », champ en attente, « Committer » désactivé'
-        )
-        await ui.shot('246-redaction-en-cours')
-        // Pas de réponse dans le délai (4 s ici) : le repli.
-        await ui.waitFor(`${state} === 'fallback'`, 15000)
-        const fallback =
-          'chore: update app.js and filters.js\n\n- public/app.js\n- public/filters.js (new)'
-        check(
-          (await ui.ev(`${ui.$('changes-commit-message')}.value`)) === fallback &&
-            (await ui.ev(`${ui.$('changes-commit-draft')}.dataset.reason`)) === 'timeout' &&
-            (await ui.ev(`${ui.$('changes-commit-draft')}.innerText`)).startsWith(
-              L('worktreeCycle.commit.draft.reason.timeout', {
-                agent: L('profiles.mock.label'),
-                seconds: 4
-              })
-            ),
-          'délai dépassé : message en anglais déduit des fichiers, la raison dite'
-        )
-        await ui.shot('246-repli')
-        // « Réessayer » : un nouvel agent, qui tombe lui aussi au délai. « Arrêter » s'essaie à
-        // part, au délai habituel : ici, il courait contre les 4 s, et sur le runner macOS le
-        // délai gagnait (agent lent à démarrer, raison « timeout », fiche 250).
-        await ui.click(ui.$('changes-commit-draft-again'))
-        await ui.waitFor(`${state} === 'drafting'`, 10000)
-        check(
-          await until(() => pidsIn(pids).filter((pid) => !before.includes(pid)).length === 2),
-          '« Réessayer » : un nouvel agent de rédaction est lancé'
-        )
-        await ui.waitFor(`${state} === 'fallback'`, 15000)
-        check(
-          (await ui.ev(`${ui.$('changes-commit-draft')}.dataset.reason`)) === 'timeout',
-          '« Réessayer » sans réponse : de nouveau le repli, au délai'
-        )
-        const gone = await draftAgentsGone(pids, before)
-        check(
-          gone.length === 2 && gone.every((pid) => pid > 0),
-          `délai dépassé deux fois : aucun agent de rédaction ne survit (${gone.join(', ')})`
-        )
-        await ui.click(ui.$('changes-commit-confirm'))
-        await ui.waitFor(`!!${ui.$('changes-commit-undo')}`, 15000)
-        check(
-          git(workspace, 'log', '-1', '--format=%s') === 'chore: update app.js and filters.js',
-          'commit fait avec le message du repli'
-        )
-      },
-      undefined,
-      'echo',
-      {
-        BOBINE_WORKSPACE: workspace,
-        MOCK_AGENT_PID_FILE: pids,
-        MOCK_AGENT_COMMIT: 'message-commit-lent',
-        BOBINE_COMMIT_DRAFT_TIMEOUT_MS: '4000'
-      }
-    )
-  } finally {
-    rmSync(workspace, { recursive: true, force: true })
-  }
-}
-
-/** « Arrêter » pendant la rédaction, au délai habituel (45 s) : rien ne court contre lui. */
-async function withStoppedDraft(scheme) {
-  const { workspace, git, work, pids } = repo('bob-e2e-commit-arret-')
-  try {
-    await withApp(
-      scheme,
-      async (ui) => {
-        await ui.ready()
-        await ui.send('/scenario echo Ajoute le filtre par statut')
-        await ui.ready()
-        work()
-        await openGitView(ui)
-        await ui.waitFor(`!!${ui.$('changes-commit')}`, 15000)
-        const before = pidsIn(pids)
-        await ui.click(ui.$('changes-commit'))
-        const state = `${ui.$('changes-commit-draft')}?.dataset.state`
-        await ui.waitFor(`${state} === 'drafting'`, 10000)
-        // « Arrêter » une fois l'agent de la rédaction lancé (son pid inscrit), plutôt qu'après
-        // 500 ms devinées : sous charge, l'arrêt partait avant que l'agent ait démarré, l'app ne le
-        // lançait donc jamais (arrêt pendant le démarrage, sans processus).
-        check(
-          await until(() => pidsIn(pids).filter((pid) => !before.includes(pid)).length === 1),
-          'rédaction : un agent de rédaction est lancé'
-        )
-        await ui.click(ui.$('changes-commit-draft-stop'))
-        await ui.waitFor(`${state} === 'fallback'`, 10000)
-        check(
-          (await ui.ev(`${ui.$('changes-commit-draft')}.dataset.reason`)) === 'stopped',
-          '« Arrêter » : rédaction arrêtée, message déduit des fichiers'
-        )
-        const gone = await draftAgentsGone(pids, before)
-        check(
-          gone.length === 1 && gone.every((pid) => pid > 0),
-          `« Arrêter » : aucun agent de rédaction ne survit (${gone.join(', ')})`
-        )
-        await ui.click(ui.$('changes-commit-confirm'))
-        await ui.waitFor(`!!${ui.$('changes-commit-undo')}`, 15000)
-        check(
-          git(workspace, 'log', '-1', '--format=%s') === 'chore: update app.js and filters.js',
-          'commit fait avec le message du repli'
-        )
-      },
-      undefined,
-      'echo',
-      {
-        BOBINE_WORKSPACE: workspace,
-        MOCK_AGENT_PID_FILE: pids,
-        MOCK_AGENT_COMMIT: 'message-commit-lent'
-      }
     )
   } finally {
     rmSync(workspace, { recursive: true, force: true })

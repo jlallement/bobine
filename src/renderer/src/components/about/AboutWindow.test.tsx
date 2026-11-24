@@ -66,6 +66,20 @@ describe('fenêtre À propos (fiche 116)', () => {
     await waitFor(() => expect(document.title).toBe('À propos de Bobine'))
   })
 
+  it('GitHub et licence : liens vers les adresses exactes, ouverts hors de la fenêtre (navigateur du système)', async () => {
+    // Remplace l'e2e `about` n° 8 : `_blank` passe par le gestionnaire d'ouverture du main.
+    render(<AboutWindow />)
+    for (const [id, url] of [
+      ['about-github', 'https://github.com/jlallement/bobine'],
+      ['about-license', 'https://github.com/jlallement/bobine/blob/main/LICENSE']
+    ] as const) {
+      const link = await screen.findByTestId(id)
+      expect(link.getAttribute('href')).toBe(url)
+      expect(link.getAttribute('target')).toBe('_blank')
+      expect(link.getAttribute('rel')).toBe('noreferrer')
+    }
+  })
+
   it('« Copier les infos techniques » : bloc du main dans le presse-papiers, « Copié » deux secondes', async () => {
     render(<AboutWindow />)
     const button = await screen.findByTestId('about-copy')

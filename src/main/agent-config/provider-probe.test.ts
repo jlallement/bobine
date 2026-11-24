@@ -40,6 +40,16 @@ describe('« Tester » un fournisseur de modèles (fiche 104)', () => {
     ])
   })
 
+  it('sans clé : GET /models sans en-tête Authorization', async () => {
+    // Remplace l'e2e `providers` n° 5 (fournisseur local sans clé).
+    const server = await fake({ models: ['qwen3-32b', 'mistral-small'] })
+    const result = await probeProvider({ baseURL: server.url })
+    expect(result).toMatchObject({ ok: true, models: 2 })
+    expect(server.requests).toHaveLength(1)
+    expect(server.requests[0]).toMatchObject({ method: 'GET', path: '/v1/models' })
+    expect(server.requests[0]?.authorization).toBeUndefined()
+  })
+
   it('clé refusée, adresse sans /models, connexion refusée, nom inconnu, délai', async () => {
     const server = await fake({ models: ['m'], apiKey: 'cle' })
     expect(await probeProvider({ baseURL: server.url, apiKey: 'mauvaise' })).toMatchObject({

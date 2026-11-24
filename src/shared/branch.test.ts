@@ -130,10 +130,17 @@ describe('branche (fiche 023)', () => {
     })
     expect(
       undoEdits('deux', [
-        { oldText: '', newText: 'un' },
+        { oldText: null, newText: 'un' },
         { oldText: 'un', newText: 'deux' }
       ])
     ).toEqual({ deleted: true })
+    // Fichier vide existant réécrit (`oldText: ""`, fiche 203) : remis vide, jamais supprimé.
+    expect(
+      undoEdits('deux', [
+        { oldText: '', newText: 'un' },
+        { oldText: 'un', newText: 'deux' }
+      ])
+    ).toEqual({ content: '' })
     expect(undoEdits('autre chose', [{ oldText: 'un', newText: 'deux' }])).toBeUndefined()
     expect(undoEdits(null, [{ oldText: 'un', newText: 'deux' }])).toBeUndefined()
     // `$&` dans le texte d'origine : remis tel quel (pas de motif de remplacement).

@@ -147,6 +147,9 @@ export interface OrphanWorktree {
   ahead: number
 }
 
+/** Ce qui désigne un orphelin à nettoyer (« Nettoyer », Réglages › Données). */
+export type OrphanRef = Pick<OrphanWorktree, 'root' | 'path' | 'branch'>
+
 /** Un fichier à committer, tel que la vue « Git » le liste. */
 export interface CommitFile {
   path: string

@@ -283,6 +283,28 @@ describe('agent factice', () => {
     expect(ofType(turn.updates, 'agent_message_chunk').length).toBeLessThan(20)
   })
 
+  it('--pas-morceaux : seul le texte diffusé va plus vite, les pauses des scénarios gardent leur durée (fiche 279)', async () => {
+    const timed = async (scenario: string) => {
+      const started = Date.now()
+      const turn = await withMockAgent(
+        { scenario, delayMs: 100, args: ['--pas-morceaux', '0'] },
+        async (ctx) => {
+          await initialize(ctx)
+          return ctx.buildSession(CWD).withSession((session) => playTurn(session, 'Vas-y'))
+        }
+      )
+      return { turn, ms: Date.now() - started }
+    }
+    // 200 morceaux : 20 s au délai de base, quelques instants au pas des morceaux.
+    const fast = await timed('lent')
+    expect(ofType(fast.turn.updates, 'agent_message_chunk').length).toBe(200)
+    expect(fast.ms).toBeLessThan(10_000)
+    // `plan` : trois pauses de 3 pas, au délai de base (100 ms) quel que soit le pas des morceaux.
+    const paused = await timed('plan')
+    expect(paused.turn.stopReason).toBe('end_turn')
+    expect(paused.ms).toBeGreaterThanOrEqual(900)
+  })
+
   it('outil-en-preparation : pending {} le temps du patch, puis les emplacements, puis terminé (fiche 128)', async () => {
     const turn = await withMockAgent(
       { scenario: 'outil-en-preparation', delayMs: 10 },

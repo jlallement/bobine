@@ -18,10 +18,11 @@ import {
 import { findExecutable } from '../agent/profiles'
 import type { ConversationManager } from '../conversations/manager'
 import { agentLog } from '../log'
+import type { ConversationTrash } from '../conversations/trash'
 import type { Run } from '../simulator/run'
 import type { PrOptions } from '@shared/pr-tracking'
 import { PrWatcher } from './pr-watch'
-import type { Worktrees } from './worktrees'
+import type { WorktreeInfo, Worktrees } from './worktrees'
 import { WorktreeCycle, type CycleTarget } from './worktree-cycle'
 
 /** Ce que le cycle demande au gestionnaire de conversations. */
@@ -66,6 +67,8 @@ export interface WorktreeCycleDeps {
   worktrees: Pick<Worktrees, 'remove'>
   /** Dossiers récents (Réglages) : des dépôts où chercher des orphelins. */
   recentWorkspaces: () => string[]
+  /** Worktrees des conversations de la corbeille : gardés avec elles, jamais orphelins (fiche 228). */
+  trashed?: () => WorktreeInfo[]
 }
 
 /** Branchement réel (`index.ts`) : `gh` cherché dans le PATH, commandes dans `agents.log`. */
@@ -79,10 +82,12 @@ export function worktreeCycleDeps(
    * premier plan des fenêtres (`pr-watch-focus.ts`, chargé à part : les essais de ce module
    * n'importent pas Electron).
    */
-  send?: <C extends 'pr:changed' | 'worktree:forge'>(
+  send?: <C extends 'pr:changed' | 'worktree:forge' | 'worktree:orphansChanged'>(
     channel: C,
     change: IpcEventContract[C]
   ) => void,
+  /** Le profil : sa corbeille tient des worktrees, et dit quand elle change (fiche 228). */
+  profile?: { trash: Pick<ConversationTrash, 'worktrees' | 'onChange'> },
   pathEnv: () => string | undefined = () => process.env['PATH']
 ): WorktreeCycleDeps {
   const log = (id: string | undefined, line: string) =>
@@ -121,12 +126,16 @@ export function worktreeCycleDeps(
     }
   })
   if (send) void import('./pr-watch-focus').then(({ watchFocus }) => watchFocus(prs))
+  // Conversation mise à la corbeille, restaurée ou effacée : la liste des orphelins est à relire.
+  const trash = profile?.trash
+  trash?.onChange(() => send?.('worktree:orphansChanged', null))
   return {
     cycle,
     prs,
     conversations,
     worktrees,
-    recentWorkspaces: () => settings.current.recentWorkspaces
+    recentWorkspaces: () => settings.current.recentWorkspaces,
+    ...(trash ? { trashed: () => trash.worktrees() } : {})
   }
 }
 
@@ -157,15 +166,20 @@ export function worktreeHandlers(
     if (!found) throw new Error(t('worktreeCycle.error.noWorktree'))
     return found
   }
+  /** Worktrees tenus en ce moment : conversations de l'historique et de la corbeille. */
+  const held = (): WorktreeInfo[] => {
+    const { conversations, trashed } = available()
+    return [...conversations.worktreePaths(), ...(trashed?.() ?? [])]
+  }
   const orphans = async (): Promise<OrphanWorktree[]> => {
     const { cycle, conversations, recentWorkspaces } = available()
-    const held = conversations.worktreePaths()
+    const holding = held()
     const roots = [
-      ...held.map((w) => w.root),
+      ...holding.map((w) => w.root),
       ...recentWorkspaces(),
       ...conversations.state().conversations.map((c) => c.workspace)
     ]
-    return cycle.orphans([...new Set(roots)], new Set(held.map((w) => w.path)))
+    return cycle.orphans([...new Set(roots)], new Set(holding.map((w) => w.path)))
   }
   /** Dossier d'une conversation ordinaire : où « Committer » hors worktree committe. */
   const folder = (id: unknown) => {
@@ -272,7 +286,9 @@ export function worktreeHandlers(
     },
     'worktree:orphans': orphans,
     'worktree:removeOrphan': async (orphan) => {
-      await available().cycle.removeOrphan(parseOrphan(orphan))
+      // Revérifié au moment de supprimer : la liste de l'interface a pu vieillir (restauration).
+      const holding = new Set(held().map((w) => w.path))
+      await available().cycle.removeOrphan(parseOrphan(orphan), holding)
       return orphans()
     }
   }

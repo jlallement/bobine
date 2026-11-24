@@ -55,4 +55,15 @@ describe('Départ d’un worktree (fiche 117)', () => {
     expect(screen.queryByTestId('worktree-origin-dirty')).toBeNull()
     expect(screen.queryByTestId('worktree-origin-git')).toBeNull()
   })
+
+  // Remplace `e2e/suites/worktree-cycle.mjs` n° 2 : une carte en tête du fil, pas d'avis.
+  it('départ explicite : la carte en tête du fil, avant le premier message, sans avis', () => {
+    view([start(), { kind: 'user', id: 2, text: 'Ajoute le test' }])
+    const thread = screen.getByTestId('thread')
+    const origin = screen.getByTestId('worktree-origin')
+    const message = screen.getByTestId('user-message')
+    expect(origin.compareDocumentPosition(message) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(thread.querySelectorAll('[data-testid=worktree-origin]')).toHaveLength(1)
+    expect(thread.querySelector('.notice')).toBeNull()
+  })
 })

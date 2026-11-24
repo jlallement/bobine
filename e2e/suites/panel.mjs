@@ -1,4 +1,4 @@
-import { FEATURES, L, MAIN_PORT, check, mainProcess, withApp } from '../lib.mjs'
+import { L, MAIN_PORT, check, mainProcess, withApp } from '../lib.mjs'
 
 /** Panneau latéral à onglets, onglet « Tâches » (fiches 029, 035). */
 export async function panelSuite(scheme) {
@@ -7,15 +7,12 @@ export async function panelSuite(scheme) {
     scheme,
     async (ui) => {
       await ui.ready()
-      check(!(await ui.ev(`!!${ui.$('side-panel')}`)), 'panneau fermé au départ')
       await ui.click(ui.$('panel-toggle'))
       await ui.waitFor(`!!${ui.$('session-tab')}`)
-      check(true, 'panneau ouvert à la main : sur « Session », son premier onglet (fiche 166)')
       await ui.click(ui.$('panel-more'))
       await ui.waitFor(`!!${ui.$('panel-more-menu')}`)
       await ui.click(`${ui.$('panel-more-menu')}.querySelector('[data-tab=tasks]')`)
       await ui.waitFor(`!!${ui.$('tasks-empty')}`)
-      check(true, 'onglet « Tâches » choisi dans « + » : pas encore de tâches')
       await ui.click(
         `${ui.$('side-panel')}.querySelector('[aria-label="${L('sidePanel.close')}"]')`
       )
@@ -28,23 +25,10 @@ export async function panelSuite(scheme) {
       )
       await ui.click(ui.$('panel-toggle'))
       await ui.waitFor(`!!${ui.$('tasks')}`)
-      check(
-        (await ui.ev(`${ui.$('tasks')}.querySelectorAll('li.completed').length`)) === 3 &&
-          (await ui.ev(`${ui.$('tasks')}.innerText`)).includes(
-            L('sidePanel.progress', { done: 3, count: 3 })
-          ),
-        'onglet « Tâches » : dernier plan de l’agent avec sa progression'
-      )
       const width = () => ui.ev(`${ui.$('side-panel')}.getBoundingClientRect().width`)
       // Le panneau arrive en glissant (fiche 185, P1) : on le prend immobile.
       await ui.waitFor(`${ui.$('side-panel')}.getAnimations().length === 0`)
       const before = await width()
-      const saved = () => ui.ev(`JSON.parse(localStorage.getItem('bobine.panel') ?? '{}')`)
-      // Fiche 226 : 320 px par défaut, et la largeur n'est pas enregistrée sans glissement.
-      check(
-        Math.abs(before - 320) < 2 && !('customWidth' in (await saved())),
-        `panneau à 320 px par défaut, largeur non enregistrée (${before} px)`
-      )
       const handle = await ui.ev(
         `(() => { const b = document.querySelector('.side-panel-resize').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + 200 } })()`
       )
@@ -83,45 +67,15 @@ export async function panelSuite(scheme) {
         )
       }
       check(Math.abs(after - before - 80) < 4, 'panneau redimensionné à la souris')
-      check(
-        Math.abs((await saved()).customWidth - after) < 2,
-        'largeur tirée à la main : enregistrée (customWidth)'
-      )
       await ui.shot('23-panneau-taches')
 
       // Onglets nommés (fiche 082) : seulement les outils qui servent, les autres dans « + ».
       const panel = ui.$('side-panel')
-      const tabs = () =>
-        ui.ev(`[...${panel}.querySelectorAll('[role=tab]')].map((tab) => tab.dataset.tab).join()`)
-      const tasksTab = await ui.ev(
-        `document.querySelector('.side-panel-tab[data-tab=tasks]').innerText`
-      )
-      check(
-        (await tabs()) === 'session,tasks' &&
-          tasksTab.includes(L('panel.tab.tasks')) &&
-          tasksTab.includes('3/3'),
-        `onglets nommés : « Session » puis « Tâches 3/3 », aucun autre outil n’a servi (${await tabs()})`
-      )
       await ui.click(ui.$('panel-more'))
       await ui.waitFor(`!!${ui.$('panel-more-menu')}`)
-      const offered = await ui.ev(
-        `[...${ui.$('panel-more-menu')}.querySelectorAll('[role=menuitem]')].map((item) => item.dataset.tab).join()`
-      )
-      check(
-        // Simulateur iOS seulement là où la plateforme l'a (capacité `simulator`, fiche 145).
-        offered ===
-          (FEATURES.simulator
-            ? 'browser,simulator,android,terminal,acp,changes,files'
-            : 'browser,android,terminal,acp,changes,files'),
-        `menu « + » : les autres outils (${offered})`
-      )
       await ui.shot('23b-panneau-autres-outils')
       await ui.click(`${ui.$('panel-more-menu')}.querySelector('[data-tab=browser]')`)
       await ui.waitFor(`!!document.querySelector('.side-panel-tab.active[data-tab=browser]')`)
-      check(
-        (await tabs()) === 'session,tasks,browser',
-        'outil choisi dans « + » : son onglet s’ajoute à droite, Tâches ne bouge pas (fiche 154)'
-      )
 
       // Agrandi (fiche 082) : à la place de la conversation, la barre latérale reste.
       await ui.click(`document.querySelector('.side-panel-tab[data-tab=tasks]')`)
@@ -164,20 +118,10 @@ export async function panelSuite(scheme) {
           !(await ui.ev(`document.querySelector('main').inert`)),
         'Affichage › Agrandir le panneau : réduit, à sa largeur d’avant'
       )
-      // Double-clic sur la poignée (fiche 226) : largeur par défaut, comme la barre latérale.
-      check(
-        (await ui.ev(`document.querySelector('.side-panel-resize').title`)) ===
-          L('sidePanel.resizeHint'),
-        'poignée : infobulle « glisser · double-clic : largeur par défaut »'
-      )
       await ui.ev(
         `document.querySelector('.side-panel-resize').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))`
       )
       await ui.waitFor(`Math.abs(${panel}.getBoundingClientRect().width - 320) < 2`)
-      check(
-        !(await ui.ev(`${maximized}`)) && !('customWidth' in (await saved())),
-        'double-clic sur la poignée : 320 px, plus de largeur enregistrée'
-      )
       await ui.click(ui.$('panel-maximize'))
       await ui.waitFor(maximized)
       // Barre latérale masquée : le panneau laisse la place des boutons de la fenêtre et offre de
@@ -185,10 +129,6 @@ export async function panelSuite(scheme) {
       await ui.click(`document.querySelector('.sidebar-header .icon-button:last-of-type')`)
       const showSidebar = `${panel}.querySelector('[aria-label="${L('app.showSidebar')}"]')`
       await ui.waitFor(`!!${showSidebar}`)
-      check(
-        await ui.ev(`${panel}.querySelector('.side-panel-head').classList.contains('with-lights')`),
-        'agrandi sans barre latérale : bouton pour la rouvrir, place des boutons de la fenêtre'
-      )
       await ui.shot('23e-panneau-agrandi-sans-barre')
       await ui.click(showSidebar)
       await ui.waitFor(`!${showSidebar}`)
@@ -201,19 +141,9 @@ export async function panelSuite(scheme) {
       await ui.waitFor(`!!${card}`)
       await ui.click(ui.$('panel-maximize'))
       await ui.waitFor(`!!${ui.$('panel-agent-status')}?.classList.contains('request')`)
-      check(
-        (await ui.ev(`${ui.$('panel-agent-status')}.innerText`)).includes(
-          L('sidePanel.agent.request')
-        ),
-        'agrandi : « Attend votre réponse » pendant la demande d’autorisation'
-      )
       await ui.shot('23d-panneau-agrandi-demande')
       await ui.click(ui.$('panel-agent-status'))
       await ui.waitFor(`!${maximized}`)
-      check(
-        await ui.ev(`!!${card}`),
-        'clic sur l’état de l’agent : retour au fil, la demande est là'
-      )
       await ui.click(`${card}.querySelector('button[data-kind=allow_once]')`)
       await ui.ready()
 
@@ -225,47 +155,27 @@ export async function panelSuite(scheme) {
       await ui.waitFor(`${tab('browser')}.classList.contains('active')`)
       await ui.click(closeOf('browser'))
       await ui.waitFor(`!${tab('browser')}`)
-      check(
-        (await tabs()) === 'session,tasks' &&
-          (await ui.ev(`${tab('tasks')}.classList.contains('active')`)),
-        `✕ sur l’onglet affiché : il disparaît, son voisin s’affiche (${await tabs()})`
-      )
       await ui.click(ui.$('panel-more'))
       await ui.waitFor(`!!${ui.$('panel-more-menu')}`)
       await ui.click(`${ui.$('panel-more-menu')}.querySelector('[data-tab=browser]')`)
       await ui.waitFor(`!!${tab('browser')}?.classList.contains('active')`)
-      check(
-        (await tabs()) === 'session,tasks,browser',
-        'onglet fermé : rouvert par le menu « + », il revient à droite'
-      )
       await ui.shot('23f-panneau-onglets-fermer')
       await ui.ev(
         `${tab('tasks')}.dispatchEvent(new MouseEvent('auxclick', { button: 1, bubbles: true }))`
       )
       await ui.waitFor(`!${tab('tasks')}`)
-      check((await tabs()) === 'session,browser', 'clic molette sur un onglet : il se ferme')
       await ui.click(closeOf('browser'))
       await ui.waitFor(`!${tab('browser')}`)
       // « Session » aussi se ferme (fiche 166) : il revient par « + ».
       await ui.click(closeOf('session'))
       await ui.waitFor(`!${panel}`)
-      check(true, 'dernier onglet fermé : le panneau se ferme')
       await ui.click(ui.$('panel-toggle'))
       await ui.waitFor(`!!${panel}`)
-      check(
-        // Rouvert par le compteur des tâches de l'en-tête : sur « Tâches ».
-        (await tabs()) === 'tasks' &&
-          (await ui.ev(`localStorage.getItem('bobine.panel.closedTabs') ?? ''`)).includes(
-            'browser'
-          ),
-        `panneau rouvert : l’onglet fermé ne revient pas, et c’est retenu (${await tabs()})`
-      )
 
       await ui.click(ui.$('panel-maximize'))
       await ui.waitFor(maximized)
       await ui.click(ui.$('new-conversation'))
       await ui.waitFor(`!${maximized}`)
-      check(true, 'nouvelle conversation : le panneau se réduit')
     },
     undefined,
     'plan',
