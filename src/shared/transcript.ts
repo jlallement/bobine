@@ -51,6 +51,7 @@ import {
 } from './turn-limit'
 import { reduceChildrenMerge, type ChildrenMerge } from './children-merge'
 import { reduceReview } from './review'
+import { reduceRoundtableItem } from './roundtable'
 import { userMessageFields } from './user-message'
 import { reduceRoleRequest, type RoleRequest } from './role-request'
 import {
@@ -217,6 +218,11 @@ export type TranscriptItem =
   | ({ kind: 'turn-limit'; id: number } & TurnLimitCard)
   /** Proposition de l'agent de retenir ou d'oublier un souvenir (fiche 182) : une carte, remplacée. */
   | ({ kind: 'memory-proposal'; id: number } & import('./memory').MemoryProposal)
+  /**
+   * Tour de table (fiche 285, ADR-0072) : la question et l'état du tour, posés par l'app et
+   * remplacés sur place ; la carte des participants s'y ancre.
+   */
+  | ({ kind: 'roundtable'; id: number } & import('./roundtable').Roundtable)
   | {
       /** L'agent a résumé l'échange pour libérer du contexte (`compaction_update`). */
       kind: 'compaction'
@@ -440,6 +446,8 @@ export function reduceTranscript(state: TranscriptState, event: AgentEvent): Tra
       return reduceReview(state, event.review)
     case 'memory-proposal':
       return reduceMemoryProposal(state, event.proposal)
+    case 'roundtable':
+      return reduceRoundtableItem(state, event.roundtable)
     case 'handover': {
       // Session neuve du même agent déjà annoncée, sans message depuis (deux redémarrages sans
       // écrire) : pas de second repère (ADR-0030).

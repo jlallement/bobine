@@ -663,6 +663,11 @@ export type AgentEvent =
    */
   | { type: 'review'; review: import('./review').Review }
   /**
+   * Tour de table (fiche 285), posé par l'app dans le fil de la conversation qui le lance, puis
+   * remplacé à chaque changement (même `roundtableId`).
+   */
+  | { type: 'roundtable'; roundtable: import('./roundtable').Roundtable }
+  /**
    * Proposition de mémoire (fiche 182), posée par l'app dans le fil quand l'agent appelle `remember`
    * ou `forget`, puis remplacée à la décision de l'utilisateur (même `proposalId`).
    */

@@ -2674,7 +2674,8 @@
       "split": "Découper le message en travaux, un par chantier",
       "help": "Liste des commandes",
       "agentCompact": "Résumer la conversation pour libérer du contexte (commande de {{agent}} ; /compact y mène aussi)",
-      "btw": "Aparté : une question à côté, répondue hors du fil"
+      "btw": "Aparté : une question à côté, répondue hors du fil",
+      "roundtable": "Poser la question à plusieurs modèles, puis en faire la synthèse"
     },
     "hint": {
       "name": "[nom]",
@@ -3896,7 +3897,8 @@
       "parent": "De la conversation d’origine « {{title}} »",
       "child": "Du travail « {{title}} »",
       "wake": "Tous les travaux ont répondu : l’agent reprend avec leurs réponses.",
-      "merge": "Consigne de la fusion lancée depuis « {{title}} »"
+      "merge": "Consigne de la fusion lancée depuis « {{title}} »",
+      "roundtable": "Tour de table · {{title}}"
     },
     "leftBehind": {
       "tag_one": "Sans {{count}} modification non commitée",
@@ -5836,7 +5838,8 @@
       "backArchitect": "Architecte back-end",
       "securityExpert": "Expert sécurité",
       "techLead": "Tech lead",
-      "codeReviewer": "Code reviewer"
+      "codeReviewer": "Code reviewer",
+      "participant": "Participant"
     },
     "error": {
       "noHeader": "Pas d’en-tête : le fichier doit commencer par une ligne « --- ».",
@@ -6539,5 +6542,176 @@
       "title": "Nouvelles versions",
       "hint": "Le seul appel de Bobine qui ne vient ni d’un agent ni de vous : au lancement, une fois par jour au plus, la liste publique des versions sur GitHub. Seule la version de Bobine est transmise ; rien ne s’installe."
     }
+  },
+  "roundtable": {
+    "name": "Tour de table",
+    "command": {
+      "description": "Poser la question à plusieurs modèles",
+      "usage": "Écrivez après /roundtable votre question : plusieurs modèles y répondent sans se voir, puis la conversation en fait la synthèse.",
+      "button": "Tour de table : poser la question à plusieurs modèles",
+      "tag": "Tour de table",
+      "close": "Revenir à une question simple"
+    },
+    "line": {
+      "participants_one": "{{count}} participant",
+      "participants_many": "{{count}} participants",
+      "participants_other": "{{count}} participants",
+      "plusSynthesis": "+ synthèse",
+      "choose": "Choisir les participants",
+      "chooseHint": "2 à 5 modèles",
+      "slots_one": "Il manque {{count}} place de travaux",
+      "slots_many": "Il manque {{count}} places de travaux",
+      "slots_other": "Il manque {{count}} places de travaux",
+      "slotsSettings": "Réglages",
+      "unavailable": "{{agent}} n’est plus disponible : choisissez un autre participant",
+      "by": "{{models}} · par {{agent}}",
+      "sendsQuestion": "Chacun reçoit la question.",
+      "sendsFiles": "Chacun reçoit la question et les fichiers joints.",
+      "sendsExchange": "Chacun reçoit la question et le dernier échange de cette conversation.",
+      "sendsAll": "Chacun reçoit la question, les fichiers joints et le dernier échange de cette conversation."
+    },
+    "cost": {
+      "full": "≈ {{n}} fois les jetons d’une question simple",
+      "short": "≈ {{n}} fois plus de jetons"
+    },
+    "menu": {
+      "title": "Participants · 2 à 5",
+      "others": "Autres modèles…",
+      "search": "Rechercher un modèle",
+      "footer": "Chacun reçoit la question et peut lire les fichiers de ce dossier.",
+      "full": "5 participants au plus",
+      "once": "Une seule fois, sans choix de modèle"
+    },
+    "card": {
+      "title": "Tour de table",
+      "progress_one": "{{count}} avis sur {{total}}",
+      "progress_many": "{{count}} avis sur {{total}}",
+      "progress_other": "{{count}} avis sur {{total}}",
+      "opinions_one": "{{count}} avis",
+      "opinions_many": "{{count}} avis",
+      "opinions_other": "{{count}} avis",
+      "synthesizing": "synthèse en cours",
+      "waitingAgent": "synthèse en attente : l’agent répond",
+      "held": "synthèse retenue : plafond de la conversation atteint",
+      "interrupted": "interrompu par le redémarrage de l’app",
+      "stopped": "tour de table arrêté",
+      "footer": "Lecture seule · chacun répond sans voir les autres",
+      "footerShort": "Lecture seule",
+      "synthesizeNow": "Synthétiser sans attendre",
+      "synthesizeNowShort": "Synthétiser",
+      "synthesizeWith_one": "Synthétiser avec {{count}} avis",
+      "synthesizeWith_many": "Synthétiser avec {{count}} avis",
+      "synthesizeWith_other": "Synthétiser avec {{count}} avis",
+      "stop": "Arrêter",
+      "stopAll": "Arrêter le tour de table",
+      "relaunch": "Relancer",
+      "open": "Ouvrir sa conversation",
+      "readMore": "Lire la suite",
+      "otherModel": "Choisir un autre modèle",
+      "seeSynthesis": "Voir la synthèse",
+      "used": "Consommé : {{total}}",
+      "usedAll": "Consommé en tout : {{total}}",
+      "tokens": "{{tokens}} jetons",
+      "silent_one": "{{count}} participant sans chiffre",
+      "silent_many": "{{count}} participants sans chiffre",
+      "silent_other": "{{count}} participants sans chiffre",
+      "single": "Un seul avis : pas de synthèse.",
+      "none": "Aucun avis : pas de synthèse.",
+      "partial_one": "Synthèse avec {{opinions}} avis : un participant n’a pas répondu.",
+      "partial_many": "Synthèse avec {{opinions}} avis : {{count}} participants n’ont pas répondu.",
+      "partial_other": "Synthèse avec {{opinions}} avis : {{count}} participants n’ont pas répondu."
+    },
+    "state": {
+      "waiting": "en attente",
+      "working": "au travail",
+      "answered": "a répondu",
+      "noOpinion": "sans avis",
+      "silent": "silencieux depuis {{duration}}",
+      "removed": "conversation supprimée",
+      "changedFolder": "a modifié des fichiers du dossier",
+      "error": "En erreur : {{reason}}",
+      "errorAfter": "En erreur : {{reason}} au bout de {{duration}}",
+      "modelNotOffered": "Modèle non proposé par {{agent}} pour le moment.",
+      "stopped": {
+        "user": "Arrêté par vous",
+        "early-synthesis": "Arrêté : synthèse sans attendre",
+        "roundtable-stopped": "Arrêté avec le tour de table",
+        "cost-cap": "Arrêté : plafond de la conversation atteint",
+        "restart": "Arrêté (redémarrage)",
+        "removed": "Conversation supprimée"
+      },
+      "reason": {
+        "model-not-found": "modèle introuvable",
+        "model-not-applied": "modèle non appliqué",
+        "agent-error": "erreur de l’agent",
+        "start-failed": "l’agent n’a pas démarré",
+        "unavailable": "agent indisponible"
+      },
+      "readOnly": {
+        "enforced": "Lecture seule",
+        "native": "Lecture seule, tenue par le rôle Participant installé",
+        "requested": "Lecture seule demandée",
+        "unverified": "Lecture seule demandée, non vérifiée (dossier hors git)"
+      }
+    },
+    "confidence": {
+      "high": "confiance haute",
+      "medium": "confiance moyenne",
+      "low": "confiance basse"
+    },
+    "formatNotFollowed": "format non suivi",
+    "synthesis": {
+      "label": "Synthèse du tour de table · {{model}}",
+      "requested_one": "Synthèse demandée · {{count}} avis",
+      "requested_many": "Synthèse demandée · {{count}} avis",
+      "requested_other": "Synthèse demandée · {{count}} avis",
+      "participant": "Participant {{letter}}",
+      "apply": "Demander à {{agent}} de l’appliquer",
+      "applyDraft": "Applique ta recommandation du tour de table."
+    },
+    "rebuttal": {
+      "action": "Faire réagir les participants",
+      "title": "Réplique",
+      "answers_one": "{{count}} réponse",
+      "answers_many": "{{count}} réponses",
+      "answers_other": "{{count}} réponses",
+      "held": "réplique retenue : plafond atteint",
+      "stance": {
+        "maintains": "maintient",
+        "nuances": "nuance",
+        "rallies": "se rallie"
+      }
+    },
+    "decision": {
+      "label": "Décision du tour de table · {{model}}",
+      "requested_one": "Décision demandée · {{count}} réplique",
+      "requested_many": "Décision demandée · {{count}} répliques",
+      "requested_other": "Décision demandée · {{count}} répliques",
+      "again": "Demander la décision"
+    },
+    "error": {
+      "running": "Un tour de table est déjà en cours dans cette conversation : attendez sa synthèse.",
+      "task": "Pas de tour de table depuis un travail : lancez-le depuis sa conversation d’origine.",
+      "archived": "Cette conversation est archivée : désarchivez-la pour lancer un tour de table.",
+      "discussion": "Le tour de table se lance dans un projet, pas dans une discussion.",
+      "slots_one": "Il manque {{count}} place de travaux : rien n’est parti.",
+      "slots_many": "Il manque {{count}} places de travaux : rien n’est parti.",
+      "slots_other": "Il manque {{count}} places de travaux : rien n’est parti.",
+      "phase": "Ce geste n’est plus possible à cette étape du tour de table.",
+      "rebuttalOnce": "Une seule réplique par tour de table.",
+      "quorum": "Il faut au moins deux avis pour une synthèse.",
+      "selection": {
+        "too-few": "Choisissez au moins 2 participants.",
+        "too-many": "5 participants au plus.",
+        "duplicate": "Ce modèle est déjà parmi les participants.",
+        "single-seat": "Cet agent ne participe qu’une fois, sans choix de modèle.",
+        "model-not-allowed": "Cet agent ne permet pas de choisir son modèle.",
+        "unknown-agent": "Cet agent n’existe plus.",
+        "unavailable": "Cet agent est indisponible."
+      }
+    },
+    "export_one": "Tour de table à {{count}} participant",
+    "export_many": "Tour de table à {{count}} participants",
+    "export_other": "Tour de table à {{count}} participants"
   }
 }

@@ -1,6 +1,7 @@
 # ADR-0072 — Tour de table : des participants filles en lecture seule, menés par l'app
 
-- **Statut** : proposé (étude `docs/tour-de-table-etude-technique.md`, fiche 285)
+- **Statut** : accepté le 2026-11-24 (étude `docs/tour-de-table-etude-technique.md`, fiche 285,
+  décisions C1 à C8)
 - **Date** : 2026-11-24 (révisé le même jour après les décisions de l'utilisateur, puis aligné sur
   les maquettes finales `docs/maquettes/1.2-tour-de-table-v2.html`)
 - **Complète** : ADR-0019 et ADR-0020 (conversations filles, plafond de travaux), ADR-0036 (mère
@@ -95,6 +96,35 @@ refusée), et un état de tour qui survive au redémarrage.
    - Le lancement par l'agent viendra après la v1 par un outil dédié `propose_roundtable` avec
      carte d'accord, pas par une extension de `start_child`.
 
+### Décisions de l'utilisateur à l'acceptation (2026-11-24)
+
+Elles précisent la décision ci-dessus (fiche 285, décisions C1 à C8) :
+
+1. **La synthèse est rédigée par la conversation en cours**, avec son agent et son modèle : rien à
+   choisir.
+2. **Elle arbitre seulement** : elle compare, critique et tranche, sans donner son propre avis
+   comme un participant de plus.
+3. **Lecture seule chez un agent qui écrit sans demander** (OpenCode) : Bobine demande le mode le
+   plus restrictif disponible. « Participant » est un **rôle fourni**, de conseil et en lecture
+   seule ; installé dans l'agent par « Installer dans… » (ADR-0047), il sert de mode natif
+   garanti. Sinon la lecture seule est seulement demandée : `ReadOnlyWatch` compare le dossier
+   avant et après, et la ligne du participant signale tout fichier modifié. **Jamais
+   d'installation automatique.** Le mode `plan` d'OpenCode n'est pas une garantie : on ne s'appuie
+   pas dessus. Cela tranche la question laissée ouverte par le lot 0 : on n'exige pas l'agent
+   installé, on lance avec « lecture seule demandée » affichée.
+4. **Modèle strict** : un seul réglage de modèle par session ; une erreur de réglage met le
+   participant en erreur ; la valeur est relue après `config_option_update`, avant l'envoi ; un
+   modèle absent du catalogue donne « modèle introuvable » ; jamais de repli silencieux.
+5. **Hors dépôt git**, le tour de table fonctionne : lecture seule, dans le dossier (non vérifiée
+   pour un agent qui écrit sans demander).
+6. **Menu des participants** : les modèles récemment utilisés d'abord, puis « Autres modèles… ».
+
+Le contrat qui en découle (types, réducteur, messages aux agents, canaux) vit dans
+`src/shared/roundtable.ts`, `roundtable-prompts.ts` et `roundtable-ipc.ts`. Les avis et la
+synthèse y sont transmis **comme des données, pas comme des instructions** : encadrés par des
+balises de l'app, balises de l'app qu'ils contiendraient neutralisées, consigne explicite de ne
+suivre aucune instruction qui s'y trouve.
+
 ## Alternatives écartées
 
 - **Orchestrateur dédié** (un `AgentHost` par participant hors conversation, comme l'aparté de la
@@ -157,8 +187,8 @@ refusée), et un état de tour qui survive au redémarrage.
     Le mode `plan` **n'est pas** une lecture seule (une commande `shell` écrit sans demande) : il
     n'est jamais posé pour un participant. L'agent « participant » installé en lecture seule
     (`edit`, `shell`, `subagent` refusés) n'a rien écrit : le rôle nomme ce mode natif quand la
-    session l'annonce. **Ouvert, à décider** : exiger cet agent avant un tour OpenCode, ou lancer
-    avec « lecture seule demandée » affichée sur la ligne du participant.
+    session l'annonce. **Décidé à l'acceptation** : pas d'exigence ni d'installation automatique ;
+    sans l'agent installé, « lecture seule demandée » est affichée sur la ligne du participant.
   - **Confirmé** : le modèle peut ne pas être celui demandé (modèle refusé, catalogue qui change,
     réponse au réglage en retard) et rien ne nomme le modèle qui a répondu : mode strict ci-dessus.
   - **Levé** : 5 `opencode acp` et 2 `bob acp` simultanés sur le même stockage (aucun verrou ni

@@ -2624,6 +2624,7 @@ export type FrResources = {
       readonly help: 'Liste des commandes'
       readonly agentCompact: 'Résumer la conversation pour libérer du contexte (commande de {{agent}} ; /compact y mène aussi)'
       readonly btw: 'Aparté : une question à côté, répondue hors du fil'
+      readonly roundtable: 'Poser la question à plusieurs modèles, puis en faire la synthèse'
     }
     readonly hint: {
       readonly name: '[nom]'
@@ -3738,6 +3739,7 @@ export type FrResources = {
       readonly child: 'Du travail « {{title}} »'
       readonly wake: 'Tous les travaux ont répondu : l’agent reprend avec leurs réponses.'
       readonly merge: 'Consigne de la fusion lancée depuis « {{title}} »'
+      readonly roundtable: 'Tour de table · {{title}}'
     }
     readonly leftBehind: {
       readonly tag_one: 'Sans {{count}} modification non commitée'
@@ -5651,6 +5653,7 @@ export type FrResources = {
       readonly securityExpert: 'Expert sécurité'
       readonly techLead: 'Tech lead'
       readonly codeReviewer: 'Code reviewer'
+      readonly participant: 'Participant'
     }
     readonly error: {
       readonly noHeader: 'Pas d’en-tête : le fichier doit commencer par une ligne « --- ».'
@@ -6322,5 +6325,176 @@ export type FrResources = {
       readonly title: 'Nouvelles versions'
       readonly hint: 'Le seul appel de Bobine qui ne vient ni d’un agent ni de vous : au lancement, une fois par jour au plus, la liste publique des versions sur GitHub. Seule la version de Bobine est transmise ; rien ne s’installe.'
     }
+  }
+  readonly roundtable: {
+    readonly name: 'Tour de table'
+    readonly command: {
+      readonly description: 'Poser la question à plusieurs modèles'
+      readonly usage: 'Écrivez après /roundtable votre question : plusieurs modèles y répondent sans se voir, puis la conversation en fait la synthèse.'
+      readonly button: 'Tour de table : poser la question à plusieurs modèles'
+      readonly tag: 'Tour de table'
+      readonly close: 'Revenir à une question simple'
+    }
+    readonly line: {
+      readonly participants_one: '{{count}} participant'
+      readonly participants_many: '{{count}} participants'
+      readonly participants_other: '{{count}} participants'
+      readonly plusSynthesis: '+ synthèse'
+      readonly choose: 'Choisir les participants'
+      readonly chooseHint: '2 à 5 modèles'
+      readonly slots_one: 'Il manque {{count}} place de travaux'
+      readonly slots_many: 'Il manque {{count}} places de travaux'
+      readonly slots_other: 'Il manque {{count}} places de travaux'
+      readonly slotsSettings: 'Réglages'
+      readonly unavailable: '{{agent}} n’est plus disponible : choisissez un autre participant'
+      readonly by: '{{models}} · par {{agent}}'
+      readonly sendsQuestion: 'Chacun reçoit la question.'
+      readonly sendsFiles: 'Chacun reçoit la question et les fichiers joints.'
+      readonly sendsExchange: 'Chacun reçoit la question et le dernier échange de cette conversation.'
+      readonly sendsAll: 'Chacun reçoit la question, les fichiers joints et le dernier échange de cette conversation.'
+    }
+    readonly cost: {
+      readonly full: '≈ {{n}} fois les jetons d’une question simple'
+      readonly short: '≈ {{n}} fois plus de jetons'
+    }
+    readonly menu: {
+      readonly title: 'Participants · 2 à 5'
+      readonly others: 'Autres modèles…'
+      readonly search: 'Rechercher un modèle'
+      readonly footer: 'Chacun reçoit la question et peut lire les fichiers de ce dossier.'
+      readonly full: '5 participants au plus'
+      readonly once: 'Une seule fois, sans choix de modèle'
+    }
+    readonly card: {
+      readonly title: 'Tour de table'
+      readonly progress_one: '{{count}} avis sur {{total}}'
+      readonly progress_many: '{{count}} avis sur {{total}}'
+      readonly progress_other: '{{count}} avis sur {{total}}'
+      readonly opinions_one: '{{count}} avis'
+      readonly opinions_many: '{{count}} avis'
+      readonly opinions_other: '{{count}} avis'
+      readonly synthesizing: 'synthèse en cours'
+      readonly waitingAgent: 'synthèse en attente : l’agent répond'
+      readonly held: 'synthèse retenue : plafond de la conversation atteint'
+      readonly interrupted: 'interrompu par le redémarrage de l’app'
+      readonly stopped: 'tour de table arrêté'
+      readonly footer: 'Lecture seule · chacun répond sans voir les autres'
+      readonly footerShort: 'Lecture seule'
+      readonly synthesizeNow: 'Synthétiser sans attendre'
+      readonly synthesizeNowShort: 'Synthétiser'
+      readonly synthesizeWith_one: 'Synthétiser avec {{count}} avis'
+      readonly synthesizeWith_many: 'Synthétiser avec {{count}} avis'
+      readonly synthesizeWith_other: 'Synthétiser avec {{count}} avis'
+      readonly stop: 'Arrêter'
+      readonly stopAll: 'Arrêter le tour de table'
+      readonly relaunch: 'Relancer'
+      readonly open: 'Ouvrir sa conversation'
+      readonly readMore: 'Lire la suite'
+      readonly otherModel: 'Choisir un autre modèle'
+      readonly seeSynthesis: 'Voir la synthèse'
+      readonly used: 'Consommé : {{total}}'
+      readonly usedAll: 'Consommé en tout : {{total}}'
+      readonly tokens: '{{tokens}} jetons'
+      readonly silent_one: '{{count}} participant sans chiffre'
+      readonly silent_many: '{{count}} participants sans chiffre'
+      readonly silent_other: '{{count}} participants sans chiffre'
+      readonly single: 'Un seul avis : pas de synthèse.'
+      readonly none: 'Aucun avis : pas de synthèse.'
+      readonly partial_one: 'Synthèse avec {{opinions}} avis : un participant n’a pas répondu.'
+      readonly partial_many: 'Synthèse avec {{opinions}} avis : {{count}} participants n’ont pas répondu.'
+      readonly partial_other: 'Synthèse avec {{opinions}} avis : {{count}} participants n’ont pas répondu.'
+    }
+    readonly state: {
+      readonly waiting: 'en attente'
+      readonly working: 'au travail'
+      readonly answered: 'a répondu'
+      readonly noOpinion: 'sans avis'
+      readonly silent: 'silencieux depuis {{duration}}'
+      readonly removed: 'conversation supprimée'
+      readonly changedFolder: 'a modifié des fichiers du dossier'
+      readonly error: 'En erreur : {{reason}}'
+      readonly errorAfter: 'En erreur : {{reason}} au bout de {{duration}}'
+      readonly modelNotOffered: 'Modèle non proposé par {{agent}} pour le moment.'
+      readonly stopped: {
+        readonly user: 'Arrêté par vous'
+        readonly 'early-synthesis': 'Arrêté : synthèse sans attendre'
+        readonly 'roundtable-stopped': 'Arrêté avec le tour de table'
+        readonly 'cost-cap': 'Arrêté : plafond de la conversation atteint'
+        readonly restart: 'Arrêté (redémarrage)'
+        readonly removed: 'Conversation supprimée'
+      }
+      readonly reason: {
+        readonly 'model-not-found': 'modèle introuvable'
+        readonly 'model-not-applied': 'modèle non appliqué'
+        readonly 'agent-error': 'erreur de l’agent'
+        readonly 'start-failed': 'l’agent n’a pas démarré'
+        readonly unavailable: 'agent indisponible'
+      }
+      readonly readOnly: {
+        readonly enforced: 'Lecture seule'
+        readonly native: 'Lecture seule, tenue par le rôle Participant installé'
+        readonly requested: 'Lecture seule demandée'
+        readonly unverified: 'Lecture seule demandée, non vérifiée (dossier hors git)'
+      }
+    }
+    readonly confidence: {
+      readonly high: 'confiance haute'
+      readonly medium: 'confiance moyenne'
+      readonly low: 'confiance basse'
+    }
+    readonly formatNotFollowed: 'format non suivi'
+    readonly synthesis: {
+      readonly label: 'Synthèse du tour de table · {{model}}'
+      readonly requested_one: 'Synthèse demandée · {{count}} avis'
+      readonly requested_many: 'Synthèse demandée · {{count}} avis'
+      readonly requested_other: 'Synthèse demandée · {{count}} avis'
+      readonly participant: 'Participant {{letter}}'
+      readonly apply: 'Demander à {{agent}} de l’appliquer'
+      readonly applyDraft: 'Applique ta recommandation du tour de table.'
+    }
+    readonly rebuttal: {
+      readonly action: 'Faire réagir les participants'
+      readonly title: 'Réplique'
+      readonly answers_one: '{{count}} réponse'
+      readonly answers_many: '{{count}} réponses'
+      readonly answers_other: '{{count}} réponses'
+      readonly held: 'réplique retenue : plafond atteint'
+      readonly stance: {
+        readonly maintains: 'maintient'
+        readonly nuances: 'nuance'
+        readonly rallies: 'se rallie'
+      }
+    }
+    readonly decision: {
+      readonly label: 'Décision du tour de table · {{model}}'
+      readonly requested_one: 'Décision demandée · {{count}} réplique'
+      readonly requested_many: 'Décision demandée · {{count}} répliques'
+      readonly requested_other: 'Décision demandée · {{count}} répliques'
+      readonly again: 'Demander la décision'
+    }
+    readonly error: {
+      readonly running: 'Un tour de table est déjà en cours dans cette conversation : attendez sa synthèse.'
+      readonly task: 'Pas de tour de table depuis un travail : lancez-le depuis sa conversation d’origine.'
+      readonly archived: 'Cette conversation est archivée : désarchivez-la pour lancer un tour de table.'
+      readonly discussion: 'Le tour de table se lance dans un projet, pas dans une discussion.'
+      readonly slots_one: 'Il manque {{count}} place de travaux : rien n’est parti.'
+      readonly slots_many: 'Il manque {{count}} places de travaux : rien n’est parti.'
+      readonly slots_other: 'Il manque {{count}} places de travaux : rien n’est parti.'
+      readonly phase: 'Ce geste n’est plus possible à cette étape du tour de table.'
+      readonly rebuttalOnce: 'Une seule réplique par tour de table.'
+      readonly quorum: 'Il faut au moins deux avis pour une synthèse.'
+      readonly selection: {
+        readonly 'too-few': 'Choisissez au moins 2 participants.'
+        readonly 'too-many': '5 participants au plus.'
+        readonly duplicate: 'Ce modèle est déjà parmi les participants.'
+        readonly 'single-seat': 'Cet agent ne participe qu’une fois, sans choix de modèle.'
+        readonly 'model-not-allowed': 'Cet agent ne permet pas de choisir son modèle.'
+        readonly 'unknown-agent': 'Cet agent n’existe plus.'
+        readonly unavailable: 'Cet agent est indisponible.'
+      }
+    }
+    readonly export_one: 'Tour de table à {{count}} participant'
+    readonly export_many: 'Tour de table à {{count}} participants'
+    readonly export_other: 'Tour de table à {{count}} participants'
   }
 }

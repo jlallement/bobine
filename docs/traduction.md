@@ -151,6 +151,31 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | capacités, ce qu'il annonce | capabilities, what it reports | |
 | propre à (un agent) | specific to | |
 
+### Tour de table (fiche 285)
+
+| Français | Anglais | Remarque |
+|---|---|---|
+| tour de table | roundtable | Le nom de la fonction ; la commande est `/roundtable`. « Tour de table » → « Roundtable ». |
+| participant | participant | Un couple agent et modèle. Aussi le nom du rôle fourni « Participant ». |
+| N participants ▾ ; Choisir les participants | N participants ; Choose participants | Ligne du tour de table, dans la saisie. |
+| Participants · 2 à 5 ; Autres modèles… | Participants · 2 to 5 ; Other models… | Menu à cases ; les modèles récents d'abord. |
+| avis (d'un participant) | opinion | À distinguer d'« avis (dans le fil) » → « notice ». « 2 avis sur 3 » → « 2 opinions of 3 ». |
+| synthèse ; Synthèse du tour de table | synthesis ; Roundtable synthesis | Rédigée par la conversation en cours, qui arbitre. |
+| Synthétiser sans attendre | Synthesize now | Forme courte : « Synthétiser » → « Synthesize ». |
+| réplique ; Faire réagir les participants | rebuttal ; Ask participants to respond | Une seule par tour. |
+| maintient, nuance, se rallie | maintains, nuances, rallies | Position d'un participant après la réplique. |
+| décision (du tour de table) | decision | « Décision du tour de table » → « Roundtable decision ». |
+| réponse courte ; confiance haute / moyenne / basse | short answer ; high / medium / low confidence | Lues dans les rubriques de l'avis. |
+| format non suivi | format not followed | |
+| + synthèse · ≈ N fois les jetons d'une question simple | + synthesis · ≈ N× the tokens of a plain question | Surcoût : ce qui est multiplié, c'est la consommation de **jetons**. |
+| ≈ N fois plus de jetons | ≈ N× more tokens | Forme courte, saisie étroite : « jetons » ne disparaît jamais. |
+| Consommé ; Consommé en tout | Used ; Used in all | Pied de la carte. |
+| participant sans chiffre | participant without figures | Agent qui ne communique ni jetons ni coût. |
+| place de travaux | task slot | « Il manque 2 places de travaux » → « 2 task slots missing ». |
+| modèle introuvable ; modèle non appliqué | model not found ; model not applied | Jamais de repli silencieux sur un autre modèle. |
+| arrêté : plafond de la conversation atteint | stopped: conversation cost cap reached | Reprend « plafond par conversation ». |
+| lecture seule demandée, non vérifiée (dossier hors git) | read-only requested, not verified (folder outside git) | |
+
 ### La conversation
 
 | Français | Anglais | Remarque |

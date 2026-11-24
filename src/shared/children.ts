@@ -555,11 +555,20 @@ export type MessageOrigin =
   /** Consigne de conflit d'une fusion lancée depuis la conversation `id` (fiches 110, 264). */
   | { kind: 'merge'; id: string; title: string }
   | { kind: 'wake' }
+  /**
+   * Demande de synthèse ou de décision d'un tour de table (fiche 285) : `id` est le `roundtableId`
+   * (pas une conversation), `title` la question coupée. La consigne dit tout à l'agent.
+   */
+  | { kind: 'roundtable'; id: string; title: string; step: 'synthesis' | 'verdict' }
 
 /** Ce que l'interface dit de la provenance d'un message (hors réveil, qui a sa propre ligne). */
 export function originKey(
   from: Exclude<MessageOrigin, { kind: 'wake' }>
-): 'children.from.parent' | 'children.from.child' | 'children.from.merge' {
+):
+  | 'children.from.parent'
+  | 'children.from.child'
+  | 'children.from.merge'
+  | 'children.from.roundtable' {
   return `children.from.${from.kind}`
 }
 
@@ -600,6 +609,7 @@ export function originContext(from: MessageOrigin): string | undefined {
     // La consigne de conflit dit déjà tout (fiche 110) : rien de plus qu'avant à l'agent.
     case 'merge':
     case 'wake':
+    case 'roundtable':
       return undefined
   }
 }

@@ -1,8 +1,9 @@
 # 285 — Tour de table : une question, plusieurs modèles, une synthèse critique
 
-- **Statut** : maquettes validées, à planifier (1.2). Étude fonctionnelle et technique du
-  2026-11-24, révisée le même jour après les décisions de l'utilisateur, puis alignée sur les
-  maquettes finales.
+- **Statut** : en cours (1.2, lots 1 à 4). Étude fonctionnelle et technique du 2026-11-24,
+  révisée le même jour après les décisions de l'utilisateur, alignée sur les maquettes finales ;
+  contrat partagé posé le 2026-11-24 (`src/shared/roundtable.ts`, `roundtable-prompts.ts`,
+  `roundtable-ipc.ts`, voir « Plan »).
 - **Dépend de** : 097, 160 (travaux et réveil groupé, ADR-0019, ADR-0020, ADR-0036), 108
   (destination des données, modèles vus), 112 et 118 (agent et modèle d'un travail), 157
   (plafond par conversation, ADR-0035), 177 et 265 (lecture seule vérifiée dans le même dossier),
@@ -14,7 +15,7 @@
   OpenCode et l'agent factice l'ont, pas Bob. Aucune nouvelle capacité de profil, aucun mode
   imposé (ADR-0011).
 - **Étude technique** : `docs/tour-de-table-etude-technique.md`. **ADR** : `docs/adr/0072-tour-de-table.md`
-  (proposé).
+  (accepté le 2026-11-24).
 - **Maquettes** (validées le 2026-11-24) : `docs/maquettes/1.2-tour-de-table-v2.html`, captures en
   clair et en sombre dans `docs/maquettes/1.2-tour-de-table-v2/` (`lancement-1-commande`,
   `lancement-2-pret`, `premier-usage`, `participants`, `surcout`, `carte-en-cours`, `avis-liste`,
@@ -191,8 +192,8 @@ Maquettes `participants` et `premier-usage`.
   « OpenCode · Qwen3 32B » ou « IBM Bob ».
   - Pour un agent qui permet le choix du modèle (`childModelChoice`), on choisit parmi ses modèles
     connus : les options de sa session si c'est l'agent de la conversation, sinon les modèles vus
-    lors de sa dernière session (`modelsSeen`, fiche 108). La liste suit l'ordre habituel des
-    menus de modèles, sans mise en avant particulière.
+    lors de sa dernière session (`modelsSeen`, fiche 108). Les modèles **récemment utilisés**
+    d'abord, puis « Autres modèles… » pour les autres (décision C6), sans autre mise en avant.
   - Pour un agent qui ne le permet pas (Bob), une seule ligne « IBM Bob », au plus une fois.
   - Un couple agent et modèle déjà présent est refusé : deux fois le même modèle n'apporte pas
     d'indépendance.
@@ -361,8 +362,9 @@ En anglais, résumée ici. Le participant :
   ligne passe à « en erreur », avec la raison en clair, et propose « Relancer » tant que d'autres
   participants travaillent encore. Les autres continuent. Quand tous ont fini avec au moins deux
   avis, la synthèse part seule ; la ligne dit « sans avis ».
-- **Un modèle non appliqué** (l'agent ne le propose plus, ou en garde un autre) : **pas de
-  substitution silencieuse.** L'avis D32 de la fiche 266 remplace un modèle non proposé par le
+- **Un modèle introuvable ou non appliqué** (absent du catalogue de l'agent : « modèle
+  introuvable » ; réglage refusé ou valeur relue différente : « modèle non appliqué ») : **pas de
+  substitution silencieuse** (décision C4). L'avis D32 de la fiche 266 remplace un modèle non proposé par le
   modèle par défaut ; ici, ce remplacement casserait l'indépendance (deux participants sur le même
   modèle sans le savoir). Le participant est « en erreur : modèle non appliqué », la question ne
   lui est pas envoyée (maquette `degrade-modele-refuse`). « Choisir un autre modèle » ouvre le menu
@@ -392,7 +394,8 @@ En anglais, résumée ici. Le participant :
 - **OpenCode tech lead, Bob participant** : Bob, sans choix de modèle, figure une seule fois. Sa
   lecture seule est effective, puisqu'il demande avant d'écrire et que la demande est refusée. Son
   coût en bobcoins est lu dans sa base, après la réponse. Pour les participants OpenCode, la
-  lecture seule n'est que demandée (`writesWithoutAsking`), et leur ligne le dit.
+  lecture seule n'est que demandée (`writesWithoutAsking`), et leur ligne le dit, sauf si le rôle
+  « Participant » est installé dans OpenCode (décision C3).
 - **Une conversation d'origine déjà longue** : les participants ne reçoivent que le dernier
   échange, borné ; la synthèse ajoute au tech lead N avis bornés à 6 000 caractères. La jauge de
   contexte habituelle suffit ; rien de plus n'est affiché.
@@ -720,6 +723,47 @@ autres. Il ne reste aucune question ouverte.
    d'office en v1. On mesure l'encombrement à la recette ; si besoin, on les regroupe sous une
    ligne « Tour de table » après la v1.
 
+## Décisions du 2026-11-24 (contrat, lancement des lots 1 à 4)
+
+Prises par l'utilisateur avant le code ; elles priment sur l'étude. Numérotées C1 à C8.
+
+1. **C1. Qui rédige la synthèse** : la conversation en cours, avec son agent et son modèle. Rien à
+   choisir.
+2. **C2. Rôle de la conversation en cours** : elle **arbitre** seulement. Elle ne donne pas son
+   propre avis comme un participant (consigne de synthèse : « You are the arbiter… do not add your
+   own opinion as one more participant »).
+3. **C3. Lecture seule chez un agent qui écrit sans demander** (OpenCode, lot 0, O8 à O10) :
+   - Bobine demande le mode le plus restrictif disponible : le rôle installé s'il est là, jamais
+     `plan`, qui n'est pas une garantie (il écrit par le shell) ;
+   - « Participant » est un **rôle fourni** (`participant`), de conseil, en lecture seule, sans
+     famille d'outils de Bobine ;
+   - installé dans l'agent par « Installer dans… » (fiche 223 phase 4, ADR-0047,
+     `src/main/roles/export/`), il sert de **mode natif garanti** (lecture seule `native`) ;
+   - sinon la lecture seule est seulement **demandée** : `ReadOnlyWatch`
+     (`src/main/roles/read-only-watch.ts`) compare le dossier avant et après, et la ligne du
+     participant signale tout fichier modifié (`changedFolder`), sans l'écarter de la synthèse
+     (l'agent qui synthétise en est averti) ;
+   - **jamais d'installation automatique**.
+4. **C4. Modèle strict** : un seul réglage de modèle par session ; une erreur de réglage met le
+   participant en erreur ; la valeur est relue après les `config_option_update`, avant l'envoi ; un
+   modèle absent du catalogue donne « modèle introuvable » ; jamais de repli silencieux.
+5. **C5. Hors dépôt git** : le tour de table fonctionne, en lecture seule dans le dossier ; la
+   lecture seule seulement demandée y est « non vérifiée » (`unverified`).
+6. **C6. Menu des participants** : les modèles récemment utilisés d'abord, puis « Autres
+   modèles… ».
+7. **C7. ADR-0072 accepté.**
+8. **C8. Périmètre** : les lots 1 à 4 sont à faire ; fiche en cours.
+
+Écarts du contrat à la lettre de la commande, assumés :
+
+- le plafond de la conversation **arrête** un participant (`stopped: 'cost-cap'`, « Arrêté :
+  plafond de la conversation atteint »), comme le dit la section « Plafond par conversation » ; ce
+  n'est pas une erreur ;
+- « a modifié des fichiers » est une **marque** sur la ligne (`changedFolder`), pas une erreur :
+  l'avis reste lisible et part à la synthèse avec un avertissement (C3) ;
+- deux phases de plus que la liste de départ : `deciding` (décision demandée) et `insufficient`
+  (moins de deux avis, pas de synthèse).
+
 ## Plan
 
 Détail dans l'étude technique (`docs/tour-de-table-etude-technique.md`, § 3). En bref :
@@ -739,6 +783,152 @@ Détail dans l'étude technique (`docs/tour-de-table-etude-technique.md`, § 3).
   ordinaires.
 - **Pas de nouvelle dépendance attendue.** Pas de migration du journal en v1.
 
+### Contrat partagé (posé le 2026-11-24, un commit)
+
+- `src/shared/roundtable.ts` : types (`RoundtableChoice`, `RoundtableParticipant`,
+  `RoundtableSeat`, `RoundtablePhase`, `RoundtableStep`, `Roundtable`, `RoundtableEvent`,
+  `RoundtableTotal`), réducteur `reduceRoundtable` (un geste hors phase rend le même objet : le main
+  refuse), reprise `settleRoundtable`, élément de fil `reduceRoundtableItem`, quorum, sélection
+  (`selectionProblem`, `toggleChoice`), lettres (`shuffledLetters`, aléa injecté), multiplicateur,
+  `participantIds`, `roundtableTotal`.
+- `src/shared/roundtable-prompts.ts` : tout ce qui part aux agents, en anglais et borné
+  (`PARTICIPANT_BRIEF`, `participantMessage`, `lastExchangeText`, `synthesisRequest`,
+  `verdictRequest`, `rebuttalMessage`), avis encadrés comme des données (`asData` neutralise les
+  balises `<bobine…`) ; lecture des avis (`opinionDigest`, `rebuttalStance`).
+- `src/shared/roundtable-ipc.ts` : canaux `roundtable:*`, types de requête et de réponse,
+  `parse…` des arguments du renderer, `ROUNDTABLE_READ_ONLY_SAFE`. **Pas encore branchés** dans
+  `IpcInvokeContract` : c'est la première tâche du lot 1 main.
+- Déclarations : élément `roundtable` (`transcript.ts`, `agent.ts`), provenance
+  `MessageOrigin.kind = 'roundtable'` (`children.ts`), début de bloc `<bobine_roundtable`
+  (`app-context.ts`), ligne d'export (`export.ts`).
+- Clés `roundtable.*` (et `children.from.roundtable`, `appCommands.list.roundtable`,
+  `roles.builtin.participant`) dans `fr.json` et `en.json` ; termes au glossaire de
+  `docs/traduction.md`.
+
+### Qui touche quoi
+
+Deux agents travaillent en parallèle : **main** et **renderer**. Les fichiers du contrat
+(`src/shared/roundtable*.ts`) sont **gelés** : un changement passe par une demande au chef, qui
+l'applique sur la branche commune avant que l'un ou l'autre ne s'en serve. Règles :
+
+| Fichier | Propriétaire |
+|---|---|
+| `src/shared/roundtable.ts`, `roundtable-prompts.ts`, `roundtable-ipc.ts` | gelés (chef) |
+| `src/shared/ipc.ts`, `src/main/ipc.ts`, `src/preload/api.ts`, `src/main/read-only-guard.ts` | main |
+| `src/shared/preferences.ts`, `src/main/settings-store.ts`, `src/main/settings.ts` (`roundtableParticipants`) | main |
+| `src/main/**`, `src/mock-agent/**`, `docs/mock-agent.md` | main |
+| `src/shared/work-groups.ts`, `src/shared/app-commands.ts` | renderer |
+| `src/renderer/**`, `e2e/**` | renderer |
+| `src/shared/i18n/locales/*.json`, `fr.generated.d.ts` | renderer ; le main n'ajoute que sous `roundtable.error.*` et `roles.builtin.*`, et régénère `fr.generated.d.ts` (`pnpm i18n-types`) en cas de conflit |
+| `docs/features/285-tour-de-table.md` (journal), `CHANGELOG*.md` | chacun sa ligne de journal ; le changelog en fin de lot 4 |
+
+### Lot 1 — lancer et recueillir
+
+**Main** (d'abord le branchement, pour débloquer le renderer) :
+
+1. Canaux : `RoundtableIpcContract` ajouté à `IpcInvokeContract` et `ROUNDTABLE_CHANNELS` à
+   `IPC_CHANNELS` (`src/shared/ipc.ts`) ; gestionnaires dans `src/main/roundtable/ipc.ts`
+   (arguments par `parseRoundtableId`, `parseRoundtableStartRequest`, `parseRoundtableLetter`),
+   enregistrés par `src/main/ipc.ts` ; classement dans `read-only-guard.ts`
+   (`ROUNDTABLE_READ_ONLY_SAFE`, les autres changent) ; preload `window.api.roundtable.{options,
+   start, synthesize, rebuttal, decide, relaunch, stop}` (`src/preload/api.ts`). Livré en premier,
+   avec des gestionnaires qui refusent tant que l'orchestrateur manque.
+2. Préférence `roundtableParticipants: RoundtableChoice[]` (`shared/preferences.ts`, défaut `[]`,
+   relue par `parseRoundtableChoices`) et `settings-store.ts` ; elle passe par le canal des
+   préférences existant.
+3. `roundtable:options` (`src/main/roundtable/options.ts`) : agents installés, `modelChoice` d'après
+   `ProfileSummary.childModel`, modèles `recent` puis `others` (`ModelsSeen` et `targetModels` de
+   `conversations/handover.ts`, options de la session si c'est l'agent de la conversation),
+   `destination`, lecture seule attendue (`native` si le rôle `participant` est installé,
+   `enforced`, `requested`, `unverified` hors git), `freeSlots`, `inGit`, `lastExchange`, `refused`.
+4. Rôle fourni `participant` (`src/main/roles/builtin.ts`, `builtin-en.ts`, `builtin-fr.ts`) :
+   lecture seule, `mcp: []`, consigne `PARTICIPANT_BRIEF` ; installable par « Installer dans… »
+   sans code de plus. Le premier message d'un participant part toujours avec la consigne
+   anglaise, figée par le code (`roleSnapshot`).
+5. Orchestrateur `src/main/roundtable/roundtables.ts` (`Roundtables`) : `start` vérifie
+   (`selectionProblem`, un tour à la fois par conversation, pas depuis un travail, ni archivée, ni
+   discussion), réserve les N places d'un coup ou refuse (`missingSlots`), tire les lettres
+   (`newSeats(…, Math.random)`), pose l'élément (`post(id, { type: 'roundtable' })`), lance chaque
+   participant par `ChildConversations.start` (`card = roundtableId`, rôle figé, pièces jointes,
+   `participantMessage(question, lastExchangeText(items))`), suit leurs fins de tour
+   (`seat-answered`, `seat-failed`, `seat-stopped`) et applique `reduceRoundtable`. « Arrêter »,
+   « Relancer », `seat-removed` (corbeille), `seat-changed-folder` (alerte de `ReadOnlyWatch`).
+6. Modèle strict (`src/main/roundtable/strict-model.ts`, et `applyModel` de
+   `conversations/children-review.ts` qui dit s'il a appliqué, le repli restant pour les autres
+   usages) : un seul `session/set_config_option`, attente des `config_option_update`, relecture
+   de `snapshot.controls` avant l'envoi ; valeur absente du catalogue → `model-not-found`, refus ou
+   écart → `model-not-applied` ; la question ne part pas.
+7. `conversations/children.ts` : `ChildRequest.attachments` (passées à `prompt`), modèle strict en
+   option, réservation de N places, `children()` sans les participants ; `host-options.ts`
+   (`extraContext` filtre `participantIds`), `children-wake.ts` et `mcp/children-tools.ts` les
+   ignorent.
+8. Reprise : au chargement du fil d'une conversation, `settleRoundtable` sur chaque élément en
+   cours, posé de nouveau s'il change.
+9. Agent factice (`src/mock-agent/`, `docs/mock-agent.md`) : `MOCK_AGENT_SCENARIO_BY_MODEL`,
+   `MOCK_AGENT_REFUSE_MODEL`, scénarios `avis-participant` (répète ce qu'il a reçu),
+   `avis-hors-format`, `avis-erreur`, `participant-ecrit`.
+10. Essais : `src/main/roundtable/*.test.ts` (places, strict, exclusions une par une, reprise),
+    suites e2e `filles*`, `roles-travail`, `travaux-groupe`, `parcours-deleguer` repassées.
+
+**Renderer** (contre le contrat, avec un `window.api.roundtable` factice dans les essais tant que
+le main n'a pas livré l'étape 1) :
+
+1. `/roundtable` : `src/shared/app-commands.ts` et `src/renderer/src/app-commands.ts`
+   (`/roundtable` seul : `roundtable.command.usage`, rien n'est envoyé ; depuis un travail :
+   `roundtable.error.task`) ; bouton de la barre (`composer/ComposerBar.tsx`).
+2. Ligne du tour de table `components/roundtable/RoundtableLine.tsx` : étiquette, « N participants
+   ▾ », `roundtable.line.plusSynthesis` · `roundtable.cost.full` (ou `cost.short` sous 560 px,
+   jamais coupé), infobulle (destinations, `sendsAll`…), places manquantes, participant
+   indisponible, premier usage (Entrée ouvre le menu) ; Échap ou ✕ ramènent à une question simple
+   (`composer/Composer.tsx`, `composer-key-down.ts`).
+3. Menu à cases `components/roundtable/RoundtableParticipants.tsx` : `toggleChoice`, préférence
+   écrite à chaque case, récents puis « Autres modèles… », une seule ligne sans modèle pour un
+   agent sans choix, 5 au plus.
+4. `src/shared/work-groups.ts` : genre « tour de table » dans `workLayout` (lancements dont `card`
+   est un `roundtableId` rangés dans une carte ancrée sur l'élément, jamais en cartes seules).
+5. Carte `components/thread/RoundtableCard.tsx` (lignes par `WorkGroupRow`), rendue par
+   `Transcript.tsx` : progression, états, durée, outil en cours, réponse courte et confiance
+   (`opinionDigest`), « format non suivi », un avis déplié à la fois, « Ouvrir sa conversation »,
+   « Arrêter », « Relancer », « Choisir un autre modèle », lecture seule par ligne.
+6. Essais de composants (ligne, menu, carte par phase), captures en clair et en sombre.
+
+### Lot 2 — synthèse
+
+- **Main** (`roundtables.ts`) : demande au premier repos de l'agent (même règle que
+  `ChildWake.check`, réessai si l'utilisateur a écrit entre-temps) par
+  `prompt(id, request.prompt, [], { from: { kind: 'roundtable', id, title, step: 'synthesis' },
+  context: request.context })` (`synthesisRequest`, avis lus des `child-report` gardés, lettres
+  seulement) ; `step-sent`, `step-held` (message retenu par le plafond), `step-answered` avec la
+  consommation du tour (`TurnUsage`), `step-usage` pour un coût tardif (Bob), `step-failed` ;
+  `roundtable:synthesize` (« sans attendre », « avec N avis » après un redémarrage).
+- **Renderer** : ligne de l'app « Synthèse demandée · N avis » à la place du message
+  (`Transcript.tsx`, provenance `roundtable`, sans lien « ouvrir ») ; étiquette « Synthèse du tour
+  de table · <modèle> » sur la réponse qui suit ; lettres « Participant X » survolées → vrai nom
+  (rendu Markdown) ; carte repliée en une ligne, rouverte d'un clic ; « Synthétiser sans
+  attendre » (« Synthétiser » sous 480 px) ; « Un seul avis : pas de synthèse. » ; pied
+  « Consommé : … » par `roundtableTotal` (digests des participants et des étapes).
+
+### Lot 3 — réplique et « Appliquer »
+
+- **Main** : `ChildConversations.followUp(childId, text, from)` (expose `deliver`) ;
+  `roundtable:rebuttal` (refusé hors `canRebut`, une seule fois), `rebuttalMessage(letter,
+  synthèse bornée)` à chaque participant qui a répondu, `rebuttal-seat` (position par
+  `rebuttalStance`, `held` au plafond), puis la décision (`verdictRequest`, `step: 'verdict'`) ;
+  `roundtable:decide` après un redémarrage.
+- **Renderer** : « Faire réagir les participants » et son rappel `cost.full` (`rebuttalMultiplier`),
+  section « Réplique » (maintient, nuance, se rallie), étiquette « Décision du tour de table »,
+  « Demander à <agent> de l'appliquer » qui met `roundtable.synthesis.applyDraft` dans la saisie.
+
+### Lot 4 — robustesse et recette
+
+- **Main** : corbeille et archivage (`seat-removed`, famille), hors git (`unverified`), plafond par
+  conversation (`seat-stopped: cost-cap`, `step-held` puis « Continuer »), essais de bout en bout
+  de l'orchestrateur ; redémarrage pendant chaque phase.
+- **Renderer** : suite e2e `tour-de-table` (clair, sombre, `--lang en`, captures comparées aux
+  maquettes) ; étape du parcours réel enchaîné (`parcours-tour-de-table`, fiche 277) ; ligne du
+  `CHANGELOG.md` et de `CHANGELOG.en.md`.
+- **Recette** : OpenCode, puis Bob sur décision de l'utilisateur.
+
 ## Journal
 
 - 2026-11-24 : étude fonctionnelle (fiches 097, 108, 112, 118, 160, 177, 223, 260 à 266 ; ADR-0019,
@@ -757,3 +947,8 @@ Détail dans l'étude technique (`docs/tour-de-table-etude-technique.md`, § 3).
   décisions D1 à D4. Contradictions avec l'avis UX tranchées (premier usage sans
   « Enregistrer et lancer », pas d'entrée dans les Réglages, synthèse automatique malgré un
   participant en erreur). Statut : maquettes validées, à planifier (1.2).
+- 2026-11-24 : décisions C1 à C8 de l'utilisateur ; ADR-0072 accepté ; statut « en cours ».
+  Contrat partagé posé (types, réducteur, reprise, messages aux agents avec avis encadrés comme
+  des données, canaux IPC et vérification de leurs arguments, clés de traduction, glossaire) ;
+  plan par lot et partage des fichiers entre main et renderer. Aucune interface ni orchestration
+  encore : rien de visible pour l'utilisateur.

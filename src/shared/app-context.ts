@@ -25,7 +25,9 @@ export const APP_CONTEXT_OPENINGS = {
   /** Consigne d'un rôle, après la demande du premier message d'une fille (fiche 223). */
   role: '<bobine_role',
   /** Où se passe une discussion (fiche 224) : ses documents, et rien d'écrit ailleurs. */
-  discussion: '<bobine_discussion>'
+  discussion: '<bobine_discussion>',
+  /** Tour de table (fiche 285) : avis, synthèse ou dernier échange joints par l'app. */
+  roundtable: '<bobine_roundtable'
 } as const
 
 /**

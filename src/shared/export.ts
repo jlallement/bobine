@@ -224,13 +224,23 @@ function itemLines(item: TranscriptItem, transcript: TranscriptState, agent: str
   }
 }
 
-/** Plafond de coût (fiche 157), limite d'étapes (fiche 209) : une ligne. */
+/** Plafond de coût (fiche 157), limite d'étapes (fiche 209) : une ligne ; tour de table (fiche 285). */
 function guardLines(item: TranscriptItem): string[] | undefined {
+  if (item.kind === 'roundtable') return roundtableLines(item)
   if (item.kind === 'cost-cap') {
     return [`> ${t('turnGuards.cap.export', { limit: formatCap(item.limit, item.unit) })}`]
   }
   if (item.kind !== 'turn-limit') return undefined
   return [`> ${t(item.refused ? 'turnGuards.limit.exportRefused' : 'turnGuards.limit.export')}`]
+}
+
+/** Tour de table (fiche 285) : la question ; les avis sont dans les conversations des participants. */
+function roundtableLines(item: Extract<TranscriptItem, { kind: 'roundtable' }>): string[] {
+  return [
+    `> ${t('roundtable.export', { count: item.seats.length })}`,
+    '>',
+    ...quoted(item.question)
+  ]
 }
 
 /** Préparation du worktree (fiche 175) : une ligne, la commande et son issue. */

@@ -2567,7 +2567,8 @@
       "split": "Split the message into tasks, one per area of work",
       "help": "List of commands",
       "agentCompact": "Summarize the conversation to free up context ({{agent}} command; /compact works too)",
-      "btw": "Aside: a side question, answered outside the conversation"
+      "btw": "Aside: a side question, answered outside the conversation",
+      "roundtable": "Ask several models the question, then synthesize"
     },
     "hint": {
       "name": "[name]",
@@ -3760,7 +3761,8 @@
       "parent": "From the source conversation “{{title}}”",
       "child": "From the task “{{title}}”",
       "wake": "All tasks have replied: the agent resumes with their responses.",
-      "merge": "Instruction from the merge started in “{{title}}”"
+      "merge": "Instruction from the merge started in “{{title}}”",
+      "roundtable": "Roundtable · {{title}}"
     },
     "leftBehind": {
       "tag_one": "Without {{count}} uncommitted change",
@@ -5593,7 +5595,8 @@
       "backArchitect": "Back-end architect",
       "securityExpert": "Security expert",
       "techLead": "Tech lead",
-      "codeReviewer": "Code reviewer"
+      "codeReviewer": "Code reviewer",
+      "participant": "Participant"
     },
     "error": {
       "noHeader": "No header: the file must start with a “---” line.",
@@ -6262,5 +6265,164 @@
       "title": "New versions",
       "hint": "The only call Bobine makes that comes from neither an agent nor you: at launch, at most once a day, the public list of releases on GitHub. Only Bobine’s version is sent; nothing installs."
     }
+  },
+  "roundtable": {
+    "name": "Roundtable",
+    "command": {
+      "description": "Ask several models the question",
+      "usage": "Write your question after /roundtable: several models answer it without seeing each other, then the conversation synthesizes their opinions.",
+      "button": "Roundtable: ask several models the question",
+      "tag": "Roundtable",
+      "close": "Back to a plain question"
+    },
+    "line": {
+      "participants_one": "{{count}} participant",
+      "participants_other": "{{count}} participants",
+      "plusSynthesis": "+ synthesis",
+      "choose": "Choose participants",
+      "chooseHint": "2 to 5 models",
+      "slots_one": "{{count}} task slot missing",
+      "slots_other": "{{count}} task slots missing",
+      "slotsSettings": "Settings",
+      "unavailable": "{{agent}} is no longer available: choose another participant",
+      "by": "{{models}} · via {{agent}}",
+      "sendsQuestion": "Each one gets the question.",
+      "sendsFiles": "Each one gets the question and the attached files.",
+      "sendsExchange": "Each one gets the question and the last exchange of this conversation.",
+      "sendsAll": "Each one gets the question, the attached files and the last exchange of this conversation."
+    },
+    "cost": {
+      "full": "≈ {{n}}× the tokens of a plain question",
+      "short": "≈ {{n}}× more tokens"
+    },
+    "menu": {
+      "title": "Participants · 2 to 5",
+      "others": "Other models…",
+      "search": "Search models",
+      "footer": "Each one gets the question and can read the files in this folder.",
+      "full": "5 participants at most",
+      "once": "Once only, no model choice"
+    },
+    "card": {
+      "title": "Roundtable",
+      "progress_one": "{{count}} opinion of {{total}}",
+      "progress_other": "{{count}} opinions of {{total}}",
+      "opinions_one": "{{count}} opinion",
+      "opinions_other": "{{count}} opinions",
+      "synthesizing": "synthesis in progress",
+      "waitingAgent": "synthesis waiting: the agent is responding",
+      "held": "synthesis held: conversation cost cap reached",
+      "interrupted": "interrupted by the app restart",
+      "stopped": "roundtable stopped",
+      "footer": "Read-only · each one answers without seeing the others",
+      "footerShort": "Read-only",
+      "synthesizeNow": "Synthesize now",
+      "synthesizeNowShort": "Synthesize",
+      "synthesizeWith_one": "Synthesize with {{count}} opinion",
+      "synthesizeWith_other": "Synthesize with {{count}} opinions",
+      "stop": "Stop",
+      "stopAll": "Stop the roundtable",
+      "relaunch": "Run again",
+      "open": "Open its conversation",
+      "readMore": "Read more",
+      "otherModel": "Choose another model",
+      "seeSynthesis": "See the synthesis",
+      "used": "Used: {{total}}",
+      "usedAll": "Used in all: {{total}}",
+      "tokens": "{{tokens}} tokens",
+      "silent_one": "{{count}} participant without figures",
+      "silent_other": "{{count}} participants without figures",
+      "single": "Only one opinion: no synthesis.",
+      "none": "No opinion: no synthesis.",
+      "partial_one": "Synthesis with {{opinions}} opinions: one participant did not answer.",
+      "partial_other": "Synthesis with {{opinions}} opinions: {{count}} participants did not answer."
+    },
+    "state": {
+      "waiting": "waiting",
+      "working": "working",
+      "answered": "replied",
+      "noOpinion": "no opinion",
+      "silent": "silent for {{duration}}",
+      "removed": "conversation deleted",
+      "changedFolder": "changed files in the folder",
+      "error": "Failed: {{reason}}",
+      "errorAfter": "Failed: {{reason}} after {{duration}}",
+      "modelNotOffered": "Model not offered by {{agent}} for now.",
+      "stopped": {
+        "user": "Stopped by you",
+        "early-synthesis": "Stopped: synthesized without waiting",
+        "roundtable-stopped": "Stopped with the roundtable",
+        "cost-cap": "Stopped: conversation cost cap reached",
+        "restart": "Stopped (restart)",
+        "removed": "Conversation deleted"
+      },
+      "reason": {
+        "model-not-found": "model not found",
+        "model-not-applied": "model not applied",
+        "agent-error": "agent error",
+        "start-failed": "the agent did not start",
+        "unavailable": "agent unavailable"
+      },
+      "readOnly": {
+        "enforced": "Read-only",
+        "native": "Read-only, held by the installed Participant role",
+        "requested": "Read-only requested",
+        "unverified": "Read-only requested, not verified (folder outside git)"
+      }
+    },
+    "confidence": {
+      "high": "high confidence",
+      "medium": "medium confidence",
+      "low": "low confidence"
+    },
+    "formatNotFollowed": "format not followed",
+    "synthesis": {
+      "label": "Roundtable synthesis · {{model}}",
+      "requested_one": "Synthesis requested · {{count}} opinion",
+      "requested_other": "Synthesis requested · {{count}} opinions",
+      "participant": "Participant {{letter}}",
+      "apply": "Ask {{agent}} to apply it",
+      "applyDraft": "Apply your roundtable recommendation."
+    },
+    "rebuttal": {
+      "action": "Ask participants to respond",
+      "title": "Rebuttal",
+      "answers_one": "{{count}} response",
+      "answers_other": "{{count}} responses",
+      "held": "rebuttal held: cost cap reached",
+      "stance": {
+        "maintains": "maintains",
+        "nuances": "nuances",
+        "rallies": "rallies"
+      }
+    },
+    "decision": {
+      "label": "Roundtable decision · {{model}}",
+      "requested_one": "Decision requested · {{count}} rebuttal",
+      "requested_other": "Decision requested · {{count}} rebuttals",
+      "again": "Ask for the decision"
+    },
+    "error": {
+      "running": "A roundtable is already running in this conversation: wait for its synthesis.",
+      "task": "No roundtable from a task: start it from its source conversation.",
+      "archived": "This conversation is archived: unarchive it to start a roundtable.",
+      "discussion": "A roundtable starts in a project, not in a chat.",
+      "slots_one": "{{count}} task slot missing: nothing was sent.",
+      "slots_other": "{{count}} task slots missing: nothing was sent.",
+      "phase": "This is no longer possible at this step of the roundtable.",
+      "rebuttalOnce": "One rebuttal per roundtable.",
+      "quorum": "A synthesis needs at least two opinions.",
+      "selection": {
+        "too-few": "Choose at least 2 participants.",
+        "too-many": "5 participants at most.",
+        "duplicate": "This model is already a participant.",
+        "single-seat": "This agent takes part once, with no model choice.",
+        "model-not-allowed": "This agent does not let you choose its model.",
+        "unknown-agent": "This agent no longer exists.",
+        "unavailable": "This agent is unavailable."
+      }
+    },
+    "export_one": "Roundtable with {{count}} participant",
+    "export_other": "Roundtable with {{count}} participants"
   }
 }

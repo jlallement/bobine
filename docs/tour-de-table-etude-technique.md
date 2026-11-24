@@ -4,7 +4,8 @@
 > de `1.1`, 1.1.0-rc.2), révisée le même jour après les décisions de l'utilisateur (fiche 285,
 > « Décisions de l'utilisateur »). Elle repose sur le code lu ; chaque affirmation cite
 > `fichier:ligne`. Fiche de fonctionnalité : `docs/features/285-tour-de-table.md`, qui fait foi
-> pour le parcours. Décision structurante : brouillon `docs/adr/0072-tour-de-table.md` (proposé).
+> pour le parcours. Décision structurante : `docs/adr/0072-tour-de-table.md` (accepté le 2026-11-24, décisions C1
+> à C8 de la fiche).
 > Alignée le 2026-11-24 sur les maquettes finales (`docs/maquettes/1.2-tour-de-table-v2.html`) et
 > sur les décisions D1 à D4 de la fiche (anciennes questions ouvertes).
 > Lot 0 (observations sur OpenCode 2.3.0 et Bob 2.1.0) fait le 2026-11-24 :
