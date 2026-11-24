@@ -21,6 +21,18 @@ const MAX_REQUESTS = 300
 const MAX_TEXT = 2000
 /** Images gardées au plus pendant un film (5 s à 60 images/s). */
 const MAX_FILM_FRAMES = 300
+/**
+ * Borne de la mise en route d'un onglet (`about:blank`, puis débogueur) : quelques dizaines de
+ * millisecondes d'ordinaire, jusqu'à une dizaine de secondes sur une machine très chargée (runner
+ * macOS de GitHub). Au-delà, l'outil de l'agent échoue au lieu de figer son tour (fiche 250,
+ * 2026-11-24) ; la mise en route reprend au prochain appel.
+ */
+export const READY_TIMEOUT_MS = 20_000
+
+/** Erreur rendue quand l'onglet ne s'est pas mis en route à temps (lue par l'agent). */
+export function notReadyMessage(ms: number): string {
+  return `The page did not finish loading within ${Math.round(ms / 1000)} s (the new tab is still starting). Try again, or reload it with browser_navigate.`
+}
 
 export interface ConsoleEntry {
   level: string
@@ -76,7 +88,8 @@ const MAC_COMMANDS: Record<string, string> = {
 
 export class CdpTab {
   readonly contents: WebContents
-  private readonly ready: Promise<void>
+  /** Mise en route en cours ou faite ; `undefined` : à relancer (échec ou délai dépassé). */
+  private ready: Promise<void> | undefined
   private readonly consoleEntries: ConsoleEntry[] = []
   private readonly requests = new Map<string, NetworkEntry>()
   emulation: Emulation | undefined
@@ -100,7 +113,7 @@ export class CdpTab {
 
   constructor(contents: WebContents) {
     this.contents = contents
-    this.ready = this.attach()
+    this.ready = this.start()
     contents.on('did-navigate', (_event, url) => {
       this.pushConsole({ level: 'info', text: `— Navigation : ${url}` })
       this.refs = new Map()
@@ -108,9 +121,33 @@ export class CdpTab {
     })
   }
 
-  /** Débogueur prêt (première page chargée). */
-  whenReady(): Promise<void> {
-    return this.ready
+  /**
+   * Débogueur prêt (première page chargée), au plus `timeoutMs` (fiche 250). Un échec ou un délai
+   * dépassé n'est pas définitif : l'appel suivant relance la mise en route (`about:blank` interrompt
+   * celle restée en plan, le débogueur déjà attaché est repris).
+   */
+  async whenReady(timeoutMs = READY_TIMEOUT_MS): Promise<void> {
+    const ready = (this.ready ??= this.start())
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const late = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(notReadyMessage(timeoutMs))), timeoutMs)
+      timer.unref?.()
+    })
+    try {
+      await Promise.race([ready, late])
+    } catch (error) {
+      if (this.ready === ready) this.ready = undefined
+      throw error
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
+  /** Mise en route ; son échec est lu par `whenReady`, jamais laissé sans gestionnaire. */
+  private start(): Promise<void> {
+    const ready = this.attach()
+    ready.catch(() => {})
+    return ready
   }
 
   /** Commande CDP, une fois le débogueur prêt. */
@@ -118,7 +155,7 @@ export class CdpTab {
     // Jamais de décision sur les certificats par le CDP (`Security.setIgnoreCertificateErrors`…) :
     // seul l'utilisateur en prend une, dans l'interface (fiche 269, ADR-0064).
     if (!cdpMethodAllowed(method)) throw new Error(`CDP method refused: ${method}`)
-    await this.ready
+    await this.whenReady()
     if (!this.contents.debugger.isAttached()) await this.attachDebugger()
     // Jamais d'attente sans fin derrière une boîte de la page (`page-dialogs.ts`).
     return (await this.dialogs.guard(() => this.contents.debugger.sendCommand(method, params))) as T
@@ -197,7 +234,7 @@ export class CdpTab {
   }
 
   async evaluateIsolated<T>(code: string): Promise<T> {
-    await this.ready
+    await this.whenReady()
     return (await this.dialogs.guard(() =>
       this.contents.executeJavaScriptInIsolatedWorld(ISOLATED_WORLD, [{ code }], true)
     )) as T
