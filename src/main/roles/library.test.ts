@@ -156,6 +156,42 @@ describe('bibliothèque des rôles (fiche 223)', () => {
     expect(library.find(undefined, 'doc')).toBeUndefined()
   })
 
+  it('modifier : la description réécrite dans le fichier, le reste gardé ; supprimer le rôle du projet fait revenir le fourni', () => {
+    // Remplace l'e2e `roles-gestion` n° 17 et 19 sur un vrai dossier.
+    const { library, project, projectDir } = setup()
+    const reviewer = library.find(project, 'code-reviewer')
+    expect(reviewer?.scope).toBe('builtin')
+    const draft = {
+      name: 'code-reviewer',
+      label: 'Relecteur du projet',
+      icon: reviewer?.icon ?? 'bot',
+      color: reviewer?.color ?? 'blue',
+      description: 'Relit les PR du projet.',
+      readOnly: true,
+      prompt: 'Review the diff.'
+    }
+    // Fichier du projet posé à la main (partagé par git), comme dans le dépôt d'essai.
+    writeFileSync(
+      join(projectDir, 'code-reviewer.md'),
+      `---\nlabel: ${draft.label}\ndescription: ${draft.description}\nread-only: true\n---\n${draft.prompt}\n`
+    )
+    expect(library.find(project, 'code-reviewer')?.scope).toBe('project')
+    expect(
+      library.save('project', { ...draft, description: 'Relit chaque commit.' }, project, {
+        previousName: 'code-reviewer'
+      })
+    ).toMatchObject({ ok: true })
+    const text = readFileSync(join(projectDir, 'code-reviewer.md'), 'utf8')
+    expect(text).toContain('description: Relit chaque commit.')
+    expect(text).not.toContain('Relit les PR du projet.')
+    expect(text).toContain('label: Relecteur du projet')
+    expect(text).toContain('Review the diff.')
+    expect(library.remove('project', 'code-reviewer', project)).toBe(true)
+    expect(existsSync(join(projectDir, 'code-reviewer.md'))).toBe(false)
+    expect(library.list(project).roles.filter((r) => r.scope !== 'builtin')).toEqual([])
+    expect(library.find(project, 'code-reviewer')?.scope).toBe('builtin')
+  })
+
   it('n’écrit jamais à travers un lien du projet (relecture)', () => {
     const { library, root, project, projectDir } = setup()
     const victim = join(root, 'zshrc')

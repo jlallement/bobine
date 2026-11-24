@@ -131,6 +131,21 @@ describe('avis de nouvelle version (fiche 274)', () => {
     expect(screen.getByTestId('settings-update-available')).toBeTruthy()
   })
 
+  it('« Plus tard » : la barre latérale se tait, Réglages › Nouveautés montre encore la nouvelle et l’actuelle', async () => {
+    // Remplace l'e2e `nouvelle-version` n° 5 : masqué pour cette version, pas oublié.
+    first = { ...base, available, dismissed: true }
+    render(
+      <>
+        <Line />
+        <UpdateCheckCard enabled onEnabled={() => {}} />
+      </>
+    )
+    const shown = await screen.findByTestId('settings-update-available')
+    expect(shown.textContent).toContain('1.0.1')
+    expect(screen.getByTestId('settings-update').textContent).toContain('1.0.0')
+    expect(screen.queryByTestId('update-line')).toBeNull()
+  })
+
   it('Réglages : jamais vérifié, à jour, nouvelle version, échec, en cours', async () => {
     const onEnabled = vi.fn()
     render(<UpdateCheckCard enabled onEnabled={onEnabled} />)
