@@ -121,3 +121,44 @@ it('fille affichée, mère supprimée avec ses filles : la fille non plus n’es
   act(() => result.current.remove('m', { children: 'keep' }))
   expect(result.current.queryId).toBe('f')
 })
+
+it('réponse de la suppression arrivée avant la liste sans elle : toujours tue jusqu’à la liste (fiche 277)', async () => {
+  const { result } = renderHook(() => useConversations())
+  await waitFor(() => expect(result.current.activeId).toBe('m'))
+  act(() => result.current.remove('m', { children: 'delete' }))
+  // Voies distinctes : la réponse du main arrive, sa liste (et l'arrêt de l'agent) pas encore.
+  await act(async () =>
+    settle.resolve({ conversations: [other], activeId: 'o' } as ConversationsState)
+  )
+  // La mère est encore l'active du renderer : rien ne doit partir vers elle.
+  expect(result.current.activeId).toBe('m')
+  expect(result.current.queryId).toBeNull()
+  expect(gated).toEqual([[['m', 'f'], true]])
+
+  act(() => pushList({ conversations: [other], activeId: 'o' } as ConversationsState))
+  await waitFor(() => expect(result.current.queryId).toBe('o'))
+  expect(gated).toEqual([
+    [['m', 'f'], true],
+    [['m', 'f'], false]
+  ])
+})
+
+it('liste sans la supprimée reçue : la porte ne se rouvre qu’après le rendu suivant (effets en attente, fiche 277)', async () => {
+  const { result } = renderHook(() => useConversations())
+  await waitFor(() => expect(result.current.activeId).toBe('m'))
+  act(() => result.current.remove('m', { children: 'delete' }))
+  await act(async () =>
+    settle.resolve({ conversations: [other], activeId: 'o' } as ConversationsState)
+  )
+  // Reçue hors de `act` comme dans l'app : React n'a encore ni rendu, ni exécuté les effets du
+  // rendu d'avant (qui affichait la mère). La porte doit rester fermée à cet instant.
+  pushList({ conversations: [other], activeId: 'o' } as ConversationsState)
+  expect(gated).toEqual([[['m', 'f'], true]])
+  await waitFor(() => expect(result.current.queryId).toBe('o'))
+  await waitFor(() =>
+    expect(gated).toEqual([
+      [['m', 'f'], true],
+      [['m', 'f'], false]
+    ])
+  )
+})

@@ -9,7 +9,8 @@ import {
 } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ProfileSummary } from '@shared/agent'
-import type { AgentReadiness, CheckRequest } from '@shared/onboarding'
+import { PROBE_PROMPT, type AgentReadiness, type CheckRequest } from '@shared/onboarding'
+import i18next from 'i18next'
 import { Onboarding } from './Onboarding'
 import { useOnboarding } from './useOnboarding'
 
@@ -223,5 +224,130 @@ describe('accueil du premier lancement (fiche 188)', () => {
     await waitFor(() =>
       expect(screen.getByTestId('onboarding-still-none').textContent).not.toBe('')
     )
+  })
+})
+
+/**
+ * Remplaçants des vérifications de composant de `e2e/suites/onboarding.mjs` (n° 4, 5, 7, 9, 19,
+ * 21, 22, 30, 40). Les vérifications réelles (agent lancé, aucun message au modèle) restent au
+ * main (`agent-readiness.test.ts`).
+ */
+describe('accueil du premier lancement — remplaçants des e2e', () => {
+  const focused = () => document.activeElement?.getAttribute('data-testid')
+
+  /** Agent choisi, connexion vérifiée (`ready`), puis le dossier d'essai : l'étape Essai. */
+  async function toTrial() {
+    const s = await setup()
+    await act(async () => fireEvent.click(screen.getByTestId('onboarding-continue')))
+    await act(async () => resolveCheck({ state: 'ready', level: 'connect', ms: 900 }))
+    s.rerender()
+    await act(async () => fireEvent.click(screen.getByTestId('onboarding-continue')))
+    s.rerender()
+    await act(async () => fireEvent.click(screen.getByTestId('onboarding-trial-folder')))
+    s.rerender()
+    return s
+  }
+
+  it('connexion vérifiée : « Agent factice est prêt », le focus sur « Continuer » (onboarding n° 4, 5)', async () => {
+    const { rerender } = await setup()
+    await act(async () => fireEvent.click(screen.getByTestId('onboarding-continue')))
+    expect(api['check']).toHaveBeenCalledWith(expect.objectContaining({ level: 'connect' }))
+    await act(async () => resolveCheck({ state: 'ready', level: 'connect', ms: 900 }))
+    rerender()
+    expect(screen.getByTestId('onboarding-ready').textContent).toContain(
+      i18next.t('onboarding.connect.readyTitle', { agent: 'Agent factice' })
+    )
+    expect(focused()).toBe('onboarding-continue')
+  })
+
+  it('essai : le message qui partira, montré tel quel (onboarding n° 7)', async () => {
+    await toTrial()
+    expect(screen.getByTestId('onboarding').textContent).toContain(`« ${PROBE_PROMPT} »`)
+    expect(focused()).toBe('onboarding-send')
+  })
+
+  it('essai réussi : « Commencer » a le focus, et finit l’accueil (onboarding n° 9)', async () => {
+    const { rerender } = await toTrial()
+    await act(async () => fireEvent.click(screen.getByTestId('onboarding-send')))
+    expect(api['check']).toHaveBeenLastCalledWith(expect.objectContaining({ level: 'reply' }))
+    // L'attente de la réponse s'affiche d'abord, comme dans l'app.
+    rerender()
+    await act(async () => resolveCheck({ state: 'ready', level: 'reply', ms: 2000, reply: 'OK' }))
+    rerender()
+    expect(screen.getByTestId('onboarding-replied').textContent).toContain('OK')
+    expect(focused()).toBe('onboarding-start')
+    await act(async () => fireEvent.click(screen.getByTestId('onboarding-start')))
+    expect(api['finish']).toHaveBeenCalledWith('finished')
+  })
+
+  it('aucun agent : le sous-titre, et ce que chaque profil dit d’installer, sans alerte (onboarding n° 19)', async () => {
+    await setup([BOB as ProfileSummary])
+    const page = screen.getByTestId('onboarding')
+    expect(page.textContent).toContain(i18next.t('onboarding.agent.noneSubtitle'))
+    const card = screen.getByTestId('onboarding-no-agent')
+    expect(card.textContent).toContain('IBM Bob')
+    expect(card.querySelector('code')?.textContent).toBe('bob')
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(focused()).toBe('onboarding-search')
+  })
+
+  it('aucun agent : « Explorer » marque l’accueil passé (onboarding n° 21)', async () => {
+    const { hook } = await setup([BOB as ProfileSummary])
+    await act(async () => fireEvent.click(screen.getByTestId('onboarding-explore')))
+    expect(api['finish']).toHaveBeenCalledWith('skipped')
+    expect(hook.result.current.visible).toBe(false)
+  })
+
+  const login = {
+    id: 'opencode-login',
+    name: 'Login',
+    step: { id: 'opencode-login', label: 'Se connecter', command: 'opencode auth login' }
+  }
+
+  it('connexion à faire : la carte, avec la commande déclarée par le profil (onboarding n° 22)', async () => {
+    const { rerender } = await setup()
+    await act(async () => fireEvent.click(screen.getByTestId('onboarding-continue')))
+    await act(async () =>
+      resolveCheck({
+        state: 'auth',
+        blocker: { kind: 'auth', methods: [login], authenticating: false }
+      })
+    )
+    rerender()
+    const card = screen.getByTestId('blocker-auth')
+    expect(card.querySelector('.pc-title')?.textContent).toBe('Connexion requise')
+    const step = screen.getByTestId('auth-opencode-login')
+    expect(step.textContent).toBe('Se connecter')
+    expect(step.getAttribute('title')?.replace(/[\u00a0\u202f]/g, ' ')).toContain(
+      '« opencode auth login »'
+    )
+  })
+
+  it('connexion expirée pendant l’essai : la carte « Connexion expirée », pas l’erreur brute (onboarding n° 30)', async () => {
+    const { rerender } = await toTrial()
+    await act(async () => fireEvent.click(screen.getByTestId('onboarding-send')))
+    await act(async () =>
+      resolveCheck({
+        state: 'auth',
+        blocker: { kind: 'auth', methods: [login], authenticating: false, atTurn: true }
+      })
+    )
+    rerender()
+    expect(screen.getByTestId('blocker-auth').textContent).toContain('Connexion expirée')
+    expect(screen.queryByTestId('onboarding-error-failed')).toBeNull()
+  })
+
+  it('agent qui plante : détails repliés, « Réessayer » a le focus (onboarding n° 40)', async () => {
+    const { rerender } = await setup()
+    await act(async () => fireEvent.click(screen.getByTestId('onboarding-continue')))
+    await act(async () =>
+      resolveCheck({ state: 'crashed', message: 'code 1', stderr: 'panic: boom' })
+    )
+    rerender()
+    const alert = screen.getByTestId('onboarding-error-crashed')
+    const details = alert.querySelector('details') as HTMLDetailsElement
+    expect(details.open).toBe(false)
+    expect(details.textContent).toContain('panic: boom')
+    expect(focused()).toBe('onboarding-retry')
   })
 })

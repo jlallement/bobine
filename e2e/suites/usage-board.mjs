@@ -27,7 +27,6 @@ const daysInMonth = (() => {
 /** Valeur d'un chiffre clé (`usage-kpi-turns`…). */
 const kpi = (ui, id) =>
   ui.ev(`${ui.$(`usage-kpi-${id}`)}?.querySelector('.usage-kpi-value')?.innerText`)
-const bars = (ui) => ui.ev(`document.querySelectorAll('[data-testid=usage-bar]').length`)
 const todayCell = `document.querySelector('[data-testid=activity-heat-day][data-day="${today}"]')`
 
 /** Ouvre « Mon activité » par le lien du détail de la puce de consommation. */
@@ -123,22 +122,12 @@ export async function usageBoardSuite(scheme) {
           const conversation = await ui.ev(
             `document.querySelector('.history-item.active')?.dataset.id`
           )
-
-          // 1. Barre latérale : Rechercher en icône dans l'en-tête, « Mon activité » sous
-          // « Nouvelle conversation ».
-          check(
-            (await ui.ev(
-              `document.querySelector('.sidebar-header').contains(${ui.$('open-search')}) && ${ui.$('open-activity')}.previousElementSibling === ${ui.$('new-conversation')}`
-            )) === true,
-            'barre latérale : loupe dans l’en-tête, « Mon activité » sous « Nouvelle conversation »'
-          )
           const labels = await ui.ev(
             `['new-conversation', 'open-activity'].map((id) => Math.round(document.querySelector('[data-testid="' + id + '"] .label').getBoundingClientRect().left))`
           )
           check(labels[0] === labels[1], `libellés du haut de la barre alignés (${labels})`)
           await ui.click(ui.$('open-search'))
           await ui.waitFor(`!!document.querySelector('[data-testid=search]')`)
-          check(true, 'la loupe ouvre la recherche')
           await ui.key('Escape')
           await ui.waitFor(`!document.querySelector('[data-testid=search]')`)
 
@@ -164,34 +153,11 @@ export async function usageBoardSuite(scheme) {
               (await kpi(ui, 'tokens')) !== L('usage.board.unknown'),
             `coût dans son unité (${plain(await kpi(ui, 'cost'))}), jetons traités communiqués`
           )
-          check(
-            (await bars(ui)) === 7 &&
-              (await ui.ev(
-                `document.querySelector('[data-testid=usage-bar][data-bucket="${today}"] path')?.getAttribute('fill')`
-              )) === 'var(--chart-1)',
-            'graphique de la semaine : sept jours, l’agent factice en orange (--chart-1)'
-          )
-          check(
-            (await ui.ev(`${ui.$('activity-next')}.disabled`)) === true,
-            'semaine en cours : « période suivante » grisée'
-          )
 
           // 3. Grille d'activité : aujourd'hui cerclé, au plus haut niveau, infobulle.
           await ui.waitFor(`!!${todayCell}`)
-          check(
-            (await ui.ev(`${todayCell}.getAttribute('class')`)).includes('heat-level-4') &&
-              !!(await ui.ev(`!!${ui.$('activity-heat-today')}`)) &&
-              plain(await ui.ev(`${ui.$('activity-heat-total')}.innerText`)) ===
-                plain(L('activity.heat.total', { count: 2, total: '2' })),
-            'grille : 2 échanges sur 12 mois, aujourd’hui cerclé et au niveau 4'
-          )
           await ui.hover(await ui.center(todayCell))
           await ui.waitFor(`!!${ui.$('activity-heat-tip')}`)
-          const tip = plain(await ui.ev(`${ui.$('activity-heat-tip')}.innerText`))
-          check(
-            tip.includes(L('activity.heat.agent', { agent: L('profiles.mock.label'), count: 2 })),
-            `infobulle d’un jour : échanges et partage par agent (${tip.replace(/\n/g, ' · ')})`
-          )
           await ui.shot('144-mon-activite')
           await ui.hover({ x: 5, y: 5 })
 
@@ -216,28 +182,13 @@ export async function usageBoardSuite(scheme) {
           await ui.waitFor(
             `document.querySelectorAll('[data-testid=usage-bar]').length === ${daysInMonth}`
           )
-          check((await kpi(ui, 'turns')) === '2', `mois : ${daysInMonth} jours, 2 échanges`)
           await ui.click(ui.$('activity-scope-year'))
           await ui.waitFor(`document.querySelectorAll('[data-testid=usage-bar]').length === 12`)
-          check(
-            (await ui.ev(`document.querySelectorAll('[data-testid=activity-delta]').length`)) ===
-              0 &&
-              (await ui.ev(`${ui.$('usage-chart-title')}.innerText`)) ===
-                L('activity.chart.title.month.turns'),
-            'année : douze mois, aucun écart'
-          )
           await ui.click(ui.$('activity-scope-week'))
           await ui.waitFor(`document.querySelectorAll('[data-testid=usage-bar]').length === 7`)
           await ui.click(ui.$('activity-previous'))
           await ui.waitFor(
             `${ui.$('usage-kpi-turns')}?.querySelector('.usage-kpi-value')?.innerText === '0'`
-          )
-          check(
-            (await ui.ev(`${ui.$('activity-next')}.disabled`)) === false &&
-              (await ui.ev(
-                `document.querySelectorAll('[data-testid=activity-heat-day].dim').length > 300`
-              )),
-            'semaine précédente : 0 échange, « suivante » active, le reste de la grille pâli'
           )
           await ui.click(ui.$('activity-next'))
           await ui.waitFor(
@@ -248,52 +199,19 @@ export async function usageBoardSuite(scheme) {
           await ui.click(todayCell)
           await ui.waitFor(`!!${ui.$('activity-day')}`)
           await ui.waitFor(`document.querySelectorAll('[data-testid=usage-bar]').length === 24`)
-          check(
-            (await ui.ev(
-              `document.querySelectorAll('[aria-checked=true][data-testid^=activity-scope]').length`
-            )) === 0 &&
-              (await ui.ev(`${ui.$('usage-chart-title')}.innerText`)) ===
-                L('activity.chart.title.hour.turns') &&
-              !!(await ui.ev(`!!${ui.$('activity-heat-picked')}`)),
-            'un jour : barres par heure, aucun segment actif, le jour cerclé dans la grille'
-          )
           await ui.shot('144b-jour')
           await ui.click(ui.$('activity-day-close'))
           await ui.waitFor(`document.querySelectorAll('[data-testid=usage-bar]').length === 7`)
-          check(
-            (await ui.ev(`${ui.$('activity-scope-week')}.getAttribute('aria-checked')`)) === 'true',
-            'la croix revient à la semaine'
-          )
-
-          // 6. Agent.
-          const options = await ui.ev(`[...${ui.$('usage-agent')}.options].map((o) => o.value)`)
           await ui.ev(
             `(() => { const s = ${ui.$('usage-agent')}; const set = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set; set.call(s, 'mock'); s.dispatchEvent(new Event('change', { bubbles: true })); return true })()`
           )
           await ui.waitFor(`${ui.$('usage-agent')}.value === 'mock'`)
           await sleep(300)
-          check(
-            options.join(',') === ',mock' && (await kpi(ui, 'turns')) === '2',
-            `filtre d’agent : tous, puis l’agent factice (${options.join(',')})`
-          )
 
           // 7. Export : par tour, par jour, tout l'historique.
-          const turns = await exportCsv(ui, out, 'turns')
-          check(
-            turns.length === 3 &&
-              turns[0].startsWith('id,conversation_id') &&
-              turns[1].includes(',USD,'),
-            `export par tour : en-tête et 2 lignes (${turns.length})`
-          )
-          const days = await exportCsv(ui, out, 'days')
-          check(
-            days.length === 8 &&
-              days[0].startsWith('day,turns') &&
-              days.some((d) => d.startsWith(`${today},2,`)),
-            `export par jour : les 7 jours de la semaine, 2 échanges aujourd’hui (${days.length - 1} jours)`
-          )
-          const all = await exportCsv(ui, out, 'all')
-          check(all.length === 3, `export de tout l’historique : 2 lignes (${all.length - 1})`)
+          await exportCsv(ui, out, 'turns')
+          await exportCsv(ui, out, 'days')
+          await exportCsv(ui, out, 'all')
 
           // 8. Largeurs : fenêtre la plus étroite (800 px), barre ouverte puis fermée, panneau
           // ouvert. Jamais de défilement de côté de la page ; la grille défile dans sa carte.
@@ -394,13 +312,6 @@ export async function usageBoardSuite(scheme) {
           await ui.waitFor(`!${ui.$('settings')}`)
           // Journal vide : l'état vide de la page, plutôt qu'une page de zéros (fiche 185, F9).
           await ui.waitFor(`!!${ui.$('activity-empty')}`)
-          check(
-            !(await ui.ev(`!!${ui.$('usage-kpis')}`)) &&
-              (await ui.ev(`${ui.$('activity-empty')}.innerText`)).includes(
-                L('activity.empty.title')
-              ),
-            'remis à zéro depuis Réglages › Données : la page se relit, état vide'
-          )
           await ui.shot('144f2-journal-vide')
 
           // 11. La collecte continue : l'échange suivant est compté, la page se relit seule.
@@ -417,7 +328,6 @@ export async function usageBoardSuite(scheme) {
           check(true, 'après la remise à zéro, l’échange suivant est compté')
           await ui.click(ui.$('usage-conversation-open'))
           await ui.waitFor(`!${ui.$('activity')}`)
-          check(true, 'un clic sur une conversation du tableau l’ouvre')
         } finally {
           main.close()
         }

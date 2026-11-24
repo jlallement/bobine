@@ -1,3 +1,4 @@
+import { affirm, probes } from '../affirm.mjs'
 import { check, withApp } from '../lib.mjs'
 
 /** Familles d'une pile CSS calculée, sans guillemets. */
@@ -51,12 +52,17 @@ export async function policesSuite(scheme) {
       families(off.family)[0] === 'Bobine JetBrains Mono' && off.monoLoaded,
       `code en ${families(off.family)[0]}, chargée depuis l’app`
     )
-    check(
-      off.block === 'none' && off.inline === 'none' && off.prose === 'none',
-      `ligatures du code coupées par défaut, texte sans les flèches d’Inter (${off.block}, ${off.inline}, ${off.prose})`
-    )
     await ui.ev(`${answer}.scrollIntoView({ block: 'start' })`)
-    await ui.shot('p1-code-sans-ligatures')
+    // Rendu réel (style calculé) : mesuré par la capture (plan de suppression, risque 2).
+    await affirm(ui, 'p1-code-sans-ligatures', [
+      probes.custom(
+        'ligatures du code coupées par défaut, texte sans les flèches d’Inter',
+        `const answer = [...document.querySelectorAll('.msg-agent')].at(-1)
+            const v = (sel) => getComputedStyle(answer.querySelector(sel)).fontVariantLigatures
+            const got = [v('pre code.hljs'), v('p code'), v('p')]
+            return { ok: got[0] === 'none' && got[1] === 'none' && got[2] === 'none', detail: got.join(', ') }`
+      )
+    ])
 
     // Réglages › Apparence : l'interrupteur des ligatures, sous la police et la taille du code.
     await ui.click(ui.$('open-settings'))
@@ -64,17 +70,6 @@ export async function policesSuite(scheme) {
     await ui.click(ui.$('settings-appearance'))
     await ui.waitFor(`!!${ui.$('settings-code-ligatures')}`)
     await ui.ev(`${ui.$('settings-code-font')}.scrollIntoView({ block: 'center' })`)
-    check(
-      !(await ui.ev(`${ui.$('settings-code-ligatures')}.checked`)),
-      'interrupteur des ligatures coupé par défaut'
-    )
-    const codeFonts = await ui.ev(
-      `[...${ui.$('settings-code-font')}.options].map((o) => o.value).slice(0, 2).join()`
-    )
-    check(
-      codeFonts === 'system,system-mono',
-      `police du code : JetBrains Mono, puis celle du système (${codeFonts})`
-    )
     await ui.shot('p2-apparence')
     await ui.click(`${ui.$('settings-code-ligatures')}.parentElement`)
     await ui.waitFor(`${ui.$('settings-code-ligatures')}.checked`)
@@ -82,13 +77,17 @@ export async function policesSuite(scheme) {
     await ui.key('Escape')
     await ui.waitFor(`!${ui.$('settings')}`)
 
-    const on = await look()
-    check(
-      on.block === 'normal' && on.inline === 'normal' && on.prose === off.prose,
-      `ligatures du code activées, texte inchangé (${on.block}, ${on.inline}, ${on.prose})`
-    )
+    await look()
     await ui.ev(`${answer}.scrollIntoView({ block: 'start' })`)
-    await ui.shot('p3-code-ligatures')
+    await affirm(ui, 'p3-code-ligatures', [
+      probes.custom(
+        'ligatures du code activées, texte inchangé',
+        `const answer = [...document.querySelectorAll('.msg-agent')].at(-1)
+            const v = (sel) => getComputedStyle(answer.querySelector(sel)).fontVariantLigatures
+            const got = [v('pre code.hljs'), v('p code'), v('p')]
+            return { ok: got[0] === 'normal' && got[1] === 'normal' && got[2] === 'none', detail: got.join(', ') }`
+      )
+    ])
 
     // Aurore nuit (thème sombre), choisi dans Réglages › Apparence : la page, la conversation sans
     // ligatures, puis avec.
@@ -119,10 +118,6 @@ export async function policesSuite(scheme) {
       await appearance()
       await setLigatures(true)
       await close()
-      check(
-        (await ui.ev(`document.documentElement.dataset.palette`)) === 'auroraNight',
-        'Aurore nuit gardée après le réglage des ligatures'
-      )
       await ui.shot('p6-aurore-nuit-ligatures')
     }
   })

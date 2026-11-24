@@ -129,6 +129,58 @@ describe('Réglages › Rôles (fiche 223, phase 3A)', () => {
     )
   })
 
+  it('renommé alors qu’il est installé dans un agent : dit à l’enregistrement, avec l’ancien identifiant', async () => {
+    // Remplace l'e2e `roles-export` n° 15.
+    calls['exportStatus']?.mockResolvedValue([
+      {
+        key: 'k1',
+        profileId: 'agent-a',
+        profileLabel: 'Agent A',
+        format: 'bob-custom-modes',
+        scope: 'user',
+        file: '~/.a/modes.yaml',
+        id: 'testeur',
+        state: 'upToDate',
+        useInBobine: true
+      }
+    ])
+    // Relu sous son nouvel identifiant après l'enregistrement (la page suit le rôle).
+    calls['read']?.mockImplementation(async (_scope: string, name: string) => {
+      const found = listing.roles.find((r) => r.name === 'testeur')
+      return found && (name === 'testeur' || name === 'testeuse') ? { ...found, name } : null
+    })
+    await show()
+    fireEvent.click(
+      within(screen.getAllByTestId('role-row')[1] as HTMLElement).getByTestId('role-row-open')
+    )
+    await waitFor(() => expect(calls['exportStatus']).toHaveBeenCalled())
+    fireEvent.change(screen.getByTestId('role-name'), { target: { value: 'testeuse' } })
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('role-edit-save'))
+    })
+    const saved = await screen.findByTestId('role-edit-saved')
+    expect(saved.textContent).toContain('ancien identifiant')
+    expect(saved.textContent).toContain('testeur')
+  })
+
+  it('deux rôles personnels de même icône et même couleur : tous deux listés chez les personnels', async () => {
+    // Remplace l'e2e `roles-meme-icone` n° 2.
+    calls['list']?.mockResolvedValue({
+      roles: [
+        role({ name: 'perf', label: 'Perf', scope: 'user', icon: 'gauge', color: 'green' }),
+        role({ name: 'perf-web', label: 'Perf web', scope: 'user', icon: 'gauge', color: 'green' })
+      ],
+      problems: []
+    })
+    await show()
+    const personal = screen.getByTestId('roles-group-user')
+    expect(
+      within(personal)
+        .getAllByTestId('role-row')
+        .map((r) => r.dataset['role'])
+    ).toEqual(['perf', 'perf-web'])
+  })
+
   it('un rôle fourni s’enregistre en rôle personnel du même nom, sans « Supprimer »', async () => {
     await show()
     fireEvent.click(

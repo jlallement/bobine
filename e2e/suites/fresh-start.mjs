@@ -41,10 +41,6 @@ async function temporaryProfile(scheme) {
     async (ui) => {
       await ui.ready()
       await ui.waitFor(`!!${ui.$('temporary-profile')}`)
-      check(
-        (await ui.ev(`${ui.$('temporary-profile')}.innerText`)) === L('settings.data.fresh.chip'),
-        'profil temporaire : la pastille dans la barre de titre'
-      )
       // En-tête étroit (fiche 276, T10) : la fiole seule, le texte en infobulle ; large : entière.
       const chip = `(() => { const c = ${ui.$('temporary-profile')}; return { width: Math.round(c.getBoundingClientRect().width), title: c.title, header: Math.round(document.querySelector('.main-header').getBoundingClientRect().width) } })()`
       await ui.viewport(700, 820)
@@ -64,15 +60,7 @@ async function temporaryProfile(scheme) {
       } finally {
         main.close()
       }
-      check(
-        realpathSync(folder).startsWith(join(realpathSync(tmpdir()), 'bobine-profil-')),
-        `dossier de données dans les fichiers temporaires (${folder})`
-      )
       await openData(ui)
-      check(
-        !(await ui.ev(`!!${ui.$('fresh-start-card')}`)),
-        'profil temporaire : pas de « Recommencer à neuf » dans Données'
-      )
       await ui.key('Escape')
       await sleep(300)
       await ui.shot('148-profil-temporaire')
@@ -103,38 +91,11 @@ async function reset(scheme) {
       await ui.ev(`${ui.$('fresh-start-card')}.scrollIntoView({ block: 'center' })`)
       await ui.click(ui.$('fresh-start-reset'))
       await ui.waitFor(`${ui.$('fresh-start-trash')}?.querySelectorAll('li').length === 5`)
-      const trashed = await ui.ev(
-        `[...${ui.$('fresh-start-trash')}.querySelectorAll('li')].map((li) => li.dataset.kind + ' ' + li.innerText.replace(/\\s+/g, ' '))`
-      )
-      // L'app compte ses fils de conversation (celle de l'accueil comprise) : ceux du disque.
-      const saved = readdirSync(join(userData, 'conversations')).filter((f) =>
-        f.endsWith('.json')
-      ).length
-      check(
-        trashed[0]?.startsWith('conversations') &&
-          trashed[0].includes(`${L('settings.data.fresh.kind.conversations')} ${saved} ·`),
-        `confirmation : les conversations comptées, avec leur taille (${trashed[0]})`
-      )
-      check(
-        trashed.map((line) => line.split(' ')[0]).join(',') ===
-          'conversations,settings,usage,browser,other',
-        'confirmation : conversations, réglages, consommation, navigateur, le reste'
-      )
-      check(
-        !(await ui.ev(`!!${ui.$('fresh-start-uninstall')}`)) &&
-          (await ui.ev(`${ui.$('fresh-start-confirm-reset')}.innerText`)) ===
-            L('settings.data.fresh.confirmClose') &&
-          !(await ui.ev(
-            `${ui.$('fresh-start-confirm')}.innerText.includes('Bobine Safe Storage')`
-          )),
-        'app non installée, dossier imposé : ni désinstallation, ni trousseau, « Tout effacer et fermer »'
-      )
       await ui.ev(`${ui.$('fresh-start-confirm')}.scrollIntoView({ block: 'center' })`)
       await ui.shot('148b-reinitialiser')
       // « Garder » referme sans rien effacer ; puis confirmé pour de bon.
       await ui.click(ui.$('confirm-row-keep'))
       await ui.waitFor(`!${ui.$('fresh-start-confirm')}`)
-      check(existsSync(userData), '« Garder » : rien n’est effacé')
       await ui.click(ui.$('fresh-start-reset'))
       await ui.waitFor(`${ui.$('fresh-start-confirm-reset')}?.disabled === false`)
       await ui.click(ui.$('fresh-start-confirm-reset'))

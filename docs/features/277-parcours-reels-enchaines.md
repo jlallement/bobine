@@ -15,8 +15,9 @@ en cours de route, un redémarrage de l'app.
 
 ## Critères d'acceptation
 
-- [x] Cinq à six « journées types », une suite `parcours-*` chacune, de 7 à 13 étapes dans **une
-  même instance** de l'app ; au moins une (en fait quatre) avec un redémarrage au milieu.
+- [x] Cinq à six « journées types » (sept depuis le 2026-11-24), une suite `parcours-*` chacune,
+  de 7 à 16 étapes dans **une même instance** de l'app ; au moins une (en fait cinq) avec un
+  redémarrage au milieu.
 - [x] Contre l'agent factice seulement, jamais un vrai modèle ; aucun nouveau scénario n'a été
   nécessaire (ceux de `docs/mock-agent.md` suffisent).
 - [x] Chaque étape vérifie un état visible par l'utilisateur, **puis** (outil commun
@@ -46,7 +47,11 @@ lu ; 6. « Faire relire… » : le Code reviewer répond dans la conversation ; 
 la barre latérale) ; 9. retour, suite écrite pendant le tour (file) ; 10. Stop, la file attend,
 « Envoyer maintenant » ; 11. modèle et mode changés, appliqués (`echo`) ; 12. ⌘Q ;
 13. relance : la conversation affichée en quittant est rouverte, son fil (relecture comprise),
-son modèle et son mode, l'agent relancé répond ; 14. l'autre conversation intacte répond.
+son modèle et son mode, sa consommation, l'agent relancé répond ; 14. l'autre conversation intacte
+répond ; 15. `@code-reviewer @ux-ui-expert` en tout premier message d'une conversation neuve :
+une carte de groupe, deux filles sous la mère ; 16. `plan.md` non commité, `@front-architect` :
+la ligne « partira sans la modification », Entrée, la fille ne voit pas le plan. Ajouts du
+2026-11-24 : point sur la branche après le tour (5), aparté `/btw` pendant le tour (9).
 
 ### `parcours-deleguer` — déléguer (9 étapes, un redémarrage)
 
@@ -74,11 +79,16 @@ Mémoire : voir, modifier, oublier ; 10. `@ux-ui-expert` : la carte du rôle ré
 (montrée, « Lancer ») et lit la sortie ; 3. navigateur intégré : page annotée, remarque envoyée
 avec sa capture ; 4. autre conversation, retour : terminal et navigateur suivent la conversation ;
 5. fenêtre rapide : nouvelle conversation dans la fenêtre principale ; 6. recherche dans
-l'historique (contenu), ouverture du résultat ; 7. export Markdown de toute la journée.
+l'historique (contenu), ouverture du résultat ; 7. export Markdown de toute la journée ; 8. garde
+de navigation (SEC-1) : l'agent ne quitte pas les sites accordés ; 9. « Échanges ACP » d'une
+nouvelle conversation, démarrage de l'agent déjà là. Ajouts du 2026-11-24 : ⌃` qui referme le
+terminal qui a le clavier, `@terminal` joint à un message (1) ; terminal rouvert seul, sortie de
+commande ACP en couleurs (2).
 
 ### `parcours-longue` — longue session (8 étapes, un redémarrage)
 
-1. 36 échanges (réponses Markdown, tableaux, code coloré, plan mêlés) ; 2. sommaire complet,
+1. 36 échanges (réponses Markdown, Mermaid, tableaux, code coloré, plan mêlés ; Mermaid chargé au
+premier diagramme seulement) ; 2. sommaire complet,
 retour au 3ᵉ message ; 3. envoyer depuis le haut du fil : retour en bas ; 4. fenêtre étroite
 (640 px) puis large (1600 px) : rien ne déborde ; 5. panneau ouvert puis refermé ; 6. autre
 conversation et retour au long fil ; 7. ⌘Q ; 8. relance : le long fil, en bas, qui continue.
@@ -89,7 +99,28 @@ conversation et retour au long fil ; 7. ⌘Q ; 8. relance : le long fil, en bas,
 3. l'autre n'en sait rien et répond ; 4. écrire à la plantée relance son agent ; 5. agent
 silencieux (`silence-annulable`, silence à 1,5 s) arrêté ; 6. erreur de tour (`erreur`), puis la
 suite ; 7. quitter pendant un tour ; 8. relance : la conversation qui travaillait est rouverte et
-reprend ; 9. l'autre a gardé ses avis et répond.
+reprend ; 9. l'autre a gardé ses avis et répond ; 10. panne réseau passagère (`reseau-instable`),
+puis la réponse, sans bulle ni avis de plus.
+
+### `parcours-premier-lancement` — premier lancement (8 étapes, un redémarrage)
+
+Bobine neuve (`BOBINE_ONBOARDING=1`, aucun vrai agent découvert), projet pnpm jetable. 1. accueil,
+agent factice présélectionné ; 2. connexion « prêt », la barre latérale dit l'agent ; 3. dossier
+choisi (dialogue simulé) ; 4. essai, réponse, « Commencer » au focus ; 5. première conversation
+dans le dossier, « Lance les tests » avec pnpm, accueil mesuré à 760 px, accueil marqué fini ;
+6. la suggestion remplit la saisie, le premier message part et reçoit sa réponse ; 7. ⌘Q ;
+8. relance : plus d'accueil, la conversation rouverte dans son dossier continue.
+
+### Captures qui affirment (`e2e/affirm.mjs`, 2026-11-24)
+
+Une capture seule ne protège rien. `affirm(ui, nom, [sondes])` prend la capture puis mesure le
+DOM (boîtes, débordement `MEASURE` repris de `debordements`, alignement, style calculé, contraste
+WCAG) ; chaque sonde est un `check` qui échoue avec sa mesure. Pas de comparaison d'images. Posé
+dans les journées : aparté au-dessus de la saisie (matinée 9), marge du terminal (outils 1),
+couleurs de la sortie de commande (outils 2), liste du sommaire et message sous le fondu
+(longue 2), fil et tableaux à 640 et 1600 px (longue 4), accueil à 760 px (premier lancement 5).
+Les captures de l'inventaire hors des journées, et celles qui ne se mesurent pas, sont listées
+dans `docs/tests/inventaire-e2e-{A,B,C}.md` (« Remplaçants écrits »).
 
 ## Défauts trouvés
 
@@ -110,6 +141,39 @@ Les étapes restent rouges tant que le défaut est là ; rien n'est contourné.
    reçoit une réponse. Obtenu : l'agent reste « Arrêté » (point d'état jamais `ready`, 15 s),
    impossible de converser. Déjà en cours de correction : branche `fix/restauration`. Les étapes
    suivantes de la journée (⌘Q, relance, la mère restaurée répond) ne sont donc pas encore jouées.
+
+Après la rc.4 (passage GitHub 45342287255, premiers essais des étapes du 2026-11-24) :
+
+3. **Erreur IPC restante après la suppression d'une mère** (`parcours-deleguer`, étape 6, clair
+   macOS seulement : intermittent). Les défauts 1 et 2 sont corrigés (`main`, rc.4) : plus de
+   `children:mergePlan`, la mère restaurée répond. Reste une fois `WARN  IPC conversation:appTools
+   : … Conversation inconnue : <id de la mère>`. Cause probable : la réponse de
+   `conversation:delete` et les évènements poussés par le main (`conversations:changed`,
+   `agent:event`) ne suivent pas la même voie IPC ; la réponse arrivée la première libérait la
+   porte du preload alors que le renderer affichait encore la mère, et l'arrêt de son agent, encore
+   en route, faisait relire ses outils de Bobine (onglet Session). Corrigé (renderer,
+   `useConversations`) : une suppression faite garde ses conversations tues jusqu'à la liste qui
+   ne les a plus ; une suppression refusée les libère tout de suite. Test unitaire rouge → vert
+   (`useConversations.remove.test.ts`). À confirmer sur GitHub (intermittent).
+   **Pas suffisant** : passage 45345873473, sombre macOS, même ligne (`conversation:appTools`,
+   +60 ms après le lancement du brouillon qui remplace la mère, après l'arrêt des agents). Seul
+   appelant possible à ce moment : l'effet de l'onglet Session (`useAppToolsTokens`, relu à chaque
+   changement de statut). Cause retenue : la porte du preload se rouvrait **à la réception** de la
+   liste, alors que React exécute les effets d'un rendu plus tard ; un rendu fait juste avant (mère
+   encore affichée, statut changé par l'arrêt de son agent) laissait en attente un effet qui part
+   après la réouverture. Corrigé : la porte ne se rouvre que dans un effet, après le rendu qui
+   n'affiche plus la conversation supprimée (React a alors exécuté tous les effets en attente).
+   Test rouge → vert : la liste reçue hors de `act`, la porte reste fermée jusqu'au rendu.
+   L'ordre exact n'a pas pu être observé (pas d'e2e locale) : `parcours-deleguer` 6 pose donc un
+   relevé IPC (`ipcTrace`, `e2e/parcours.mjs` : appels reçus nommant la mère, listes et
+   évènements poussés, horodatés), affiché seulement si l'étape échoue.
+4. **Sommaire : en bas du fil, le dernier message n'est jamais le courant** (`parcours-longue`,
+   étape 2, macOS et Linux, clair et sombre). Le message lu est le dernier dont le haut passe le
+   premier tiers du fil ; en fin de fil d'échanges courts, le haut des derniers messages n'y
+   arrive jamais, même tout en bas (capture : « Question 35 » en avant, « Question 36 » à l'écran) —
+   ils ne pouvaient jamais être mis en avant, pas même après un clic dessus. `sommaire` ne le
+   voyait pas : à 80 messages, un trait en regroupe deux. Corrigé : tout en bas d'un fil qui défile,
+   le dernier message est le courant (`ConversationOutline.test.tsx`, rouge → vert).
 
 Observation (pas un défaut d'essai, à juger) : un proxy saisi dans Réglages ne vaut qu'au
 « prochain lancement d'un agent » (c'est dit) ; dans une conversation déjà ouverte, le bandeau
@@ -134,6 +198,23 @@ l'être. Le parcours vérifie donc le proxy dans une nouvelle conversation.
   la barre latérale ; proxy pris au lancement suivant d'un agent ; l'onglet Terminal n'est monté
   que s'il est affiché ; étape ⌘Q : la page n'est plus là, seul le journal du main est relu).
   Avertissement « ResizeObserver loop » de Chromium ignoré (pas un défaut de l'app).
+- 2026-11-24 (chantier « pyramide », remplaçants avant suppression) : étapes ajoutées d'après
+  l'inventaire (`docs/tests/inventaire-e2e-*.md`), 7ᵉ journée `parcours-premier-lancement`,
+  mécanisme `e2e/affirm.mjs` (la sonde `MEASURE` de `debordements` y est déplacée, inchangée).
+  Les numéros des étapes existantes ne bougent pas : les nouvelles sont ajoutées en fin de
+  journée, ou comme vérifications de plus dans l'étape où l'état existe. Proxy de
+  `parcours-reglages` avec identifiants (`jean:…@127.0.0.1:9`) : cité masqué, mot de passe nulle
+  part dans la page. Rien joué en local (ADR-0069) : à lancer sur GitHub.
 - Dernière série locale (clair et sombre, `--jobs 3`, 3 min en tout) : matinée 45 s, déléguer
   36–38 s (rouge, défauts 1 et 2), réglages 38 s, outils 40 s, longue 58 s, pannes 49–50 s, par
   thème. `--lang en` non joué : e2e locales arrêtées à la demande, `e2e.yml` les jouera.
+- 2026-11-24 (passage GitHub 45342287255) : trois échecs examinés. `parcours-premier-lancement`
+  8 : essai mal écrit — la relance gardait l'agent imposé par `withApp`
+  (`BOBINE_AGENT_PROFILE=mock`), qui ouvre une nouvelle conversation au lieu de la dernière
+  affichée (fiche 243) ; relance sans agent imposé, comme les autres journées
+  (`BOBINE_MOCK_AGENT=1`), l'étape inchangée. `parcours-longue` 2 et `parcours-deleguer` 6 : vrais
+  défauts de l'app (3 et 4 ci-dessus), étapes inchangées, corrigés dans l'app. Rien joué en local
+  (ADR-0069) : suites à relancer sur GitHub.
+- 2026-11-24 (passage GitHub 45345873473) : premier lancement, longue, `sommaire`, `filles` verts ;
+  `parcours-deleguer` 6 encore rouge en sombre (défaut 3) : porte rouverte après le rendu, relevé
+  IPC en cas d'échec (option `trace` de `day().step`).

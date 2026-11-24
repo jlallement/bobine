@@ -96,6 +96,24 @@ describe('commandes « / » de l’app (fiche 039)', () => {
     ])
   })
 
+  // Remplace `e2e/suites/commands.mjs` n° 12 : `/mode` sans argument, comme `/model`.
+  it('/mode sans argument : la liste des modes, le mode courant marqué', () => {
+    const mode: SessionControl = {
+      id: 'mode',
+      name: 'Mode',
+      category: 'mode',
+      type: 'select',
+      currentValue: 'code',
+      options: [
+        { value: 'code', name: 'Code' },
+        { value: 'plan', name: 'Plan' }
+      ]
+    }
+    expect(
+      appCommandActions('mode', '', context({ snapshot: snapshot({ controls: [model, mode] }) }))
+    ).toEqual([{ type: 'info', message: 'Mode\u00a0:\n• Code\n◦ Plan' }])
+  })
+
   it('/model nom : règle l’option puis le dit', () => {
     expect(appCommandActions('model', 'réfl', context())).toEqual([
       { type: 'setControl', controlId: 'model', value: 'deep' },

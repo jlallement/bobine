@@ -9,6 +9,7 @@ import type { Settings } from './settings'
 import { loadSettings, saveSettings } from './settings'
 import { normalizeMessage } from '@shared/tips'
 import { SettingsStore } from './settings-store'
+import { ApiKeyStore } from './agent-config/api-keys'
 
 const profile = (id: string, extra: Partial<AgentProfile> = {}): AgentProfile => ({
   id,
@@ -121,6 +122,35 @@ describe('SettingsStore (fiche 089)', () => {
     const { settings, save } = store()
     expect(() => settings.setNewConversation({ workspace: '/nexiste/pas' })).toThrow('introuvable')
     expect(save).not.toHaveBeenCalled()
+  })
+
+  it('clé d’API enregistrée : jamais sa valeur dans ce qui part à l’interface ni dans settings.json', async () => {
+    // Remplace l'e2e `auth` n° 6 (la vue des réglages, `settings:get`, est faite de `keyInfo`).
+    const dir = mkdtempSync(join(tmpdir(), 'cles-'))
+    const cipher = {
+      available: () => Promise.resolve(true),
+      encrypt: (text: string) => Promise.resolve(Buffer.from([...text].reverse().join(''))),
+      decrypt: (data: Buffer) =>
+        Promise.resolve({ text: [...data.toString()].reverse().join(''), reencrypt: false })
+    }
+    const keyed = profile('bob', { apiKeys: [{ env: 'BOB_API_KEY', label: 'Clé' }] })
+    const saved: Settings[] = []
+    const settings = new SettingsStore({
+      initial: { recentWorkspaces: [] },
+      save: (next) => saved.push(next),
+      profiles: [keyed],
+      apiKeys: new ApiKeyStore(join(dir, 'api-keys.json'), cipher),
+      env: {}
+    })
+    await settings.setApiKey('bob', 'BOB_API_KEY', 'sk-secret-123')
+    expect(settings.keyInfo(keyed)).toEqual([
+      expect.objectContaining({ env: 'BOB_API_KEY', stored: true })
+    ])
+    expect(JSON.stringify(settings.keyInfo(keyed))).not.toContain('sk-secret-123')
+    expect(JSON.stringify(saved)).not.toContain('sk-secret-123')
+    expect(JSON.stringify(settings.current)).not.toContain('sk-secret-123')
+    // L'agent, lui, la reçoit à son lancement.
+    expect(await settings.credentials(keyed)).toEqual({ BOB_API_KEY: 'sk-secret-123' })
   })
 
   it('clés d’API sans coffre : état lu dans l’environnement, enregistrement refusé', async () => {

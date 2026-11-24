@@ -8,6 +8,12 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 - Plusieurs travaux proposés d’un coup : la carte les range toujours dans l’ordre où l’agent les a
   proposés, le même d’une fois à l’autre, et une ligne affichée ne change plus de place.
+- Sommaire d’une longue conversation : tout en bas du fil, le dernier message est bien celui mis en
+  avant, même quand les derniers échanges sont courts.
+- **Arrêter** une conversation fille qui vient d’être lancée (son agent démarre encore) l’arrête
+  bien : le tour ne va plus à son terme.
+- Préparation d’un worktree à autoriser : la carte ne bouge plus sous le pointeur pendant que
+  la réponse s’écrit dessous, « Autoriser » n’est plus manqué.
 - Fichier vide déjà présent, réécrit par l’agent : Modifications › Conversation ne le marque plus
   « créé » (la carte de l’outil disait déjà « Modification »), et **Annuler cette modification**
   ou **Repartir de ce message** le remettent vide au lieu de le supprimer.

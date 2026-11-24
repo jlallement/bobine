@@ -61,16 +61,11 @@ export async function linksSuite(scheme) {
         await ui.waitFor(
           `${ui.$('document-name')}?.innerText === 'plan.md' && ${ui.$('document-body')}.innerText.includes('Plan de travail')`
         )
-        check(
-          opened().length === 0,
-          '.md du dossier : aperçu dans le panneau, rien d’ouvert ailleurs'
-        )
         await ui.shot('41-apercu-md')
         await ui.click(
           `[...${ui.$('document-body')}.querySelectorAll('a')].find((a) => a.textContent === 'la suite')`
         )
         await ui.waitFor(`${ui.$('document-name')}?.innerText === 'suite.md'`)
-        check(true, 'lien relatif dans l’aperçu : depuis le dossier du document (docs/suite.md)')
 
         await ui.click(link('src/app.ts:3'))
         const waitLog = async (line) => {
@@ -82,10 +77,6 @@ export async function linksSuite(scheme) {
         // Chemin sans dossier écrit en code (`liste.js:2`, fiche 272) : un lien de fichier comme
         // les autres ; avant, `liste.js:` passait pour un schéma et l'adresse était vidée.
         await ui.click(link('liste.js:2'))
-        check(
-          await waitLog(`open ${join(workspace, 'liste.js')}`),
-          'chemin sans dossier en code (`liste.js:2`) : app par défaut'
-        )
         // Lien Markdown vers un fichier absent, cliqué deux fois : un seul avis, et le pied du tour
         // reste visible (recette de la rc.3 : un avis rouge par clic, le pied disparaissait).
         const missingText = Lpart('fileLink.missing')
@@ -100,13 +91,7 @@ export async function linksSuite(scheme) {
         )
         await ui.shot('45-fichier-absent-pied')
         await ui.click(link('docs'))
-        check(await waitLog(`reveal ${join(workspace, 'docs')}`), 'dossier : montré dans le Finder')
         await ui.click(link('outil.command'))
-        check(
-          (await waitLog(`reveal ${join(workspace, 'outil.command')}`)) &&
-            !opened().includes(`open ${join(workspace, 'outil.command')}`),
-          'exécutable : montré dans le Finder, jamais ouvert'
-        )
         await ui.waitFor(
           `document.body.innerText.includes(${JSON.stringify(Lpart('fileLink.executable'))})`
         )
@@ -123,7 +108,6 @@ export async function linksSuite(scheme) {
         await ui.waitFor(
           `!${ui.$('document-tab')} && !document.querySelector('[data-tab=document]')`
         )
-        check(true, 'aperçu fermé : l’onglet disparaît')
       },
       undefined,
       'liens-fichiers',

@@ -8,8 +8,6 @@ import { client, methods, ndJsonStream } from '../../shared/acp-sdk.mts'
 import type {
   ClientConnection,
   ContentBlock,
-  CreateElicitationRequest,
-  CreateElicitationResponse,
   InitializeResponse,
   McpServer,
   RequestPermissionRequest,
@@ -79,7 +77,6 @@ import { TurnRetry } from './turn-retry'
 import { TurnLimitWatch } from './turn-limit'
 import {
   NO_SESSION_SUPPORT,
-  elicitationPrompt,
   initializeParams,
   authMethodsOf,
   promptCapabilitiesOf,
@@ -287,6 +284,11 @@ export class AgentHost {
   private sendNowPending = false
   /** Un message est en préparation (pièces jointes lues) : l'agent est encore « prêt ». */
   private preparing = false
+  /**
+   * « Arrêter » pendant cette préparation (fiche 278) : le tour n'est pas encore chez l'agent ;
+   * l'arrêt part juste après le message, au lieu d'être perdu.
+   */
+  private stopRequested = false
   /**
    * Contexte de session dû au prochain message (fiche 118), et à quel moment (fiche 223) : session
    * neuve, rouverte, ou compaction ; absent : rien à joindre.
@@ -566,6 +568,7 @@ export class AgentHost {
     this.preparing = true
     let built: Awaited<ReturnType<typeof buildPrompt>>
     let session: string | undefined
+    let stopAtOnce = false
     try {
       ;[built, , session] = await Promise.all([
         buildPrompt(text, attachments, this.promptCaps, agentLabel, this.options.contextText),
@@ -575,6 +578,8 @@ export class AgentHost {
       ])
     } finally {
       this.preparing = false
+      stopAtOnce = this.stopRequested
+      this.stopRequested = false
     }
     // Arrêté ou relancé pendant l'attente du rejeu : ce message n'est plus pour cette session.
     if (this.connection !== connection || this.status !== 'ready') {
@@ -609,7 +614,7 @@ export class AgentHost {
       ...(compaction ? { compaction: true } : {}),
       ...(options.about ? { about: options.about } : {})
     })
-    await this.runTurn(connection, sessionId, blocks)
+    await this.runTurn(connection, sessionId, blocks, stopAtOnce)
   }
 
   /**
@@ -619,7 +624,8 @@ export class AgentHost {
   private async runTurn(
     connection: ClientConnection,
     sessionId: string,
-    blocks: ContentBlock[]
+    blocks: ContentBlock[],
+    stopAtOnce = false
   ): Promise<void> {
     this.retry.begin(blocks)
     this.turnLimit.turnStarted(sessionId, blocks)
@@ -638,10 +644,17 @@ export class AgentHost {
       onSilent: (since) => this.quiet.setSilent(since)
     })
     try {
-      const response = await connection.agent.request(methods.agent.session.prompt, {
+      const sent = connection.agent.request(methods.agent.session.prompt, {
         sessionId,
         prompt: blocks
       })
+      // Arrêt demandé avant le départ du message (fiche 278) : `session/cancel` le suit aussitôt,
+      // dans l'ordre d'écriture de la connexion.
+      if (stopAtOnce) {
+        this.options.emit({ type: 'cancel-requested' })
+        void this.cancel().catch(() => {})
+      }
+      const response = await sent
       stopReason = response.stopReason
       // Limite d'étapes (fiche 209) : la file attend l'utilisateur, comme après un arrêt ; elle
       // serait refusée de la même façon.
@@ -767,6 +780,11 @@ export class AgentHost {
 
   async cancel(): Promise<void> {
     const { connection, child, sessionId } = this
+    // Message en préparation : l'arrêt attend qu'il parte (`runTurn`).
+    if (this.preparing) {
+      this.stopRequested = true
+      return
+    }
     if (this.status !== 'busy' || !connection || !sessionId) return
     // Une tentative attendait (fiche 142) : rien n'est en cours chez l'agent, le tour s'arrête là.
     if (this.retry.cancel()) {
@@ -884,25 +902,6 @@ export class AgentHost {
     const risks = permissionRisks(withKnownLocations(toolCall, known), place)
     const ask = (asked: RequestPermissionRequest) => this.requests.permission(asked, risks, signal)
     return askReadOnly({ ...params, toolCall }, this.options.readOnly, ask)
-  }
-
-  /** Formulaire ou page demandés par l'agent (`elicitation/create`), traduits pour l'interface. */
-  private onElicitation(
-    params: CreateElicitationRequest
-  ): CreateElicitationResponse | Promise<CreateElicitationResponse> {
-    const prompt = elicitationPrompt(params)
-    if (!prompt) {
-      this.options.emit({
-        type: 'notice',
-        level: 'warning',
-        message: {
-          key: 'agentHost.notice.elicitationUnsupported',
-          params: { message: params.message }
-        }
-      })
-      return { action: 'decline' }
-    }
-    return this.requests.elicitation(prompt)
   }
 
   /**
@@ -1048,7 +1047,9 @@ export class AgentHost {
         .onRequest(methods.client.session.requestPermission, ({ params, signal }) =>
           settleNotifications().then(() => this.onPermissionRequest(params, signal))
         )
-        .onRequest(methods.client.elicitation.create, ({ params }) => this.onElicitation(params))
+        .onRequest(methods.client.elicitation.create, ({ params }) =>
+          this.requests.fromAgent(params)
+        )
         // Fin d'une élicitation par URL : rien à faire de plus côté app.
         .onNotification(methods.client.elicitation.complete, () => {})
         .onNotification(methods.client.session.update, ({ params }) => this.onSessionUpdate(params))

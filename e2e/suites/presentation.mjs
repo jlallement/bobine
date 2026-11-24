@@ -34,10 +34,6 @@ export async function presentationSuite(scheme) {
         await ui.click(ui.$('settings-appearance'))
         await ui.click(ui.$('density-compact'))
         await ui.waitFor(`document.documentElement.dataset.density === 'compact'`)
-        check(
-          (await ui.ev(css('--density-thread-gap'))) === '10px',
-          'compacte : jeton --density-thread-gap'
-        )
         await ui.shot('presentation-1-reglages')
         await ui.key('Escape')
         await ui.waitFor(`!${ui.$('settings')}`)
@@ -72,7 +68,6 @@ export async function presentationSuite(scheme) {
           main.evaluate(
             `require('electron').Menu.getApplicationMenu().getMenuItemById('presentation').checked`
           )
-        check((await menuChecked()) === false, 'menu Affichage : « Mode présentation » décoché')
         await ui.click(ui.$('open-settings'))
         await ui.click(ui.$('settings-appearance'))
         await ui.click(ui.$('settings-presentation'))

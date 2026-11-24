@@ -48,15 +48,6 @@ export async function outlineSuite(scheme) {
         return state()
       }
       const bottom = await state()
-      const limit = Math.min(240, Math.floor(bottom.thread * 0.3))
-      check(
-        bottom.height - bottom.padding <= limit,
-        `colonne de traits dans sa hauteur maximale (${Math.round(bottom.height - bottom.padding)} ≤ ${limit} px, fil de ${bottom.thread} px)`
-      )
-      check(
-        bottom.bars < MESSAGES && bottom.bars >= 20,
-        `${MESSAGES} messages, ${bottom.bars} traits : un trait pour plusieurs messages`
-      )
       check(bottom.items === MESSAGES, `la liste au survol garde les ${MESSAGES} messages`)
       check(
         bottom.current?.[1] === MESSAGES - 1 && bottom.currentRank === bottom.bars - 1,

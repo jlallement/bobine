@@ -8,6 +8,12 @@ What changes for you, version by version. Shown in Settings › About.
 
 - Several pieces of work proposed at once: the card always lists them in the order the agent
   proposed them, the same every time, and a line already shown no longer changes place.
+- Outline of a long conversation: at the very bottom of the thread, the last message is the one
+  highlighted, even when the last exchanges are short.
+- **Stop** on a child conversation that was just started (its agent still starting) now stops
+  it: the turn no longer runs to the end.
+- Worktree setup awaiting approval: the card no longer moves under the pointer while the reply
+  is written below it, so “Allow” is no longer missed.
 - An existing empty file rewritten by the agent: Changes › Conversation no longer marks it
   “created” (its tool card already said it was edited), and **Revert this change** or **Branch from
   this message** now leave it empty instead of deleting it.

@@ -21,11 +21,6 @@ export async function planSuite(scheme) {
         // Panneau « Session » ouvert de lui-même (fiche 166) : fermé, le fil garde sa largeur.
         await ui.closePanel()
         await ui.waitFor(`!!${ui.$('plan-document')}`)
-        check(
-          (await ui.ev(`${ui.$('plan-document')}.innerText`)).includes('plan.md') &&
-            (await ui.ev(`${ui.$('plan-document')}.dataset.version`)) === '1',
-          'mode plan : plan écrit dans plan.md affiché comme document (version 1)'
-        )
 
         /** Boîtes des boutons de la barre du plan (dernière carte). */
         const buttons = () =>
@@ -124,10 +119,6 @@ export async function planSuite(scheme) {
         )
         await annotate('Utilise Vitest.')
         await ui.viewport()
-        check(
-          (await ui.ev(`CSS.highlights.get('plan-notes')?.size`)) === 1,
-          'passage commenté : remarque listée, passage surligné'
-        )
         await ui.shot('98-plan-annote')
 
         // Plan plus long que la fenêtre (comme celui de GPT) : sa fin reste visible au-dessus des
@@ -162,7 +153,6 @@ export async function planSuite(scheme) {
         await ui.waitFor(
           `[...(${ui.$('plan-notes')}?.querySelectorAll('textarea') ?? [])].some((t) => t.value === 'Utilise Vitest.')`
         )
-        check(true, 'remarques en cours gardées après rechargement (stockage local)')
 
         await ui.click(ui.$('plan-send-notes'))
         await ui.waitFor(
@@ -172,18 +162,8 @@ export async function planSuite(scheme) {
         await ui.waitFor(
           `[...document.querySelectorAll('[data-testid=plan-document]')].at(-1)?.dataset.version === '2'`
         )
-        const sent = await ui.ev(`[...document.querySelectorAll('.msg-user')].at(-1).innerText`)
-        check(
-          sent.includes('« script Node maison »') && sent.includes('Remarque : Utilise Vitest.'),
-          'remarques envoyées : passage cité et remarque'
-        )
         await ui.click(`[...document.querySelectorAll('[data-testid=plan-diff-toggle]')].at(-1)`)
         await ui.waitFor(`!!${ui.$('plan-diff')}`)
-        const diff = await ui.ev(`${ui.$('plan-diff')}.innerText`)
-        check(
-          diff.includes('Vitest') && diff.includes('script Node maison'),
-          'version 2 : « Voir ce qui a changé » montre le diff entre les versions'
-        )
         await ui.shot('99-plan-version-2')
 
         await ui.click(`[...document.querySelectorAll('[data-testid=plan-execute]')].at(-1)`)
@@ -191,23 +171,6 @@ export async function planSuite(scheme) {
           `[...document.querySelectorAll('.msg-user')].at(-1)?.innerText === 'Exécute le plan de plan.md.'`
         )
         await ui.ready()
-        check(
-          (await ui.lastAgentText()).includes('Plan exécuté') &&
-            (await ui.ev(
-              `window.api.conversations.get().then((s) => window.api.conversations.view(s.activeId)).then((v) => v.snapshot.controls.find((c) => c.category === 'mode').currentValue)`
-            )) === 'code',
-          'exécuter : retour au mode d’exécution, puis demande d’exécution'
-        )
-        // Fiche 272 (recette) : le plan exécuté ne s'exécute pas deux fois.
-        check(
-          (await ui.ev(
-            `[...document.querySelectorAll('[data-testid=plan-execute]')].at(-1)?.disabled === true`
-          )) &&
-            (await ui.ev(
-              `[...document.querySelectorAll('[data-testid=plan-document-hint]')].at(-1)?.innerText`
-            )) === L('planDocument.executed'),
-          'plan exécuté : « Exécuter le plan » désactivé, « Plan déjà exécuté »'
-        )
       },
       undefined,
       'plan-fichier',

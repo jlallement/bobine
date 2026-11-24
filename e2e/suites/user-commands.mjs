@@ -42,15 +42,6 @@ export async function userCommandsSuite(scheme) {
           `[...document.querySelectorAll('.settings-nav-item')].find((b) => b.innerText.trim() === ${JSON.stringify(L('settings.section.commands'))})`
         )
         await ui.waitFor(`!!${ui.$('commands-settings')}`)
-        check(
-          (await ui.ev(`${ui.$('project-commands-list')}?.innerText ?? ''`)).includes('/revue') &&
-            (await ui.ev(`${ui.$('project-commands-list')}.innerText`)).includes('Revue du projet'),
-          'réglages : commande du projet listée (revue.md, lecture seule)'
-        )
-        check(
-          (await ui.ev(`${ui.$('project-commands-list')}.innerText`)).includes('/ancienne'),
-          'réglages : commande de l’ancien dossier .bob-desktop/commands encore lue'
-        )
         await ui.click(ui.$('command-add'))
         await ui.waitFor(`!!${ui.$('command-form')}`)
         await fill(ui, 'command-name', 'salut')
@@ -58,7 +49,6 @@ export async function userCommandsSuite(scheme) {
         await fill(ui, 'command-prompt', 'Dis bonjour à $ARGUMENTS')
         await ui.click(ui.$('command-save'))
         await ui.waitFor(`!!document.querySelector('[data-testid=command-item][data-name=salut]')`)
-        check(true, 'commande personnelle « /salut » enregistrée')
         await ui.shot('34-commandes-personnelles-reglages')
         await ui.press('Escape')
         await ui.waitFor(`!${ui.$('commands-settings')}`)
@@ -67,25 +57,11 @@ export async function userCommandsSuite(scheme) {
         await ui.ev(`${ui.$('composer-input')}.focus()`)
         await ui.type('/')
         await ui.waitFor(`!!${ui.$('command-menu')}`)
-        const items = await ui.ev(
-          `[...document.querySelectorAll('[data-testid=command-item]')].map((i) => i.innerText.replace(/\\s+/g, ' ').trim())`
-        )
-        check(
-          items.some(
-            (i) => i.startsWith('/revue <fichier>') && i.endsWith(L('commandMenu.source.project'))
-          ) &&
-            items.some((i) => i.startsWith('/salut') && i.endsWith(L('commandMenu.source.user'))),
-          'menu « / » : « /revue <fichier> » (Projet) et « /salut » (Vous)'
-        )
         await ui.type('salut')
         await ui.waitFor(`document.querySelectorAll('[data-testid=command-item]').length === 1`)
         await ui.shot('35-commandes-personnelles-menu')
         await ui.type(' Jérôme')
         await sendTyped(ui)
-        check(
-          (await ui.lastAgentText()).includes(quoted('Dis bonjour à Jérôme')),
-          '« /salut Jérôme » : l’agent reçoit la consigne développée'
-        )
 
         // Commande du projet avec argument : Tab complète, l'argument remplace $ARGUMENTS.
         await ui.type('/revu')

@@ -1,4 +1,4 @@
-import { L, check, withApp, M } from '../lib.mjs'
+import { check, withApp } from '../lib.mjs'
 
 /**
  * Liste de tâches épinglée au-dessus de la zone de saisie pendant le tour (fiche 077). Le scénario
@@ -34,14 +34,6 @@ export async function pinnedPlanSuite(scheme) {
       }
     })()`)
     check(pinned.aboveComposer, 'liste épinglée juste au-dessus de la zone de saisie')
-    check(
-      pinned.head.includes(L('pinnedPlan.title')) && pinned.head.includes('1 / 3'),
-      `en-tête de la liste : « ${L('pinnedPlan.title')} 1 / 3 »`
-    )
-    check(
-      pinned.step === M('Modifier la configuration') && pinned.spinning,
-      'tâche en cours marquée, son cercle tourne'
-    )
     check(pinned.struck === 'none', 'tâches faites grisées, pas barrées')
     check(
       !pinned.threadCard && pinned.counter === '',
@@ -67,13 +59,6 @@ export async function pinnedPlanSuite(scheme) {
     // Repliée sur une ligne : la tâche en cours et la progression.
     await ui.click(ui.$('pinned-plan-toggle'))
     await ui.waitFor(`${ui.$('pinned-plan-toggle')}.getAttribute('aria-expanded') === 'false'`)
-    check(
-      (await ui.ev(`${ui.$('pinned-plan-current')}?.innerText`)) ===
-        M('Modifier la configuration') &&
-        (await ui.ev(`${ui.$('pinned-plan-toggle')}.innerText`)).includes('1 / 3') &&
-        (await ui.ev(`${ui.$('pinned-plan')}.querySelector('.pinned-plan-body').hidden`)),
-      'repliée d’un clic : une ligne, tâche en cours et « 1 / 3 »'
-    )
     await ui.shot('101-taches-repliees')
     await ui.click(ui.$('pinned-plan-toggle'))
     await ui.waitFor(`${ui.$('pinned-plan-toggle')}.getAttribute('aria-expanded') === 'true'`)
@@ -89,10 +74,6 @@ export async function pinnedPlanSuite(scheme) {
     await ui.waitFor(`!!${ui.$('history-open-beside')}`)
     await ui.click(ui.$('history-open-beside'))
     await ui.waitFor(`!!${ui.$('beside')}?.querySelector('[data-testid=pinned-plan]')`)
-    check(
-      !(await ui.ev(`!!${ui.$('beside')}.querySelector('.scroll .plan')`)),
-      'conversation à côté : liste épinglée, pas de carte « Plan » dans son fil'
-    )
     await ui.click(ui.$('beside-close'))
     await ui.waitFor(`!${ui.$('beside')}`)
     await ui.click(itemNamed('/scenario streaming-texte'))

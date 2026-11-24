@@ -139,3 +139,41 @@ describe('« Lancer en parallèle… » et dossier de la mère (fiches 240, 262)
     expect(startChild).toHaveBeenCalledWith('m', { text: 'Écris l’API', uncommitted: 'anyway' })
   })
 })
+
+// Remplace `e2e/suites/filles.mjs` n° 2 : la fenêtre s'ouvre sur l'agent et le modèle de la mère.
+describe('« Lancer en parallèle… » : agent et modèle de la mère par défaut (fiches 097, 112)', () => {
+  it('agent et modèle de la mère présélectionnés ; « Lancer » ne demande rien de plus', async () => {
+    const withModel = [
+      { id: 'mock', label: 'Factice', available: true, childModel: true },
+      { id: 'opencode', label: 'OpenCode', available: true }
+    ] as ProfileSummary[]
+    vi.mocked(window.api.conversations.view).mockResolvedValue({
+      snapshot: {
+        controls: [
+          {
+            id: 'model',
+            name: 'Modèle',
+            category: 'model',
+            type: 'select',
+            currentValue: 'grand',
+            options: [
+              { value: 'petit', name: 'Petit' },
+              { value: 'grand', name: 'Grand' }
+            ]
+          }
+        ]
+      }
+    } as never)
+    render(<ChildDialog mother={mother} profiles={withModel} onClose={vi.fn()} />)
+    await waitFor(() => expect(screen.getByTestId('child-model')).toBeTruthy())
+    expect((screen.getByTestId('child-agent') as HTMLSelectElement).value).toBe('mock')
+    expect((screen.getByTestId('child-model') as HTMLSelectElement).value).toBe('grand')
+    fireEvent.change(screen.getByTestId('child-prompt'), { target: { value: 'Écris l’API' } })
+    await act(async () => answer(at()))
+    await act(async () => void fireEvent.click(screen.getByTestId('child-launch')))
+    expect(startChild).toHaveBeenCalledWith('m', {
+      text: 'Écris l’API',
+      model: { controlId: 'model', value: 'grand' }
+    })
+  })
+})

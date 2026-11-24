@@ -114,17 +114,23 @@ export function day(name) {
      * propre et affichage cohérent. Une exception arrête la journée (l'état suivant n'aurait plus
      * de sens), comme dans toutes les suites.
      */
-    async step(label, fn, { allow = [], closing = false } = {}) {
+    async step(label, fn, { allow = [], closing = false, trace } = {}) {
       n++
       console.log(`  · ${name} ${n}. ${label}`)
       await fn()
       const errors = await journal(allow, closing)
       const problems = closing ? [] : await coherent()
+      const failed = errors.length > 0 || problems.length > 0
+      // `trace` : relevé de diagnostic, lu et montré seulement en cas d'échec.
+      const traced =
+        failed && trace ? await trace().catch((e) => [`trace illisible : ${e.message}`]) : []
       check(
-        errors.length === 0 && problems.length === 0,
+        !failed,
         `${name} ${n}. ${label} : journal propre, affichage cohérent${
           errors.length ? `\n      journal : ${errors.join('\n      ')}` : ''
-        }${problems.length ? `\n      écarts : ${problems.join(' ; ')}` : ''}`
+        }${problems.length ? `\n      écarts : ${problems.join(' ; ')}` : ''}${
+          traced.length ? `\n      trace :\n        ${traced.join('\n        ')}` : ''
+        }`
       )
     }
   }
@@ -150,6 +156,16 @@ export function project(prefix) {
   git(dir, 'config', 'user.email', 'e2e@example.invalid')
   return dir
 }
+
+/**
+ * L'état attendu arrive-t-il dans le délai ? `true` ou `false`, sans lever : la vérification qui suit
+ * dit alors ce qui manque (au lieu d'une attente échouée sans rapport avec ce que l'étape garantit).
+ */
+export const eventually = (ui, expression, ms = 10000) =>
+  ui.waitFor(expression, ms).then(
+    () => true,
+    () => false
+  )
 
 /** Lignes de la barre latérale. */
 export const ROWS = `[...document.querySelectorAll('[data-testid=history-item]')]`
@@ -222,5 +238,54 @@ export async function quitApp(main, mainPort) {
     )
     if (!alive) return
     await sleep(150)
+  }
+}
+
+/**
+ * Relevé, dans le main, de l'ordre des échanges IPC autour d'une conversation (diagnostic, fiche
+ * 277) : appels reçus du renderer (`invoke`, avec leur canal) qui la nomment, et ce que le main
+ * pousse aux fenêtres (`conversations:changed` : active, présente ou non ; `agent:event` qui la
+ * concernent). Posé avant l'étape ; `read()` rend les lignes, horodatées en ms depuis la pose.
+ */
+export async function ipcTrace(main, conversationId) {
+  const id = JSON.stringify(conversationId)
+  await main.evaluate(`(() => {
+    const { ipcMain, BrowserWindow } = require('electron')
+    const id = ${id}
+    const t0 = Date.now()
+    const lines = (globalThis.__ipcTrace = [])
+    const note = (line) => lines.length < 300 && lines.push('+' + (Date.now() - t0) + ' ms ' + line)
+    const handlers = ipcMain._invokeHandlers
+    if (!handlers) { note('ipcMain._invokeHandlers absent : appels non relevés') }
+    else for (const [channel, handler] of handlers) {
+      handlers.set(channel, async (event, ...args) => {
+        const named = args.some((a) => a === id)
+        if (named) note('reçu ' + channel + ' (fenêtre ' + event.sender.id + ')')
+        try {
+          const value = await handler(event, ...args)
+          if (named) note('rendu ' + channel)
+          return value
+        } catch (error) {
+          if (named) note('échec ' + channel + ' : ' + String(error?.message ?? error).slice(0, 80))
+          throw error
+        }
+      })
+    }
+    for (const win of BrowserWindow.getAllWindows()) {
+      const contents = win.webContents
+      const send = contents.send.bind(contents)
+      contents.send = (channel, payload, ...rest) => {
+        if (channel === 'conversations:changed')
+          note('poussé ' + channel + ' à ' + contents.id + ' : active ' + String(payload?.activeId).slice(0, 8) + (payload?.conversations?.some((c) => c.id === id) ? ', présente' : ', absente'))
+        else if (channel === 'agent:event' && payload?.conversationId === id)
+          note('poussé agent:event à ' + contents.id + ' : ' + payload.event?.type + (payload.event?.snapshot?.status ? ' ' + payload.event.snapshot.status : ''))
+        return send(channel, payload, ...rest)
+      }
+    }
+    return true
+  })()`)
+  return {
+    read: async () =>
+      JSON.parse((await main.evaluate(`JSON.stringify(globalThis.__ipcTrace ?? [])`)) ?? '[]')
   }
 }

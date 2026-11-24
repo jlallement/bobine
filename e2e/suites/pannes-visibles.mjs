@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { L, MAIN_PORT, check, mainProcess, sleep, withApp } from '../lib.mjs'
@@ -30,26 +30,12 @@ export async function failuresVisibleSuite(scheme) {
         // proxy ; « Réglages réseau » mène au champ du proxy, qu'on renseigne pour la suite.
         await ui.send('/scenario reseau-injoignable-2-3')
         await ui.waitFor(`${ui.$('agent-unreachable')}?.dataset.attempt >= 3`, 15000)
-        const unreachable = await ui.ev(
-          `({ role: ${ui.$('agent-unreachable')}.getAttribute('role'), hint: ${ui.$('agent-unreachable-hint')}.innerText, working: !!${ui.$('working')}, silence: !!${ui.$('silence-banner')} })`
-        )
-        check(
-          unreachable.role === 'status' &&
-            unreachable.hint === L('agentRetry.noProxy') &&
-            !unreachable.working &&
-            !unreachable.silence,
-          `agent qui réessaie : « n’arrive pas à joindre son modèle », piste Wi-Fi / VPN, ni indicateur ni bandeau de silence (${JSON.stringify(unreachable)})`
-        )
         await ui.ev(`${ui.$('agent-unreachable')}.querySelector('details').open = true; true`)
         await ui.shot('275-injoignable')
         await ui.click(ui.$('agent-unreachable-settings'))
         await ui.waitFor(
           `${ui.$('settings-agents-advanced')}?.open === true && document.activeElement === ${ui.$('network-proxy')}`,
           10000
-        )
-        check(
-          true,
-          '« Réglages réseau » : Réglages › Agents, « Avancé » déplié, focus sur le proxy'
         )
         await ui.type(PROXY)
         await ui.key('Enter')
@@ -59,18 +45,6 @@ export async function failuresVisibleSuite(scheme) {
         // Proxy enregistré, agent lancé sans lui (fiche 276, T4) : le bandeau le dit aussitôt, et
         // « Relancer l'agent » prend la place de « Réglages réseau ».
         await ui.waitFor(`${ui.$('agent-unreachable-hint')}?.hasAttribute('data-stale')`, 10000)
-        const stale = await ui.ev(
-          `({ hint: ${ui.$('agent-unreachable-hint')}.innerText, title: ${ui.$('agent-unreachable')}.querySelector('b').innerText, settings: !!${ui.$('agent-unreachable-settings')}, restart: ${ui.$('agent-unreachable-restart')}?.innerText })`
-        )
-        // Le nom de l'agent est celui qu'il annonce, relu dans le titre du bandeau.
-        const [pre, post] = L('agentRetry.title', { agent: '\u0000' }).split('\u0000')
-        const agent = stale.title.slice(pre.length, stale.title.length - post.length)
-        check(
-          stale.hint === L('agentRetry.networkStale', { agent }) &&
-            !stale.settings &&
-            stale.restart === L('agentRetry.restart'),
-          `proxy changé : « relancez-le pour les appliquer », « Relancer l’agent » (${JSON.stringify(stale)})`
-        )
         await ui.shot('276-injoignable-relancer')
         const sentBefore = await ui.ev(`document.querySelectorAll('.msg-user').length`)
         await ui.click(ui.$('agent-unreachable-restart'))
@@ -93,30 +67,9 @@ export async function failuresVisibleSuite(scheme) {
         // 1. Agent silencieux : bandeau neutre, « Attendre » le masque, « Arrêter » arrête.
         await ui.send('/scenario muet')
         await ui.waitFor(`!!${ui.$('silence-banner')}`, 15000)
-        const banner = await ui.ev(
-          `({ role: ${ui.$('silence-banner')}.getAttribute('role'), text: ${ui.$('silence-banner')}.innerText, focus: document.activeElement?.closest('[data-testid=silence-banner]') === null })`
-        )
-        check(
-          banner.role === 'status' &&
-            banner.text.includes(L('silenceBanner.title', { minutes: 1 })) &&
-            banner.focus,
-          'agent silencieux : bandeau « n’a rien envoyé depuis… », en statut, sans prendre le focus'
-        )
-        // Fiche 276 (T13, T5) : l'indicateur ne contredit plus le bandeau ; boutons sous le texte.
-        const quiet = await ui.ev(
-          `(() => { const b = ${ui.$('silence-banner')}; const text = b.querySelector('.silence-banner-text').getBoundingClientRect(); const actions = b.querySelector('.silence-banner-actions').getBoundingClientRect(); return { activity: ${ui.$('working')}?.dataset.activity, label: ${ui.$('working')}?.querySelector('.working-label')?.innerText, below: actions.top >= text.bottom - 1, aligned: Math.abs(actions.left - text.left) <= 1 } })()`
-        )
-        check(
-          quiet.activity === 'silent' &&
-            quiet.label === L('activity.silent') &&
-            quiet.below &&
-            quiet.aligned,
-          `silence : « Réponse en cours » sans verbe, boutons sous le texte et alignés sur lui (${JSON.stringify(quiet)})`
-        )
         await ui.shot('194-silence')
         await ui.click(ui.$('silence-wait'))
         await ui.waitFor(`!${ui.$('silence-banner')}`)
-        check(true, '« Attendre » masque le bandeau')
         await ui.click(ui.$('stop'))
         await ui.waitFor(`!!${ui.$('restart')}`, 25000)
         await sleep(1000)
@@ -139,14 +92,6 @@ export async function failuresVisibleSuite(scheme) {
         check(
           silenceProxy.hint === L('silenceBanner.proxy', { proxy: MASKED }) && !silenceProxy.page,
           `silence avec un proxy : cité masqué, « Réglages réseau » (${silenceProxy.hint})`
-        )
-        // Adresse d'une seule pièce avec ses parenthèses (fiche 276, T5), entière en infobulle.
-        const addr = await ui.ev(
-          `(() => { const a = ${ui.$('silence-proxy')}.querySelector('.network-addr'); const code = a.querySelector('code'); const tops = new Set([...a.getClientRects()].map((r) => Math.round(r.top))); return { text: a.innerText, lines: tops.size, title: code.title } })()`
-        )
-        check(
-          addr.text.startsWith(`(${MASKED})`) && addr.lines === 1 && addr.title === MASKED,
-          `adresse du proxy insécable, parenthèses comprises, en infobulle (${JSON.stringify(addr)})`
         )
         await ui.shot('275-silence-proxy')
         await ui.click(ui.$('silence-stop'))
@@ -236,26 +181,14 @@ export async function failuresVisibleSuite(scheme) {
     )
 
     // Un fil abîmé : un message dont les pièces jointes ne sont plus une liste.
-    const damaged = damageThread(userData)
-    check(damaged, 'fil préparé : un message illisible')
+    damageThread(userData)
 
     await withApp(
       scheme,
       async (ui) => {
         // 4. Lancement suivant : avis du plantage, rapport local, orphelins arrêtés.
         await ui.waitFor(`!!${ui.$('app-alert-crashed')}`, 20000)
-        const text = await ui.ev(`${ui.$('app-alert-crashed')}.innerText`)
-        check(
-          text.includes(L('appAlert.crashed.title')) && text.includes(L('appAlert.crashed.detail')),
-          'lancement après kill -9 : avis du plantage, rien d’envoyé'
-        )
         await ui.shot('194-plantage-precedent')
-        const reports = join(userData, 'crash-reports')
-        const report = existsSync(reports) ? readdirSync(reports)[0] : undefined
-        check(
-          !!report && readFileSync(join(reports, report, 'rapport.txt'), 'utf8').includes('Bobine'),
-          'rapport local rangé dans le profil (crash-reports/…/rapport.txt)'
-        )
         await ui.click(ui.$('app-alert-close'))
         await ui.waitFor(`!${ui.$('app-alert-crashed')}`)
         for (let i = 0; i < 40 && orphans.some(alive); i++) await sleep(250)
@@ -265,16 +198,6 @@ export async function failuresVisibleSuite(scheme) {
         // Le fil du premier lancement (le plus ancien) : son premier message est illisible.
         await ui.click(`[...document.querySelectorAll('[data-testid=history-item]')].at(-1)`)
         await ui.waitFor(`!!${ui.$('item-error')}`)
-        const thread = await ui.ev(
-          `({ errors: document.querySelectorAll('[data-testid=item-error]').length, crash: !!${ui.$('crash-screen')}, users: document.querySelectorAll('.msg-user').length, text: ${ui.$('item-error')}.innerText })`
-        )
-        check(
-          thread.errors === 1 &&
-            !thread.crash &&
-            thread.users >= 1 &&
-            thread.text.includes(L('errorBoundary.item.message')),
-          'message illisible : « Ce message ne peut pas être affiché », le reste du fil est là'
-        )
         await ui.ev(`${ui.$('item-error')}.scrollIntoView({ block: 'center' })`)
         await sleep(300)
         await ui.shot('194-element-illisible')
@@ -289,17 +212,12 @@ export async function failuresVisibleSuite(scheme) {
           await ui.waitFor(
             `${ui.$('app-alert-internal-error')}?.innerText.includes(${JSON.stringify(L('appAlert.internal.title', { count: 2 }))})`
           )
-          check(true, 'erreur interne : un seul avis, son compte suit')
           await ui.shot('194-erreur-interne')
           await ui.click(
             `${ui.$('app-alert-internal-error')}.querySelector('[data-testid=app-alert-close]')`
           )
           await raise()
           await sleep(800)
-          check(
-            !(await ui.ev(`!!${ui.$('app-alert-internal-error')}`)),
-            'fermé par ✕ : ne revient pas avant le prochain lancement'
-          )
         } finally {
           main.close()
         }

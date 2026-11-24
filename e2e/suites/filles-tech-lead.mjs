@@ -2,10 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, check, sleep, withApp, M } from '../lib.mjs'
-
-/** Raison donnée par le scénario `filles-tech-lead` pour son choix de modèle. */
-const WHY = 'import délicat, modèle précis'
+import { L, check, sleep, withApp } from '../lib.mjs'
 
 /**
  * La mère tech lead (fiche 160), dans un dépôt git jetable. Scénario `filles-tech-lead` : un agent
@@ -51,22 +48,8 @@ export async function fillesTechLeadSuite(scheme) {
         await ui.send('Ajoute l’import CSV')
         await ui.waitFor(`!!${pending}`, 30000)
         const mother = await activeId()
-        check(
-          (await ui.ev(`document.body.innerText`)).includes('Unknown agent "agent-inconnu"'),
-          'start_child : agent inconnu refusé avec la liste des agents, sans carte'
-        )
-        check(
-          (await ui.ev(`${pending}.querySelector('[data-testid=proposal-why]')?.innerText`)) ===
-            `${L('children.proposals.proposed', { choice: M('Factice précis') })} — ${WHY}`,
-          'carte : modèle proposé par la mère et sa raison'
-        )
         // Suggestion : sélecteurs ouverts d'emblée, à confirmer ou changer.
         await ui.waitFor(`!!${ui.$('proposal-model')}`)
-        check(
-          (await ui.ev(`${ui.$('proposal-agent')}.value`)) === 'mock' &&
-            (await ui.ev(`${ui.$('proposal-model')}.value`)) === 'factice-precis',
-          'carte : agent de la mère et modèle proposé présélectionnés'
-        )
         await ui.shot('filles-tech-lead-1-proposition')
         // « Lancer » armé une fois le dossier de la mère lu (fiches 240, 262).
         await ui.waitFor(
@@ -86,24 +69,9 @@ export async function fillesTechLeadSuite(scheme) {
         )
         await ui.waitFor(`document.body.innerText.includes('à toi de la fusionner')`, 30000)
         await ui.ready()
-        check(
-          !(await ui.ev(`!!${ui.$('child-recommendation')}`)) &&
-            !(await ui.ev(`!!${ui.$('child-instruction')}`)) &&
-            !(await ui.ev(`!!${ui.$('subtasks')}`)) &&
-            !(await ui.ev(`!!${ui.$('child-report')}`)),
-          'carte de groupe : ni « Sous-tâches », ni compte rendu, ni recommandation ou consigne séparées'
-        )
         await ui.reveal(`${row}.querySelector('[data-testid=work-row-toggle]')`)
         await ui.click(`${row}.querySelector('[data-testid=work-row-toggle]')`)
         await ui.waitFor(`!!${row}.querySelector('[data-testid=work-note]')`)
-        check(
-          (
-            await ui.ev(`${row}.querySelector('[data-testid=work-note-text]').textContent`)
-          ).includes('Il manque un test du séparateur') &&
-            (await ui.ev(`${row}.innerText`)).includes('Correction faite'),
-          'la correction (message_child) dans la carte du travail, puis sa réponse'
-        )
-        check(git(workspace, 'rev-list', '--count', 'main') === '1', 'rien de fusionné par l’agent')
 
         // Un second travail, lancé à la main (« Lancer en parallèle… ») : sa propre carte.
         await ui.ev(
@@ -156,61 +124,6 @@ export async function fillesTechLeadSuite(scheme) {
       },
       undefined,
       'filles-tech-lead',
-      env
-    )
-
-    await withApp(
-      scheme,
-      async (ui) => {
-        await ui.ready()
-        const pending = `document.querySelector('[data-testid=proposal-row][data-outcome=pending] [data-testid=proposal-start]')`
-        await ui.send('Fais le relevé')
-        await ui.waitFor(`!!${pending}`, 30000)
-        // « Lancer » armé une fois le dossier de la mère lu (fiches 240, 262).
-        await ui.waitFor(`!${pending}.disabled`, 30000)
-        await ui.click(pending)
-        await ui.waitFor(`(document.body.innerText).includes('Compte rendu borné')`, 90000)
-        // Fiche 247 (D11) : le compte rendu coupé dit comment lire la suite ; la mère la lit.
-        // Phrase entière (le texte arrive en flux) : l'une des trois issues du scénario.
-        await ui.waitFor(
-          `/MARQUEUR-FIN-DE-REPONSE\\.|Suite introuvable par child_status\\.|Rien ne dit comment lire la suite\\./.test(document.body.innerText)`,
-          30000
-        )
-        check(
-          await ui.ev(
-            `document.body.innerText.includes('Suite lue par child_status : réponse entière, jusqu’à MARQUEUR-FIN-DE-REPONSE.')`
-          ),
-          'fille bavarde : la mère lit la réponse entière par child_status, comme le compte rendu l’y invite'
-        )
-        // Tour fini (son pied « Terminé » arrive après le texte et fait défiler le fil) et bouton
-        // à l'écran avant le clic : sinon le clic tombait là où le bouton n'était plus (fiche 145).
-        await ui.ready()
-        // La ligne de la carte compte les fichiers ; dépliée, la réponse entière (fiche 264).
-        const bavarde = `document.querySelector('[data-testid=work-row]')`
-        await ui.waitFor(`${bavarde}?.dataset.state === 'replied'`, 30000)
-        await ui.waitFor(
-          `${bavarde}.querySelector('[data-testid=work-row-meta]').innerText.includes(${JSON.stringify(L('workCard.dirty', { count: 30 }))})`,
-          20000
-        )
-        check(
-          (
-            await ui.ev(`${bavarde}.querySelector('[data-testid=work-row-meta]').innerText`)
-          ).includes(L('workCard.dirty', { count: 30 })),
-          'fille bavarde : ses 30 fichiers non commités dits sur sa ligne (rien à fusionner encore)'
-        )
-        await ui.reveal(`${bavarde}.querySelector('[data-testid=work-row-toggle]')`)
-        await ui.click(`${bavarde}.querySelector('[data-testid=work-row-toggle]')`)
-        await ui.waitFor(`!!${bavarde}.querySelector('[data-testid=work-body]')?.innerText`)
-        check(
-          (await ui.ev(`${bavarde}.querySelector('[data-testid=work-body]').innerText`)).startsWith(
-            'Récapitulatif'
-          ),
-          'fille bavarde : sa réponse dans la carte, repliée, commence par le récapitulatif'
-        )
-        await ui.shot('filles-tech-lead-5-bavarde')
-      },
-      undefined,
-      'filles-bavarde',
       env
     )
   } finally {

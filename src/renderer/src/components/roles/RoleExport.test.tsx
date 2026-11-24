@@ -162,6 +162,14 @@ describe('« Installer dans… » (fiche 223, phase 4)', () => {
     await waitFor(() => expect(calls['exportRemove']).toHaveBeenCalledWith('k1', true))
   })
 
+  it('rôle jamais installé : aucune ligne d’état, le bouton seul', async () => {
+    // Remplace l'e2e `roles-export` n° 1.
+    render(<Page />)
+    await waitFor(() => expect(calls['exportStatus']).toHaveBeenCalled())
+    expect(screen.getByTestId('role-export-button')).toBeTruthy()
+    expect(screen.queryByTestId('role-export-rows')).toBeNull()
+  })
+
   it('modifications non enregistrées : bouton désactivé', () => {
     render(<Page dirty />)
     expect((screen.getByTestId('role-export-button') as HTMLButtonElement).disabled).toBe(true)

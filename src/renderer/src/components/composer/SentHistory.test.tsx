@@ -225,6 +225,27 @@ describe('historique de la saisie (fiche 227)', () => {
     expect(screen.queryByTestId('command-menu')).toBeNull()
   })
 
+  // Remplace `e2e/suites/historique-saisie.mjs` n° 6 : ni menu « / » ni menu `@` au rappel.
+  it('un message repris avec « @Libellé » n’ouvre pas le menu des fichiers', () => {
+    const { input, key } = setup()
+    for (let i = 0; i < 3; i++) key('ArrowUp')
+    expect(input.value).toBe('@Rôle parti regarde ça')
+    expect(screen.queryByTestId('file-menu')).toBeNull()
+    expect(screen.queryByTestId('command-menu')).toBeNull()
+  })
+
+  // Remplace `e2e/suites/historique-saisie.mjs` n° 14 : ↓ passe au message suivant, curseur en fin.
+  it('↓ depuis la dernière ligne : le message suivant, le curseur à sa fin', () => {
+    const { input, key, pill } = setup()
+    for (let i = 0; i < 3; i++) key('ArrowUp')
+    expect(pill()).toContain('4/6')
+    key('ArrowDown')
+    expect(input.value).toBe('/compact')
+    expect(pill()).toContain('5/6')
+    expect(input.selectionStart).toBe('/compact'.length)
+    expect(input.selectionEnd).toBe('/compact'.length)
+  })
+
   it('à l’envoi : le texte tapé (la commande, pas sa consigne), jetons et pièces jointes comptés', () => {
     const { input, recordSent, onSend } = setup()
     fireEvent.change(input, { target: { value: '/revue src/panier' } })

@@ -37,14 +37,6 @@ async function subagents(scheme, home) {
       // Bob : autorisation demandée avant de lancer le sous-agent.
       await ui.send('/scenario sous-agent-bob')
       await ui.waitFor(`!!${ui.$('permission')}`)
-      check(
-        (await ui.ev(`${ui.$('permission')}.innerText`)).includes(
-          L('toolCall.permission.question.subagent')
-        ) &&
-          (await ui.ev(`${last}?.dataset.status`)) === 'waiting' &&
-          !(await ui.ev(`${ui.$('subagents')}.contains(${ui.$('permission')})`)),
-        'Bob : « Lancer ce sous-agent ? » sous la carte, avec sa consigne'
-      )
       await ui.shot('g0-sous-agent-autorisation')
       await ui.click(`${ui.$('permission')}.querySelector('[data-kind=allow_once]')`)
       // Pendant qu'il travaille : durée qui défile, coût relu dans la base de Bob.
@@ -59,39 +51,12 @@ async function subagents(scheme, home) {
         running.status !== 'completed' && /^\d+ s/.test(running.meta),
         `Bob : durée et coût du sous-agent pendant qu’il travaille (${running.meta.replace(/\s+/g, ' ')})`
       )
-      // L'indicateur sous le fil dit ce que fait l'agent avec le libellé de la carte (fiche 053).
-      const working = await ui.ev(`${ui.$('working')}?.innerText.replace(/\\s+/g, ' ') ?? ''`)
-      check(
-        working.startsWith(
-          L('activity.subagent', { task: 'Read notes.txt' }).replace(/\s+/g, ' ')
-        ) && /\d+ s$/.test(working),
-        `indicateur : « Sous-agent : … » et sa durée sur une ligne (${working})`
-      )
       await ui.shot('g0-sous-agent-en-cours')
       await ui.waitFor(`${last}?.dataset.status === 'completed'`)
       await ui.waitFor(`(${meta}).includes(${JSON.stringify(bobcoins(0.0058))})`)
       check(true, 'Bob : coût final du sous-agent sur sa ligne')
-      const card = `${last}.closest('[data-testid=subagents]')`
-      const bobCard = await ui.ev(
-        `({ head: ${card}.querySelector('.subagents-head').innerText, row: ${last}.innerText, rows: ${card}.dataset.count })`
-      )
-      check(
-        bobCard.rows === '1' &&
-          bobCard.head.includes(L('toolCall.subagents.title', { count: 1 })) &&
-          bobCard.head.includes(L('toolCall.subagents.done', { count: 1 })) &&
-          bobCard.head.includes(bobcoins(0.0058)) &&
-          /explore\s*Read notes\.txt/.test(bobCard.row),
-        `Bob : carte « Sous-agent · 1 fini », une ligne « explore · consigne » (${bobCard.row.replace(/\s+/g, ' ')})`
-      )
       await ui.click(`${last}.querySelector('summary')`)
       await ui.waitFor(`!!${last}.querySelector('[data-testid=subagent-answer]')`)
-      const bobAnswer = await ui.ev(
-        `${last}.querySelector('[data-testid=subagent-answer]').innerHTML`
-      )
-      check(
-        bobAnswer.includes('<strong>Bobine</strong>') && !bobAnswer.includes('task_result'),
-        'Bob : réponse mise en forme, sans les balises <task_result>'
-      )
       await ui.shot('g1-sous-agent-bob')
       await ui.ready()
 
@@ -108,15 +73,6 @@ async function subagents(scheme, home) {
       // Dépliée : le détail est dans la page même replié, seul `open` dit que le clic a porté.
       await ui.waitFor(`${last}.open`)
       await ui.waitFor(`!!${last}.querySelector('[data-testid=subagent-answer]')`)
-      const details = await ui.ev(
-        `${last}.querySelector('[data-testid=subagent-details]').innerText`
-      )
-      check(
-        details.includes('summarize it in exactly one sentence') &&
-          details.includes('Gribouille') &&
-          !details.includes('<task'),
-        'OpenCode : consigne complète et réponse, sans les balises <task>'
-      )
       // Son travail : la session du sous-agent est rejouée à part (fiche 053). Ses outils sont
       // des cartes eux aussi : on garde la carte du sous-agent.
       const row = `[...document.querySelectorAll('[data-testid=subagent]')].at(-1)`
@@ -143,34 +99,8 @@ async function subagents(scheme, home) {
         `${cards}.length > ${before} && ${oc2}.dataset.subagent === 'explore' && ${oc2}.dataset.status === 'completed'`
       )
       await ui.ready()
-      check(
-        (await ui.lastAgentText()).trim() === 'Résumé : le fichier parle du chat Gribouille.',
-        'OpenCode 2 : seule la réponse de l’agent dans le fil, rien du sous-agent collé'
-      )
-      const inThread = await ui.ev(
-        `[...document.querySelectorAll('[data-testid=tool]')].filter((t) => !t.closest('[data-testid=subagent-work]')).map((t) => t.innerText).join(' | ')`
-      )
-      // Ses outils portent leur libellé lisible (fiche 107), pas le titre brut « glob ».
-      const globLabel = L('toolCall.label.search', { target: '**/notes.txt' })
-      const readLabel = L('toolCall.label.read', { target: 'notes.txt' })
-      check(
-        !/\bglob\b/.test(inThread) && !inThread.includes(globLabel),
-        'OpenCode 2 : ses outils ne sont pas dans le fil'
-      )
       await ui.click(`${oc2}.querySelector('summary')`)
       await ui.waitFor(`!!${oc2}.querySelector('[data-testid=subagent-work]')`)
-      // Les libellés lus d'un bloc (`textContent`) : celui d'un fichier est en morceaux (fiche 203).
-      const live = await ui.ev(
-        `[...${oc2}.querySelectorAll('[data-testid=subagent-work] .tool-title')].map((t) => t.textContent).join(' | ') + ' | ' + ${oc2}.querySelector('[data-testid=subagent-work]').innerText`
-      )
-      const replayButton = await ui.ev(`!!${oc2}.querySelector('[data-testid=subagent-work-show]')`)
-      check(
-        live.includes(globLabel) &&
-          live.includes(readLabel) &&
-          !live.includes('qui aime dormir au soleil') &&
-          !replayButton,
-        'OpenCode 2 : son travail sous la carte, sans le rejouer (sa réponse n’est pas répétée)'
-      )
       await ui.shot('g3-sous-agent-opencode2')
 
       // Sous-agent lancé en arrière-plan (OpenCode 2, fiche 122) : son outil rend la main tout de
@@ -181,25 +111,10 @@ async function subagents(scheme, home) {
       const bg = `[...${cards}].at(-1)`
       await ui.waitFor(`${cards}.length > ${beforeBg} && ${bg}.dataset.subagent === 'general'`)
       await ui.ready()
-      const bgHead = `${bg}.closest('[data-testid=subagents]').querySelector('.subagents-head').innerText`
-      check(
-        (await ui.ev(`${bg}.dataset.status`)) === 'in_progress' &&
-          (await ui.ev(bgHead)).includes(L('toolCall.subagents.running', { count: 1 })),
-        'arrière-plan : « en cours » après la fin du tour, pas « fini, < 1 s »'
-      )
       await ui.shot('g3b-sous-agent-arriere-plan-en-cours')
       await ui.waitFor(`${bg}.dataset.status === 'completed'`, 40_000)
       await ui.click(`${bg}.querySelector('summary')`)
       await ui.waitFor(`!!${bg}.querySelector('[data-testid=subagent-answer]')`)
-      const bgAnswer = await ui.ev(`${bg}.querySelector('[data-testid=subagent-answer]').innerHTML`)
-      check(
-        bgAnswer.includes('<strong>date</strong>') && !bgAnswer.includes('background'),
-        'arrière-plan : fini quand sa session finit, avec sa réponse finale (pas le texte d’attente)'
-      )
-      check(
-        (await ui.ev(bgHead)).includes(L('toolCall.subagents.done', { count: 1 })),
-        'arrière-plan : « 1 fini » dans l’en-tête de la carte'
-      )
       await ui.shot('g3c-sous-agent-arriere-plan-fini')
 
       // Deux sous-agents lancés ensemble (fiche 117) : une seule carte, deux lignes, le total.
@@ -220,21 +135,10 @@ async function subagents(scheme, home) {
       await ui.waitFor(
         `document.querySelectorAll('[data-testid=subagents]').length > ${before2} && (${head}).includes(${JSON.stringify(bobcoins(0.0033))})`
       )
-      const both = await ui.ev(`({ head: ${head}, rows: ${parallel}.dataset.count })`)
-      check(
-        both.rows === '2' &&
-          both.head.includes(L('toolCall.subagents.title', { count: 2 })) &&
-          both.head.includes(L('toolCall.subagents.running', { count: 2 })),
-        `deux sous-agents : une carte, deux lignes, « 2 en cours » et le coût total en direct (${both.head.replace(/\s+/g, ' ')})`
-      )
       await ui.shot('g4-sous-agents-en-cours')
       await ui.waitFor(
         `(${head}).includes(${JSON.stringify(L('toolCall.subagents.done', { count: 1 }))})`
       )
-      const half = await ui.ev(
-        `[...${parallel}.querySelectorAll('[data-testid=subagent]')].map((r) => r.dataset.status).join(' ')`
-      )
-      check(half === 'completed in_progress', `le premier finit d’abord (${half})`)
       await ui.waitFor(
         `(${head}).includes(${JSON.stringify(L('toolCall.subagents.done', { count: 2 }))}) && (${head}).includes(${JSON.stringify(bobcoins(0.0078))})`,
         20_000
@@ -242,12 +146,6 @@ async function subagents(scheme, home) {
       await ui.ready()
       await ui.click(`${parallel}.querySelector('[data-testid=subagent] summary')`)
       await ui.waitFor(`!!${parallel}.querySelector('[data-testid=subagent-answer]')`)
-      check(
-        (
-          await ui.ev(`${parallel}.querySelector('[data-testid=subagent-answer]').innerHTML`)
-        ).includes('<strong>three</strong>'),
-        '« Réponse » déplie la réponse du premier sous-agent, mise en forme'
-      )
       await ui.shot('g5-sous-agents-finis')
     },
     undefined,
@@ -279,15 +177,9 @@ async function backgroundThenMessage(scheme) {
         await ui.ready()
         await ui.send('Et pendant ce temps, dis bonjour')
         await ui.ready()
-        check(
-          (await ui.ev(`${card}.dataset.status`)) === 'in_progress' &&
-            (await ui.ev(`document.querySelectorAll('.msg-user').length`)) === 2,
-          'arrière-plan : un autre message part avant sa fin, la carte est toujours « en cours »'
-        )
         await ui.waitFor(`${card}.dataset.status === 'completed'`, 40_000)
         await ui.click(`${card}.querySelector('summary')`)
         await ui.waitFor(`(${answer}).includes('<strong>date</strong>')`)
-        check(true, 'arrière-plan : fini dans le tour précédent, avec sa réponse finale')
         await ui.ev(`${card}.scrollIntoView({ block: 'center' }), true`)
         await ui.shot('g3d-arriere-plan-fini-apres-un-message')
       },
@@ -327,11 +219,8 @@ async function openCode23(scheme) {
   const userData = mkdtempSync(join(tmpdir(), 'bob-e2e-2-3-'))
   const block = `[...document.querySelectorAll('[data-testid=subagents]')].at(-1)`
   const rows = `[...(${block}?.querySelectorAll('[data-testid=subagent]') ?? [])]`
-  const head = `(${block}?.querySelector('.subagents-head')?.innerText ?? '')`
   const work = (i) =>
     `(${rows}[${i}]?.querySelector('[data-testid=subagent-work]')?.textContent ?? '')`
-  const unfinished = (i) =>
-    `${rows}[${i}]?.querySelectorAll('[data-testid=subagent-work] [data-testid=tool]:is([data-status=pending], [data-status=in_progress])').length ?? -1`
   const answer = (i) =>
     `(${rows}[${i}]?.querySelector('[data-testid=subagent-answer]')?.textContent ?? '')`
   const replies = `[...document.querySelectorAll('.msg-agent')].map((m) => m.innerText)`
@@ -348,39 +237,9 @@ async function openCode23(scheme) {
         await ui.send('/scenario sous-agents-arriere-plan-2-3')
         await ui.waitFor(`${rows}.length === 2`)
         await ui.ready()
-        const running = await ui.ev(`${rows}.map((r) => r.dataset.status).join(' ')`)
-        check(
-          running === 'in_progress in_progress' &&
-            (await ui.ev(head)).includes(L('toolCall.subagents.running', { count: 2 })),
-          `2.3.0 : deux sous-agents « en cours » après la fin du tour (${running})`
-        )
         // Fiche 255 (D1) : le tour ACP est fini, mais le travail continue : « en cours » partout.
         const status = `document.querySelector('[data-testid=agent-status]')?.textContent`
         const summary = `document.querySelector('[data-testid=turn-summary]')`
-        check(
-          (await ui.ev(status)) === L('sidebar.status.background') &&
-            !(await ui.ev(`!!${summary}`)),
-          '2.3.0 (fiche 255) : sous-agents au travail après le tour : pied de la barre « en cours », pas de bilan'
-        )
-        // Fiche 261 (écran F, revue UX) : le pied de la réponse dit « Travaille encore… · N s », dans
-        // son groupe ; le travail après le tour n'est dit qu'une fois (pas d'indicateur en bas).
-        const workingFoot = await ui.ev(`(() => {
-          const foot = [...document.querySelectorAll('[data-testid=turn-working]')].at(-1)
-          const group = [...document.querySelectorAll('.msg-agent-group')].at(-1)
-          return {
-            inGroup: !!foot && !!group?.contains(foot),
-            text: foot?.innerText.replace(/\u00a0/g, ' ') ?? '',
-            indicator: !!document.querySelector('[data-testid=working]')
-          }
-        })()`)
-        check(
-          workingFoot.inGroup &&
-            new RegExp(`^${L('turnSummary.working')} · (\\d+ s|\\d+ min \\d+)$`).test(
-              workingFoot.text
-            ) &&
-            !workingFoot.indicator,
-          `2.3.0 (fiche 261) : « Travaille encore… · N s » sous la réponse, sans indicateur en bas (${JSON.stringify(workingFoot)})`
-        )
         await ui.shot('255-en-cours-apres-le-tour')
         await open(ui, 0)
         await open(ui, 1)
@@ -398,17 +257,7 @@ async function openCode23(scheme) {
         await open(ui, 0)
         await open(ui, 1)
         await ui.waitFor(`${answer(0)}.includes('KANGOUROU') && ${answer(1)}.includes('ZEBRE')`)
-        check(
-          (await ui.ev(`[${unfinished(0)}, ${unfinished(1)}].join(' ')`)) === '0 0' &&
-            !(await ui.ev(answer(0))).includes('background'),
-          '2.3.0 : à leur fin, chacun sa réponse et son travail complet (plus de lecture « en cours »)'
-        )
         await ui.waitFor(`${replies}.at(-1)?.includes('ZEBRE')`, 20_000)
-        const [before, after] = (await ui.ev(replies)).slice(-2)
-        check(
-          !before.includes('ZEBRE') && after.includes('ZEBRE') && !after.includes(before.trim()),
-          '2.3.0 : la réponse du parent hors tour est un message à part, pas collée au précédent'
-        )
         // Fiche 255 : le bilan vient à la fin du travail (quelques secondes de silence après la
         // réponse hors tour), sous cette réponse, et l'agent redit « Prêt ».
         await ui.waitFor(`!!${summary}`, 20_000)
@@ -420,13 +269,6 @@ async function openCode23(scheme) {
             !(await ui.ev(`!!document.querySelector('[data-testid=working]')`)) &&
             (await ui.ev(status)) === L('sidebar.status.ready'),
           '2.3.0 (fiche 255) : le bilan vient à la fin du travail, sous la réponse hors tour ; « Prêt » ensuite'
-        )
-        // Fiche 261 : un seul pied, celui du bilan ; plus de « Travaille encore… ».
-        check(
-          !(await ui.ev(`!!document.querySelector('[data-testid=turn-working]')`)) &&
-            (await ui.ev(`${summary}.querySelectorAll('[data-testid=turn-duration]').length`)) ===
-              1,
-          '2.3.0 (fiche 261) : à la fin, le pied devient le bilan (heure · durée), une seule durée'
         )
         // Le pied de la réponse en vue (revue UX) : le bilan qui a remplacé « Travaille encore… ».
         await ui.ev(`${summary}.scrollIntoView({ block: 'end' }), true`)

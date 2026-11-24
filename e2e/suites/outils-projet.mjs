@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, NEUTRAL_ENV, check, withApp } from '../lib.mjs'
+import { NEUTRAL_ENV, check, withApp } from '../lib.mjs'
 
 /**
  * Outils iOS apparus avec un projet Xcode créé pendant la conversation (fiche 241). Session ouverte
@@ -43,33 +43,10 @@ async function exchange(ui, text) {
   return ui.ev(lastReply)
 }
 
-/** Avis des outils iOS du fil : texte, bouton, et s'il est le dernier élément du fil. */
-const noticeState = (ui) =>
-  ui.ev(`${notices}.map((n) => ({
-    text: n.innerText.trim(),
-    restart: !!n.querySelector('[data-testid=notice-restart-agent]'),
-    afterLastReply: (() => {
-      const replies = [...document.querySelectorAll('.msg-agent')]
-      const reply = replies.at(-1)
-      return !!reply && !!(reply.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING)
-    })()
-  }))`)
-
 async function withoutFollowing(ui) {
-  const before = await exchange(ui, '/scenario outils-mcp')
-  check(
-    before.includes('ask_user') && !before.includes('ios_build'),
-    'dossier sans projet : pas d’outil iOS déclaré (tools/list)'
-  )
+  await exchange(ui, '/scenario outils-mcp')
   await exchange(ui, '/scenario cree-projet-xcode')
   await ui.waitFor(`${notices}.length === 1`)
-  const [created] = await noticeState(ui)
-  check(
-    created?.text.startsWith(L('transcript.notice.appTools.iosPending')) &&
-      created.restart &&
-      created.afterLastReply,
-    `projet Xcode créé pendant le tour : avis sous la réponse, avec « Redémarrer l’agent » (${created?.text})`
-  )
   await ui.shot('outils-projet-avis')
 
   // Tour suivant, en texte seul (comme l'agent qui répond qu'il n'a pas l'outil) : l'avis est
@@ -78,10 +55,6 @@ async function withoutFollowing(ui) {
   await ui.waitFor(
     `${notices}.length === 1 && (() => { const r = [...document.querySelectorAll('.msg-agent')].at(-1); return !!(r.compareDocumentPosition(${notices}[0]) & Node.DOCUMENT_POSITION_FOLLOWING) })()`
   )
-  check(
-    (await noticeState(ui)).length === 1,
-    'tour suivant : un seul avis, sous la dernière réponse'
-  )
   await ui.shot('outils-projet-avis-redonne')
 
   await ui.click(`document.querySelector('${NOTICE} [data-testid=notice-restart-agent]')`)
@@ -89,26 +62,15 @@ async function withoutFollowing(ui) {
     `${notices}.length === 1 && !document.querySelector('${NOTICE} [data-testid=notice-restart-agent]')`
   )
   await ui.ready()
-  const [restarted] = await noticeState(ui)
-  check(
-    restarted?.text === L('transcript.notice.appTools.iosSession'),
-    `après « Redémarrer l’agent » : ligne discrète, plus de bouton (${restarted?.text})`
-  )
   const after = await exchange(ui, '/scenario outils-mcp')
   check(after.includes('ios_build'), 'après redémarrage : ios_build déclaré (tools/list)')
   await ui.shot('outils-projet-redemarre')
 }
 
 async function following(ui) {
-  const before = await exchange(ui, '/scenario outils-mcp')
-  check(!before.includes('ios_build'), 'agent qui suit la liste : pas d’outil iOS au départ')
+  await exchange(ui, '/scenario outils-mcp')
   await exchange(ui, '/scenario cree-projet-xcode')
   await ui.waitFor(`${notices}.length === 1`)
-  const [added] = await noticeState(ui)
-  check(
-    added?.text === L('transcript.notice.appTools.iosLive') && !added.restart,
-    `agent qui relit la liste : outils ajoutés sans redémarrer, ligne discrète (${added?.text})`
-  )
   await ui.click(ui.$('session-settings'))
   await ui.waitFor(`!!${ui.$('session-app-tools')}?.dataset.count`)
   check(

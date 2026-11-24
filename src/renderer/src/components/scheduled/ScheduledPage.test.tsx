@@ -169,6 +169,30 @@ describe('astuce « Planifier… » (fiche 191)', () => {
     )
   })
 
+  // Remplace `e2e/suites/astuces.mjs` n° 12 : « Annuler » d'une tâche préremplie par l'astuce.
+  it('tâche préremplie par l’astuce : « Annuler » ferme le formulaire, rien d’enregistré, retour à la conversation', async () => {
+    const tips = {
+      current: null,
+      offer: vi.fn(),
+      close: vi.fn(),
+      never: vi.fn(),
+      used: vi.fn(),
+      plan: { instruction: 'Fais le point sur les PR ouvertes', folder: '/Users/moi/projet' },
+      clearPlan: vi.fn(),
+      leavePlan: vi.fn()
+    }
+    render(
+      <TipsContext.Provider value={tips}>
+        <ScheduledPage onOpenConversation={vi.fn()} profiles={profiles} defaultProfileId="mock" />
+      </TipsContext.Provider>
+    )
+    await screen.findByTestId('scheduled-instruction')
+    fireEvent.click(screen.getByTestId('scheduled-cancel'))
+    expect(screen.queryByTestId('scheduled-instruction')).toBeNull()
+    expect(tips.leavePlan).toHaveBeenCalledTimes(1)
+    expect(api.save).not.toHaveBeenCalled()
+  })
+
   it('nouvelle tâche : dossier de la conversation ouverte prérempli, les récents au menu (fiche 276)', async () => {
     const choose = vi.fn(async () => '/Users/moi/autre')
     window.api = {

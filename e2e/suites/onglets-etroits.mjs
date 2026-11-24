@@ -103,13 +103,6 @@ export async function narrowTabsSuite(scheme) {
         }
         await ui.waitFor(`!!document.querySelector('.side-panel-tab.active[data-tab=changes]')`)
         whole(await rowState(), 'Modifications actif')
-        check(
-          await ui.ev(`(() => {
-            const count = document.querySelector('.side-panel-tab.active[data-tab=changes] .side-panel-tab-count')
-            return !!count && count.getBoundingClientRect().width > 0 && count.textContent.trim() === '12'
-          })()`),
-          `${language} : « 12 » affiché sur l’onglet Modifications`
-        )
 
         // Un clic sur l'icône d'un inactif l'ouvre (le ✕ invisible ne prend pas le clic) : il devient
         // l'actif et aucun onglet n'est fermé.
@@ -174,13 +167,6 @@ export async function narrowTabsSuite(scheme) {
               3000
             )
             .catch(() => {})
-          const after = await rowState()
-          check(
-            after.open === before.open - 1 &&
-              after.active !== target &&
-              after.active === before.active,
-            `${language} : le ✕ de la ligne ${target} dans « + » ferme l’onglet, sans l’ouvrir (${before.open} → ${after.open}, actif ${before.active} → ${after.active})`
-          )
           await ui.key('Escape')
         }
 
@@ -195,19 +181,9 @@ export async function narrowTabsSuite(scheme) {
           const from = await ui.center(`${row}.querySelector('[data-testid=panel-more-tab-close]')`)
           const to = await ui.center(`${ui.$('panel-more-menu')}.querySelector('.menu-label')`)
           await ui.drag(from, to)
-          check(
-            (await rowState()).open === before.open &&
-              (await ui.ev(`!!${ui.$('panel-more-menu')}`)),
-            `${language} : appui sur le ✕ puis glissé ailleurs : rien ne se ferme, le menu reste ouvert`
-          )
           await ui.ev(`(${row}.focus(), true)`)
           await ui.key('Enter')
           await ui.waitFor(`!!document.querySelector('.side-panel-tab.active[data-tab=${target}]')`)
-          const after = await rowState()
-          check(
-            after.active === target && after.open === before.open,
-            `${language} : ↩ sur la ligne ${target} l’ouvre, rien n’est fermé (${before.open} → ${after.open})`
-          )
         }
 
         // Ligne rangée fermée au clavier (⌫) : l'onglet se ferme, le focus reste dans le menu (ou
@@ -222,22 +198,8 @@ export async function narrowTabsSuite(scheme) {
           await ui.waitFor(
             `!${ui.$('panel-more-menu')} || !!document.activeElement?.closest('[data-testid=panel-more-menu]')`
           )
-          check(
-            true,
-            `${language} : ⌫ sur une ligne rangée ferme l’onglet, le focus reste dans le menu`
-          )
           await ui.key('Escape')
         }
-        // Puce de l'agent : forcément en icône à cette largeur, jamais un bout ni un chevron seul.
-        const chip = await ui.ev(`(() => {
-        const chip = document.querySelector('.agent-chip')
-        const icon = chip.querySelector('.agent-chip-icon')
-        return { iconMode: !!chip.closest('[data-agent-icon]'), icon: icon.getBoundingClientRect().width > 0, name: chip.textContent.trim() }
-      })()`)
-        check(
-          chip.iconMode && chip.icon && chip.name.length > 0,
-          `${language}, 280 px : la puce de l’agent est en icône, son nom gardé pour les lecteurs (${JSON.stringify(chip)})`
-        )
         await ui.shot(`185-280-${language}`)
         await ui.viewport()
       }

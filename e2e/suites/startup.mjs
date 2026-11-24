@@ -22,29 +22,10 @@ export async function startupSuite(scheme) {
       scheme,
       async (ui) => {
         await ui.waitFor(`!!${ui.$('blocker-workspace')}`)
-        const card = await ui.ev(`${ui.$('blocker-workspace')}.innerText`)
-        check(
-          card.includes(L('blocker.workspace.title')) &&
-            card.includes(L('blocker.workspace.subtitle')) &&
-            card.includes(L('blocker.workspace.choose')),
-          'premier lancement : « Choisissez le dossier de votre projet », un bouton pour le choisir'
-        )
-        check(
-          await ui.ev(
-            `${ui.$('composer-input')}.disabled && ${ui.$('composer-input')}.placeholder === ${JSON.stringify(L('composer.placeholder.needsFolder'))}`
-          ),
-          'zone de saisie inactive : « Choisissez d’abord un dossier »'
-        )
         check(
           (await ui.ev(`${ui.$('workspace-menu')}.innerText.trim()`)) === L('workspaceMenu.none') &&
             (await ui.ev(`!${ui.$('agent-menu')}.disabled`)),
           'puce du dossier « Choisir un dossier » ; l’agent reste au choix'
-        )
-        check(
-          (await ui.ev(`${ui.$('agent-status')}?.innerText`)) ===
-            L('sidebar.status.needs-action') &&
-            !(await ui.ev(`!!document.querySelector('.status-dot.ready')`)),
-          'aucun agent démarré avant le choix du dossier'
         )
         await ui.shot('44-premier-lancement')
 
@@ -52,21 +33,6 @@ export async function startupSuite(scheme) {
         try {
           // Menu Fenêtre de macOS ; ailleurs, pas de menu Fenêtre (`settings`, fiche 145).
           if (FEATURES.appMenu) {
-            const windowMenu = await main.evaluate(`(() => {
-              const menu = require('electron').Menu.getApplicationMenu()
-              const window = menu.items.find((i) => i.label === ${JSON.stringify(L('menu.window'))})
-              return window.submenu.items.filter((i) => i.type !== 'separator').map((i) => i.label)
-            })()`)
-            check(
-              JSON.stringify(windowMenu) ===
-                JSON.stringify([
-                  L('shortcuts.menu.activity'),
-                  L('menu.minimize'),
-                  L('menu.zoom'),
-                  L('menu.front')
-                ]),
-              `menu Fenêtre traduit : ${windowMenu?.join(', ')}`
-            )
           }
           // Dialogue natif simulé : il rend le dossier du projet.
           await main.evaluate(`(() => {
@@ -79,15 +45,6 @@ export async function startupSuite(scheme) {
         }
         await ui.click(ui.$('choose-workspace'))
         await ui.ready()
-        check(
-          (await ui.ev(`${ui.$('workspace-menu')}.innerText.trim()`)) === basename(project) &&
-            !(await ui.ev(`!!${ui.$('blocker-workspace')}`)),
-          'dossier choisi : l’agent y démarre'
-        )
-        check(
-          JSON.stringify(settings().recentWorkspaces) === JSON.stringify([project]),
-          `dossiers récents : seulement celui choisi (${settings().recentWorkspaces})`
-        )
         await ui.shot('45-dossier-choisi')
       },
       userData,

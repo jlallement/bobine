@@ -67,3 +67,88 @@ describe('polices livrées hors macOS (fiche 145)', () => {
     expect(codeFontCss('Fira Code')).toBe("'Fira Code', var(--font-mono)")
   })
 })
+
+/**
+ * Apparence posée sur la page (fiches 027, 136, 145) : remplace les vérifications de composant
+ * des e2e `settings` (n° 12, 13, 14), `polices` (n° 3, 6, 7) et `fun` (n° 2). Les couleurs que
+ * le CSS donne à chaque `data-palette` et le style calculé restent aux captures.
+ */
+describe('apparence appliquée à la page (fiches 027, 136, 145)', () => {
+  const html = document.documentElement
+  const dark = (on: boolean) =>
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({ matches: on, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
+    )
+  const apply = async (change: Partial<import('@shared/preferences').Preferences>) => {
+    const { DEFAULT_PREFERENCES } = await import('@shared/preferences')
+    const { applyAppearance } = await import('./appearance')
+    applyAppearance({ preferences: { ...DEFAULT_PREFERENCES, ...change } })
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.resetModules()
+    html.removeAttribute('style')
+    delete html.dataset['palette']
+    delete html.dataset['accent']
+  })
+
+  it('Nuit noire en sombre : `data-palette` posé ; l’accent retiré « Comme le Mac » devient l’orange', async () => {
+    dark(true)
+    await apply({ theme: 'dark', darkTheme: 'black', accent: 'system' as never })
+    expect(html.dataset['palette']).toBe('black')
+    expect(html.dataset['accent']).toBe('orange')
+  })
+
+  it('Aurore en clair, Fjord en clair : la palette suit le thème du mode affiché', async () => {
+    dark(false)
+    await apply({ theme: 'light', lightTheme: 'aurora' })
+    expect(html.dataset['palette']).toBe('aurora')
+    await apply({ theme: 'light', lightTheme: 'fjord' })
+    expect(html.dataset['palette']).toBe('fjord')
+    await apply({ theme: 'light', lightTheme: 'light' })
+    expect(html.dataset['palette']).toBe('')
+  })
+
+  it('police et taille du fil : Serif en 14 px', async () => {
+    dark(false)
+    await apply({ conversationFont: 'serif', conversationFontSize: 14 })
+    expect(html.style.getPropertyValue('--conv-font')).toBe('var(--font-serif)')
+    expect(html.style.getPropertyValue('--conv-size')).toBe('14px')
+  })
+
+  it('ligatures du code : coupées par défaut, activées sur demande', async () => {
+    dark(false)
+    await apply({})
+    expect(html.style.getPropertyValue('--code-ligatures')).toBe('none')
+    await apply({ codeLigatures: true })
+    expect(html.style.getPropertyValue('--code-ligatures')).toBe('normal')
+  })
+
+  it('Aurore nuit gardée après le réglage des ligatures (sombre)', async () => {
+    dark(true)
+    await apply({ theme: 'dark', darkTheme: 'auroraNight' })
+    expect(html.dataset['palette']).toBe('auroraNight')
+    await apply({ theme: 'dark', darkTheme: 'auroraNight', codeLigatures: true })
+    expect(html.dataset['palette']).toBe('auroraNight')
+    expect(html.style.getPropertyValue('--code-ligatures')).toBe('normal')
+  })
+})
+
+// Remplace `e2e/suites/touches.mjs` n° 5 : la largeur du fil choisie devient `--column-width`.
+describe('largeur du fil (fiche 027)', () => {
+  it('étroite, normale, large : 640, 740, 960 px', async () => {
+    const { applyAppearance } = await import('./appearance')
+    const { DEFAULT_PREFERENCES } = await import('@shared/preferences')
+    const width = () => document.documentElement.style.getPropertyValue('--column-width')
+    for (const [threadWidth, px] of [
+      ['wide', '960px'],
+      ['narrow', '640px'],
+      ['normal', '740px']
+    ] as const) {
+      applyAppearance({ preferences: { ...DEFAULT_PREFERENCES, threadWidth } })
+      expect(width()).toBe(px)
+    }
+  })
+})

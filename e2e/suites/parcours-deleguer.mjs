@@ -8,6 +8,7 @@ import {
   closeSettings,
   day,
   git,
+  ipcTrace,
   open,
   openSettings,
   project,
@@ -178,17 +179,27 @@ export async function parcoursDeleguerSuite(scheme) {
           )
         })
 
-        await journee.step('supprimer la mère (et ses travaux)', async () => {
-          await trash(ui, MOTHER)
-          await ui.waitFor(`!${row(MOTHER)}`)
-          await ui.waitFor(`!${row('Import CSV')} && !${row('Page d’aide')}`)
-          check(
-            !(await ui.ev(
-              `window.api.conversations.get().then((s) => s.conversations.some((c) => c.id === '${mother}'))`
-            )),
-            'mère et travaux à la corbeille : plus dans la barre latérale'
-          )
-        })
+        // Diagnostic de l'étape 6 (fiche 277, défaut 3), montré seulement en cas d'échec.
+        let deleteTrace
+        await journee.step(
+          'supprimer la mère (et ses travaux)',
+          async () => {
+            deleteTrace = await ipcTrace(main, mother)
+            await trash(ui, MOTHER)
+            await ui.waitFor(`!${row(MOTHER)}`)
+            await ui.waitFor(`!${row('Import CSV')} && !${row('Page d’aide')}`)
+            check(
+              !(await ui.ev(
+                `window.api.conversations.get().then((s) => s.conversations.some((c) => c.id === '${mother}'))`
+              )),
+              'mère et travaux à la corbeille : plus dans la barre latérale'
+            )
+            // Inventaire `restart` n° 4 : la suppression se confirme dans l'app (fiche 026), jamais
+            // par une boîte du navigateur (`confirm()`).
+            check(ui.dialogs.length === 0, 'suppression confirmée dans l’app : aucune boîte native')
+          },
+          { trace: () => deleteTrace?.read() ?? Promise.resolve([]) }
+        )
 
         await journee.step('restaurer la mère depuis la corbeille', async () => {
           await openSettings(ui, 'settings-data')

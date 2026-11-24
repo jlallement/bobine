@@ -1,6 +1,6 @@
 # ADR-0057 — Politique de montée de version
 
-- **Statut** : proposé
+- **Statut** : accepté — point 4 remplacé par ADR-0070
 - **Date** : 2026-11-19
 
 ## Contexte
