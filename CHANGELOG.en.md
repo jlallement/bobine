@@ -11,6 +11,8 @@ What changes for you, version by version. Shown in Settings › About.
 - An existing empty file rewritten by the agent: Changes › Conversation no longer marks it
   “created” (its tool card already said it was edited), and **Revert this change** or **Branch from
   this message** now leave it empty instead of deleting it.
+- Image annotation: **Esc** while typing a text now discards only that text; the annotation stays
+  open (it used to close entirely). Outside text entry, Esc closes it as before.
 
 ## 1.0.0-rc.4 — November 23, 2026
 

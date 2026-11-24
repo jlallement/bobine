@@ -11,6 +11,8 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 - Fichier vide déjà présent, réécrit par l’agent : Modifications › Conversation ne le marque plus
   « créé » (la carte de l’outil disait déjà « Modification »), et **Annuler cette modification**
   ou **Repartir de ce message** le remettent vide au lieu de le supprimer.
+- Annotation d’une image : **Échap** pendant la saisie d’un texte abandonne seulement ce texte ;
+  l’annotation reste ouverte (elle se fermait entièrement). Hors saisie, Échap la ferme comme avant.
 
 ## 1.0.0-rc.4 — 23 novembre 2026
 
