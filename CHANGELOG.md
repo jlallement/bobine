@@ -6,6 +6,8 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ### Corrections
 
+- Linux et Windows : le menu ☰ rouvert par Alt juste après l’avoir fermé reste ouvert ; il se
+  refermait aussitôt, ou restait affiché après un nouvel appui sur Alt.
 - Windows : une tâche planifiée dans un dossier comme `C:\Users\…\projet` s’enregistre et se
   lance ; elle était refusée, ou oubliée à la relecture de la liste.
 - Navigateur intégré : un onglet neuf qui ne finit pas de s’ouvrir ne bloque plus l’agent sans fin ;

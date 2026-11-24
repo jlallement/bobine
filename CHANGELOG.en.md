@@ -6,6 +6,8 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixes
 
+- Linux and Windows: the ☰ menu reopened with Alt right after closing it stays open; it closed
+  again at once, or stayed on screen after the next Alt press.
 - Windows: a scheduled task in a folder such as `C:\Users\…\project` is saved and runs; it was
   refused, or dropped when the list was read back.
 - Built-in browser: a new tab that never finishes opening no longer blocks the agent forever;
