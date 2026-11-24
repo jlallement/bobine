@@ -214,6 +214,46 @@ export async function parcoursDeleguerSuite(scheme) {
           check(true, 'restaurée : de retour dans la barre latérale')
         })
 
+        // Chasse rc.5 (fiche 228) : la liste des orphelins comptait les worktrees des travaux
+        // restaurés, et « Nettoyer » les supprimait avec leur travail non commité.
+        await journee.step(
+          'restaurer puis Nettoyer : le worktree d’un travail restauré n’est ni listé ni supprimé',
+          async () => {
+            const kept = folders['Page d’aide']
+            const draft = join(kept, 'brouillon.md')
+            writeFileSync(draft, 'en cours\n')
+            const branch = git(kept, 'rev-parse', '--abbrev-ref', 'HEAD')
+            await openSettings(ui, 'settings-data')
+            // Liste lue (pendant la recherche, la liste est là, vide) : « Aucun. » ou des lignes.
+            await ui.waitFor(
+              `!!${ui.$('orphans-none')} || !!document.querySelector('[data-testid=orphans] li')`
+            )
+            const listed = await ui.ev(
+              `[...document.querySelectorAll('[data-testid=orphans] [title]')].map((e) => e.title)`
+            )
+            check(
+              Object.values(folders).every((f) => !listed.includes(f)) &&
+                (await ui.ev(`!!${ui.$('orphans-none')}`)),
+              'Worktrees orphelins : ni les travaux restaurés ni celui encore à la corbeille'
+            )
+            await ui.ev(`${ui.$('orphans-none')}.scrollIntoView({ block: 'center' }), true`)
+            await ui.shot('276-deleguer-orphelins')
+            // « Nettoyer » d'une liste périmée : le main revérifie et refuse.
+            const refused = await ui.ev(
+              `window.api.worktree.removeOrphan(${JSON.stringify({ root: workspace, path: kept, branch })}).then(() => '', (e) => String(e.message))`
+            )
+            check(
+              refused.includes(L('worktrees.orphanHeld', { path: kept })) &&
+                existsSync(draft) &&
+                git(workspace, 'branch', '--list', branch) !== '',
+              'Nettoyer refusé par le main : dossier, travail non commité et branche gardés'
+            )
+            await closeSettings(ui)
+          },
+          // Le refus voulu, consigné par le main.
+          { allow: [/worktree:removeOrphan/] }
+        )
+
         await journee.step('rouvrir la mère restaurée et continuer à converser', async () => {
           await open(ui, MOTHER)
           await ui.waitFor(`document.querySelectorAll('.msg-user').length >= 2`)

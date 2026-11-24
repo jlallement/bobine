@@ -984,7 +984,7 @@ async function start(): Promise<void> {
         git: new GitRepo(gitRun),
         commands: { project: projectCommands },
         changes: { git: new GitChangesReader(gitRun), ...fileOpeners() },
-        worktree: worktreeCycleDeps(gitRun, conversations, worktrees, settings, send),
+        worktree: worktreeCycleDeps(gitRun, conversations, worktrees, settings, send, profile),
         childrenMerge: childrenMerger(
           gitRun,
           conversations,

@@ -19,6 +19,7 @@ import {
   type CommitOutcome,
   type MainDirty,
   type MergeOutcome,
+  type OrphanRef,
   type OrphanWorktree,
   prBlockerKey,
   type PrAvailability,
@@ -36,7 +37,7 @@ import {
 } from './forge-resolver'
 import { insideWorkspace, parseStatus, statusOf } from './git'
 import { gitError, gitErrorLine } from './git-errors'
-import { nativeGitPath, samePath } from '../git/git-platform'
+import { nativeGitPath, samePathIn } from '../git/git-platform'
 import { WORKTREES_DIR, type WorktreeInfo } from './worktrees'
 
 /**
@@ -953,7 +954,7 @@ export class WorktreeCycle {
       seen.add(repo)
       for (const entry of await this.worktreeList(repo)) {
         if (!isInside(join(repo, WORKTREES_DIR), entry.path)) continue
-        if ([...known].some((path) => samePath(resolve(path), resolve(entry.path)))) continue
+        if (samePathIn(known, entry.path)) continue
         const branch = entry.branch ?? ''
         const porcelain = await this.gitRun(entry.path, ['status', '--porcelain', '-uall'])
         found.push({
@@ -968,11 +969,17 @@ export class WorktreeCycle {
     return found
   }
 
-  /** Supprime un worktree orphelin et sa branche, quoi qu'il contienne (l'utilisateur l'a demandé). */
-  async removeOrphan(orphan: Pick<OrphanWorktree, 'root' | 'path' | 'branch'>): Promise<void> {
+  /**
+   * Supprime un worktree orphelin et sa branche, quoi qu'il contienne (l'utilisateur l'a demandé).
+   * `held` : les worktrees que des conversations tiennent au moment même (corbeille comprise),
+   * relus par l'appelant ; l'un d'eux est refusé, même désigné par une liste périmée.
+   */
+  async removeOrphan(orphan: OrphanRef, held: ReadonlySet<string>): Promise<void> {
     if (!isInside(join(orphan.root, WORKTREES_DIR), orphan.path)) {
       throw new Error(t('worktrees.outside', { root: WORKTREES_DIR, path: orphan.path }))
     }
+    if (samePathIn(held, orphan.path))
+      throw new Error(t('worktrees.orphanHeld', { path: orphan.path }))
     const removed = await this.gitRun(orphan.root, ['worktree', 'remove', '--force', orphan.path])
     if (removed.code !== 0) await this.exec(orphan.root, ['worktree', 'prune'])
     if (orphan.branch) await this.gitRun(orphan.root, ['branch', '-D', orphan.branch])

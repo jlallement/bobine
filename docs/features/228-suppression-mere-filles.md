@@ -246,3 +246,33 @@ Maquettes validées par Jérôme le 2026-11-15 (gardées hors du dépôt).
   - e2e `filles` : le filtre ne regarde plus deux canaux mais toute erreur « Conversation
     inconnue » (`L('conversations.error.unknown')`, fr ou en) dans la sortie de l'app, sur toute
     la séance gardée (64 Kio glissants), et n'en accepte aucune.
+
+- 2026-11-24 — Chasse avant la rc.5 : **perte de données** par Réglages › Données › Worktrees
+  orphelins (branche `fix/orphelins-corbeille`). Mère et travaux mis à la corbeille, puis restaurés :
+  la liste montrait encore les worktrees des travaux, et « Nettoyer » les supprimait (branche et
+  travail non commité compris) ; le travail restauré ne démarrait plus (« Dossier de travail
+  introuvable »). Causes : (a) les worktrees d'une conversation **à la corbeille** étaient déjà
+  comptés orphelins, alors que la boîte de suppression promet « Leurs worktrees sont gardés » ;
+  (b) `removeOrphan` ne revérifiait rien : une liste périmée (ou un appel direct) supprimait même
+  le worktree d'une conversation de l'historique ; (c) la liste n'était relue qu'au ⟳.
+  Correctifs, côté main d'abord :
+  - `ConversationTrash.worktrees()` : worktrees des conversations de la corbeille, et de celles
+    en route (`incoming`, posé par `TrashLink.put` avant toute attente : aucune fenêtre où la
+    conversation n'est ni dans l'historique ni dans la corbeille). Les canaux `worktree:orphans`
+    et `worktree:removeOrphan` tiennent ces worktrees avec ceux de l'historique
+    (`WorktreeCycleDeps.trashed`, la corbeille de l'app passée par `index.ts`).
+  - `WorktreeCycle.removeOrphan(orphan, held)` : `held` obligatoire, relu par le canal au moment
+    même ; un worktree tenu est refusé (`worktrees.orphanHeld`), rien n'est touché.
+  - Évènement `worktree:orphansChanged` (corbeille : entrée, restauration, effacement, via
+    `ConversationTrash.onChange`) : `OrphanWorktrees` relit sa liste ; un « Nettoyer » refusé dit
+    l'erreur et relit la liste.
+  - Effacée pour de bon (« Effacer définitivement », ou expiration au lancement) : alors seulement
+    son worktree devient orphelin, listé, jamais supprimé d'office — cohérent avec « Leurs
+    worktrees sont gardés ». Texte d'aide de la section ajusté (fr/en).
+  Preuves : `family-delete.test.ts` (« chasse rc.5 » : conversation active, à la corbeille,
+  restaurée, effacée ; vrais canaux, vrai git) — rouge sans le correctif (le worktree d'une
+  conversation **active** était supprimé), vert avec ; `trash.test.ts` (tenus, en route compris,
+  évènements), `worktree-cycle.test.ts` (refus, chemin écrit autrement compris),
+  `worktree-ipc.test.ts`, `OrphanWorktrees.test.tsx` ; e2e `parcours-deleguer`, étape « restaurer
+  puis Nettoyer » (aucun orphelin listé, refus du main, brouillon et branche gardés, capture
+  `276-deleguer-orphelins`).

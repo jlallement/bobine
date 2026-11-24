@@ -1605,7 +1605,7 @@
       },
       "orphans": {
         "label": "Worktrees orphelins",
-        "hint": "Worktrees dont la conversation a été supprimée. « Nettoyer » les efface avec leur contenu.",
+        "hint": "Sans conversation, même dans la corbeille. « Nettoyer » les efface avec leur contenu.",
         "none": "Aucun.",
         "clean": "Nettoyer",
         "cleanLabel": "Nettoyer {{path}}",
@@ -3554,6 +3554,7 @@
     "notRepo": "Ce dossier n’est pas dans un dépôt git.",
     "noCommit": "Le dépôt n’a pas encore de commit : un worktree part d’un commit.",
     "outside": "Worktree hors de {{root}} : {{path}}",
+    "orphanHeld": "Ce worktree sert encore à une conversation (de l’historique ou de la corbeille) : il n’est pas supprimé. {{path}}",
     "lockedWindows": "Un programme garde des fichiers du worktree ouverts (serveur de développement, éditeur, antivirus) : fermez-le, puis réessayez.\n{{error}}",
     "notice": {
       "start": "Worktree créé depuis {{branch}} au commit {{hash}} ({{date}}) : « {{subject}} ».",

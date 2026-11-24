@@ -1567,7 +1567,7 @@ export type FrResources = {
       }
       readonly orphans: {
         readonly label: 'Worktrees orphelins'
-        readonly hint: 'Worktrees dont la conversation a été supprimée. « Nettoyer » les efface avec leur contenu.'
+        readonly hint: 'Sans conversation, même dans la corbeille. « Nettoyer » les efface avec leur contenu.'
         readonly none: 'Aucun.'
         readonly clean: 'Nettoyer'
         readonly cleanLabel: 'Nettoyer {{path}}'
@@ -3397,6 +3397,7 @@ export type FrResources = {
     readonly notRepo: 'Ce dossier n’est pas dans un dépôt git.'
     readonly noCommit: 'Le dépôt n’a pas encore de commit : un worktree part d’un commit.'
     readonly outside: 'Worktree hors de {{root}} : {{path}}'
+    readonly orphanHeld: 'Ce worktree sert encore à une conversation (de l’historique ou de la corbeille) : il n’est pas supprimé. {{path}}'
     readonly lockedWindows: 'Un programme garde des fichiers du worktree ouverts (serveur de développement, éditeur, antivirus) : fermez-le, puis réessayez.\n{{error}}'
     readonly notice: {
       readonly start: 'Worktree créé depuis {{branch}} au commit {{hash}} ({{date}}) : « {{subject}} ».'

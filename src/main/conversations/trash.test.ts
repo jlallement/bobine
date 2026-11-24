@@ -178,3 +178,43 @@ describe('corbeille : relecture (fiches 196, 197)', () => {
     expect(readFileSync(join(trash.dir, 'a.json'), 'utf8')).toBe(text)
   })
 })
+
+describe('corbeille : worktrees gardés (fiche 228, chasse rc.5)', () => {
+  const worktree = (id: string) => ({
+    root: '/depot',
+    path: `/depot/.worktrees/${id}`,
+    branch: `bobine/${id}`,
+    base: 'abc'
+  })
+
+  it('tenus tant qu’elle y est, en route comprise ; effacés : plus tenus ; chaque changement prévenu', async () => {
+    const { dir, trash } = setup()
+    const changes: string[] = []
+    const off = trash.onChange(() => changes.push('changé'))
+    writeFileSync(join(dir, 'a.json'), '{"version":1,"items":[],"nextId":1}')
+    // En route : sortie de l'historique, pas encore écrite dans la corbeille (écriture en vol).
+    let release = () => {}
+    const forget = () => new Promise<void>((resolve) => (release = resolve))
+    const link = new TrashLink(trash, new ConversationStore(dir), { forget })
+    const putting = link.put({ record: { ...record('a'), worktree: worktree('a') } }, false)
+    expect(trash.worktrees()).toEqual([worktree('a')])
+    expect(changes).toEqual([])
+    release()
+    await putting
+    expect(trash.worktrees()).toEqual([worktree('a')])
+    expect(changes).toEqual(['changé'])
+    // Restaurée : la corbeille ne la tient plus (l'historique, si).
+    trash.restore('a', join(dir, 'a.json'))
+    expect(trash.worktrees()).toEqual([])
+    trash.put({ ...record('a'), worktree: worktree('a') }, undefined, join(dir, 'a.json'))
+    trash.put(record('b'), undefined, join(dir, 'b.json'))
+    expect(trash.worktrees()).toEqual([worktree('a')])
+    // Effacée pour de bon : son worktree peut alors devenir orphelin.
+    trash.erase('a')
+    expect(trash.worktrees()).toEqual([])
+    expect(changes).toHaveLength(5)
+    off()
+    trash.erase('b')
+    expect(changes).toHaveLength(5)
+  })
+})

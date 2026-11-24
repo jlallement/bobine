@@ -9,6 +9,8 @@ import { ConfirmRow, useConfirm } from './ConfirmRow'
  * Réglages › Données › Worktrees orphelins (fiches 110, 136) : les worktrees de Bobine dont
  * la conversation a été supprimée sans eux, avec « Nettoyer » (dossier et branche supprimés),
  * confirmé dans la ligne (fiche 126) : c'est une suppression, avec ce qu'ils contiennent.
+ * Relue quand la corbeille change (fiche 228) ; le main refuse de toute façon un worktree qu'une
+ * conversation tient encore, même désigné par une liste périmée.
  */
 export function OrphanWorktrees() {
   const { t } = useTranslation()
@@ -26,7 +28,15 @@ export function OrphanWorktrees() {
       .finally(() => setBusy(null))
   useEffect(() => {
     void load(window.api.worktree.orphans())
+    return window.api.worktree.onOrphansChanged(() => void load(window.api.worktree.orphans()))
   }, [])
+  /** « Nettoyer » refusé (worktree tenu entre-temps) : l'erreur reste dite, la liste est relue. */
+  const clean = (orphan: OrphanWorktree) =>
+    window.api.worktree.removeOrphan(orphan).catch(async (e: unknown) => {
+      const found = await window.api.worktree.orphans().catch(() => orphans ?? [])
+      setOrphans(found)
+      throw e
+    })
   const detail = (orphan: OrphanWorktree) =>
     [
       orphan.dirty > 0 && t('settings.data.orphans.detail_dirty', { count: orphan.dirty }),
@@ -95,7 +105,7 @@ export function OrphanWorktrees() {
                   onConfirm={() => {
                     confirm.done()
                     setBusy(orphan.path)
-                    void load(window.api.worktree.removeOrphan(orphan))
+                    void load(clean(orphan))
                   }}
                   onCancel={confirm.done}
                 />
