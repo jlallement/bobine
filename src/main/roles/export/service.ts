@@ -257,14 +257,35 @@ export class RoleExports {
       mine.find((r) => r.scope === 'project' && workspace && r.workspace === workspace) ??
       mine.find((r) => r.scope === 'user')
     if (!found) return undefined
+    // Sans adaptateur, le fichier ne peut pas être relu : rien n'est garanti, pas de mode natif.
+    const adapter = this.adapterFor(found.format)
+    if (!adapter) return undefined
     const mode = { id: found.id, readOnly: found.readOnly }
+    // Ce que l'agent lira vraiment (revue sécurité, fiche 285) : le fichier relu sur le disque doit
+    // porter l'entrée telle que Bobine l'a écrite, et aucun fichier du projet du même identifiant
+    // ne doit la masquer (un dépôt peut fournir son propre mode, écriture permise).
+    if (!this.onDisk(found, adapter, workspace)) return { ...mode, stale: 'roleChanged' }
     if (!role) return mode
     if (role.readOnly !== found.readOnly) return { ...mode, stale: 'readOnly' }
-    const adapter = this.adapterFor(found.format)
-    if (adapter && adapter.fingerprintOf({ ...role, id: found.id }) !== found.written) {
+    if (adapter.fingerprintOf({ ...role, id: found.id }) !== found.written) {
       return { ...mode, stale: 'roleChanged' }
     }
     return mode
+  }
+
+  /** L'installation est intacte sur le disque, et rien du projet ne la remplace. */
+  private onDisk(
+    record: RoleExportRecord,
+    adapter: RoleExportAdapter,
+    workspace: string | undefined
+  ): boolean {
+    const { locations } = this.options
+    const place = adapter.place(record.scope, record.id, locations, record.workspace)
+    if (this.stateOf(record, adapter, place, undefined) !== 'upToDate') return false
+    if (record.scope !== 'user' || !workspace) return true
+    const project = adapter.place('project', record.id, locations, workspace)
+    const read = readTarget(project.file, project.root, 'project', project.shown)
+    return !('error' in read) && adapter.find(read.text, record.id).kind === 'absent'
   }
 
   private statusOf(record: RoleExportRecord, role?: RoleToExport): RoleExportStatus | undefined {

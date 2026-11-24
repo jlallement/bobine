@@ -22,8 +22,7 @@ import {
 import { rebuttalStance } from '@shared/roundtable-prompts'
 import type { ChildConversations } from '../conversations/children'
 import type { ConversationManager } from '../conversations/manager'
-import { nativeMode } from '../roles/launch'
-import { expectedReadOnly, folderInGit, type ParticipantMode } from './options'
+import { expectedReadOnly, folderInGit, modeHeld, type ParticipantMode } from './options'
 import { StrictModelError } from './strict-model'
 
 /** La place d'un participant : son tour, dans le fil de sa mère, et sa lettre. */
@@ -98,9 +97,7 @@ export class SeatEvents {
     if (expected !== 'native') return expected
     const installed = this.host.participantMode?.(seat.profileId, ref.motherId)
     const controls = this.host.conversations.view(childId).snapshot?.controls ?? []
-    const mode = installed && nativeMode(controls, installed.id)
-    const current = controls.find((c) => c.id === mode?.controlId)?.currentValue
-    if (mode && current === mode.value) return 'native'
+    if (installed && modeHeld(controls, installed.id)) return 'native'
     const inGit = folderInGit(this.host.conversations.view(ref.motherId).summary.workspace)
     return inGit ? 'requested' : 'unverified'
   }

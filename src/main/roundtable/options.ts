@@ -60,9 +60,19 @@ export function expectedReadOnly(
   inGit: boolean,
   installed: InstalledMode | undefined
 ): RoundtableReadOnly {
-  if (!profile?.writesWithoutAsking) return 'enforced'
+  // Profil introuvable : rien ne dit comment l'agent écrit, rien n'est promis.
+  if (!profile) return 'unverified'
+  if (!profile.writesWithoutAsking) return 'enforced'
   if (installed?.readOnly && !installed.stale) return 'native'
   return inGit ? 'requested' : 'unverified'
+}
+
+/**
+ * La session est dans le mode installé `id` : la **valeur** du réglage de mode, jamais son nom (un
+ * mode d'un autre identifiant, fourni par le dépôt, peut porter le même libellé).
+ */
+export function modeHeld(controls: readonly SessionControl[], id: string): boolean {
+  return controls.some((c) => c.category === 'mode' && c.type === 'select' && c.currentValue === id)
 }
 
 interface ModelSource {

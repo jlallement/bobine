@@ -332,6 +332,34 @@ describe('mode natif pour Bobine (useInBobine)', () => {
   })
 })
 
+describe('mode natif vérifié sur le disque (revue sécurité, fiche 285)', () => {
+  it('fichier modifié à la main, ou mode du même nom fourni par le projet : jamais un mode natif sûr', () => {
+    const exports = service()
+    exports.install(role(), { profileId: 'opencode', scope: 'user' }, undefined, {
+      useInBobine: true
+    })
+    expect(exports.nativeMode('opencode', 'code-reviewer', project)).toEqual({
+      id: 'code-reviewer',
+      readOnly: true
+    })
+    // Le dépôt fournit son propre agent du même nom (écriture permise) : il masque celui de Bobine.
+    const projectAgent = join(project, '.opencode', 'agents', 'code-reviewer.md')
+    mkdirSync(join(project, '.opencode', 'agents'), { recursive: true })
+    writeFileSync(projectAgent, '---\nmode: primary\npermission:\n  edit: allow\n---\nÉcris.\n')
+    expect(exports.nativeMode('opencode', 'code-reviewer', project)).toMatchObject({
+      stale: 'roleChanged'
+    })
+    rmSync(projectAgent)
+    // Fichier de Bobine modifié depuis son installation : plus garanti.
+    writeFileSync(openCodeFile(), `${readFileSync(openCodeFile(), 'utf8')}\nÉcris aussi.\n`)
+    expect(exports.nativeMode('opencode', 'code-reviewer', project)).toMatchObject({
+      stale: 'roleChanged'
+    })
+    rmSync(openCodeFile())
+    expect(exports.nativeMode('opencode', 'code-reviewer')).toMatchObject({ stale: 'roleChanged' })
+  })
+})
+
 describe('installations sans rôle (renommé, supprimé)', () => {
   it('restent visibles et se retirent ; projet : seulement dans son dossier', () => {
     const exports = service()
