@@ -131,6 +131,24 @@ describe('Réglages › Agents › Fournisseurs de modèles (fiche 104)', () => 
     expect(document.body.textContent).not.toContain('sk-secret')
   })
 
+  it('clé enregistrée sans trousseau (Linux) : « Enregistrée en clair » et l’avis nomme la variable', async () => {
+    // Remplace l'e2e `providers` n° 2 (cas sans trousseau, fiche 145, D4).
+    api.setKey.mockImplementationOnce(async () => {
+      views = [
+        view(current().providers.map((p) => ({ ...p, keyStored: true, keyPlaintext: true })))
+      ]
+      return views
+    })
+    await renderProviders()
+    fireEvent.click(screen.getByTestId('provider-key'))
+    fireEvent.change(screen.getByTestId('provider-key-value'), { target: { value: 'sk-secret' } })
+    fireEvent.submit(screen.getByTestId('provider-key-form'))
+    await act(async () => {})
+    expect(screen.getByTestId('provider-key-state').textContent).toBe('Enregistrée en clair')
+    expect(screen.getByTestId('provider-key-plaintext').textContent).toContain('LLMAAS_API_KEY')
+    expect(document.body.textContent).not.toContain('sk-secret')
+  })
+
   it('activation, « seulement ces fournisseurs », suppression confirmée dans la ligne (fiche 126)', async () => {
     await renderProviders()
     fireEvent.click(screen.getByTestId('provider-enabled'))
