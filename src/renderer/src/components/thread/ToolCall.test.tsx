@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import i18next from 'i18next'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import type { TranscriptItem } from '@shared/transcript'
 import { ToolCall, WorkspaceContext } from './ToolCall'
@@ -187,5 +188,28 @@ describe('carte d’outil — remplaçants des e2e', () => {
       )
     ].map((e) => e.getAttribute('data-testid') ?? e.className)
     expect(order).toEqual(['command-block', 'permission-risks', 'pc-actions'])
+  })
+
+  it('Stop pendant l’attente : la demande dite « annulée », plus de boutons (base n° 12)', () => {
+    view({
+      kind: 'tool',
+      id: 7,
+      toolCallId: 'c',
+      title: 'Écrire hello.txt',
+      toolKind: 'edit',
+      status: 'pending',
+      content: [],
+      locations: [{ path: `${WS}/hello.txt` }],
+      permission: {
+        requestId: 'p',
+        state: 'cancelled',
+        options: [{ optionId: 'ok', name: 'Allow once', kind: 'allow_once' }]
+      }
+    })
+    expect(screen.getByTestId('tool').textContent).toContain(
+      i18next.t('toolCall.permission.cancelled')
+    )
+    expect(screen.queryByTestId('permission')).toBeNull()
+    expect(screen.queryByRole('button', { name: /Allow once/ })).toBeNull()
   })
 })

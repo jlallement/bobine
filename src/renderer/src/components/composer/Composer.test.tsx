@@ -642,6 +642,34 @@ describe('Composer — remplaçants des e2e', () => {
     expect(t.onSend).not.toHaveBeenCalled()
   })
 
+  it('modèle choisi dans « Réglages de la session » : demandé à l’agent, la puce suit (base n° 14)', async () => {
+    const model = (currentValue: string): AgentSnapshot['controls'] => [
+      {
+        id: 'model',
+        name: 'Modèle',
+        category: 'model',
+        type: 'select',
+        currentValue,
+        options: [
+          { value: 'fast', name: 'Rapide' },
+          { value: 'deep', name: 'Réfléchi' }
+        ]
+      }
+    ]
+    const t = setup({ controls: model('fast') })
+    expect(screen.getByTestId('model-chip').textContent).toContain('Rapide')
+    fireEvent.keyDown(screen.getByTestId('session-settings'), { key: 'Enter' })
+    await act(async () => {})
+    fireEvent.keyDown(screen.getByTestId('control-model'), { key: 'ArrowRight' })
+    await act(async () => {})
+    fireEvent.click(screen.getByTestId('control-model-deep'))
+    expect(t.onSetControl).toHaveBeenCalledWith('model', 'deep')
+    // L'agent confirme : la puce et le menu lisent le même réglage.
+    cleanup()
+    setup({ controls: model('deep') })
+    expect(screen.getByTestId('model-chip').textContent).toContain('Réfléchi')
+  })
+
   it('capture d’écran : l’image est jointe dans la zone de saisie (quick n° 12)', async () => {
     const image = {
       kind: 'image' as const,
