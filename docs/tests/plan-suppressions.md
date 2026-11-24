@@ -9,10 +9,10 @@ vérification y a sa ligne, avec son numéro d'inventaire.
 
 | Étape | État | Réel |
 |---|---|---|
-| 1 — remplaçants Vitest verts | **faite** (2026-11-24, fiche 278) | 118 suites (catalogue : 127 → 118 entrées), 768 lignes d'inventaire restent (1 219 retirées), `check(…)` : 1 970 → 754 |
+| 1 — remplaçants Vitest verts | **faite** (2026-11-24, fiche 279) | 118 suites (catalogue : 127 → 118 entrées), 768 lignes d'inventaire restent (1 219 retirées), `check(…)` : 1 970 → 754 |
 | 2 — journées à confirmer | en attente d'une campagne `e2e.yml` verte | 35 vérifications |
 
-Écarts de l'étape 1 au tableau ci-dessous (détail : fiche 278) : 13 lignes « attente » gardent
+Écarts de l'étape 1 au tableau ci-dessous (détail : fiche 279) : 13 lignes « attente » gardent
 leur `waitFor` (pas de `check` à elles) ; l'entrée `usage` du catalogue est partie aussi (sa
 fonction ne vérifiait plus rien) ; les rendus du risque 2 sont mesurés par `affirm`. Durée de
 la suite complète, estimée d'après les durées du 2026-11-23 : 74 min de temps machine avant,

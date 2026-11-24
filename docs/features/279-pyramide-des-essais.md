@@ -1,4 +1,4 @@
-# 278 — Pyramide des essais remise à l'endroit
+# 279 — Pyramide des essais remise à l'endroit
 
 - **Statut** : en cours — étape 1 faite (2026-11-24), étape 2 en attente d'une campagne `e2e.yml` verte
 - **Dépend de** : 115 (lanceur e2e), 277 (journées types, `e2e/affirm.mjs`), ADR-0069
