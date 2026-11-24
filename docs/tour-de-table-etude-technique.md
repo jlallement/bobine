@@ -7,6 +7,9 @@
 > pour le parcours. Décision structurante : brouillon `docs/adr/0072-tour-de-table.md` (proposé).
 > Alignée le 2026-11-24 sur les maquettes finales (`docs/maquettes/1.2-tour-de-table-v2.html`) et
 > sur les décisions D1 à D4 de la fiche (anciennes questions ouvertes).
+> Lot 0 (observations sur OpenCode 2.3.0 et Bob 2.1.0) fait le 2026-11-24 :
+> [`recettes/2026-11-24-tour-de-table-lot0.md`](recettes/2026-11-24-tour-de-table-lot0.md) ;
+> risques et inconnues mis à jour (§ 3.6, § 3.7).
 
 ## 0. En bref
 
@@ -140,8 +143,12 @@ et de fusion) ne conviennent pas non plus.
 - **`maxLive`** : 6 par défaut, de 2 à 12 (`preferences.ts:246`, `:265`). Limite **souple** : une fille
   en cours ou une mère qui attend n'est jamais mise en veille (`manager.ts:1356-1362`).
 - **Mémoire** : environ 300 Mo par agent vivant, mesurés pour Bob 2.0.6 et OpenCode 2.0.32 (fiche
-  102, § Mesure). Un tour à 5 participants, avec sa mère, garde donc 6 agents vivants, soit environ
-  **1,8 Go**, et met en veille les autres conversations au repos.
+  102, § Mesure). **Lot 0** ([rapport](recettes/2026-11-24-tour-de-table-lot0.md), O12 et B6) :
+  Bob 2.1.0 ≈ 230 Mo d'empreinte physique (RSS 285 Mo), mais OpenCode 2.3.0 lance **deux
+  processus** par agent (`opencode acp` et `opencode serve --stdio`), ≈ 360 Mo d'empreinte
+  (RSS ≈ 650 Mo). Un tour à 5 participants OpenCode, avec une mère OpenCode, garde donc 6 agents
+  vivants, soit environ **2,2 Go** d'empreinte (≈ 3,9 Go en RSS), hors serveurs de langage d'un vrai
+  projet, et met en veille les autres conversations au repos.
 - **Plafond de coût par conversation** (`conversations/cost-cap.ts`, ADR-0035), désactivé par
   défaut (`shared/preferences.ts:248`). Son fonctionnement avec les filles, et donc avec le tour de
   table, est détaillé au § 2.6.
@@ -209,7 +216,7 @@ Un participant, s'il est une fille, a tout cela sans rien écrire.
 |---|---|---|
 | `maxChildren` | 5 (1–10) | Les participants en cours comptent comme des filles. Un tour à 5 participants demande 5 places libres. Les autres filles en cours de la mère les prennent. |
 | `maxLive` | 6 (2–12) | Limite souple : les participants en cours et la mère qui attend restent vivants (`keepLive`). Les conversations ordinaires au repos sont mises en veille. |
-| Mémoire | environ 300 Mo par agent (fiche 102) | De 3 participants + 1 mère ≈ 1,2 Go à 5 + 1 ≈ 1,8 Go. Ce que le projet ajoute n'est pas compté (serveurs de langage d'OpenCode, MCP de l'utilisateur). |
+| Mémoire | environ 300 Mo par agent (fiche 102) ; OpenCode 2.3.0 ≈ 360 Mo d'empreinte, deux processus (lot 0, O12) | Avec OpenCode : de 3 participants + 1 mère ≈ 1,5 Go à 5 + 1 ≈ 2,2 Go d'empreinte. Ce que le projet ajoute n'est pas compté (serveurs de langage d'OpenCode, MCP de l'utilisateur). |
 | Places du tour | 2 à 5 (décision) | Bornées par `min(5, maxChildren − filles actives)`. **Vérification atomique** : refuser tout le tour s'il manque des places, et le dire sur la ligne du tour de table. Ne jamais lancer 3 participants sur 5. |
 | Une seule génération | `children.error.oneLevel` | Pas de tour de table depuis une conversation fille ; un participant ne peut pas lancer de filles. |
 
@@ -226,12 +233,26 @@ rouvre ensuite (`session/load` ou `resume`, que Bob et OpenCode annoncent) : `de
   modèle par défaut peut changer juste après `session/new` (`config_option_update`) : il faut donc
   vérifier après coup.
 - Pour le tour de table, `applyModel` doit devenir **strict** :
-  - relire `snapshot.controls` après l'appel ;
+  - une erreur de `session/set_config_option` met le participant en erreur, sans repli. OpenCode
+    2.3.0 refuse un modèle inconnu par `-32602` « Invalid params: model not found: <id> » et **garde
+    le modèle précédent** : sans mode strict, le participant répond avec le modèle par défaut (vu au
+    lot 0, O3) ;
+  - relire `snapshot.controls` après l'appel **et après les `config_option_update` qui suivent** :
+    la réponse à un réglage peut porter la valeur précédente quand deux réglages se suivent (lot 0,
+    O5) ; ne poser qu'un réglage de modèle à la fois ;
   - si la valeur courante n'est pas celle demandée, le participant est en erreur « modèle non
     appliqué » **avant** l'envoi de la question.
 
   Sans cela, deux participants peuvent répondre avec le même modèle et la synthèse comparerait un
-  modèle à lui-même.
+  modèle à lui-même. OpenCode ne dit jamais, pendant ou après le tour, quel modèle a répondu (ni
+  `usage`, ni `usage_update`, lot 0, O6) : la vérification ne peut se faire qu'avant l'envoi.
+- **Le catalogue change.** Les modèles gratuits annoncés par OpenCode ont changé entre deux
+  lancements à une minute d'intervalle (cache vide, puis catalogue à jour ; lot 0, O4). Un
+  participant retenu dans les préférences peut donc disparaître : le mode strict le dit au
+  lancement (« modèle introuvable »).
+- **Plusieurs processus.** 3 puis 5 `opencode acp` lancés ensemble dans le même dossier, sur le même
+  stockage, chacun avec son modèle : tous prêts en moins de 0,6 s, aucun conflit ni erreur, les 5
+  réponses obtenues (lot 0, O1).
 
 **Profil sans choix de modèle (Bob)**
 
@@ -613,16 +634,29 @@ Recommandation : un **outil dédié `propose_roundtable`**, pas une extension de
   interrompre (`capDecision` → `ask`, `shared/cost-cap.ts:192`). Un avis de Bob n'est donc jamais
   coupé par le plafond ; seul le message suivant (réplique) est retenu.
 
+**Observé au lot 0** (Bob 2.1.0, [rapport](recettes/2026-11-24-tour-de-table-lot0.md), B1 à B6)
+
+- **Deux `bob acp` en même temps**, même dossier, même `~/.bob` : tous deux prêts en 0,7 s, aucune
+  erreur, `tasks.locked_by` resté vide. Seul partage relevé : un même fichier de journal pour deux
+  processus lancés dans la même seconde.
+- **Coûts par tâche** : une ligne `tasks` par session, coût juste pour chacune, définitif dès la fin
+  du tour ; ≈ 0,07 bobcoin pour une question qui lit un fichier.
+- **Débit** : 4,6 et 4,7 s à deux, 4,66 s seul ; aucune erreur.
+- **Lectures sans autorisation** avec les réglages par défaut (groupe `read` permis) : `glob` et
+  `read` passent sans `session/request_permission`. Un participant Bob ne bloque pas sur des cartes
+  pour lire.
+- **Écriture refusée** : `failed`, « Tool call to write_file was cancelled: Rejected by user »,
+  puis `end_turn` ; rien d'écrit.
+
 **Non observé, rien n'est supposé**
 
-- **Plusieurs `bob acp` en même temps.** Même dossier, même `~/.bob` (base `bob.db`, journaux) : ni
-  verrou ni conflit relevés.
-- **Débit** : la forme d'une limite de débit de la passerelle IBM pour plusieurs tâches simultanées
-  (429 non relevé, `docs/acp.md:260`).
-- **Lectures demandées ou non** en ACP par défaut (groupe `read`) : si Bob demande l'autorisation de
-  lire, un participant Bob passera par des cartes d'autorisation dans son fil, qui ne sont pas
-  refusées (seuls `edit`, `delete`, `move`, `execute` le sont).
-- **Le `-32603` « Server Error »** vu au travail : en attente d'une trace réelle.
+- **Débit** au-delà de deux tâches, et la forme d'une limite de débit de la passerelle IBM (429 non
+  relevé, `docs/acp.md:260`).
+- **Lectures avec le groupe `read` retiré** des réglages de Bob : un participant Bob passerait alors
+  par des cartes d'autorisation dans son fil, qui ne sont pas refusées (seuls `edit`, `delete`,
+  `move`, `execute` le sont).
+- **Le `-32603` « Server Error »** vu au travail : en attente d'une trace réelle (pas survenu au
+  lot 0).
 
 **Scénarios d'agent factice** pour ces comportements : `--sans-options` (pas de modèle), `--cout-bob`
 (coût après coup), `role-ecrit-avec-demande` (écriture refusée), `connexion-expiree-bob`.
@@ -796,36 +830,51 @@ lancés à la main.
 
 ### 3.6 Risques
 
-1. **Lecture seule seulement demandée chez OpenCode.** `writesWithoutAsking` (`profiles.ts:626`)
-   donne le niveau `requested` (`roles/launch.ts:39-46`) : OpenCode peut écrire sans rien demander,
-   et `ReadOnlyWatch` ne le voit qu'après coup, dans un dépôt git seulement. Parades :
-   - poser le mode `plan` s'il est annoncé (le rôle nomme `mode`) ;
-   - mieux, l'agent « participant » installé en lecture seule (`opencode-agents.ts:48`, fiche 223
-     phase 4).
+1. **Lecture seule seulement demandée chez OpenCode.** — **Confirmé** ([lot 0](recettes/2026-11-24-tour-de-table-lot0.md), O8 à O10).
+   `writesWithoutAsking` (`profiles.ts:626`) donne le niveau `requested` (`roles/launch.ts:39-46`) :
+   OpenCode peut écrire sans rien demander, et `ReadOnlyWatch` ne le voit qu'après coup, dans un
+   dépôt git seulement. Observé sur 2.3.0 :
+   - mode par défaut (`build`) : fichier écrit tout de suite, sans demande ;
+   - **mode `plan` : pas une lecture seule.** `write` est refusé hors de son dossier de plans, mais
+     `echo … > note.txt` passe par `shell` sans demande et crée le fichier. **Écarté comme parade** ;
+   - **agent `participant` installé** (format de Bobine, `opencode-agents.ts:48`, `edit`, `shell`,
+     `subagent` refusés) : rien d'écrit même sur demande insistante ; outils d'écriture absents,
+     `execute` (Code Mode) sans accès au disque. Reste `webfetch` (lecture du web). **Seule parade
+     tenue par OpenCode.**
 
-   À vérifier au lot 0. Le dire sur la ligne du participant, comme pour les rôles.
-2. **Modèle non appliqué en silence.** Le repli d'`applyModel` (`children-review.ts:821-828`), plus
-   OpenCode qui change de modèle juste après `session/new` (`docs/acp.md:396-398`), peut faire
-   répondre deux participants avec le même modèle, et la synthèse serait trompeuse. Parade : mode
-   strict, vérifié **après** application et juste avant l'envoi.
-3. **Coût et ressources.**
-   - N + 1 (jusqu'à 2N + 2) réponses de modèle ;
-   - environ 1,8 Go pour 5 + 1 agents ;
+   Conséquence : le rôle du participant nomme ce mode natif quand il est annoncé (lecture seule
+   alors tenue par l'agent) ; jamais `plan`. Sans l'agent installé, la ligne du participant dit
+   « lecture seule demandée », comme pour les rôles. Exiger l'installation ou non avant un tour
+   OpenCode : **décision à prendre** (ADR-0072, « À surveiller »).
+2. **Modèle non appliqué en silence.** — **Confirmé** ([lot 0](recettes/2026-11-24-tour-de-table-lot0.md), O3 à O6). Le repli d'`applyModel`
+   (`children-review.ts:821-828`), plus OpenCode qui change de modèle juste après `session/new`
+   (`docs/acp.md:396-398`), peut faire répondre deux participants avec le même modèle, et la
+   synthèse serait trompeuse. Vu : un modèle refusé (`-32602` « model not found », catalogue changé
+   entre deux lancements) laisse la session sur `big-pickle`, qui répond à sa place ; la réponse à
+   un réglage peut porter la valeur précédente ; aucun signal ACP ne nomme le modèle qui a répondu.
+   Parade : mode strict (§ 2.1), erreur de réglage = participant en erreur, valeur relue après les
+   `config_option_update`, un seul réglage de modèle à la fois, juste avant l'envoi.
+3. **Coût et ressources.** — **Confirmé**, mémoire plus haute que prévu ([lot 0](recettes/2026-11-24-tour-de-table-lot0.md), O11, O12, B2).
+   - N + 1 (jusqu'à 2N + 2) réponses de modèle ; un participant qui lit le code : ≈ 12 à 18 k jetons
+     cache compris chez OpenCode, ≈ 0,07 bobcoin chez Bob ;
+   - environ 2,2 Go d'empreinte pour 5 + 1 agents OpenCode 2.3.0 (deux processus par agent,
+     ≈ 360 Mo), ≈ 3,9 Go en RSS ;
    - un quota de fournisseur vite épuisé (fiche 267) ;
    - un coût Bob connu après coup seulement, et des profils muets.
 
    Parades : multiplicateur de jetons sur la ligne du tour de table et à côté de la réplique, total réel au pied
    de la carte, plafond par conversation pour qui l'active, places réservées ensemble. Pas
    d'estimation ni de plafond propre au tour (décision de l'utilisateur).
-4. **Régression sur les filles.** Le tour touche la machinerie la plus utilisée de la 1.1 :
+4. **Régression sur les filles.** — **Ouvert** (hors du champ du lot 0 : se juge au code, lot par lot). Le tour touche la machinerie la plus utilisée de la 1.1 :
    `children.ts`, `childContext`, `ChildWake`, `workLayout`, outils de la mère. Une exclusion oubliée
    donnerait un double réveil, des comptes rendus en double à la mère, ou N cartes seules. Parades :
    - les exclusions en un seul point (`participantIds`), testées une par une ;
    - les suites e2e `filles*`, `roles-travail`, `travaux-groupe` et `parcours-deleguer` à chaque lot.
-5. **Concurrence non observée entre processus du même agent.** Plusieurs `opencode acp` ou `bob acp`
-   sur le même stockage (`~/.local/share/opencode`, `~/.bob/db`) en même temps, débit du fournisseur
-   ou de la passerelle IBM : rien de relevé. Parade : lot 0 avant le lot 1 ; une panne reste une
-   erreur de participant, sans nouvelle tentative supposée.
+5. **Concurrence entre processus du même agent.** — **Levé** pour 5 `opencode acp` et 2 `bob acp`
+   ([lot 0](recettes/2026-11-24-tour-de-table-lot0.md), O1, B1 à B3) : même dossier, même stockage, tous prêts en moins d'une seconde, aucun
+   verrou, aucune erreur, coûts de Bob justes par tâche, pas de ralentissement à deux. Reste
+   **ouvert** : la forme d'une limite de débit (rien de provoqué). Une panne reste une erreur de
+   participant, sans nouvelle tentative supposée.
 
 Autres risques, moindres :
 
@@ -838,19 +887,23 @@ Autres risques, moindres :
 
 ### 3.7 Ce qui reste inconnu, à observer sur les vrais agents
 
-- OpenCode, plusieurs processus simultanés dans un même dossier, chacun sur un autre modèle : la
-  valeur réglée tient-elle ? Y a-t-il des conflits de stockage, ou un `config_option_update` qui
-  ramène un autre modèle ?
-- OpenCode, avec un mode `plan` ou un agent « participant » installé en lecture seule : écrit-il
-  vraiment jamais ?
-- Bob, deux `bob acp` simultanés dans le même dossier : base `bob.db`, coûts attribués à la bonne
-  tâche, débit.
-- Bob en ACP : les lectures du dossier sont-elles demandées (groupe `read`) ?
-- Le `-32603` « Server Error » de Bob au travail : forme exacte, passager ou non.
-- Mémoire réelle de N + 1 agents sur un vrai projet (serveurs de langage d'OpenCode).
+Relevés du [lot 0](recettes/2026-11-24-tour-de-table-lot0.md) (OpenCode 2.3.0, Bob 2.1.0) :
+
+- ~~OpenCode, plusieurs processus simultanés, chacun sur un autre modèle~~ : **levé**. La valeur
+  réglée tient (vérifiée dans la base d'OpenCode), pas de conflit de stockage, aucun
+  `config_option_update` pendant ou après les tours. Mais un modèle refusé laisse l'ancien en place
+  et le catalogue change (risque 2, **confirmé**).
+- ~~OpenCode, mode `plan` ou agent « participant »~~ : **réponse**. `plan` écrit par le shell ;
+  l'agent « participant » installé n'écrit pas (risque 1).
+- ~~Bob, deux `bob acp` simultanés~~ : **levé** (base, coûts par tâche, débit à deux).
+- ~~Bob en ACP, lectures demandées ?~~ : **non**, avec les réglages par défaut. Avec le groupe
+  `read` retiré : **ouvert**, non essayé.
+- Le `-32603` « Server Error » de Bob au travail : **ouvert**, pas survenu au lot 0.
+- Limite de débit (passerelle IBM, Zen) au-delà de 2 Bob ou 5 OpenCode : **ouvert**.
+- Mémoire réelle de N + 1 agents sur un vrai projet (serveurs de langage d'OpenCode) : **ouvert**
+  (mesuré sur un dépôt jetable : ≈ 360 Mo d'empreinte par OpenCode).
 - Qualité : une synthèse sur 3 à 5 avis bornés tient-elle dans le contexte d'un petit modèle ? Le
-  verdict après réplique change-t-il quelque chose (à juger en recette, pas en CI) ?
-- Le multiplicateur « ≈ N + 1 fois les jetons d'une question simple » est-il juste en ordre de
-  grandeur, vu que
-  les participants lisent du code ? À relever en recette avec le total réel, pour ajuster le texte
-  si besoin (sans ajouter d'estimation).
+  verdict après réplique change-t-il quelque chose (à juger en recette, pas en CI) ? **Ouvert.**
+- Le multiplicateur « ≈ N + 1 fois les jetons d'une question simple » : **tient en ordre de
+  grandeur** sur le dépôt jetable (≈ 12 à 18 k jetons par participant qui lit un fichier, cache
+  compris) ; à confirmer en recette sur un vrai projet, avec le total réel.

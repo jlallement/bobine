@@ -47,8 +47,11 @@ refusée), et un état de tour qui survive au redémarrage.
    des filles.
 2. **L'app mène le tour, pas l'agent.** Un module main `roundtable/` :
    - réserve les N places en une fois, ou refuse tout le tour ;
-   - impose le modèle de chaque participant en mode **strict** (vérifié après application,
-     participant en erreur sinon) ;
+   - impose le modèle de chaque participant en mode **strict** : une erreur de
+     `session/set_config_option` (OpenCode : `-32602` « model not found », la session gardant
+     l'ancien modèle) met le participant en erreur ; la valeur est relue après les
+     `config_option_update` qui suivent, un seul réglage de modèle à la fois, avant l'envoi ; aucun
+     repli (lot 0, O3 à O6) ;
    - suit les participants ;
    - envoie la synthèse à la mère **au repos** : message de l'app `from: { kind: 'roundtable' }`,
      avis bornés à 6 000 caractères chacun en contexte caché, en anglais, **anonymisés** :
@@ -135,7 +138,8 @@ refusée), et un état de tour qui survive au redémarrage.
     touchés ; ce sont les filles, très utilisées. Chaque lot repasse les suites `filles*`,
     `roles-travail`, `travaux-groupe` et `parcours-deleguer`.
   - Les participants prennent des places de `maxChildren`.
-  - N + 1 agents vivants, soit environ 1,8 Go pour 5 + 1 (fiche 102).
+  - N + 1 agents vivants : ≈ 2,2 Go d'empreinte pour 5 + 1 OpenCode 2.3.0, qui lance deux
+    processus par agent (≈ 360 Mo, RSS ≈ 650 Mo) ; ≈ 230 Mo par Bob 2.1.0 (lot 0, O12 et B6).
   - La liste latérale gagne N filles par tour, rangées comme des travaux ordinaires (décision D4
     de la fiche) ; l'encombrement se mesure à la recette.
   - Pas de plafond sur le total d'un tour : qui active le plafond par conversation l'a par
@@ -148,10 +152,18 @@ refusée), et un état de tour qui survive au redémarrage.
   - Relancer quoi que ce soit seul après un redémarrage.
   - Plus d'une réplique.
   - Tout code propre à un agent dans l'interface.
-- **À surveiller (lot 0, observations réelles).**
-  - La lecture seule seulement « demandée » chez OpenCode (`writesWithoutAsking`) ; viser un mode ou
-    un agent installé en lecture seule.
-  - Plusieurs `opencode acp` ou `bob acp` simultanés sur le même stockage.
-  - Le modèle qui tient après `session/new` chez OpenCode.
-  - Les lectures demandées ou non par Bob en ACP.
-  - Le `-32603` « Server Error » de Bob.
+- **Lot 0, observations réelles** ([rapport du lot 0](../recettes/2026-11-24-tour-de-table-lot0.md), OpenCode 2.3.0, Bob 2.1.0).
+  - **Confirmé** : la lecture seule seulement « demandée » chez OpenCode (`writesWithoutAsking`).
+    Le mode `plan` **n'est pas** une lecture seule (une commande `shell` écrit sans demande) : il
+    n'est jamais posé pour un participant. L'agent « participant » installé en lecture seule
+    (`edit`, `shell`, `subagent` refusés) n'a rien écrit : le rôle nomme ce mode natif quand la
+    session l'annonce. **Ouvert, à décider** : exiger cet agent avant un tour OpenCode, ou lancer
+    avec « lecture seule demandée » affichée sur la ligne du participant.
+  - **Confirmé** : le modèle peut ne pas être celui demandé (modèle refusé, catalogue qui change,
+    réponse au réglage en retard) et rien ne nomme le modèle qui a répondu : mode strict ci-dessus.
+  - **Levé** : 5 `opencode acp` et 2 `bob acp` simultanés sur le même stockage (aucun verrou ni
+    erreur ; coûts de Bob justes par tâche ; pas de ralentissement à deux).
+  - **Levé** : Bob ne demande pas l'autorisation de lire avec ses réglages par défaut ; une écriture
+    refusée finit le tour proprement (`failed`, puis `end_turn`).
+  - **Ouvert** : le `-32603` « Server Error » de Bob (pas survenu), la forme d'une limite de débit,
+    les lectures de Bob avec le groupe `read` retiré, la mémoire sur un vrai projet.
