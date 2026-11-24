@@ -91,9 +91,9 @@ const MODIFICATIONS: Step[] = [
   {
     kind: 'edit-file',
     path: 'src/app.js',
-    content: "export function main() {\n  console.log('bonjour')\n}\n",
-    // Comme Bob 2.0.6 : un fichier créé arrive avec un ancien texte vide.
-    emptyOldText: true
+    // Création à la convention (`oldText: null`) : celle d'OpenCode, et celle que le main donne au
+    // `oldText: ""` de Bob quand il a vu le fichier absent à la proposition (scénario `creation-bob`).
+    content: "export function main() {\n  console.log('bonjour')\n}\n"
   },
   {
     kind: 'edit-file',

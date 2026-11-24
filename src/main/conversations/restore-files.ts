@@ -39,7 +39,8 @@ export async function planRestore(
 ): Promise<RestorePlanItem[]> {
   return Promise.all(
     changes.map(async (change): Promise<RestorePlanItem> => {
-      const created = !change.edits[0]?.oldText
+      // Seul `null` est une création (fiche 203) : `oldText: ""` est un fichier vide existant.
+      const created = change.edits[0]?.oldText === null
       const path = resolve(root, change.path)
       if (!inside(root, change.path)) return { path, status: 'outside', created }
       const current = await readFile(path, 'utf8').catch(() => null)

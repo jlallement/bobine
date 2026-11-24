@@ -129,8 +129,8 @@ function clip(text: string): string {
 /** Modification d'un fichier par l'agent, telle que le diff ACP la décrit. */
 export interface FileEdit {
   /**
-   * Texte remplacé : le fichier entier (Bob) ou un extrait (OpenCode) ; `null` ou vide : fichier
-   * créé (Bob 2.0.6 envoie `""`, fiche 021).
+   * Texte remplacé : le fichier entier (Bob) ou un extrait (OpenCode) ; `null` : fichier créé.
+   * `""` : fichier vide existant (le main remet à `null` le `""` d'un fichier absent, fiche 203).
    */
   oldText: string | null
   /** Texte qui l'a remplacé : fichier entier ou extrait. */
@@ -174,7 +174,8 @@ export function undoEdits(
   for (let i = edits.length - 1; i >= 0; i--) {
     const edit = edits[i]
     if (!edit || content === null) return undefined
-    const created = !edit.oldText
+    // Seul `null` est une création (fiche 203) : un fichier vide réécrit est remis vide, pas supprimé.
+    const created = edit.oldText === null
     if (content === edit.newText) {
       if (created) {
         // Le fichier n'existait pas avant cette modification (la toute première).
@@ -184,7 +185,10 @@ export function undoEdits(
       content = edit.oldText ?? ''
       continue
     }
-    if (created || !edit.newText || occurrences(content, edit.newText) !== 1) return undefined
+    // Un ancien texte vide n'est pas un extrait : seul le fichier entier se défait (sinon, doute).
+    if (created || !edit.oldText || !edit.newText || occurrences(content, edit.newText) !== 1) {
+      return undefined
+    }
     content = content.replace(edit.newText, () => edit.oldText ?? '')
   }
   return content === null ? undefined : { content }

@@ -71,3 +71,10 @@ Pas de nouvelle dépendance (canevas 2D).
   fenêtre en `no-drag`, chevauchement de la barre constaté), `browser` (page native masquée sous
   les Réglages, puis réaffichée). Un essai à la vraie souris n'a pas pu être fait (deux instances
   d'Electron sous le même identifiant d'app) : à confirmer par l'utilisateur.
+- 2026-11-24 — **Échap pendant la saisie d'un texte fermait toute l'annotation** (trouvé en écrivant
+  les tests de remplacement). Cause : Radix écoute Échap sur le document, en phase de capture,
+  avant le `onKeyDown` de la saisie ; son `stopPropagation` arrivait trop tard. Correction :
+  `onEscapeKeyDown` sur `Dialog.Content`, qui, tant qu'un texte est en cours, empêche la fermeture
+  (`preventDefault`) et abandonne ce texte ; la branche Échap, inopérante, quitte la saisie. Test de
+  composant `ImageAnnotator.test.tsx` (image et canevas simulés), rouge avant, vert après : Échap
+  dans la saisie abandonne le texte sans fermer ni l'ajouter ; Échap hors saisie ferme comme avant.

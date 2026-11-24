@@ -111,6 +111,20 @@ describe('annoter une image jointe (fiche 067)', () => {
     expect(onApply).not.toHaveBeenCalled()
   })
 
+  it('Échap dans la saisie d’un texte abandonne ce texte, l’annotation reste ouverte', async () => {
+    const { canvas, onClose } = await open()
+    fireEvent.click(screen.getByTestId('annotator-tool-text'))
+    fireEvent.pointerDown(canvas, { clientX: 50, clientY: 40, pointerId: 1 })
+    const text = screen.getByTestId('annotator-text')
+    fireEvent.change(text, { target: { value: 'ici' } })
+    fireEvent.keyDown(text, { key: 'Escape' })
+    expect(screen.queryByTestId('annotator-text')).toBeNull()
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.getByTestId('annotator')).toBeTruthy()
+    // Le texte abandonné n'est pas devenu une annotation.
+    expect((screen.getByTestId('annotator-apply') as HTMLButtonElement).disabled).toBe(true)
+  })
+
   it('rectangle, flèche et texte dessinés ; « Annuler le dernier » et « Appliquer » s’activent', async () => {
     const { canvas, onApply } = await open()
     const undo = screen.getByTestId('annotator-undo') as HTMLButtonElement
