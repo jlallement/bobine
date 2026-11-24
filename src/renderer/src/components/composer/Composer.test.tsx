@@ -1,8 +1,9 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { ComponentProps } from 'react'
-import { describe, expect, it, vi } from 'vitest'
-import type { AgentSnapshot } from '@shared/agent'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
+import type { AgentSettingsView, AgentSnapshot } from '@shared/agent'
+import i18next from 'i18next'
 import { Composer } from './Composer'
 
 // Le terminal (xterm.js) n'a rien à faire ici : seule sa constante d'évènement est utilisée.
@@ -401,5 +402,143 @@ describe('Composer : texte collé, fichiers exclus, brouillon (fiche 155)', () =
     t.enter()
     expect(t.onSend).toHaveBeenCalledWith('', [{ kind: 'file', path: '/tmp/projet/.env.png' }])
     pathFor.mockRestore()
+  })
+})
+
+/**
+ * Remplaçants des vérifications de composant des e2e `queue`, `startup`, `composer`, `commands`,
+ * `git` et `quick` (inventaire `docs/tests/inventaire-e2e-*.md`). Ce qui tient à la mise en page
+ * réelle (clic à travers une infobulle, repli mesuré) reste e2e ou en capture.
+ */
+describe('Composer — remplaçants des e2e', () => {
+  beforeAll(() => {
+    globalThis.ResizeObserver ??= class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver
+  })
+
+  const settings = {
+    profileId: 'mock',
+    profiles: [{ id: 'mock', label: 'Agent factice', available: true, capabilities: {} }],
+    workspace: '/tmp/projet',
+    recentWorkspaces: ['/tmp/projet'],
+    inGitRepo: true
+  } as unknown as AgentSettingsView
+
+  it('conversation neuve : l’invite demande quoi faire (queue n° 1)', () => {
+    const t = setup({}, { fresh: true })
+    expect(t.input.placeholder).toBe(i18next.t('composer.placeholder.new'))
+  })
+
+  it('« Modifier » d’un message en attente : retiré pour modification, remis dans la saisie (queue n° 4)', async () => {
+    const onUnqueue = vi.fn(async () => ({ text: 'Suite à faire', attachments: [] }))
+    const t = setup(
+      { status: 'busy', queued: [{ id: 'q1', text: 'Suite à faire', attachments: [] }] },
+      { onUnqueue }
+    )
+    await act(async () => fireEvent.click(screen.getByTestId('queued-edit')))
+    expect(onUnqueue).toHaveBeenCalledWith('q1', true)
+    expect(t.input.value).toBe('Suite à faire')
+    expect(document.activeElement).toBe(t.input)
+  })
+
+  it('pas encore de dossier : saisie inactive, « Choisissez d’abord un dossier » (startup n° 2)', () => {
+    const t = setup({ status: 'needs-action', blocker: { kind: 'workspace' } })
+    expect(t.input.placeholder).toBe('Choisissez d’abord un dossier')
+    expect(t.input.disabled).toBe(true)
+  })
+
+  it('dossier et branche sur la ligne sous la saisie, pas dans la barre (composer n° 1, git n° 1)', () => {
+    setup(
+      {},
+      {
+        settings,
+        fresh: true,
+        gitBranch: { name: 'main', dirty: 2, ahead: 0, behind: 0, onOpen: vi.fn() }
+      }
+    )
+    const context = screen.getByTestId('composer-context')
+    const bar = screen.getByTestId('composer-bar')
+    expect(context.contains(screen.getByTestId('workspace-menu'))).toBe(true)
+    expect(bar.contains(screen.getByTestId('workspace-menu'))).toBe(false)
+    const branch = screen.getByTestId('git-branch')
+    expect(context.contains(branch)).toBe(true)
+    expect(branch.textContent).toBe('main')
+    expect(branch.getAttribute('data-dirty')).toBe('true')
+  })
+
+  it('mode choisi dans le menu : focus rendu à la saisie, sans infobulle ouverte (composer n° 2, 3)', async () => {
+    const t = setup({ controls: modes('code') })
+    fireEvent.keyDown(screen.getByTestId('mode-chip'), { key: 'Enter' })
+    await act(async () => fireEvent.click(screen.getByTestId('control-mode-ask')))
+    expect(t.onSetControl).toHaveBeenCalledWith('mode', 'ask')
+    expect(screen.queryByTestId('mode-menu-content')).toBeNull()
+    expect(document.activeElement).toBe(t.input)
+    expect(document.querySelector('.tooltip')).toBeNull()
+  })
+
+  it('Échap ferme le menu du mode et rend le focus à la puce (composer n° 10)', async () => {
+    setup({ controls: modes('code') })
+    const chip = screen.getByTestId('mode-chip')
+    fireEvent.keyDown(chip, { key: 'Enter' })
+    expect(screen.getByTestId('mode-menu-content')).toBeTruthy()
+    await act(async () =>
+      fireEvent.keyDown(screen.getByTestId('mode-menu-content'), { key: 'Escape' })
+    )
+    expect(screen.queryByTestId('mode-menu-content')).toBeNull()
+    expect(document.activeElement).toBe(chip)
+  })
+
+  it('le mode Plan a son icône, distincte des autres modes (composer n° 23)', () => {
+    setup({ controls: modes('code') })
+    const icon = () => screen.getByTestId('mode-chip').querySelector('svg')?.getAttribute('class')
+    const code = icon()
+    expect(screen.getByTestId('mode-chip').getAttribute('data-plan')).toBeNull()
+    cleanup()
+    setup({ controls: modes('plan') })
+    expect(screen.getByTestId('mode-chip').getAttribute('data-plan')).toBe('true')
+    expect(icon()).not.toBe(code)
+  })
+
+  it('accueil : un clic sur Envoyer envoie le message (composer n° 34)', () => {
+    const t = setup({}, { fresh: true })
+    t.type('Lance les tests')
+    fireEvent.click(screen.getByTestId('send'))
+    expect(t.onSend).toHaveBeenCalledWith('Lance les tests', [])
+  })
+
+  it('commande de l’app : badge au nom de l’agent de la conversation, pas « Bobine » (commands n° 2)', () => {
+    const t = setup()
+    t.type('/help')
+    const item = screen.getAllByTestId('command-item')[0]
+    expect(item?.querySelector('.command-source.from-app')?.textContent).toBe('Agent factice')
+    expect(item?.textContent).not.toContain('Bobine')
+  })
+
+  it('« / » sans correspondance : le menu le dit (commands n° 8)', () => {
+    const t = setup()
+    t.type('/zzzz')
+    expect(screen.getByTestId('command-menu').textContent).toContain(
+      'Aucune commande ne correspond.'
+    )
+    expect(screen.queryAllByTestId('command-item')).toHaveLength(0)
+  })
+
+  it('capture d’écran : l’image est jointe dans la zone de saisie (quick n° 12)', async () => {
+    const image = { kind: 'image' as const, name: 'capture.png', mimeType: 'image/png', data: 'AA==' }
+    setup({}, { onCaptureScreen: vi.fn(async () => image) })
+    await act(async () => fireEvent.click(screen.getByTestId('capture')))
+    const [chip, ...others] = screen.getAllByTestId('attachment')
+    expect(others).toHaveLength(0)
+    expect(chip?.querySelector('img')?.getAttribute('src')).toContain('AA==')
+    expect(chip?.innerHTML).toContain('capture.png')
+  })
+
+  it('sans capture d’écran (plateforme) : pas de bouton de capture dans la saisie (quick n° 14)', () => {
+    setup()
+    expect(screen.queryByTestId('capture')).toBeNull()
+    expect(screen.getByTestId('attach')).toBeTruthy()
   })
 })

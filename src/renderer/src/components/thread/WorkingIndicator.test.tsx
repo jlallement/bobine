@@ -123,3 +123,42 @@ describe('après la fin du tour, l’agent travaille encore (fiche 255)', () => 
     expect(screen.getByTestId('working').dataset.activity).toBe('background')
   })
 })
+
+/** Remplaçants de `e2e/suites/base.mjs` (n° 5, 8, 9) : ce que l'indicateur dit et montre. */
+describe('ce que dit l’indicateur (base)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 10, 24, 9, 0))
+  })
+  afterEach(() => vi.useRealTimers())
+
+  const working = () => screen.getByTestId('working')
+  const label = () => working().querySelector('.working-label')?.textContent
+
+  it('l’agent écrit : « Écrit… », le temps écoulé, la bobine qui tourne (base n° 5)', () => {
+    render(<WorkingIndicator conversationId="c-ecrit" items={[user(1), agent(2)]} />)
+    wait(3_000)
+    expect(label()).toBe('Écrit…')
+    expect(elapsed()).toBe('3 s')
+    expect(working().getAttribute('data-activity')).toBe('writing')
+    expect(screen.getByTestId('spool-mark').getAttribute('data-motion')).toBe('loop')
+  })
+
+  it('autorisation demandée : « Attend votre accord », bobine immobile (base n° 8, 9)', () => {
+    const asking: TranscriptItem = {
+      kind: 'tool',
+      id: 2,
+      toolCallId: 't2',
+      title: 'Écrire hello.txt',
+      toolKind: 'edit',
+      status: 'pending',
+      content: [],
+      locations: [],
+      permission: { requestId: 'r1', options: [], state: 'pending' }
+    }
+    render(<WorkingIndicator conversationId="c-accord" items={[user(1), asking]} />)
+    expect(label()).toBe('Attend votre accord')
+    expect(working().classList.contains('waiting')).toBe(true)
+    expect(screen.getByTestId('spool-mark').getAttribute('data-motion')).toBe('none')
+  })
+})
