@@ -24,7 +24,7 @@ and Rolldown are, for the small runtime helpers they add to the build output.
 
 | Package | Version | License | Used by | License text |
 |---|---|---|---|---|
-| [@agentclientprotocol/sdk](https://github.com/agentclientprotocol/typescript-sdk) | 2.9.1 | Apache-2.0 | main process | [T2](#t2) |
+| [@agentclientprotocol/sdk](https://github.com/agentclientprotocol/typescript-sdk) | 2.7.0 | Apache-2.0 | main process | [T2](#t2) |
 | [@braintree/sanitize-url](https://github.com/braintree/sanitize-url) | 7.1.2 | MIT | interface | [T3](#t3) |
 | [@chevrotain/gast](https://github.com/Chevrotain/chevrotain) | 13.2.0 | Apache-2.0 | interface | [T4](#t4) |
 | [@chevrotain/regexp-to-ast](https://github.com/Chevrotain/chevrotain) | 13.2.0 | Apache-2.0 | interface | [T4](#t4) |
@@ -323,7 +323,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ### T2
 
-Used by: @agentclientprotocol/sdk 2.9.1.
+Used by: @agentclientprotocol/sdk 2.7.0.
 
 ```text
 

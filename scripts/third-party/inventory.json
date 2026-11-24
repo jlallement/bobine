@@ -3,7 +3,7 @@
   "bundled": [
     {
       "name": "@agentclientprotocol/sdk",
-      "version": "2.9.1",
+      "version": "2.7.0",
       "in": ["main"]
     },
     {
