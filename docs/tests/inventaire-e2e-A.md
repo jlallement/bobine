@@ -9,6 +9,8 @@ sondage ; les fichiers marqués « à créer » n'existent pas encore).
 Classes : `parcours` (reste e2e) · `composant` (Vitest + Testing Library, sans l'app) ·
 `unitaire-main` · `capture` (capture nocturne) · `doublon` (déjà vérifié ailleurs).
 
+**Remplaçants du panneau (2026-11-24)** : 9 lignes passées à « oui » (`pr-ci-sans-ci` 1–3, `worktree-cycle` 4, 5, 7, `terminal` 13, 14, 16). Les chiffres du résumé restent ceux de l'inventaire.
+
 ## Résumé chiffré
 
 - **42 suites, 643 vérifications.**
@@ -405,9 +407,9 @@ Compte : 4 vérifications — parcours 1, composant 3, unitaire-main 0, capture 
 
 | # | Vérification (libellé court) | Ce qu'elle garantit | Classe | Remplaçant proposé | Déjà couvert ? |
 |---|---|---|---|---|---|
-| 1 | Ni workflow ni contrôle requis : « Aucune CI détectée », « Fusionner maintenant » proposé | Détection sans CI (appels branches/rules) et rendu | composant | `src/renderer/src/components/panel/PrCard.test.tsx` (à créer) | partiel : `src/main/changes/pr-watch.test.ts › aucun contrôle : pas de CI, attendus, puis « rien » après 5 min (D16, D20)` ; `› « Aucune CI » seulement si GitHub ne dit rien d’autre : CI externe, règles, blocage (remarque 1)` (main seulement) |
-| 2 | Fusion d'office cochée : jamais sans contrôle, la carte le dit | Raison d'attente `no-ci` affichée, aucun `merge` | composant | `PrCard.test.tsx` (à créer) | partiel : `src/shared/pr-tracking.test.ts › pourquoi la fusion d’office attend : la raison la plus bloquante d’abord (0.9.1, D20)` ; `pr-watch.test.ts › aucun contrôle : …` |
-| 3 | Branche à reprendre : bouton désactivé, raison en infobulle | Refus anticipé avec la raison | composant | `PrCard.test.tsx` (à créer) | partiel : `pr-watch.test.ts › « Fusionner maintenant » refusé, avec la raison, quand GitHub bloque (remarque 2)` |
+| 1 | Ni workflow ni contrôle requis : « Aucune CI détectée », « Fusionner maintenant » proposé | Détection sans CI (appels branches/rules) et rendu | composant | `src/renderer/src/components/panel/PrCard.test.tsx` (à créer) | oui : `src/renderer/src/components/panel/PrCard.test.tsx › carte « Pull request » sans CI (fiche 176, 0.9.1, D20) › ni workflow ni contrôle requis : « Aucune CI détectée », « Fusionner maintenant » proposé` (les appels `gh` qui détectent l’absence de CI : `pr-watch.test.ts`) |
+| 2 | Fusion d'office cochée : jamais sans contrôle, la carte le dit | Raison d'attente `no-ci` affichée, aucun `merge` | composant | `PrCard.test.tsx` (à créer) | oui : `src/renderer/src/components/panel/PrCard.test.tsx › carte « Pull request » sans CI (fiche 176, 0.9.1, D20) › fusion d’office cochée : jamais sans contrôle, la carte le dit sans alarme` |
+| 3 | Branche à reprendre : bouton désactivé, raison en infobulle | Refus anticipé avec la raison | composant | `PrCard.test.tsx` (à créer) | oui : `src/renderer/src/components/panel/PrCard.test.tsx › carte « Pull request » sans CI (fiche 176, 0.9.1, D20) › branche à reprendre : « Fusionner maintenant » désactivé, la raison en infobulle` |
 | 4 | « Fusionner maintenant » : PR fusionnée (commit de fusion), « Nettoyer » proposé | Clic → `gh pr merge --merge --match-head-commit`, évènement, nettoyage proposé | parcours | `pr-ci.mjs` (phase « sans CI ») ou étape d'une journée type | partiel : `pr-watch.test.ts › « Fusionner maintenant » : sans CI seulement, sur clic` ; `› « Fusionner maintenant » relit la PR d’abord, puis épingle le commit vu (remarque 1)` ; `pr-ci.mjs` couvre la fusion d'office et « Nettoyer », pas ce bouton |
 
 ---
@@ -721,10 +723,10 @@ Compte : 19 vérifications — parcours 2, composant 6, unitaire-main 5, capture
 | 1 | (attente) menu du dossier › worktree : la conversation passe sur `bobine/…` | création réelle du worktree et agent relancé dedans | parcours | garder ici, ou nouvelle étape de `parcours-deleguer` | partiel : `worktrees.test.ts › création depuis un sous-dossier, exclusion locale, état, suppression` (main seul) |
 | 2 | départ explicite : une carte en tête du fil (branche, commit, sujet, non commité), pas d’avis | la carte de départ remplace les avis | composant | `WorktreeStart.test.tsx` (+ place en tête du fil) | partiel : `WorktreeStart.test.tsx › branche et commit en code, date, sujet, modifications non commitées, « Vue Git »` ; `worktree-cycle.test.ts › départ relevé à la création…` |
 | 3 | le haut du fil n’est pas dans le fondu de l’en-tête (≥ 28 px) | espace sous l’en-tête | capture | capture nocturne | non |
-| 4 | « Vue Git » ouvre l’onglet Modifications en vue Git | bouton de la carte → panneau | composant | `WorktreeStart.test.tsx` | partiel : même test (présence du bouton) |
-| 5 | vue Git du worktree : départ rappelé, avertissement, une case par fichier | barre du worktree | composant | `CommitBars.test.tsx` | partiel : `CommitChooser.test.tsx › la liste complète, toutes cochées…` |
+| 4 | « Vue Git » ouvre l’onglet Modifications en vue Git | bouton de la carte → panneau | composant | `WorktreeStart.test.tsx` | oui : `src/renderer/src/components/thread/WorktreeStart.test.tsx › Départ d’un worktree (fiche 117) › branche et commit en code, date, sujet, modifications non commitées, « Vue Git »` (le clic appelle `onOpenGitView` ; l’ouverture en vue Git : `usePanel.test.ts`) |
+| 5 | vue Git du worktree : départ rappelé, avertissement, une case par fichier | barre du worktree | composant | `CommitBars.test.tsx` | oui : `src/renderer/src/components/panel/WorktreeBar.test.tsx › barre du worktree : départ et fusion (fiches 110, 123) › départ rappelé (branche, commit), avertissement sur le dossier d’origine` ; `src/renderer/src/components/panel/ChangesTab.test.tsx › vue Git d’un worktree (fiche 110) › barre du worktree en tête, une case cochée par fichier modifié` |
 | 6 | sans dépôt distant : ni « Ouvrir une PR » ni raison | pas de bouton inutile | doublon | — | oui : `worktree-outcome.test.ts › pas de dépôt distant : ni bouton ni raison, même si gh manque` |
-| 7 | « Fusionner » bloqué tant qu’il reste du non commité (infobulle) | fusion impossible avec du non commité | composant | `CommitBars.test.tsx` | partiel : `worktree-cycle.test.ts (shared) › fusion : à committer d’abord, rien à fusionner, ou reprise d’une fusion arrêtée` (texte seul) |
+| 7 | « Fusionner » bloqué tant qu’il reste du non commité (infobulle) | fusion impossible avec du non commité | composant | `CommitBars.test.tsx` | oui : `src/renderer/src/components/panel/WorktreeBar.test.tsx › barre du worktree : départ et fusion (fiches 110, 123) › « Fusionner » bloqué tant qu’il reste du non commité, la raison en infobulle` |
 | 8 | message rédigé par l’agent : Conventional Commits, seul fichier coché | rédaction limitée aux cochés | doublon | — | oui : `commit-draft.test.ts (main) › réponse normale…` ; `CommitChooser.test.tsx › un fichier décoché ne part pas, et le message ne le cite pas` |
 | 9 | commit fait dans le worktree : README seul | git réel, cochés seulement | unitaire-main | — | oui : `worktree-cycle.test.ts › état, commit des fichiers cochés seulement, annulation, journal` |
 | 10 | commit défait : branche revenue au départ | annulation réelle | unitaire-main | — | oui : même test |
@@ -756,10 +758,10 @@ Compte : 18 vérifications — parcours 5, composant 5, unitaire-main 0, capture
 | 10 | Réglages › Confidentialité : commande retenue listée sous son dossier | la commande retenue est visible | composant | test de la section Confidentialité (à créer) | partiel : `approvals.test.ts › sites et commandes retenus, relus au lancement suivant, révocables` (main seul) |
 | 11 | commande retenue oubliée depuis les Réglages | révocation par l’interface, avec confirmation | composant | même test (à créer) | partiel : même test (main seul) |
 | 12 | saisie au clavier dans le terminal | frappe transmise au pty | doublon | — | oui : `parcours-outils` étape 1 |
-| 13 | fond et palette ANSI des jetons | thème xterm issu des jetons | composant | test de `TerminalTab` (xterm simulé) | partiel : `themes.test.ts › variables CSS : noms en kebab, coloration et ANSI` |
-| 14 | couleurs en variante sans rouvrir l’onglet | le thème suit la palette à chaud | composant | test de `TerminalTab` (xterm simulé) | non |
+| 13 | fond et palette ANSI des jetons | thème xterm issu des jetons | composant | test de `TerminalTab` (xterm simulé) | oui : `src/renderer/src/components/panel/TerminalTab.test.tsx › onglet « Terminal » (fiches 034, 134) › fond et palette ANSI : les jetons du thème affiché` (xterm.js simulé) |
+| 14 | couleurs en variante sans rouvrir l’onglet | le thème suit la palette à chaud | composant | test de `TerminalTab` (xterm simulé) | oui : `src/renderer/src/components/panel/TerminalTab.test.tsx › onglet « Terminal » (fiches 034, 134) › accent changé : les couleurs suivent, sans rouvrir l’onglet` |
 | 15 | extrait sélectionné à la souris joint au message, avec l’onglet d’origine | sélection xterm réelle → saisie | parcours | `parcours-outils` étape 2 (sélectionner la sortie, « Ajouter au message ») | partiel : `useComposerInbox.test.ts › message repris de la fenêtre rapide pour cette conversation, extrait du terminal` |
-| 16 | nouvel onglet de terminal | « + » ajoute un onglet | composant | test de `TerminalTab` | non |
+| 16 | nouvel onglet de terminal | « + » ajoute un onglet | composant | test de `TerminalTab` | oui : `src/renderer/src/components/panel/TerminalTab.test.tsx › onglet « Terminal » (fiches 034, 134) › « + » : un nouvel onglet de terminal, affiché aussitôt` |
 | 17 | commande refusée : la carte dit « refusé », sans coche verte | état « refusé » même si l’agent la dit finie | doublon | — | oui : `tool-outcome.test.ts › outil de l’app refusé : « refusé » même si l’agent le dit fini` |
 | 18 | l’agent reçoit le refus (résultat en erreur) | refus transmis à l’agent | doublon | — | oui : `command-approval.test.ts › refus : résultat en erreur, marqué refusé pour la carte (fiche 122)` |
 
