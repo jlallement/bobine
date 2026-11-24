@@ -74,3 +74,28 @@ it('plus haut dans le fil : le dernier message dont le haut a passé le premier 
   const { container } = render(<ConversationOutline items={items} scroller={ref} />)
   expect(currentBar(container)).toBe(1)
 })
+
+it('tour de table (fiche 285) : sa question marquée, jamais les demandes internes de l’app', async () => {
+  const { roundtable } = await import('../roundtable/test-fixtures')
+  const rt = roundtable()
+  const withTour: TranscriptItem[] = [
+    ...items,
+    { kind: 'roundtable', id: 4, ...rt },
+    {
+      kind: 'user',
+      id: 5,
+      text: 'Roundtable: 3 participants answered…',
+      from: { kind: 'roundtable', id: 'rt1', title: 'q', step: 'synthesis' }
+    }
+  ]
+  tops = { 1: -900, 2: 100, 3: 450 }
+  const ref = { current: thread(1000) }
+  const { getAllByTestId } = render(<ConversationOutline items={withTour} scroller={ref} />)
+  const entries = getAllByTestId('outline-item').map((b) => b.textContent)
+  expect(entries).toEqual([
+    'Question 1',
+    'Question 2',
+    'Question 3',
+    'Tour de table · Quelle file de tâches ?'
+  ])
+})

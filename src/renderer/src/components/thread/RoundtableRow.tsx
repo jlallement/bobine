@@ -12,6 +12,7 @@ import {
   CircleX,
   LoaderCircle,
   ShieldAlert,
+  SquareArrowOutUpRight,
   ShieldCheck,
   Square,
   TriangleAlert
@@ -353,6 +354,19 @@ function RowButtons({ seat, actions }: { seat: RoundtableSeat; actions: RowActio
   const { t } = useTranslation()
   return (
     <>
+      {/* Sa conversation, quel que soit son état (au travail, en erreur, retenue…). */}
+      {actions.open && (
+        <button
+          type="button"
+          className="icon-button small"
+          aria-label={t('roundtable.card.open')}
+          title={t('roundtable.card.open')}
+          onClick={actions.open}
+          data-testid="roundtable-open-row"
+        >
+          <SquareArrowOutUpRight size={12} aria-hidden />
+        </button>
+      )}
       {actions.stop && (
         <button
           type="button"

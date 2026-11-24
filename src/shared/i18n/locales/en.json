@@ -6291,7 +6291,8 @@
       "sendsExchange": "Each one gets the question and the last exchange of this conversation.",
       "sendsAll": "Each one gets the question, the attached files and the last exchange of this conversation.",
       "unknownAgent": "A removed agent",
-      "byTo": "{{models}} · via {{agent}} · to {{destination}}"
+      "byTo": "{{models}} · via {{agent}} · to {{destination}}",
+      "needTwo": "at least 2 needed"
     },
     "cost": {
       "full": "≈ {{n}}× the tokens of a plain question",

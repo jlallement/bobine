@@ -1,4 +1,5 @@
 import { Plus } from 'lucide-react'
+import { invocableRole } from '../../roles/invocable'
 import { useTranslation } from 'react-i18next'
 import { Tip } from '../common/Menus'
 import { useProfileStatus } from '../common/Profile'
@@ -31,7 +32,7 @@ export function TeamSection({
   const { readOnly } = useProfileStatus()
   const { listing } = useRolesListing(conversationId)
   if (!listing) return null
-  const roles = listing.roles.filter((role) => role.enabled)
+  const roles = listing.roles.filter(invocableRole)
   const add = (
     <Tip label={t('team.new')}>
       <button

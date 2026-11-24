@@ -86,6 +86,8 @@ export interface SubtasksInfo {
   motherBusy?: boolean
   /** Un message attend déjà dans la file de la mère : « Appliquer » ne se propose pas. */
   motherQueued?: boolean
+  /** La conversation affichée est archivée : ni geste ni « Appliquer » sur un tour de table. */
+  motherArchived?: boolean
   /** Nom de l'agent de la conversation, dit sur les cartes-réponses (fiche 263). */
   agentLabel?: string
   /** Échec d'une action d'une carte-réponse (arrêter, relancer), dit à l'utilisateur. */

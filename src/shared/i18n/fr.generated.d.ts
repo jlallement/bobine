@@ -6354,6 +6354,7 @@ export type FrResources = {
       readonly sendsAll: 'Chacun reçoit la question, les fichiers joints et le dernier échange de cette conversation.'
       readonly unknownAgent: 'Un agent retiré'
       readonly byTo: '{{models}} · par {{agent}} · vers {{destination}}'
+      readonly needTwo: 'il en faut au moins 2'
     }
     readonly cost: {
       readonly full: '≈ {{n}} fois les jetons d’une question simple'

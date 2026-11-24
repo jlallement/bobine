@@ -111,7 +111,7 @@ export function enterAction(state: LineState): 'send' | 'menu' | 'none' {
 /** Ce qu'une destination dit en peu de mots (fiche 108) : le fournisseur, ou le service. */
 export function destinationName(destination: DataDestination): string | undefined {
   if (destination.kind === 'provider') return destination.name
-  if (destination.kind === 'prefix') return destination.provider
+  // Un préfixe de modèle (`fx/…`) n'est qu'un identifiant : jamais montré, l'agent suffit.
   if (destination.kind === 'agent') return destination.text
   return undefined
 }

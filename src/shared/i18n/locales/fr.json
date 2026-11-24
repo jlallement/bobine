@@ -6570,7 +6570,8 @@
       "sendsExchange": "Chacun reçoit la question et le dernier échange de cette conversation.",
       "sendsAll": "Chacun reçoit la question, les fichiers joints et le dernier échange de cette conversation.",
       "unknownAgent": "Un agent retiré",
-      "byTo": "{{models}} · par {{agent}} · vers {{destination}}"
+      "byTo": "{{models}} · par {{agent}} · vers {{destination}}",
+      "needTwo": "il en faut au moins 2"
     },
     "cost": {
       "full": "≈ {{n}} fois les jetons d’une question simple",

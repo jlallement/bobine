@@ -1,4 +1,5 @@
 import { builtinLabels } from './role-labels'
+import { invocableRole } from './roles/invocable'
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
 import type { ConversationSummary, ProfileSummary } from '@shared/agent'
 import type { RoleView } from '@shared/roles'
@@ -35,7 +36,7 @@ export function useComposerRoles(
     if (!id) return Promise.resolve(NO_ROLES)
     return window.api.roles.list(id).then(
       (listing) => {
-        const list = listing.roles.filter((role) => role.enabled)
+        const list = listing.roles.filter(invocableRole)
         setRead({ id, list })
         return eligible ? list : NO_ROLES
       },

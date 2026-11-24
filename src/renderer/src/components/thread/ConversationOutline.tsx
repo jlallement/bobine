@@ -29,9 +29,16 @@ export function ConversationOutline({
   const { t } = useTranslation()
   // Une demande à des rôles (bulle « @Rôle … », fiche 263) est un message de l'utilisateur ; sa
   // suite dans une carte-réponse n'est pas à sa place dans le fil.
-  const messages = items.flatMap((i) =>
-    (i.kind === 'user' || (i.kind === 'role-request' && !i.followUp)) && i.text.trim() ? [i] : []
-  )
+  // Les demandes de l'app d'un tour de table (provenance `roundtable`, en anglais) n'en sont pas ;
+  // le tour lui-même y figure par sa question, marquée « Tour de table » (fiche 285).
+  const messages = items.flatMap((i): { id: number; text: string; roundtable?: true }[] => {
+    if (i.kind === 'roundtable')
+      return i.question.trim() ? [{ id: i.id, text: i.question, roundtable: true }] : []
+    if (i.kind === 'user' && i.from?.kind === 'roundtable') return []
+    return (i.kind === 'user' || (i.kind === 'role-request' && !i.followUp)) && i.text.trim()
+      ? [{ id: i.id, text: i.text }]
+      : []
+  })
   const [current, setCurrent] = useState<number | undefined>(undefined)
   const [room, setRoom] = useState(false)
   const [height, setHeight] = useState(0)
@@ -54,7 +61,7 @@ export function ConversationOutline({
       const line = el.getBoundingClientRect().top + el.clientHeight / 3
       let id: number | undefined
       const nodes = el.querySelectorAll<HTMLElement>(
-        '[data-testid=user-message], [data-testid=role-request]'
+        '[data-testid=user-message], [data-testid=role-request], [data-testid=roundtable-bubble]'
       )
       for (const node of nodes) {
         if (node.getBoundingClientRect().top <= line) id = Number(node.dataset['itemId'])
@@ -120,7 +127,13 @@ export function ConversationOutline({
               onClick={() => go(m.id)}
               title={m.text}
               data-testid="outline-item"
+              data-roundtable={m.roundtable}
             >
+              {m.roundtable && (
+                <span className="outline-mark" data-testid="outline-roundtable">
+                  {t('roundtable.name')} ·{' '}
+                </span>
+              )}
               {m.text.trim().split('\n')[0]}
             </button>
           </li>

@@ -539,6 +539,31 @@ describe('synthèse', () => {
   })
 })
 
+describe('relecture fonctionnelle', () => {
+  it('M5 : seuls les participants finis sans chiffre sont « sans chiffre »', () => {
+    const subtasks = info({
+      children: [child('child-A', { usage: { total: 1000 } }), child('child-B'), child('child-C')]
+    })
+    // A a répondu avec un chiffre, B et C travaillent encore, sans chiffre.
+    show(thread(roundtable([answered('A')]), OPINIONS), subtasks)
+    expect(screen.getByTestId('roundtable-used').textContent).not.toContain('sans chiffre')
+  })
+
+  it('M11 : conversation archivée, ni « Appliquer » ni « Faire réagir », aucun geste', () => {
+    show(synthesized(done(), SYNTHESIS), info({ motherArchived: true }))
+    expect(screen.queryByTestId('roundtable-apply')).toBeNull()
+    expect(screen.queryByTestId('roundtable-rebut')).toBeNull()
+  })
+
+  it('« Ouvrir sa conversation » sur toute ligne dont la conversation existe', () => {
+    const subtasks = show(thread(roundtable([answered('A'), failed('C')]), OPINIONS))
+    for (const letter of ['A', 'B', 'C'])
+      expect(within(row(letter)).getByTestId('roundtable-open-row')).toBeTruthy()
+    fireEvent.click(within(row('B')).getByTestId('roundtable-open-row'))
+    expect(subtasks?.onOpen).toHaveBeenCalledWith('child-B')
+  })
+})
+
 describe('gestes : un à la fois, refus dits', () => {
   it('« Appliquer » masqué si un message suit déjà, ou si un message attend dans la file', () => {
     const followed = synthesized(done(), SYNTHESIS, [{ kind: 'user', id: 0, text: 'Merci' }])

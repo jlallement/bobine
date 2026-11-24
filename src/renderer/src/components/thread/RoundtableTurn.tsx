@@ -161,7 +161,7 @@ function RoundtableActions({
   if (!answered) return null
   const rebut = step === 'synthesis' && !!gestures && canRebut(item)
   // Un message attend déjà dans la file, ou a suivi : il emporte la suite, rien à proposer.
-  const onAsk = followed || info?.motherQueued ? undefined : info?.onAsk
+  const onAsk = followed || info?.motherQueued || info?.motherArchived ? undefined : info?.onAsk
   if (!onAsk && !rebut) return null
   return (
     <div className="roundtable-actions" data-testid="roundtable-actions">

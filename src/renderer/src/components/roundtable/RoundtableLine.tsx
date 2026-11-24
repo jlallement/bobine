@@ -114,7 +114,14 @@ function LineStatus({ roundtable }: { roundtable: RoundtableCompose }) {
   }
   switch (state.kind) {
     case 'choose':
-      return <span className="roundtable-line-cost">{t('roundtable.line.chooseHint')}</span>
+      // Un seul retenu : il en faut au moins deux ; aucun : le premier usage.
+      return (
+        <span className="roundtable-line-cost" data-testid="roundtable-choose-hint">
+          {roundtable.choices.length === 1
+            ? t('roundtable.line.needTwo')
+            : t('roundtable.line.chooseHint')}
+        </span>
+      )
     case 'unavailable':
       return (
         <span className="roundtable-line-alert" role="status" data-testid="roundtable-unavailable">
@@ -179,10 +186,10 @@ export function RoundtableLine({
   // le laisse où l'on a cliqué.
   const outside = useRef(false)
   const { state } = roundtable
-  // Dès deux retenus, le bouton les compte (même si le tour ne peut pas partir d'ici).
+  // Dès un retenu, le bouton les compte (même si le tour ne peut pas partir d'ici).
   const count = roundtable.choices.length
   const label =
-    count >= 2 ? t('roundtable.line.participants', { count }) : t('roundtable.line.choose')
+    count >= 1 ? t('roundtable.line.participants', { count }) : t('roundtable.line.choose')
   return (
     <div className="roundtable-line" data-testid="roundtable-line" data-state={state.kind}>
       <RoundtableIcon size={15} className="roundtable-line-icon" />

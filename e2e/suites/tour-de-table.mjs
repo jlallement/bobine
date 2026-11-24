@@ -28,7 +28,9 @@ const MODELS = [
   'fx/beta=Fx/Beta',
   'fx/gamma=Fx/Gamma',
   'fx/delta=Fx/Delta',
-  'fx/zeta=Fx/Zeta'
+  'fx/zeta=Fx/Zeta',
+  'fx/omega=Fx/Omega',
+  'fx/sigma=Fx/Sigma'
 ].join(',')
 
 /** Scénario de chaque modèle ; « Factice précis » (la conversation) joue la synthèse. */
@@ -38,7 +40,9 @@ const BY_MODEL = (rapide = 'avis-participant') =>
     'fx/alpha=avis-participant',
     'fx/beta=avis-hors-format',
     'fx/gamma=avis-erreur',
-    'fx/delta=participant-ecrit'
+    'fx/delta=participant-ecrit',
+    'fx/omega=participant-outils',
+    'fx/sigma=avis-change-modele'
   ].join(',')
 
 const PEER = () => L('profiles.mockPeer.label')
@@ -136,7 +140,77 @@ export async function roundtableSuite(scheme) {
   console.log(`\n— Tour de table (${scheme})`)
   await nominal(scheme)
   await degraded(scheme)
+  await guarded(scheme)
   await restart(scheme)
+}
+
+/**
+ * 2 bis. Garde-fous du moteur : question trop longue dite avant l'envoi ; participant qui n'a aucun
+ * outil de l'app et dont la commande est refusée d'office (jamais « attend votre réponse ») ;
+ * modèle changé par l'agent en plein tour, avis écarté « modèle non appliqué ».
+ */
+async function guarded(scheme) {
+  const workspace = repo()
+  try {
+    await withApp(
+      scheme,
+      async (ui) => {
+        await ui.ready()
+        await ui.closePanel()
+        await arbiterModel(ui)
+        await ui.ev(`${ui.$('composer-input')}.focus()`)
+        await ui.type(`/roundtable ${'Trop long. '.repeat(800)}`)
+        await ui.waitFor(`!!${ui.$('roundtable-line')}`)
+        await choose(ui, ['Omega', 'Sigma', 'Alpha'])
+        await ui.waitFor(`!!${ui.$('roundtable-too-long')}`)
+        await affirm(ui, '285-question-trop-longue', [
+          probes.custom(
+            'la ligne le dit, Envoyer atténué',
+            `return { ok: document.querySelector('[data-testid=roundtable-too-long]').textContent === ${JSON.stringify(L('roundtable.error.question'))} && document.querySelector('[data-testid=send]').disabled }`
+          )
+        ])
+        await ui.ev(`${ui.$('composer-input')}.focus()`)
+        await ui.enter()
+        check(!(await ui.ev(`!!${ui.$('roundtable-card')}`)), 'question trop longue : rien ne part')
+
+        // Raccourcie : le tour part.
+        await ui.ev(
+          `(() => { const i = ${ui.$('composer-input')}; i.focus(); i.select(); return true })()`
+        )
+        await ui.type('Une question courte ?')
+        await ui.waitFor(`!!${ui.$('roundtable-cost-full')}`)
+        await ui.enter()
+        await ui.waitFor(`!!${ui.$('roundtable-card')}`, 20_000)
+
+        // Modèle changé en plein tour : l'avis est écarté, la raison traduite.
+        await ui.waitFor(rowState('Sigma', 'error'), 30_000)
+        check(
+          await ui.ev(
+            `${rowOf('Sigma')}.querySelector('[data-testid=roundtable-row-meta]').textContent.includes(${JSON.stringify(L('roundtable.state.reason.model-not-applied'))})`
+          ),
+          'modèle changé en plein tour : « modèle non appliqué »'
+        )
+        // Participant aux outils : fini sans jamais attendre l'utilisateur, aucune carte d'accord.
+        await ui.waitFor(`${rowOf('Omega')}?.dataset.state === 'answered'`, 30_000)
+        check(
+          !(await ui.ev(`!!document.querySelector('[data-testid=permission]')`)) &&
+            !(await ui.ev(
+              `[...document.querySelectorAll('.history-item')].some((h) => h.querySelector('.status-dot.needs-action, [data-attention=request]'))`
+            )),
+          'participant : commande refusée d’office, aucune carte d’autorisation'
+        )
+        await ui.waitFor(`!!${ui.$('roundtable-actions')}`, 60_000)
+        await ui.click(ui.$('roundtable-head-toggle'))
+        await ui.waitFor(`!!${rowOf('Sigma')}`)
+        await affirm(ui, '285-garde-fous', [probes.threadFits()])
+      },
+      undefined,
+      'synthese-tour-de-table',
+      env(workspace)
+    )
+  } finally {
+    rmSync(workspace, { recursive: true, force: true })
+  }
 }
 
 /** 1. Journée nominale. */
@@ -166,7 +240,13 @@ async function nominal(scheme) {
 
         // Menu : 2 à 5 ; au-delà, les cases se désactivent et disent pourquoi.
         await ui.waitFor(`document.querySelectorAll('[data-testid=roundtable-option]').length > 0`)
-        for (const name of ['Alpha', 'Beta', 'Gamma', PEER(), 'Delta']) await toggle(ui, name)
+        await toggle(ui, 'Alpha')
+        // Un seul coché : il en faut au moins deux (M13).
+        await ui.waitFor(
+          `${ui.$('roundtable-choose-hint')}?.textContent === ${JSON.stringify(L('roundtable.line.needTwo'))}`
+        )
+        check(true, 'un seul participant : « il en faut au moins 2 »')
+        for (const name of ['Beta', 'Gamma', PEER(), 'Delta']) await toggle(ui, name)
         await ui.waitFor(
           `${ui.$('roundtable-participants')}.textContent.includes(${JSON.stringify(L('roundtable.line.participants', { count: 5 }))})`
         )
@@ -306,6 +386,17 @@ async function nominal(scheme) {
           20_000
         )
         await ui.ready()
+
+        // Sommaire (S4) : le tour par sa question, marqué ; jamais les demandes de l'app.
+        await ui.waitFor(`!!${ui.$('outline')}`, 5000)
+        const outline = await ui.ev(
+          `[...document.querySelectorAll('[data-testid=outline-item]')].map((b) => ({ text: b.textContent, tour: b.dataset.roundtable === 'true' }))`
+        )
+        check(
+          outline.some((o) => o.tour && o.text.includes('Postgres seul')) &&
+            outline.every((o) => !/Roundtable|Synthesize|rebuttal/i.test(o.text)),
+          `sommaire : le tour par sa question, sans demande interne (${JSON.stringify(outline)})`
+        )
       },
       undefined,
       'synthese-tour-de-table',
@@ -339,9 +430,9 @@ async function degraded(scheme) {
         await ui.waitFor(`!!${ui.$('roundtable-other-model')}`, 30_000)
         check(
           await ui.ev(
-            `${rowOf('Zeta')}.textContent.includes(${JSON.stringify(L('roundtable.state.modelNotOffered', { agent: L('profiles.mock.label') }))})`
+            `${rowOf('Zeta')}.textContent.includes(${JSON.stringify(L('roundtable.state.reason.model-not-applied'))})`
           ),
-          'modèle refusé : « Modèle non proposé… »'
+          'modèle refusé par l’agent : « modèle non appliqué », sans substitution'
         )
         await affirm(ui, '285-modele-refuse', [probes.threadFits()])
         await ui.click(ui.$('roundtable-other-model'))
@@ -392,6 +483,14 @@ async function degraded(scheme) {
         await ui.click(`${second}.querySelector('[data-testid=roundtable-stop]')`)
         await ui.waitFor(`${second}.dataset.phase === 'stopped'`, 20_000)
         await affirm(ui, '285-arrete', [probes.threadFits()])
+
+        // Conversation archivée (M11) : la carte se lit, ni « Appliquer » ni « Faire réagir ».
+        check(!!(await ui.ev(`!!${ui.$('roundtable-apply')}`)), 'avant l’archivage : « Appliquer »')
+        await ui.ev(
+          `window.api.conversations.get().then((s) => window.api.conversations.archive(s.activeId, true)).then(() => true)`
+        )
+        await ui.waitFor(`!${ui.$('roundtable-apply')} && !${ui.$('roundtable-rebut')}`, 10_000)
+        check(true, 'archivée : ni « Appliquer » ni « Faire réagir »')
       },
       undefined,
       'synthese-tour-de-table',

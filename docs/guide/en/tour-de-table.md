@@ -24,7 +24,8 @@ then write the question. The question gets the “Roundtable” tag, and a grey 
 Escape, the cross of the line, or ⌫ at the start of the question take you back to a plain question.
 
 A roundtable does not start from a delegated task, nor in the Chat space. One roundtable at a time
-per conversation: a second one waits for the first synthesis.
+per conversation: a second one is refused until the first has given its synthesis. A question of
+more than 8,000 characters is refused too: attach the details as a file.
 
 <a id="participants"></a>
 
@@ -46,8 +47,10 @@ the last exchange of the conversation.
 
 A “Roundtable” card shows under the question. Each participant has its row: its model and agent,
 what it reads, for how long. Participants are read-only: a shield reminds you, full when it is
-guaranteed, marked when it is only requested (an agent that writes without asking). If a
-participant changes the folder anyway, its row says so.
+guaranteed, marked when it is only requested (an agent that writes without asking). “Requested”
+read-only is only checked in the git repository: Bobine compares the repository before and after,
+and if a participant changes it anyway, its row says so. Outside a git repository it is not
+checked at all, and the row says so too.
 
 Once given, the opinion shows its short answer and its confidence; a click unfolds it in full,
 with **Open its conversation**. A failed participant says why and offers **Run again**; a refused
@@ -84,5 +87,9 @@ roundtable.
 
 Much more than a plain question: each participant, then the synthesis. The line says so before
 sending, with no estimate in money. At the foot of the card, **Used** gives what the agents
-reported, per unit, without conversion. The per-conversation cost cap, when on, applies to each
-participant like to any conversation.
+reported, per unit, without conversion.
+
+The per-conversation cost cap, when on, applies to each participant like to any conversation. A
+participant that reaches it stops, and its row says so; the “Cap reached” card is in its
+conversation (**Open its conversation**). If the arbitrating conversation reaches it, the
+synthesis request is held: the “Cap reached” card shows in the thread, and **Continue** sends it.

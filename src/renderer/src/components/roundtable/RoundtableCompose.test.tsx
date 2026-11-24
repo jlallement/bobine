@@ -228,6 +228,18 @@ describe('premier usage et menu des participants', () => {
     expect(t.input.value).toBe('Question')
   })
 
+  it('M13 : un seul participant coché, « 1 participant · il en faut au moins 2 »', async () => {
+    const t = setup([deep])
+    t.type('/roundtable Q')
+    expect(within(line()).getByTestId('roundtable-participants').textContent).toContain(
+      '1 participant'
+    )
+    expect(screen.getByTestId('roundtable-choose-hint').textContent).toBe('il en faut au moins 2')
+    t.enter()
+    expect(await screen.findByTestId('roundtable-menu')).toBeTruthy()
+    expect(api.start).not.toHaveBeenCalled()
+  })
+
   it('chaque case est retenue aussitôt ; dès deux, la ligne est prête et Entrée envoie', async () => {
     const t = setup([])
     t.type('/roundtable Question')

@@ -49,7 +49,8 @@ export function useRoundtableGestures(info: SubtasksInfo | undefined, item: Roun
   // Un geste à la fois par bouton : pas de second envoi sur un double clic (revue QA).
   const [pending, setPending] = useState<ReadonlySet<string>>(new Set())
   const conversationId = info?.motherId
-  if (!conversationId) return { gestures: undefined, refusal, pending }
+  // Conversation archivée : la carte se lit, aucun geste (le main les refuserait).
+  if (!conversationId || info.motherArchived) return { gestures: undefined, refusal, pending }
   const { roundtableId } = item
   const run = (key: string, refused: string | undefined, call: () => Promise<unknown>) => {
     if (pending.has(key)) return
@@ -116,10 +117,13 @@ export function GestureRefusal({ text }: { text: string | undefined }) {
 export function useRoundtableTotal(group: RoundtableGroupData, info: SubtasksInfo | undefined) {
   const presenting = usePresentation()
   const { item } = group
-  const digests = item.seats.map((seat) => {
+  // Un participant encore au travail sans chiffre n'est pas « sans chiffre » : il n'a pas fini.
+  const digests = item.seats.flatMap((seat) => {
     const work = group.works.get(seat.letter)
     const child = info?.children.find((c) => c.id === seat.childId)
-    return workUsage(work ? currentReport(work) : undefined, child)
+    const digest = workUsage(work ? currentReport(work) : undefined, child)
+    const running = seat.state === 'working' || seat.state === 'waiting'
+    return running && !digest ? [] : [digest]
   })
   const total = roundtableTotal(digests, [item.synthesis?.usage, item.verdict?.usage])
   // Mode présentation (fiche 159) : aucun montant.

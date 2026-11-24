@@ -104,13 +104,10 @@ describe('ligne du tour de table', () => {
     }
   })
 
-  it('infobulle : les modèles groupés par agent, leur destination, ce qui part', () => {
+  it('infobulle : les modèles groupés par agent, leur destination, jamais un identifiant brut', () => {
+    // `vendor` n'est qu'un préfixe de modèle : l'agent suffit ; un service déclaré se dit.
     expect(participantGroups([deep, glm, b], options())).toEqual([
-      {
-        agent: 'Agent A',
-        models: ['DeepSeek V4.1 Flash', 'GLM 5.3 Flash'],
-        destinations: ['vendor']
-      },
+      { agent: 'Agent A', models: ['DeepSeek V4.1 Flash', 'GLM 5.3 Flash'], destinations: [] },
       { agent: 'Agent B', models: ['Agent B'], destinations: ['service en ligne B'] }
     ])
     expect(sendsKey(false, false)).toBe('roundtable.line.sendsQuestion')

@@ -45,6 +45,7 @@ export function threadSubtasks(
     onAsk: (text, about) => send(text, [], about ? { about } : {}),
     ...(snapshot?.status === 'busy' ? { motherBusy: true } : {}),
     ...(snapshot?.queued.length ? { motherQueued: true } : {}),
+    ...(c.activeSummary?.archived ? { motherArchived: true } : {}),
     ...(agentLabel ? { agentLabel } : {}),
     onWarn: c.warn,
     ...(open ? { onReview: open.review, onShowChanges: open.changes } : {}),

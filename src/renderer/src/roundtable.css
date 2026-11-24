@@ -392,3 +392,8 @@
     animation: none;
   }
 }
+
+/* Sommaire : un tour de table par sa question, marqué (fiche 285). */
+.outline-mark {
+  color: var(--accent);
+}

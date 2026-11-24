@@ -25,7 +25,9 @@ de table », et une ligne grise s'affiche dessous :
 Échap, la croix de la ligne, ou ⌫ en tête de la question ramènent à une question simple.
 
 Un tour de table ne se lance pas depuis un travail délégué, ni dans l'espace Discussion. Un seul
-tour à la fois par conversation : un second attend la synthèse du premier.
+tour à la fois par conversation : un second est refusé tant que le premier n'a pas rendu sa
+synthèse. Une question de plus de 8 000 caractères est refusée aussi : joignez le détail en
+fichier.
 
 <a id="participants"></a>
 
@@ -49,7 +51,9 @@ avec : les fichiers joints, le dernier échange de la conversation.
 Une carte « Tour de table » s'affiche sous la question. Chaque participant y a sa ligne : son
 modèle et son agent, ce qu'il lit, depuis combien de temps. Les participants sont en lecture
 seule : un bouclier le rappelle, plein quand c'est garanti, marqué quand ce n'est que demandé (un
-agent qui écrit sans demander). Si un participant modifie quand même le dossier, sa ligne le dit.
+agent qui écrit sans demander). « Demandée », la lecture seule n'est vérifiée que dans le dépôt
+git : Bobine compare le dépôt avant et après, et si un participant le modifie quand même, sa ligne
+le dit. Hors d'un dépôt git, elle n'est pas vérifiée du tout, et la ligne le dit aussi.
 
 Une fois rendu, l'avis montre sa réponse courte et sa confiance ; un clic le déplie en entier,
 avec **Ouvrir sa conversation**. Un participant en erreur dit pourquoi et propose **Relancer** ;
@@ -87,5 +91,10 @@ décision. Une seule réplique par tour.
 
 Nettement plus qu'une question simple : chaque participant, puis la synthèse. La ligne le dit
 avant l'envoi, sans estimation en argent. Au pied de la carte, **Consommé** donne ce que les
-agents ont communiqué, par unité, sans conversion. Le plafond par conversation, s'il est activé,
-s'applique à chaque participant comme à toute conversation.
+agents ont communiqué, par unité, sans conversion.
+
+Le plafond par conversation, s'il est activé, s'applique à chaque participant comme à toute
+conversation. Un participant qui l'atteint s'arrête, et sa ligne le dit ; la carte « Plafond
+atteint » est dans sa conversation (**Ouvrir sa conversation**). Si c'est la conversation qui
+arbitre qui l'atteint, la demande de synthèse est retenue : la carte « Plafond atteint » s'affiche
+dans le fil, et **Continuer** l'envoie.

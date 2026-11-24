@@ -412,9 +412,13 @@ En anglais, résumée ici. Le participant :
 - **La corbeille et l'archivage** :
   - les participants suivent la conversation d'origine comme ses autres travaux : archivés avec
     elle, supprimés avec elle ou détachés selon la confirmation de famille (fiche 228) ;
-  - supprimer la conversation d'un participant avant la synthèse la sort de la synthèse et de la
-    réplique ; après, son avis reste lisible dans la carte, sa ligne dit « conversation supprimée »
-    et perd « Ouvrir ».
+  - mettre la conversation d'un participant à la corbeille avant la synthèse la sort de la synthèse
+    et de la réplique ; après, son avis reste lisible dans la carte ; sa ligne dit « à la
+    corbeille » (restaurable, sans « Ouvrir ») ou « conversation supprimée » (corbeille vidée),
+    selon le contrat du moteur (recette fonctionnelle S1/S2, branchement de l'interface en attente) ;
+  - les conversations des participants ne figurent dans la barre latérale que tant que leur tour
+    est en cours (recueil ou réplique), sauf la conversation affichée ; ensuite, on les ouvre depuis
+    la carte ou par la recherche (décision M7 du tech lead, 2026-11-25).
 - **Le dossier modifié pendant le tour** (par l'utilisateur ou un autre agent) : avis neutre de
   la lecture seule, déjà existant. Le tour de table continue.
 
@@ -491,8 +495,9 @@ Ce que cela donne pour un tour de table, sans nouvelle interface :
 - Un **délai** par participant.
 - Une **vue côte à côte** des avis.
 - Un **total des tours de table dans Mon activité** : il demande une migration du journal (colonne
-  `roundtable_id`), reportée après la v1. Les participants y figurent déjà comme travaux de la
-  conversation d'origine.
+  `roundtable_id`), reportée après la v1. Les participants y figurent comme des conversations
+  séparées (une ligne chacun), pas comme des travaux de la conversation d'origine (recette
+  fonctionnelle du 2026-11-25).
 - Une mise en avant, une étiquette ou un groupe par défaut pour les **modèles gratuits**.
 - Un encadré d'explication de premier usage.
 - « Poser une question à un participant » depuis la carte : on ouvre sa conversation.
@@ -1068,3 +1073,19 @@ le main n'a pas livré l'étape 1) :
     `--lang en`, et le plafond par conversation en e2e (couvert par les essais du main).
   - Docs : page d'aide « Tour de table » (fr, en), `CHANGELOG.md` et `CHANGELOG.en.md`,
     `docs/architecture.md` (renderer).
+- 2026-11-25 : recette fonctionnelle, partie interface (branche `1.2-rt-engine-fix`). Fait : le
+  sommaire ne montre plus les demandes de l'app (provenance `roundtable`) et a une entrée par tour,
+  sa question marquée « Tour de table » (S4) ; « N participants sans chiffre » ne compte que les
+  participants finis (M5) ; conversation archivée : aucun geste, ni « Appliquer » ni « Faire
+  réagir » (M11) ; un seul participant coché : « 1 participant · il en faut au moins 2 » (M13) ;
+  l'infobulle ne montre jamais un préfixe de modèle brut, l'agent seul à défaut d'une destination
+  déclarée (M14) ; « Ouvrir sa conversation » sur toute ligne dont la conversation existe ; page
+  d'aide corrigée (second tour refusé, plafond, lecture seule demandée vérifiée dans le dépôt
+  seulement, non vérifiée hors git). Décisions notées : barre latérale réduite aux participants
+  d'un tour en cours (M7) ; rôle « Participant » caché de la barre Équipe et des mentions `@`,
+  gardé dans Réglages › Rôles. En attente du moteur (`1.2-rt-engine-fix2`) : étiquette de la
+  synthèse par l'agent et le modèle réellement utilisés (S3), place « retenue par le plafond »
+  (S5), corbeille et suppression (S1/S2), filtre de la barre latérale (M7), marqueur du rôle.
+  Côté main : l'aperçu « retenu » de la carte « Plafond atteint » et les extraits de la recherche
+  se construisent dans le main (`held` du `CostCapCard`, `conversations/content-search.ts`).
+
