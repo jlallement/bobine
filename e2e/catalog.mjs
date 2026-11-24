@@ -151,7 +151,13 @@ const REPLAY = [
 ]
 
 /** Parcours réels enchaînés (fiche 277) : leurs outils, la barre latérale, le fil. */
-const PARCOURS = ['e2e/parcours.mjs', `${C}sidebar/`, `${C}thread/`, `${R}useConversations.ts`]
+const PARCOURS = [
+  'e2e/parcours.mjs',
+  'e2e/affirm.mjs',
+  `${C}sidebar/`,
+  `${C}thread/`,
+  `${R}useConversations.ts`
+]
 
 /**
  * Suites, dans l'ordre de `pnpm e2e --jobs 1`. `run` : nom de la fonction exportée par le fichier.
@@ -1831,6 +1837,7 @@ export const SUITES = [
     themes: BOTH,
     // Fiche 173 : tout ce que le fil affiche peut déborder ; styles.css est déjà global.
     sources: [
+      'e2e/affirm.mjs',
       ...TOOLS,
       `${C}thread/SubagentsCard.tsx`,
       `${C}thread/MermaidBlock.tsx`,
@@ -2371,6 +2378,21 @@ export const SUITES = [
       'src/main/conversations/',
       'src/main/quit-guard.ts',
       'src/main/agent/'
+    ]
+  },
+  {
+    name: 'parcours-premier-lancement',
+    file: 'parcours-premier-lancement.mjs',
+    run: 'parcoursPremierLancementSuite',
+    themes: BOTH,
+    sources: [
+      ...PARCOURS,
+      `${C}onboarding/`,
+      `${R}onboarding.css`,
+      `${C}composer/`,
+      'src/shared/onboarding.ts',
+      'src/main/onboarding/',
+      'src/main/conversations/'
     ]
   }
 ]
