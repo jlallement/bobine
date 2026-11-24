@@ -167,9 +167,10 @@ export type Step =
       content?: string
       edit?: { from: string; to: string }
       /**
-       * Fichier créé annoncé avec `oldText: ""` au lieu de `null`, comme Bob (2.0.6, 2.0.9) ; et,
-       * comme lui (trace `bob-2.0.9/creation-fichier-neuf`), l'outil proposé d'abord (`pending`,
-       * sans contenu) : c'est là que le main constate le fichier absent (fiche 203).
+       * Fichier créé annoncé avec `oldText: ""` au lieu de `null`, directement `in_progress` (sans
+       * proposition avant l'écriture) : forme jamais relevée chez Bob, qui propose l'outil puis
+       * attend l'autorisation (scénario `creation-bob`). Le main ne peut rien constater : l'app y
+       * voit une modification (fiche 203, limite connue).
        */
       emptyOldText?: boolean
     }
@@ -702,36 +703,15 @@ async function editFile(
     ? (oldText ?? '').replace(step.edit.from, step.edit.to)
     : (step.content ?? '')
   const toolCallId = `edit_${++editCount}`
-  const title = `${oldText === null ? 'Création' : 'Modification'} de ${step.path}`
-  const content = [
-    { type: 'diff' as const, path, oldText: oldText ?? (step.emptyOldText ? '' : null), newText }
-  ]
-  if (oldText === null && step.emptyOldText) {
-    await send(ctx, {
-      sessionUpdate: 'tool_call',
-      toolCallId,
-      title: `Writing file ${path}`,
-      kind: 'edit',
-      status: 'pending',
-      locations: [{ path }]
-    })
-    await send(ctx, {
-      sessionUpdate: 'tool_call_update',
-      toolCallId,
-      status: 'in_progress',
-      content
-    })
-  } else {
-    await send(ctx, {
-      sessionUpdate: 'tool_call',
-      toolCallId,
-      title,
-      kind: 'edit',
-      status: 'in_progress',
-      locations: [{ path }],
-      content
-    })
-  }
+  await send(ctx, {
+    sessionUpdate: 'tool_call',
+    toolCallId,
+    title: `${oldText === null ? 'Création' : 'Modification'} de ${step.path}`,
+    kind: 'edit',
+    status: 'in_progress',
+    locations: [{ path }],
+    content: [{ type: 'diff', path, oldText: oldText ?? (step.emptyOldText ? '' : null), newText }]
+  })
   await tick(ctx, 1)
   await mkdir(dirname(path), { recursive: true })
   await writeFile(path, newText)

@@ -209,10 +209,13 @@ Ce qu'il faut désormais, et seulement cela :
   ancien texte vide ne se défait que par le fichier entier (jamais comme extrait). Essais rouges
   avant, verts après : `trace-replay.test.ts` (trace réelle, fichier présent : `created: false`),
   `changes.test.ts`, `branch.test.ts`, `restore-files.test.ts` (fichier remis vide, pas supprimé).
-  Agent factice : l'étape `edit-file` avec `emptyOldText` (scénarios `modifications`, plan) propose
-  maintenant l'outil d'abord (`pending` sans contenu, puis `in_progress` avec le diff `""`), la forme
-  observée de Bob ; avant, elle l'annonçait directement `in_progress`, forme jamais relevée chez Bob.
-  Conséquence : sa création est vue « Création » sur la carte aussi. Limite inchangée (fiche 203) :
+  Agent factice : le scénario `modifications` crée `src/app.js` à la convention (`oldText: null`) ;
+  son ancien `oldText: ""` annoncé directement `in_progress` n'est pas une forme relevée chez Bob
+  (qui propose l'outil puis attend l'autorisation : scénario `creation-bob`). Un premier essai
+  (outil proposé `pending` puis écrit aussitôt, sans attendre) a échoué en e2e sur Mac (passage
+  GitHub 45343501913, suite `changes`, plus de badge « A ») : course, le main recevait le `pending`
+  après l'écriture et voyait, à raison, le fichier présent. Seule l'attente d'une réponse du client
+  (l'autorisation, chez Bob) rend le constat sûr. Limite inchangée (fiche 203) :
   un agent qui écrirait un fichier neuf avec `oldText: ""` sans jamais le proposer avant
   (`in_progress` direct) le verrait « Modification » partout — cohérent, et une annulation le
   remet vide plutôt que de le supprimer. e2e non relancées (consigne de la tâche).
