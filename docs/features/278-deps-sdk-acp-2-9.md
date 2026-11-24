@@ -108,6 +108,19 @@ types `dist/v1/unstable/schema/types.gen.d.ts` comparés entre les deux versions
   - `browser` clair : cause non établie (`inherit` avale ses erreurs) ; l'échec dit désormais
     l'état des pages du main. Pas de correctif à l'aveugle.
   `./scripts/verify` vert. Rien joué en local (ADR-0069).
+- 2026-11-24 : passage GitHub 45361829816 (`test/pyramide`, ce lot fusionné) : Linux vert ;
+  macOS rouge sur `session` sombre et sur trois onglets neufs du navigateur (`browser` ×2,
+  `parcours-outils`). Comparaison avec les passages macOS : `browser`, `session` et
+  `parcours-outils` verts dans les 4 passages d'avant le SDK 2.9.1 sur la même image, rouges dans
+  les 2 d'après. Détail : fiche 250 (journal du 2026-11-24, run 45361829816).
+  - `session` : `71ee121` ne suffisait pas ; une fille reste « démarre » avant que sa consigne
+    entre dans `SendOrder` (démarrage de l'agent, modèle posé, préparation du worktree), et
+    l'arrêt s'y perdait encore. Le SDK 2.9 (une tâche de la boucle par message ACP) allonge cette
+    fenêtre. Corrigé : arrêt retenu pour une fille qui démarre jusqu'au départ de sa consigne
+    (`SendOrder.stopPending(id, starting)`, oublié si le lancement échoue).
+  - Navigateur : premier chargement d'un onglet neuf qui ne finit pas dans le main ; cause non
+    établie, corrélée au SDK sans mécanisme trouvé. Les échecs joignent désormais l'état des
+    pages du main. Épreuve proposée : `browser` macOS avec le SDK 2.7.0 puis 2.9.1.
 - Reste : suites e2e touchées sur GitHub (`session`, `worktree-setup`, `parcours-reglages`,
   `parcours-outils`, `browser`, et celles des fichiers modifiés) ; sonde d'OpenCode 2.4.1 avec
   modèle gratuit.
