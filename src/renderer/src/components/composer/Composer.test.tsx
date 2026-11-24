@@ -4,6 +4,7 @@ import type { ComponentProps } from 'react'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import type { AgentSettingsView, AgentSnapshot } from '@shared/agent'
 import i18next from 'i18next'
+import { ComposerInbox } from '../../useFileDrop'
 import { Composer } from './Composer'
 
 // Le terminal (xterm.js) n'a rien à faire ici : seule sa constante d'évènement est utilisée.
@@ -580,6 +581,65 @@ describe('Composer — remplaçants des e2e', () => {
     const back = setup({}, { draftKey: key })
     expect(back.input.value).toBe('à finir')
     expect(screen.getByTestId('attachment-pasted').textContent).toContain('41 lignes')
+  })
+
+  it('image collée : sa vignette dans la saisie (attachments n° 1)', async () => {
+    const t = setup()
+    const image = new File([new Uint8Array([137, 80, 78, 71])], 'collée.png', { type: 'image/png' })
+    await act(async () => {
+      fireEvent.paste(t.input, { clipboardData: { files: [image], getData: () => '' } })
+    })
+    await waitFor(() => expect(screen.getAllByTestId('attachment')).toHaveLength(1))
+    const img = screen.getByTestId('attachment').querySelector('img')
+    expect(img?.getAttribute('src')).toMatch(/^data:image\/png;base64,/)
+  })
+
+  it('`@app` : le fichier du dossier proposé ; Entrée insère son chemin et le joint (attachments n° 2, 4)', async () => {
+    const onSearchFiles = vi.fn(async () => [
+      { path: '/tmp/projet/src/app.ts', relative: 'src/app.ts' }
+    ])
+    const t = setup({}, { onSearchFiles })
+    fireEvent.change(t.input, { target: { value: 'Relis @app', selectionStart: 10 } })
+    fireEvent.keyUp(t.input, { key: 'p' })
+    await waitFor(() => expect(screen.getAllByTestId('file-item')).toHaveLength(1))
+    expect(onSearchFiles).toHaveBeenCalledWith('app')
+    expect(screen.getByTestId('file-item').textContent).toContain('app.ts')
+    fireEvent.keyDown(t.input, { key: 'Enter' })
+    expect(t.input.value).toBe('Relis @src/app.ts ')
+    expect(screen.getAllByTestId('attachment')).toHaveLength(1)
+    t.enter()
+    expect(t.onSend).toHaveBeenCalledWith('Relis @src/app.ts ', [
+      { kind: 'file', path: '/tmp/projet/src/app.ts' }
+    ])
+  })
+
+  it('`@git-changes` et `@terminal` : proposés, joints en pièces jointes de contexte (mentions n° 2)', async () => {
+    const t = setup()
+    const mention = async (typed: string) => {
+      const value = `${t.input.value}${typed}`
+      fireEvent.change(t.input, { target: { value, selectionStart: value.length } })
+      fireEvent.keyUp(t.input, { key: 'x' })
+      await waitFor(() => expect(screen.getAllByTestId('context-item').length).toBeGreaterThan(0))
+      fireEvent.keyDown(t.input, { key: 'Enter' })
+    }
+    await mention('@git')
+    await mention('@term')
+    expect(t.input.value).toBe('@git-changes @terminal ')
+    expect(screen.getAllByTestId('attachment')).toHaveLength(2)
+    t.enter()
+    expect(t.onSend).toHaveBeenCalledWith('@git-changes @terminal ', [
+      { kind: 'context', source: 'git-changes' },
+      { kind: 'context', source: 'terminal' }
+    ])
+  })
+
+  it('demande de lancement : le premier message posé dans la saisie, jamais envoyé (command n° 7)', () => {
+    const composerInbox = new ComposerInbox()
+    const key = `c-lancement-${Math.random()}`
+    composerInbox.prefill({ id: key, text: 'Corrige le parseur', attachments: [] })
+    const t = setup({}, { composerInbox, draftKey: key })
+    expect(t.input.value).toBe('Corrige le parseur')
+    expect(t.onSend).not.toHaveBeenCalled()
   })
 
   it('capture d’écran : l’image est jointe dans la zone de saisie (quick n° 12)', async () => {

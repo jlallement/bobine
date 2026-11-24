@@ -735,6 +735,23 @@ describe('Transcript — remplaçants des e2e', () => {
     expect(screen.getByTestId('user-message').textContent).toContain('Regarde')
   })
 
+  it('texte collé envoyé : sa puce dans le message, son aperçu à l’ouverture (attachments n° 16)', () => {
+    const pasted = Array.from({ length: 41 }, (_, i) => `ligne ${i}`).join('\n')
+    show([
+      {
+        kind: 'user',
+        id: 1,
+        text: 'Regarde ce journal',
+        attachments: [{ kind: 'text', name: 'Texte collé', text: pasted }]
+      }
+    ])
+    const chip = screen.getByTestId('msg-attachments').querySelector('.attachment-text')
+    expect(chip?.textContent).toContain('41 lignes')
+    expect(chip?.getAttribute('title')).toBe(pasted.slice(0, 200))
+    if (chip) fireEvent.click(chip)
+    expect(document.body.textContent).toContain('ligne 40')
+  })
+
   it('question posée par un outil : la carte de questions à la place de l’appel d’outil (questions n° 2)', () => {
     show([
       { kind: 'user', id: 1, text: 'Pose-moi une question' },
