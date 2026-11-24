@@ -529,7 +529,7 @@
         "quotaHint": "From {{agent}}’s server, across all your computers, work outside Bobine included.",
         "quotaValue": "{{used}} of {{limit}} · {{percent}}%",
         "spend": "Spend on this Mac",
-        "spendHint": "From {{agent}}’s database on this Mac, Bobine and terminal included. A conversation used during the period counts in full."
+        "spendHint": "From {{agent}}’s database on this Mac, Bobine and terminal included. A conversation used during the period counts in full. Sessions Bobine deleted from {{agent}} (drafted commit messages, asides, conversations deleted along with their session) are no longer there: My activity counts them, this line doesn’t."
       },
       "reset": {
         "title": "History",
@@ -3316,7 +3316,7 @@
     },
     "quotaBobStatus": {
       "label": "Bobcoin quota",
-      "detail": "This month’s limit and usage according to Bob’s server, across all your computers: read at startup through Bob Shell’s `/status` command (`bob chat` in the background, 0 Bobcoins); the empty task it creates is deleted right away. Bob doesn’t send it over ACP."
+      "detail": "This month’s limit and usage according to Bob’s server, across all your computers: read as soon as Bob is ready through Bob Shell’s `/status` command (`bob chat` in the background, 0 Bobcoins); the empty task it creates is deleted right away. The month’s last reading shows from launch, with its time. Bob doesn’t send it over ACP."
     },
     "costBobDb": {
       "label": "Usage in Bobcoins",
@@ -3635,6 +3635,7 @@
     "left": "Left",
     "over": "Over by",
     "source": "From {{agent}}’s server, across all your computers · read at {{time}}",
+    "sourceEarlier": "From {{agent}}’s server, across all your computers · read on {{date}} at {{time}}",
     "refresh": "Refresh",
     "reading": "Reading…"
   },
@@ -5827,7 +5828,7 @@
           "account": {
             "title": "{{agent}} on this computer",
             "spend": "Spend on this computer",
-            "spendHint": "From {{agent}}’s database on this computer, Bobine and terminal included. A conversation used during the period counts in full."
+            "spendHint": "From {{agent}}’s database on this computer, Bobine and terminal included. A conversation used during the period counts in full. Sessions Bobine deleted from {{agent}} (drafted commit messages, asides, conversations deleted along with their session) are no longer there: My activity counts them, this line doesn’t."
           }
         }
       },

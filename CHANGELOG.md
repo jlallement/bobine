@@ -30,6 +30,31 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   sans avis rouge dans le fil ; si le fichier revient, le lien aussi.
 - Simulateur iOS : l’agent voit aussi les champs de saisie vides et sans nom (« TextField
   (vide) »), et peut les toucher pour y écrire.
+
+## 1.0.1 — 24 novembre 2026
+
+### Corrections
+
+- La boîte « Supprimer » d’une conversation fille dont la branche est déjà fusionnée n’annonce
+  plus de commits perdus ; seuls comptent ceux qu’aucune autre branche ne garde. Même correction
+  dans Réglages › Données › Worktrees orphelins.
+- Le titre donné par l’agent à une conversation ne reprend plus ce que Bobine joint à votre
+  premier message (« Résumer le projet bobine_capabilities ») : la conversation garde alors le
+  titre tiré de votre message.
+- IBM Bob : le quota de Bobcoins s’affiche en bas à gauche dès le lancement — le dernier relevé
+  du mois, avec son heure de lecture dans le détail —, puis se met à jour quelques secondes après
+  que Bob est prêt. Il n’apparaissait qu’une fois sa lecture finie.
+- Mon activité › IBM Bob sur ce Mac : l’aide de « Dépense sur ce Mac » dit pourquoi ce total peut
+  être plus bas que celui de la page : les sessions que Bobine supprime chez Bob (message de commit
+  rédigé, apartés…) n’y sont plus.
+
+## 1.0.0 — 24 novembre 2026
+
+### Corrections
+
+- Linux et Windows : le menu ☰ rouvert par Alt juste après l’avoir fermé reste ouvert ; il se
+  refermait aussitôt, ou restait affiché après un nouvel appui sur Alt.
+
 ## 1.0.0-rc.5 — 24 novembre 2026
 
 ### Corrections

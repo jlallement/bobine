@@ -143,7 +143,7 @@ export interface OrphanWorktree {
   path: string
   branch: string
   dirty: number
-  /** Commits de la branche que la branche courante du dépôt n'a pas. */
+  /** Commits que seule cette branche garde, perdus avec elle (fiche 280). */
   ahead: number
 }
 

@@ -39,9 +39,34 @@ export async function quotaSuite(scheme) {
     'demo',
     { MOCK_AGENT_QUOTA: '1' }
   )
+  await rememberedSuite(scheme, userData)
   rmSync(userData, { recursive: true, force: true })
   await notUsedSuite(scheme)
   await quitDuringReadSuite(scheme)
+}
+
+/**
+ * Dernier quota lu, montré dès le lancement suivant (fiche 282) : même profil, faux `bob chat` lent
+ * (8 s) et consommation passée à 900. Les 81 % lus au lancement d'avant sont là avant que la
+ * lecture de ce lancement finisse, puis remplacés par les 90 % qu'elle rend.
+ */
+async function rememberedSuite(scheme, userData) {
+  console.log(`\n— Dernier quota lu, montré dès le lancement (${scheme})`)
+  const before = spaces(L('quota.short', { percent: 81 }))
+  const after = spaces(L('quota.short', { percent: 90 }))
+  await withApp(
+    scheme,
+    async (ui) => {
+      await ui.waitFor(`${plain(ui.$('agent-status'))}?.includes(${JSON.stringify(before)})`, 5000)
+      check(true, 'quota du lancement d’avant affiché tout de suite, lecture encore en cours')
+      await ui.shot('quota-4-dernier-lu-au-lancement')
+      await ui.waitFor(`${plain(ui.$('agent-status'))}?.includes(${JSON.stringify(after)})`, 30000)
+      check(true, 'remplacé par la lecture de ce lancement')
+    },
+    userData,
+    'demo',
+    { MOCK_AGENT_QUOTA: '1', MOCK_QUOTA_SLOW_MS: '8000', MOCK_QUOTA_USED: '900' }
+  )
 }
 
 /**

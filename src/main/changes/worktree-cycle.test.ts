@@ -676,6 +676,55 @@ describe('cycle d’un worktree (fiche 110)', () => {
   })
 })
 
+describe('orphelins : commits perdus (D1 recette 1.0.0, fiche 280)', () => {
+  it('branche fusionnée dans `main`, dépôt sur une autre branche : 0 ; non fusionnée : son compte', async () => {
+    const { root, target, cycle } = await setup()
+    const commit = (cwd: string, file: string) => {
+      writeFileSync(join(cwd, file), `${file}\n`)
+      git(cwd, 'add', '.')
+      git(
+        cwd,
+        '-c',
+        'user.name=t',
+        '-c',
+        'user.email=t@example.invalid',
+        'commit',
+        '-q',
+        '-m',
+        file
+      )
+    }
+    const add = (name: string) => {
+      const path = join(root, '.worktrees', name)
+      git(root, 'worktree', 'add', '-q', '-b', `bobine/${name}`, path, 'HEAD')
+      return path
+    }
+    const merged = add('20261001-1200-aaaa')
+    const pending = add('20261001-1200-bbbb')
+    for (const file of ['a.txt', 'b.txt', 'c.txt']) commit(merged, file)
+    for (const file of ['d.txt', 'e.txt']) commit(pending, file)
+    git(
+      root,
+      '-c',
+      'user.name=t',
+      '-c',
+      'user.email=t@example.invalid',
+      'merge',
+      '-q',
+      '--no-ff',
+      '--no-edit',
+      'bobine/20261001-1200-aaaa'
+    )
+    // Le dépôt principal passe sur une branche d'avant la fusion : `HEAD..branche` comptait 3.
+    git(root, 'checkout', '-q', '-b', 'ailleurs', 'HEAD~1')
+    const found = await cycle.orphans([root], new Set([target.worktree.path]))
+    expect(found.map(({ branch, ahead }) => ({ branch, ahead }))).toEqual([
+      { branch: 'bobine/20261001-1200-aaaa', ahead: 0 },
+      { branch: 'bobine/20261001-1200-bbbb', ahead: 2 }
+    ])
+  })
+})
+
 describe('« Committer » hors worktree (fiche 123)', () => {
   /** Dépôt ordinaire, sans worktree : le dossier de la conversation en est un sous-dossier. */
   function plain(): { root: string; place: { id: string; workspace: string; cwd: string } } {

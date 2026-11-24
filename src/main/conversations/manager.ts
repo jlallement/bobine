@@ -1410,7 +1410,7 @@ export class ConversationManager {
       listChanged = true
       if (!conversation.draft) this.saveIndex()
     }
-    const proposed = proposedTitle(conversation.record, event)
+    const proposed = proposedTitle(conversation.record, event, conversation.transcript)
     if (proposed) {
       conversation.record.title = proposed
       conversation.record.titleSource = 'agent'

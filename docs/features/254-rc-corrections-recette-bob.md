@@ -1,6 +1,6 @@
 # 254 — rc : corrections de la recette Bob courte (D1 à D3, gitleaks)
 
-- **Statut** : fait (relecture du tech lead)
+- **Statut** : fait (relecture du tech lead) ; D4 corrigé pour la 1.0.1 (relecture du tech lead)
 - **Dépend de** : 157 (coût hors protocole), 180 (aparté), 246 (message de commit rédigé, ADR-0056),
   249 (accord par site), 130 (journal de consommation), 016 (questions à choix)
 - **Agents** : les deux — D1 touche surtout Bob (coût hors protocole, `costSource` du profil),
@@ -29,6 +29,9 @@ nom accessible (D3). En plus, le job « gitleaks (historique) » de la CI est ro
       composant (site web, commande, `ask_user`, questions de l'agent).
 - [x] D3 : chaque interrupteur des Réglages a un nom accessible.
 - [x] D4 : cause probable écrite ici (pas de correctif avant la rc).
+- [x] D4, pour la 1.0.1 (D2 de la recette Bob 1.0) : un titre d'agent tiré de ce que l'app joint
+      (mot propre à l'app absent des messages de l'utilisateur) n'est pas pris ; la conversation
+      garde le titre de son premier message. Générique, testé contre l'agent factice.
 - [x] Testé contre l'agent factice (`--cout-bob --bob-db`), un test rouge sans correctif par point ;
       e2e `browser` (et suites touchées) vertes, captures regardées.
 
@@ -119,3 +122,36 @@ nom accessible (D3). En plus, le job « gitleaks (historique) » de la CI est ro
   commit-redige aparte usage usage-board settings inbox` (clair et sombre) vertes ; la nouvelle
   vérification de `browser` échoue sur le build d'avant le correctif D2 (captures avant/après de
   `28h-site-affiche-accord` regardées).
+- 2026-11-24 : **D4** (revu comme D2 de la [recette Bob 1.0](../recettes/2026-11-24-recette-bob-1-0.md) :
+  « Résumer le projet **bobine_capabilities** » pour `petit-stock`). Corrigé pour la 1.0.1.
+  - **Ce qui est observé** : aucune trace de Bob 2.1.0 ne porte ce titre (les journaux Détaillé
+    des recettes ne gardent pas les `session_info_update`). Les traces de Bob 2.0.9
+    (`__traces__/bob-2.0.9/`) montrent un titre égal au début du premier bloc, celui de
+    l'utilisateur ; les deux recettes sur Bob 2.1.0 (rc1, 1.0) montrent un titre **reformulé**
+    dont le sujet vient du contexte joint (« Bobine », puis la balise `bobine_capabilities`).
+    Comment Bob 2.1.0 choisit son titre n'est pas observé : on ne suppose rien.
+  - **Cause, côté Bobine** : `agentTitle` prenait tout titre proposé, une fois retiré ce qui
+    suivait un début de bloc de l'app (`stripAppContext`, fiche 125). Un titre reformulé qui
+    nomme le contexte sans le recopier passait.
+  - **Pistes écartées** : ne plus nommer l'app dans le contexte ne suffit pas (la 1.0 a pris la
+    balise, pas le nom), et les balises servent à `stripAppContext` ; joindre le contexte au
+    deuxième tour priverait le premier de `start_child`, alors que c'est souvent là qu'on
+    délègue ; un contexte de session hors message n'existe pas en ACP.
+  - **Correctif** (générique, `src/shared/app-context.ts` › `borrowsAppWords`) : un titre
+    d'agent qui contient un mot propre à l'app (son nom « Bobine », `bobine_…`, ou le nom d'une
+    balise de `APP_CONTEXT_OPENINGS` sans chevrons) que les messages de l'utilisateur
+    n'emploient pas (contexte joint retiré) n'est pas pris (`agentTitle`, `proposedTitle` : les
+    messages ne sont lus du fil que quand un titre arrive). La conversation garde son titre
+    actuel (celui du premier message, ou un titre d'agent pris avant). Un utilisateur qui parle
+    lui-même de Bobine ou de la balise garde le titre de l'agent.
+  - **Limites** : « bobine » est aussi un mot courant ; un titre d'agent qui l'emploie sans que
+    l'utilisateur l'ait écrit est écarté (le titre du message reste : sans gravité). Les titres
+    des sessions reprises de l'historique de l'agent (`resumedRecord`) ne sont pas filtrés :
+    aucun message de l'utilisateur n'est connu à ce moment.
+  - **Tests** : `app-context.test.ts` (titres des deux recettes, mots de l'utilisateur, contexte
+    joint ignoré), `helpers.test.ts`, `manager.test.ts` avec le nouveau scénario d'agent factice
+    `titre-contexte-bob` (rejoue le titre observé) : rouge sans le correctif (« Résumer le projet
+    bobine_capabilities » pris), vert avec. `docs/mock-agent.md` à jour.
+  - **À vérifier avec Bob** : au prochain passage, le titre de la conversation du premier tour
+    (attendu : celui du message, ou un titre de Bob sans mot de l'app) ; journal en Trace pour
+    relever enfin les `session_info_update` de Bob 2.1.0 (combien, quand, sur quoi).

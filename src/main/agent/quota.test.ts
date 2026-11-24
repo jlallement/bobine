@@ -1,4 +1,4 @@
-import { mkdtempSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
@@ -11,7 +11,9 @@ import { bobStatusQuota } from './bob-status'
 import {
   QuotaReader,
   quotaAfterCheck,
+  quotaMemoryFile,
   quotaOnReady,
+  rememberedQuotas,
   READ_TIMEOUT_MS,
   RETRY_WHEN_READY_MS,
   quotaStatusDir,
@@ -401,5 +403,108 @@ describe('quota : l’app quitte pendant une lecture (fiche 208)', () => {
     await reading
     expect(deleteSessions).not.toHaveBeenCalled()
     expect(quota.list()).toEqual([])
+  })
+})
+
+describe('quota : le dernier lu montré dès le lancement (fiche 282)', () => {
+  // 24 novembre 2026, 18 h (heure locale) : le mois en cours est novembre.
+  const now = new Date(2026, 10, 24, 18).getTime()
+  const saved = (change: Record<string, unknown> = {}) => ({
+    profileId: 'bob',
+    profileLabel: 'ancien nom',
+    currency: 'autre',
+    limit: 50,
+    used: 41.95,
+    readAt: new Date(2026, 10, 23, 9, 30).getTime(),
+    ...change
+  })
+
+  it('gardé au lancement, puis relu quand l’agent est prêt et enregistré', async () => {
+    const memory = { load: vi.fn(() => [saved()]), save: vi.fn() }
+    const read = vi.fn(async () => ({ quota: { limit: 50, used: 42.1 }, leftovers: [] }))
+    const quota = new QuotaReader({
+      profiles: [profile('bob', source(read))],
+      statusDir: mkdtempSync(join(tmpdir(), 'quota-garde-')),
+      spawnPty: () => {
+        throw new Error('pas de terminal dans ces essais')
+      },
+      env: () => ({}),
+      isAvailable: () => true,
+      credentials: () => Promise.resolve({}),
+      deleteSessions: async () => {},
+      now: () => now,
+      memory
+    })
+    // Dès le lancement, sans rien lancer : le dernier relevé, au nom et dans l'unité du profil.
+    expect(read).not.toHaveBeenCalled()
+    expect(quota.list()).toEqual([
+      {
+        profileId: 'bob',
+        profileLabel: 'IBM Bob',
+        currency: 'bobcoins',
+        limit: 50,
+        used: 41.95,
+        readAt: new Date(2026, 10, 23, 9, 30).getTime()
+      }
+    ])
+    // Un quota retrouvé ne remplace pas la lecture de ce lancement.
+    await quota.agentReady('bob')
+    expect(read).toHaveBeenCalledTimes(1)
+    const fresh = { profileId: 'bob', limit: 50, used: 42.1, readAt: now }
+    expect(quota.list()).toMatchObject([fresh])
+    expect(memory.save).toHaveBeenCalledWith([expect.objectContaining(fresh)])
+    // Lu dans ce lancement : la session suivante ne relance rien.
+    await quota.agentReady('bob')
+    expect(read).toHaveBeenCalledTimes(1)
+  })
+
+  it('écarte ce qui ne vaut plus : mois d’avant, agent absent ou sans quota, valeurs douteuses', () => {
+    const bob = profile(
+      'bob',
+      source(async () => ({ leftovers: [] }))
+    )
+    const keep = (items: unknown, available = true) =>
+      rememberedQuotas(items, [bob, profile('opencode')], () => available, now)
+    expect(keep([saved()])).toHaveLength(1)
+    expect(keep([saved({ limit: null })])).toMatchObject([{ limit: null }])
+    expect(keep([saved({ readAt: new Date(2026, 9, 31, 23, 59).getTime() })])).toEqual([])
+    expect(keep([saved({ readAt: new Date(2025, 10, 24).getTime() })])).toEqual([])
+    expect(keep([saved({ readAt: now + 60_000 })])).toEqual([])
+    expect(keep([saved()], false)).toEqual([])
+    expect(keep([saved({ profileId: 'opencode' })])).toEqual([])
+    expect(keep([saved({ profileId: 'inconnu' })])).toEqual([])
+    expect(keep([saved({ used: -1 })])).toEqual([])
+    expect(keep([saved({ used: '12' })])).toEqual([])
+    expect(keep([saved({ limit: 'illimité' })])).toEqual([])
+    expect(keep([null, 3, 'bob'])).toEqual([])
+    expect(keep({ bob: saved() })).toEqual([])
+    expect(keep(undefined)).toEqual([])
+  })
+
+  it('fichier : relu tel qu’écrit ; absent ou abîmé, rien ; profil en lecture seule, pas écrit', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'quota-fichier-'))
+    const file = join(dir, 'agent-quotas.json')
+    const memory = quotaMemoryFile(file)
+    expect(memory.load()).toBeUndefined()
+    const quotas: AgentQuota[] = [
+      {
+        profileId: 'bob',
+        profileLabel: 'IBM Bob',
+        currency: 'bobcoins',
+        limit: 50,
+        used: 1,
+        readAt: 2
+      }
+    ]
+    memory.save(quotas)
+    expect(memory.load()).toEqual(quotas)
+    expect(readdirSync(dir)).toEqual(['agent-quotas.json'])
+    writeFileSync(file, '{ pas du json')
+    expect(memory.load()).toBeUndefined()
+
+    const other = join(dir, 'lecture-seule.json')
+    quotaMemoryFile(other, () => true).save(quotas)
+    expect(existsSync(other)).toBe(false)
+    expect(readFileSync(file, 'utf8')).toBe('{ pas du json')
   })
 })
