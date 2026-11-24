@@ -1,3 +1,4 @@
+import { MEASURE } from '../affirm.mjs'
 import { check, withApp } from '../lib.mjs'
 
 /**
@@ -165,51 +166,3 @@ async function roomForConversation(ui) {
   const back = await layout()
   check(back.tab === 'session', `fenêtre élargie : le panneau revient sur « ${back.tab} »`)
 }
-
-/**
- * Ce qui dépasse : le cadre du fil et ses ancêtres (`scrollWidth > clientWidth`), et les éléments
- * du fil qui sortent de la colonne sans être dans un cadre qui les coupe ou les fait défiler (les
- * plus profonds seulement : leurs parents dépassent forcément aussi).
- */
-const MEASURE = `(() => {
-  const scroll = document.querySelector('.scroll')
-  const column = scroll.querySelector('.column').getBoundingClientRect()
-  const columnEl = scroll.querySelector('.column')
-  // Un cadre qui coupe ou fait défiler son contenu (sauf la colonne elle-même, filet de sécurité).
-  const clipped = (el) => {
-    for (let p = el.parentElement; p && p !== columnEl; p = p.parentElement) {
-      if (getComputedStyle(p).overflowX !== 'visible') return true
-    }
-    return false
-  }
-  // Sort de la colonne : la boîte de l'élément, ou son texte qui dépasse de sa boîte.
-  const out = (el) => {
-    const r = el.getBoundingClientRect()
-    if (r.width === 0) return false
-    const text = getComputedStyle(el).overflowX === 'visible' && el.clientWidth > 0 ? r.left + el.scrollWidth : r.right
-    return Math.max(r.right, text) > column.right + 1 || r.left < column.left - 1
-  }
-  const name = (el) => el.tagName.toLowerCase() + (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\\s+/).join('.') : '') + (el.dataset.testid ? '[' + el.dataset.testid + ']' : '')
-  const offenders = []
-  for (const el of scroll.querySelectorAll('.thread *')) {
-    if (!out(el) || clipped(el)) continue
-    if ([...el.children].some(out)) continue
-    const r = el.getBoundingClientRect()
-    const right = Math.max(r.right, r.left + el.scrollWidth)
-    offenders.push(name(el) + ' (' + Math.round(r.left - column.left) + '…' + Math.round(right - column.left) + ' / ' + Math.round(column.width) + ')')
-  }
-  const ancestors = []
-  for (let p = scroll.parentElement; p; p = p.parentElement) {
-    ancestors.push({ name: name(p), scrollWidth: p.scrollWidth, clientWidth: p.clientWidth })
-  }
-  const framed = [...scroll.querySelectorAll('.thread *')].filter((el) => {
-    const o = getComputedStyle(el).overflowX
-    return (o === 'auto' || o === 'scroll') && el.scrollWidth > el.clientWidth
-  }).length
-  return {
-    scroll: { scrollWidth: scroll.scrollWidth, clientWidth: scroll.clientWidth },
-    offenders: offenders.slice(0, 20),
-    ancestors,
-    framed
-  }
-})()`
