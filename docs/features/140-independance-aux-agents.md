@@ -91,7 +91,7 @@ plan dans `rawInput.plan`. Scénario `questions` : sans aperçu.
 - `tool-label.ts` (noms usuels de la cible dans `rawInput`) : règle générique, commentaire sans
   noms d'agents.
 - `changes.ts` (`oldText: ""` = fichier créé) : règle générique (un ancien texte vide crée le
-  fichier).
+  fichier). **Remplacée le 2026-11-24** (voir le journal) : seul `oldText` nul est une création.
 - `transcript.ts` (`/compact|compress` reconnu dans le fil) : l'hôte marque le message envoyé
   `compaction: true` quand il est la commande de compaction de la session (annoncée ou du profil) ;
   le réducteur lit la marque.
@@ -196,3 +196,23 @@ Ce qu'il faut désormais, et seulement cela :
   `codex-question-plan` est renommé et `questions` modifié) ; 142 (`agent-host.ts` à 1048/1050 des
   deux côtés, `profiles.ts` : champ `testedVersions` ajouté avant `welcomeHint`, 142 ajoute
   `transientError` après `license`).
+
+- **2026-11-24** — Écart avec la fiche 203 : la règle « `oldText: ""` = fichier créé » de
+  `conversationChanges` (et ses deux copies, `undoEdits` dans `branch.ts` et `planRestore` dans
+  `restore-files.ts`) contredisait la carte d'outil. Depuis la fiche 203, le main remet à `null` le
+  `oldText: ""` d'un fichier qu'il a constaté absent quand l'outil a été proposé (`new-files.ts`) ;
+  un `oldText: ""` qui reste est un fichier vide **existant** réécrit (trace réelle
+  `bob-2.0.9/creation-fichier-neuf`, rejouée avec le fichier présent). Effets constatés : badge « A »
+  dans Modifications › Conversation sous une carte « Modification », et — plus grave — « Annuler
+  cette modification » ou « Repartir de ce message » **supprimaient** ce fichier au lieu de le
+  remettre vide. Correctif générique : seul `oldText` nul est une création, aux trois endroits ; un
+  ancien texte vide ne se défait que par le fichier entier (jamais comme extrait). Essais rouges
+  avant, verts après : `trace-replay.test.ts` (trace réelle, fichier présent : `created: false`),
+  `changes.test.ts`, `branch.test.ts`, `restore-files.test.ts` (fichier remis vide, pas supprimé).
+  Agent factice : l'étape `edit-file` avec `emptyOldText` (scénarios `modifications`, plan) propose
+  maintenant l'outil d'abord (`pending` sans contenu, puis `in_progress` avec le diff `""`), la forme
+  observée de Bob ; avant, elle l'annonçait directement `in_progress`, forme jamais relevée chez Bob.
+  Conséquence : sa création est vue « Création » sur la carte aussi. Limite inchangée (fiche 203) :
+  un agent qui écrirait un fichier neuf avec `oldText: ""` sans jamais le proposer avant
+  (`in_progress` direct) le verrait « Modification » partout — cohérent, et une annulation le
+  remet vide plutôt que de le supprimer. e2e non relancées (consigne de la tâche).

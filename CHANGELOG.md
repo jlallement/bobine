@@ -8,6 +8,9 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 - Plusieurs travaux proposés d’un coup : la carte les range toujours dans l’ordre où l’agent les a
   proposés, le même d’une fois à l’autre, et une ligne affichée ne change plus de place.
+- Fichier vide déjà présent, réécrit par l’agent : Modifications › Conversation ne le marque plus
+  « créé » (la carte de l’outil disait déjà « Modification »), et **Annuler cette modification**
+  ou **Repartir de ce message** le remettent vide au lieu de le supprimer.
 
 ## 1.0.0-rc.4 — 23 novembre 2026
 

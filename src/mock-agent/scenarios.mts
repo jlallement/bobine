@@ -92,7 +92,7 @@ const MODIFICATIONS: Step[] = [
     kind: 'edit-file',
     path: 'src/app.js',
     content: "export function main() {\n  console.log('bonjour')\n}\n",
-    // Comme Bob 2.0.6 : un fichier créé arrive avec un ancien texte vide.
+    // Comme Bob : un fichier créé arrive avec un ancien texte vide, après l'outil proposé.
     emptyOldText: true
   },
   {

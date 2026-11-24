@@ -233,6 +233,8 @@ describe('formes relevées dans les traces', () => {
     expect(createsFile(atRequest)).toBe(false)
     expect(createsFile(tool)).toBe(false)
     expect(tool.content.find((c) => c.type === 'diff')).toMatchObject({ oldText: '' })
+    // Modifications › Conversation dit la même chose que la carte : pas de badge « créé ».
+    expect(conversationChanges([tool])[0]).toMatchObject({ created: false, added: 1, removed: 0 })
   })
 
   // Fiche 211, trace réelle de Bob 2.0.9 : une commande `execute` n'arrive qu'avec
