@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { addRecentWorkspace, loadSettings, peekPreferences, saveSettings } from './settings'
+import { SettingsStore } from './settings-store'
 
 const tempFile = () => join(mkdtempSync(join(tmpdir(), 'bob-settings-')), 'settings.json')
 
@@ -43,6 +44,41 @@ describe('settings', () => {
     saveSettings(file, settings)
     expect(loadSettings(file)).toEqual(settings)
     expect(() => readFileSync(`${file}.tmp`)).toThrow()
+  })
+
+  it('réglages changés dans l’interface : écrits dans settings.json, relus au lancement suivant', () => {
+    // Remplace les e2e `settings` n° 37 et `language` n° 6, sur un vrai fichier.
+    const file = tempFile()
+    const store = new SettingsStore({
+      initial: loadSettings(file),
+      save: (next) => saveSettings(file, next),
+      profiles: []
+    })
+    store.setPreferences({
+      theme: 'dark',
+      darkTheme: 'black',
+      conversationFont: 'serif',
+      conversationFontSize: 14,
+      codeFontSize: 13,
+      maxLive: 2,
+      language: 'en'
+    })
+    const relaunched = new SettingsStore({
+      initial: loadSettings(file),
+      save: () => {},
+      profiles: []
+    })
+    expect(relaunched.preferences()).toMatchObject({
+      theme: 'dark',
+      darkTheme: 'black',
+      conversationFont: 'serif',
+      conversationFontSize: 14,
+      codeFontSize: 13,
+      maxLive: 2,
+      language: 'en'
+    })
+    // La langue est relue avant toute fenêtre (fiche 074).
+    expect(peekPreferences(file).language).toBe('en')
   })
 
   it('fenêtre (fiche 093) : gardée, valeurs mal formées écartées', () => {

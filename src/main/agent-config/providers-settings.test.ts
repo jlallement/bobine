@@ -8,6 +8,7 @@ import type { AgentProfile } from '../agent/profiles'
 import { SettingsStore } from '../settings-store'
 import { ApiKeyStore } from './api-keys'
 import { ProvidersSettings } from './providers-settings'
+import { effectiveNetwork } from './network-env'
 import { OPENCODE_PROVIDERS } from './opencode-providers'
 import { native } from '../test-platform'
 
@@ -174,6 +175,32 @@ describe('fournisseurs de modèles dans les réglages (fiche 104)', () => {
       fix: expect.stringContaining('Rien n’écoute'),
       action: 'open-agents-settings'
     })
+  })
+
+  it('« Tester » passe par le proxy saisi dans les réglages (SettingsStore), comme au lancement', async () => {
+    // Remplace l'e2e `providers` n° 9 : même câblage que `index.ts` (réglage, puis shell).
+    const home = mkdtempSync(join(tmpdir(), 'providers-proxy-'))
+    const store = new SettingsStore({
+      initial: { recentWorkspaces: [] },
+      save: () => {},
+      profiles: []
+    })
+    const providers = new ProvidersSettings({
+      profiles: [profile('opencode', { providers: OPENCODE_PROVIDERS })],
+      locations: { home },
+      env: {},
+      network: () => effectiveNetwork(store.network(), {})
+    })
+    providers.save('opencode', {
+      id: 'llmaas',
+      baseURL: 'http://llm.interne.invalid/v1',
+      models: [{ id: 'a' }]
+    })
+    store.setNetwork({ proxy: 'http://127.0.0.1:9' })
+    expect(await providers.test('opencode', 'llmaas')).toMatchObject({ ok: false, cause: 'proxy' })
+    // Proxy effacé : plus de proxy, l'hôte inconnu est dit tel quel.
+    store.setNetwork({})
+    expect(await providers.test('opencode', 'llmaas')).toMatchObject({ ok: false, cause: 'dns' })
   })
 
   it('fichier illisible : erreur dans la vue et le Diagnostic, rien d’écrit', async () => {
