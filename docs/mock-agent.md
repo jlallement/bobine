@@ -24,6 +24,7 @@ pnpm mock-agent --scenario permission     # parle ACP sur stdin/stdout
 |---|---|---|---|
 | `--scenario <nom>` | `MOCK_AGENT_SCENARIO` | `demo` | Scénario joué à chaque prompt |
 | `--delay <ms>` | `MOCK_AGENT_DELAY_MS` | `40` | Délai entre deux morceaux (0 dans les tests) |
+| `--pas-morceaux <ms>` | `MOCK_AGENT_CHUNK_MS` | celui de `--delay` | Délai entre deux morceaux de **texte** diffusés (réponse, réflexion) seulement ; les pauses des scénarios et les étapes d'outil gardent `--delay`. Les e2e le posent à 5 ms (`NEUTRAL_ENV`, fiche 279) : le scénario `echo` rediffuse tout le contexte joint par l'app, jusqu'à 700 mots |
 | `--sans-options` | `MOCK_AGENT_OPTIONS=none` (app, fiche 210) | non | N'expose que des modes, sans options de configuration (simule un agent comme Bob pourrait l'être) |
 | `--store <dossier>` | `MOCK_AGENT_STORE` | dossier temporaire | Où les sessions sont mémorisées (pour `session/load` après redémarrage) |
 | `--sans-historique` | — | non | Aucune capacité de reprise (`loadSession` faux, pas de `sessionCapabilities`) |
