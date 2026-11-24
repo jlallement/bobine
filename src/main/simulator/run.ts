@@ -64,5 +64,12 @@ export const runCommand: Run = (file, args, options = {}) =>
         })
       }
     )
-    if (options.input !== undefined) child.stdin?.end(options.input)
+    // Un enfant peut sortir sans lire son entrée (`git check-ignore --stdin` hors dépôt) : l'écriture
+    // dans le tube fermé échoue (`EPIPE`, fiche 250). Sans écouteur, l'erreur du flux serait une
+    // exception non gérée du main ; ici elle est sans objet : le code de sortie est rendu par le rappel.
+    const stdin = child.stdin
+    if (options.input !== undefined && stdin) {
+      stdin.on('error', () => {})
+      if (stdin.writable && !stdin.destroyed) stdin.end(options.input)
+    }
   })

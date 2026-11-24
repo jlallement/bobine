@@ -68,7 +68,8 @@ function waitFor(predicate: () => boolean, timeoutMs = 5000): Promise<void> {
     const started = Date.now()
     const check = () => {
       if (predicate()) return resolve()
-      if (Date.now() - started > timeoutMs) return reject(new Error('waitFor : délai dépassé'))
+      if (Date.now() - started > timeoutMs)
+        return reject(new Error(`waitFor : délai dépassé (${timeoutMs} ms) : ${predicate}`))
       setTimeout(check, 10)
     }
     check()
@@ -1609,11 +1610,13 @@ describe('AgentHost', () => {
         const { host } = failing('plantage-avec-enfant', {}, [])
         await host.start()
         await host.prompt('Compile')
-        await waitFor(() => host.snapshot().status === 'exited', 10_000)
+        // Délais par défaut (5 s chacun, cumul sous la limite de 15 s). Mesuré (30 passages en
+        // parallèle) : 1 ms au plus pour la sortie, 0,4 s pour la fin de la commande.
+        await waitFor(() => host.snapshot().status === 'exited')
         expect(host.snapshot().detail).toContain('SIGKILL')
         // Dit en clair (fiche 272, recette).
         expect(host.snapshot().detail).toContain('arrêt forcé')
-        await waitFor(() => sleeping().length === 0, 8000)
+        await waitFor(() => sleeping().length === 0)
         expect(sleeping()).toEqual([])
         host.stop()
       }

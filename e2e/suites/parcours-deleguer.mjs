@@ -188,6 +188,9 @@ export async function parcoursDeleguerSuite(scheme) {
             )),
             'mère et travaux à la corbeille : plus dans la barre latérale'
           )
+          // Inventaire `restart` n° 4 : la suppression se confirme dans l'app (fiche 026), jamais
+          // par une boîte du navigateur (`confirm()`).
+          check(ui.dialogs.length === 0, 'suppression confirmée dans l’app : aucune boîte native')
         })
 
         await journee.step('restaurer la mère depuis la corbeille', async () => {

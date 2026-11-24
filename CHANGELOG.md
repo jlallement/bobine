@@ -2,6 +2,13 @@
 
 Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrections
+
+- Plusieurs travaux proposés d’un coup : la carte les range toujours dans l’ordre où l’agent les a
+  proposés, le même d’une fois à l’autre, et une ligne affichée ne change plus de place.
+
 ## 1.0.0-rc.4 — 23 novembre 2026
 
 ### Nouveau
