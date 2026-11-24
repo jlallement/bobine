@@ -17,6 +17,11 @@ describe('searchSettings (fiche 051)', () => {
     expect(labels('introuvable xyz')).toEqual([])
   })
 
+  it('« empattements », l’ancien mot (fiche 128), trouve encore la police des réponses', () => {
+    // Remplace l'e2e `settings` n° 33 (interface en français seulement).
+    expect(labels('empattements')).toContain('appearance:Police des réponses')
+  })
+
   it('raccourcis clavier par libellé ou par touches ; libellés qui suffisent d’abord', () => {
     expect(labels('⌘K')).toContain('shortcuts:Rechercher une conversation')
     const terminal = labels('terminal')

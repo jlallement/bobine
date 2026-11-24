@@ -1,12 +1,15 @@
 /**
- * Réglages › Confidentialité (fiches 072, 136, 269) : certificats acceptés dans le navigateur
- * intégré, cookies gardés, « Effacer » les données du navigateur. L'effet dans Chromium (partition
- * vidée, exception oubliée) reste dans le main et les e2e `certificats` et `reglages`.
+ * Réglages › Confidentialité (fiches 042, 072, 136, 269) : certificats acceptés dans le navigateur
+ * intégré, commandes retenues, cookies gardés, « Effacer » les données du navigateur. Remplace les
+ * vérifications de composant des e2e `settings` (n° 15, 16 : la note), `certificats` (n° 16) et
+ * `terminal` (n° 10, 11). Les autorisations retenues, leur tri et leur relecture au lancement sont
+ * dans `approvals.test.ts` (main) ; l'effet dans Chromium (partition vidée, exception oubliée)
+ * reste dans le main (`settings-effects.test.ts`, `browser-manager.test.ts`) et les e2e.
  */
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { t } from 'i18next'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AgentSettingsView } from '@shared/agent'
 import type { ApprovalsView } from '@shared/approvals'
 import { DEFAULT_PREFERENCES, type Preferences } from '@shared/preferences'
@@ -26,14 +29,19 @@ const view = (
     preferences: { ...DEFAULT_PREFERENCES, ...preferences }
   }) as unknown as AgentSettingsView
 
-const clearData = vi.fn()
+const api = window.api
+let clearData: ReturnType<typeof vi.fn>
+
 beforeEach(() => {
-  clearData.mockReset()
-  window.api.browser = { clearData } as unknown as Window['api']['browser']
+  clearData = vi.fn(async () => undefined)
+  Object.assign(window, { api: { ...api, browser: { clearData } } })
+})
+afterEach(() => {
+  Object.assign(window, { api })
 })
 
 function renderPrivacy(
-  settings: AgentSettingsView,
+  settings: AgentSettingsView = view(),
   handlers: { onPreferences?: () => void; onForgetApproval?: () => void } = {}
 ) {
   return render(
@@ -105,6 +113,44 @@ describe('certificats acceptés (fiche 269)', () => {
   })
 })
 
+describe('commandes retenues (fiche 042)', () => {
+  it('commande retenue listée sous son dossier, en chasse fixe', () => {
+    renderPrivacy(
+      view({ commands: [{ workspace: '/projets/bobine', commands: ['pnpm dev', 'make'] }] })
+    )
+    const group = screen.getByTestId('settings-approved-commands')
+    expect(group.textContent).toBe('Commandes · bobine')
+    const list = group.parentElement as HTMLElement
+    const commands = within(list)
+      .getAllByTestId('forget-command')
+      .map((b) => b.closest('li')?.querySelector('.settings-list-main') as HTMLElement)
+    expect(commands.map((c) => c.textContent)).toEqual(['pnpm dev', 'make'])
+    expect(commands.every((c) => c.classList.contains('mono'))).toBe(true)
+  })
+
+  it('commande retenue oubliée : rien avant la confirmation, puis dossier et commande au main', () => {
+    const onForgetApproval = vi.fn()
+    renderPrivacy(view({ commands: [{ workspace: '/projets/bobine', commands: ['pnpm dev'] }] }), {
+      onForgetApproval
+    })
+    fireEvent.click(screen.getByTestId('forget-command'))
+    expect(onForgetApproval).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByTestId('confirm-row-keep'))
+    expect(screen.queryByTestId('confirm-row-confirm')).toBeNull()
+    fireEvent.click(screen.getByTestId('forget-command'))
+    fireEvent.click(screen.getByTestId('confirm-row-confirm'))
+    expect(onForgetApproval).toHaveBeenCalledWith({
+      workspace: '/projets/bobine',
+      command: 'pnpm dev'
+    })
+  })
+
+  it('rien de retenu : la liste le dit', () => {
+    renderPrivacy()
+    expect(screen.getByTestId('settings-allowed-none')).toBeTruthy()
+  })
+})
+
 describe('données du navigateur intégré (fiches 072, 136)', () => {
   it('cookies gardés par défaut ; décocher part dans les préférences', () => {
     const onPreferences = vi.fn()
@@ -119,7 +165,7 @@ describe('données du navigateur intégré (fiches 072, 136)', () => {
   it('« Effacer » : bouton occupé pendant l’effacement, puis la note ; une erreur est dite', async () => {
     let done: () => void = () => {}
     clearData.mockReturnValueOnce(new Promise<void>((resolve) => (done = resolve)))
-    renderPrivacy(view())
+    renderPrivacy()
     const button = screen.getByTestId('settings-clear-browser-data') as HTMLButtonElement
     fireEvent.click(button)
     expect(clearData).toHaveBeenCalledTimes(1)
@@ -137,6 +183,22 @@ describe('données du navigateur intégré (fiches 072, 136)', () => {
     })
     expect(screen.getByTestId('settings-clear-browser-data-note').textContent).toContain(
       'partition occupée'
+    )
+  })
+
+  it('effacement refusé : la cause seule, le bouton revient', async () => {
+    clearData.mockRejectedValueOnce(
+      new Error("Error invoking remote method 'browser:clearData': Error: Partition occupée.")
+    )
+    renderPrivacy()
+    fireEvent.click(screen.getByTestId('settings-clear-browser-data'))
+    await waitFor(() =>
+      expect(screen.getByTestId('settings-clear-browser-data-note').textContent).toBe(
+        'Partition occupée.'
+      )
+    )
+    expect((screen.getByTestId('settings-clear-browser-data') as HTMLButtonElement).disabled).toBe(
+      false
     )
   })
 })

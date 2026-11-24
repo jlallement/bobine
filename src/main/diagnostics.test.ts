@@ -83,6 +83,14 @@ describe('diagnostic — l’app et son environnement (fiche 061)', () => {
     expect(check(groups, 'android', 'sdk')?.detail).toBe('~/Library/Android/sdk')
   })
 
+  it('groupe « Bobine » : version et dossier, plus le chemin des journaux (carte Journal, fiche 133)', async () => {
+    // Remplace l'e2e `diagnostic` n° 8 : les journaux ont leur carte en tête de la page.
+    const groups = await systemGroups(facts())
+    const app = groups.find((g) => g.id === 'app')
+    expect(app?.checks.map((c) => c.id)).toEqual(['version', 'workspace'])
+    expect(JSON.stringify(app)).not.toMatch(/main\.log|agents\.log|Logs/)
+  })
+
   it('sans simulateur (Linux, fiche 145) : ni groupe iOS ni commande Xcode', async () => {
     const asked: string[] = []
     const run: Run = async (file, args) => {

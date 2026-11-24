@@ -144,3 +144,127 @@ describe('Approbations : un seul mot (recette QA)', () => {
     )
   })
 })
+
+/**
+ * Page des approbations (fiche 215) : remplace les vérifications de composant de l'e2e
+ * `regles-approbation` (n° 20, 21, 22, 29, 30, 31). L'écriture réelle du fichier de l'agent est
+ * dans `bob-approval-rules.test.ts` (main).
+ */
+describe('Approbations : groupes, listes, fichier illisible (fiche 215)', () => {
+  const view = (over: Partial<ApprovalRulesView> = {}): ApprovalRulesView => ({
+    ...rules({ global: false, read: false }),
+    groups: APPROVAL_GROUPS.map((id) => ({
+      id,
+      enabled: id === 'read' || id === 'execute',
+      forbidden: id === 'mcp',
+      outsideWorkspace: false
+    })),
+    commands: { allowed: ['ls', 'git status'], denied: ['rm'], defaultList: false },
+    ...over
+  })
+  const groupRow = (id: string) =>
+    document.querySelector(`[data-testid="approval-group"][data-group="${id}"]`) as HTMLElement
+  const groupSwitch = (id: string) =>
+    within(groupRow(id)).getByTestId('approval-group-switch') as HTMLInputElement
+
+  it('groupes lus : « Commandes de la liste » activé, « Liste de tâches » non', async () => {
+    get.mockResolvedValue({ ok: true, rules: view() })
+    render(<ApprovalRulesPage profile={profile} />)
+    await screen.findByTestId('approval-rules-groups')
+    expect(groupSwitch('execute').checked).toBe(true)
+    expect(groupSwitch('todo').checked).toBe(false)
+    expect(screen.getByTestId('approval-rules-path').textContent).toBe(
+      '~/.bob/settings/settings.json'
+    )
+  })
+
+  it('interrupteur « Liste de tâches » : le changement part au main, la page suit', async () => {
+    get.mockResolvedValue({ ok: true, rules: view() })
+    const enabled = view({
+      groups: view().groups.map((g) => (g.id === 'todo' ? { ...g, enabled: true } : g))
+    })
+    change.mockResolvedValue({ ok: true, rules: enabled, notice: {} })
+    render(<ApprovalRulesPage profile={profile} />)
+    await screen.findByTestId('approval-rules-groups')
+    fireEvent.click(groupSwitch('todo'))
+    await waitFor(() =>
+      expect(change).toHaveBeenCalledWith('bob', { type: 'setGroup', group: 'todo', enabled: true })
+    )
+    await waitFor(() => expect(groupSwitch('todo').checked).toBe(true))
+  })
+
+  it('listes : modifier retire puis ajoute ; retirer se confirme dans la ligne', async () => {
+    get.mockResolvedValue({ ok: true, rules: view() })
+    change.mockResolvedValue({ ok: true, rules: view(), notice: {} })
+    render(<ApprovalRulesPage profile={profile} />)
+    const allowed = await screen.findByTestId('approval-rules-allowed')
+    const row = (command: string) =>
+      allowed.querySelector(`[data-command="${command}"]`) as HTMLElement
+    fireEvent.click(within(row('git status')).getByTestId('approval-rules-edit'))
+    fireEvent.change(screen.getByTestId('approval-rules-edit-input'), {
+      target: { value: 'git status --short' }
+    })
+    fireEvent.submit(screen.getByTestId('approval-rules-edit-input'))
+    await waitFor(() => expect(change).toHaveBeenCalledTimes(2))
+    expect(change.mock.calls.map((c) => c[1])).toEqual([
+      { type: 'removeCommand', prefix: 'git status', list: 'allowed' },
+      { type: 'addCommand', prefix: 'git status --short', list: 'allowed' }
+    ])
+    change.mockClear()
+    fireEvent.click(within(row('ls')).getByTestId('approval-rules-remove'))
+    expect(change).not.toHaveBeenCalled()
+    fireEvent.click(within(row('ls')).getByTestId('confirm-row-confirm'))
+    await waitFor(() =>
+      expect(change).toHaveBeenCalledWith('bob', {
+        type: 'removeCommand',
+        prefix: 'ls',
+        list: 'allowed'
+      })
+    )
+  })
+
+  it('modifier en une saisie vide : refusé avant d’écrire, l’ancienne reste', async () => {
+    get.mockResolvedValue({ ok: true, rules: view() })
+    render(<ApprovalRulesPage profile={profile} />)
+    const allowed = await screen.findByTestId('approval-rules-allowed')
+    fireEvent.click(
+      within(allowed.querySelector('[data-command="ls"]') as HTMLElement).getByTestId(
+        'approval-rules-edit'
+      )
+    )
+    fireEvent.change(screen.getByTestId('approval-rules-edit-input'), { target: { value: '  ' } })
+    fireEvent.submit(screen.getByTestId('approval-rules-edit-input'))
+    expect(await screen.findByRole('alert')).toBeTruthy()
+    expect(change).not.toHaveBeenCalled()
+  })
+
+  it('groupe interdit par l’organisation : interrupteur désactivé, raison dite', async () => {
+    get.mockResolvedValue({ ok: true, rules: view() })
+    render(<ApprovalRulesPage profile={profile} />)
+    await screen.findByTestId('approval-rules-groups')
+    expect(groupSwitch('mcp').disabled).toBe(true)
+    expect(within(groupRow('mcp')).getByTestId('approval-group-forbidden').textContent).toContain(
+      'Interdit par votre organisation'
+    )
+    expect(groupSwitch('todo').disabled).toBe(false)
+  })
+
+  it('fichier illisible : bandeau avec la ligne, ni groupes ni listes ; corrigé, « Relire »', async () => {
+    get.mockResolvedValueOnce({
+      ok: false,
+      error: { code: 'invalid-json', file: '~/.bob/settings/settings.json', line: 4 }
+    })
+    render(<ApprovalRulesPage profile={profile} />)
+    const banner = await screen.findByTestId('approval-rules-unreadable')
+    expect(banner.textContent).toContain('pas du JSON valide')
+    expect(banner.textContent).toContain('~/.bob/settings/settings.json')
+    expect(banner.textContent).toContain('ligne 4')
+    expect(screen.queryByTestId('approval-rules-groups')).toBeNull()
+    expect(screen.queryByTestId('approval-rules-allowed')).toBeNull()
+    get.mockResolvedValueOnce({ ok: true, rules: view() })
+    fireEvent.click(screen.getByTestId('approval-rules-reload'))
+    await screen.findByTestId('approval-rules-groups')
+    expect(screen.queryByTestId('approval-rules-unreadable')).toBeNull()
+    expect(screen.getByTestId('approval-rules-allowed')).toBeTruthy()
+  })
+})

@@ -156,6 +156,34 @@ describe('« Pour tous les projets » sur une carte de commande (fiche 215)', ()
     })
   })
 
+  it('vraie commande longue de Bob : 5 parties à cocher, `wc -l` déjà autorisée ; « Refuser partout » la seule cochée', async () => {
+    // Remplace l'e2e `regles-approbation` n° 14 et 16 : copie de `BOB_LONG_COMMAND`
+    // (src/mock-agent/scenarios-commandes.mts, recette du 2026-11-07 avec le vrai IBM Bob).
+    const long =
+      "seq 1 20000 | sed 's/^/ligne numero /' > gros.txt && git add gros.txt && git -c user.email=qa@example.test -c user.name=QA commit -qm gros && sed -i '' 's/numero/n°/' gros.txt && wc -l gros.txt"
+    get.mockResolvedValue({ ok: true, rules: rules({ enabled: true }) })
+    const { onRespond } = view(command(long))
+    fireEvent.click(await screen.findByTestId('global-rule-toggle'))
+    const parts = screen.getAllByTestId<HTMLInputElement>('global-rule-prefix').map((i) => i.value)
+    expect(parts).toHaveLength(5)
+    expect(parts[0]).toBe('seq 1 20000')
+    expect(parts[4]).toBe("sed -i '' 's/numero/n°/' gros.txt")
+    const covered = screen.getAllByTestId('global-rule-covered').map((c) => c.textContent)
+    expect(covered).toEqual(['wc -l gros.txtdéjà autorisée partout'])
+    const toggles = screen.getAllByTestId('global-rule-part-on')
+    expect(toggles).toHaveLength(5)
+    expect(screen.queryByTestId('global-rule-first-time')).toBeNull()
+    for (const toggle of toggles.slice(0, 4)) fireEvent.click(toggle)
+    fireEvent.click(screen.getByTestId('global-rule-deny'))
+    await waitFor(() => expect(onRespond).toHaveBeenCalledWith(`req-${long}`, 'r1'))
+    expect(change).toHaveBeenCalledTimes(1)
+    expect(change).toHaveBeenCalledWith('bob', {
+      type: 'addCommand',
+      prefix: "sed -i '' 's/numero/n°/' gros.txt",
+      list: 'denied'
+    })
+  })
+
   it('préfixe d’un seul mot : avertissement, sans blocage', async () => {
     view(command('npm run lint'))
     fireEvent.click(await screen.findByTestId('global-rule-toggle'))
