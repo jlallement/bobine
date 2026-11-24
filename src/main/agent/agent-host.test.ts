@@ -1275,6 +1275,22 @@ describe('AgentHost', () => {
       expect(userTexts(transcript())).toEqual(['Longue réponse', 'Suite'])
     })
 
+    it('Arrêter pendant la préparation du message : le tour part, puis s’arrête (fiche 278)', async () => {
+      const { host, events } = createHost(mockProfile('attend-stop', 20))
+      await host.start()
+      const turn = host.prompt('Longue réponse')
+      // Le message n'est pas encore chez l'agent : rien à annuler, l'arrêt doit le suivre.
+      await host.cancel()
+      await turn
+      host.stop()
+      expect(events).toContainEqual({ type: 'cancel-requested' })
+      expect(events).toContainEqual({
+        type: 'turn-end',
+        stopReason: 'cancelled',
+        at: expect.any(Number)
+      })
+    })
+
     it('« Envoyer maintenant » : interrompt la réponse, ce message part en premier', async () => {
       const { host, events, transcript } = createHost(mockProfile('lent', 20))
       await host.start()
