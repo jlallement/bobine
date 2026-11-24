@@ -66,7 +66,9 @@ const hintLayout = `(() => {
  * à 640 px) ; à 1280 px panneau ouvert, le rappel entier. Jamais l'un sur l'autre (maquette rc4).
  */
 async function narrowComposer(ui, focus) {
-  await ui.send('/scenario lent')
+  // Un tour qui ne finit qu'à l'arrêt : l'invite « réponse en cours » ne peut pas changer pendant
+  // les mesures (un tour « lent » finissait parfois avant la dernière, à 1280 px).
+  await ui.send('/scenario attend-stop')
   await ui.waitFor(`!!${ui.$('stop')}`)
   const cases = [
     { width: 760, panel: false, label: false, shot: 'historique-5-saisie-760' },
@@ -112,7 +114,7 @@ async function narrowComposer(ui, focus) {
   }
   await ui.viewport()
   // La réponse s'arrête : l'essai d'Échap qui suit repart d'une saisie au repos.
-  await ui.ev(`${ui.$('stop')}?.click()`)
+  await ui.click(ui.$('stop'))
   await ui.ready()
   await focus()
 }
@@ -218,7 +220,6 @@ async function run(ui) {
   await ui.ev(`${input}.select(); document.execCommand('delete')`)
   await ui.waitFor(`${input}.value === ''`)
   // Saisie étroite (maquette rc4, variante 1) : pendant une réponse, l'invite longue et le rappel.
-  // Sa commande est la même que la suivante : l'historique n'en garde qu'une.
   await narrowComposer(ui, focus)
   await ui.send('/scenario lent')
   await ui.waitFor(`!!${ui.$('stop')}`)
