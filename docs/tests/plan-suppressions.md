@@ -1,10 +1,23 @@
 # Plan de suppression des e2e remplacées (étape 3 de la pyramide)
 
 Établi le 2026-11-24 sur la branche `test/pyramide` (les six branches de remplaçants assemblées,
-`./scripts/verify` vert). **Rien n'est supprimé ici** : ce plan attend la validation de
-l'utilisateur. Sources : `docs/tests/inventaire-e2e-{A,B,C}.md` (colonne « Déjà couvert ? »,
+`./scripts/verify` vert), validé par l'utilisateur le même jour, en deux étapes. Sources : `docs/tests/inventaire-e2e-{A,B,C}.md` (colonne « Déjà couvert ? »,
 après assemblage), ADR-0069, fiche 277. Généré ligne à ligne depuis les inventaires : chaque
 vérification y a sa ligne, avec son numéro d'inventaire.
+
+## État
+
+| Étape | État | Réel |
+|---|---|---|
+| 1 — remplaçants Vitest verts | **faite** (2026-11-24, fiche 278) | 118 suites (catalogue : 127 → 118 entrées), 768 lignes d'inventaire restent (1 219 retirées), `check(…)` : 1 970 → 754 |
+| 2 — journées à confirmer | en attente d'une campagne `e2e.yml` verte | 35 vérifications |
+
+Écarts de l'étape 1 au tableau ci-dessous (détail : fiche 278) : 13 lignes « attente » gardent
+leur `waitFor` (pas de `check` à elles) ; l'entrée `usage` du catalogue est partie aussi (sa
+fonction ne vérifiait plus rien) ; les rendus du risque 2 sont mesurés par `affirm`. Durée de
+la suite complète, estimée d'après les durées du 2026-11-23 : 74 min de temps machine avant,
+≈ 39 à 62 min après (les étapes qui mènent aux vérifications gardées restent), soit ≈ 13 à
+21 min à trois tâches ; à remesurer par la prochaine campagne.
 
 ## Règle
 
@@ -3191,8 +3204,8 @@ photo seule) : `repere` 7, 8 ; `settings` 22, 43 ; `mcp` 5, 33 ; `browser-annota
 
 ## Ordre proposé après validation
 
-1. Étape 1 : supprimer les vérifications « vert » et les creuses, suite par suite (un commit par
-   lot), retirer les suites vidées de `e2e/catalog.mjs`, poser `affirm` sur les captures qui
-   restent ; `verify` puis `pnpm e2e --changed` sur GitHub.
+1. Étape 1 (**faite**) : supprimer les vérifications « vert » et les creuses, retirer les suites
+   vidées de `e2e/catalog.mjs`, mesurer par `affirm` les rendus du risque 2 ; `verify` puis
+   `pnpm e2e --changed` sur GitHub.
 2. Campagne `e2e.yml` complète (macOS + Linux) : les journées vertes valident les « à confirmer ».
 3. Étape 2 : supprimer les vérifications « à confirmer » dont la journée est verte.
