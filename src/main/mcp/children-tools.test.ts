@@ -582,6 +582,19 @@ describe('start_child avec un rôle (fiche 223)', () => {
     expect(s.calls).toEqual([])
   })
 
+  it('fiche 285 : le rôle interne « participant » n’est ni cité ni accepté', async () => {
+    const s = setup({ roles: [...ROLES, role('participant', { readOnly: true, internal: true })] })
+    expect(JSON.stringify(s.tool('start_child').definition.inputSchema)).not.toContain(
+      'participant'
+    )
+    const result = await s
+      .tool('start_child')
+      .call({ title: 'T', prompt: 'P', role: 'participant' })
+    expect(result.isError).toBe(true)
+    expect(textOf(result)).toContain('Unknown role "participant"')
+    expect(s.calls).toEqual([])
+  })
+
   it('délègue à un rôle : figé sur la carte (consigne, mode, lecture seule), lancé tel quel', async () => {
     const s = setup({ roles: ROLES })
     const result = await s

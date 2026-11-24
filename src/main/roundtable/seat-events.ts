@@ -34,7 +34,7 @@ export interface SeatRef {
 }
 
 export interface SeatEventsHost {
-  conversations: Pick<ConversationManager, 'view' | 'state' | 'settingsView'>
+  conversations: Pick<ConversationManager, 'view' | 'state' | 'settingsView' | 'post'>
   read: (motherId: string, roundtableId: string) => Roundtable | undefined
   apply: (motherId: string, roundtableId: string, event: RoundtableEvent) => Roundtable | undefined
   live: (
@@ -45,6 +45,8 @@ export interface SeatEventsHost {
   participantMode?: ParticipantMode | undefined
   /** Arrête le tour en cours d'une conversation. */
   cancel: (conversationId: string) => void
+  /** Renomme une conversation (titre lisible du participant). */
+  rename: (conversationId: string, title: string) => void
   now: () => number
 }
 
@@ -74,7 +76,7 @@ export class SeatEvents {
   /** La question peut-elle partir ? Seulement pour une place encore en attente (tour non arrêté). */
   mayStart(ref: SeatRef): boolean {
     const found = this.seat(ref)
-    return found?.rt.phase === 'collecting' && found.seat.state === 'waiting'
+    return found?.rt.phase === 'collecting' && !found.rt.stopping && found.seat.state === 'waiting'
   }
 
   folderChanged(ref: SeatRef): RoundtableEvent {
@@ -113,6 +115,14 @@ export class SeatEvents {
       readOnly: 'unverified',
       at: found.seat.startedAt ?? this.host.now()
     })
+  }
+
+  /** Nom du modèle de la place d'après les options de la session du participant. */
+  private modelName(childId: string, seat: RoundtableSeat): string | undefined {
+    if (!seat.model) return undefined
+    const controls = this.host.conversations.view(childId).snapshot?.controls ?? []
+    const control = controls.find((c) => c.id === seat.model?.controlId && c.category === 'model')
+    return control?.options.find((o) => o.value === seat.model?.value)?.name
   }
 
   /** Le premier message n'a pas pu partir : modèle strict refusé, agent qui ne démarre pas… */
@@ -169,8 +179,25 @@ export class SeatEvents {
       this.host.conversations.view(childId).transcript.items.findLast((i) => i.kind === 'user')?.at
     const asked = askedAt !== undefined ? { askedAt } : {}
     if (rt.phase === 'collecting' && seat.state === 'waiting') {
-      this.apply(ref, { type: 'seat-working', letter: ref.letter, at, ...asked })
+      // Nom du modèle tel que la session du participant l'annonce (titre et libellé lisibles).
+      const name = this.modelName(childId, seat)
+      this.apply(ref, {
+        type: 'seat-working',
+        letter: ref.letter,
+        at,
+        ...asked,
+        ...(name ? { label: name } : {})
+      })
+      if (name && name !== seat.label) this.host.rename(childId, name)
       const readOnly = this.actualReadOnly(ref, childId, seat)
+      // Hors git, rien n'est vérifié : la conversation du participant le dit comme sa ligne.
+      if (readOnly === 'unverified') {
+        this.host.conversations.post(childId, {
+          type: 'notice',
+          level: 'info',
+          message: { key: 'roundtable.state.readOnly.unverified' }
+        })
+      }
       if (readOnly !== seat.readOnly) {
         this.apply(ref, {
           type: 'seat-launched',
@@ -255,7 +282,8 @@ export class SeatEvents {
 
   private stoppedByUser(ref: SeatRef): void {
     const found = this.seat(ref)
-    if (!found) return
+    // Tour en train de s'arrêter : c'est l'arrêt du tour qui le dira.
+    if (!found || found.rt.stopping) return
     const { rt, seat } = found
     const at = this.host.now()
     if (rt.phase === 'collecting' && running(seat.state)) {
@@ -293,6 +321,34 @@ export class SeatEvents {
 
   /** Plafond de la conversation du participant (fiche 157, inchangé) : arrêté, ou réplique retenue. */
   private capped(ref: SeatRef, reached: CostCapReached): void {
+    if (reached.held !== undefined) return this.held(ref)
+    // Plafond vu après coup (Bob, coût lu après la réponse) : le tour avait fini, l'avis compte.
+    if (!reached.interrupted) return
+    // Tour interrompu : la carte du plafond arrive avec la fin du tour, parfois avant elle. Un avis
+    // fini (fin de tour normale, traitée juste après) l'emporte ; sinon, arrêté par le plafond.
+    setTimeout(() => this.stoppedByCap(ref), 0)
+  }
+
+  /** Message retenu par le plafond : la place attend « Continuer » dans sa conversation. */
+  private held(ref: SeatRef): void {
+    const found = this.seat(ref)
+    if (!found) return
+    const { rt, seat } = found
+    const at = this.host.now()
+    if (rt.phase === 'collecting' && running(seat.state)) {
+      this.apply(ref, { type: 'seat-held', letter: ref.letter, at })
+    } else if (rt.phase === 'rebutting' && running(seat.rebuttal?.state)) {
+      this.apply(ref, {
+        type: 'rebuttal-seat',
+        letter: ref.letter,
+        state: 'waiting',
+        held: true,
+        at
+      })
+    }
+  }
+
+  private stoppedByCap(ref: SeatRef): void {
     const found = this.seat(ref)
     if (!found) return
     const { rt, seat } = found
@@ -301,12 +357,7 @@ export class SeatEvents {
     if (rt.phase === 'collecting' && running(seat.state)) {
       this.apply(ref, { type: 'seat-stopped', letter, reason: 'cost-cap', at })
     } else if (rt.phase === 'rebutting' && running(seat.rebuttal?.state)) {
-      this.apply(
-        ref,
-        reached.held !== undefined
-          ? { type: 'rebuttal-seat', letter, state: 'waiting', held: true, at }
-          : { type: 'rebuttal-seat', letter, state: 'stopped', stopped: 'cost-cap', at }
-      )
+      this.apply(ref, { type: 'rebuttal-seat', letter, state: 'stopped', stopped: 'cost-cap', at })
     }
   }
 

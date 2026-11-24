@@ -154,7 +154,7 @@ describe('sélection et places (lot 1)', () => {
     expect(ok.ok).toBe(true)
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
     expect(env.rt(mother).seats.map((s) => s.label)).toEqual([
-      'factice-rapide',
+      'Factice rapide',
       'Factice sans-modele'
     ])
   })
@@ -243,17 +243,17 @@ describe('quorum, arrêts et relance (lots 2 et 4)', () => {
       'deux au travail'
     )
     const first = env.rt(mother).seats.find((s) => s.profileId === 'lent')
-    env.roundtables.stop(mother, id, first?.letter)
+    await env.roundtables.stop(mother, id, first?.letter)
     expect(env.rt(mother).seats.find((s) => s.letter === first?.letter)).toMatchObject({
       state: 'stopped',
       stopped: 'user'
     })
-    env.roundtables.stop(mother, id)
+    await env.roundtables.stop(mother, id)
     expect(env.rt(mother).phase).toBe('stopped')
     expect(env.rt(mother).seats.every((s) => s.state !== 'working' && s.state !== 'waiting')).toBe(
       true
     )
-    expect(() => env.roundtables.stop(mother, id)).toThrow(/plus possible/)
+    await expect(env.roundtables.stop(mother, id)).rejects.toThrow(/plus possible/)
     expect(env.users(mother).some((u) => u.from?.kind === 'roundtable')).toBe(false)
     rmSync(lock)
   })
@@ -279,7 +279,7 @@ describe('courses (revue de code)', () => {
     const id = env.rt(mother).roundtableId
     const seat = () => env.rt(mother).seats.find((s) => s.profileId === 'demarre')
     expect(seat()?.state).toBe('waiting')
-    env.roundtables.stop(mother, id, seat()?.letter)
+    await env.roundtables.stop(mother, id, seat()?.letter)
     await env.roundtables.relaunch(mother, id, seat()?.letter ?? 'A')
     await env.waitFor(() => seat()?.state === 'answered', 'participant relancé, a répondu')
     rmSync(lock)
@@ -302,7 +302,7 @@ describe('courses (revue de code)', () => {
       participants: [FAST, PRECISE, choice('panel', 'autre')]
     })
     await env.waitFor(() => env.items(mother).some((i) => i.kind === 'roundtable'), 'tour posé')
-    env.roundtables.stop(mother, env.rt(mother).roundtableId)
+    await env.roundtables.stop(mother, env.rt(mother).roundtableId)
     release()
     await launching
     expect(start).toHaveBeenCalledTimes(1)
@@ -463,7 +463,14 @@ describe('lecture seule (décision C3)', () => {
       participants: [FAST, choice('ecrit', 'factice-rapide')]
     })
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
-    expect(env.rt(mother).seats.find((s) => s.profileId === 'ecrit')?.readOnly).toBe('unverified')
+    const outside = env.rt(mother).seats.find((s) => s.profileId === 'ecrit')
+    expect(outside?.readOnly).toBe('unverified')
+    // Sa conversation dit la même chose que sa ligne, sans « surveillance impossible ».
+    const keys = env
+      .items(outside?.childId ?? '')
+      .flatMap((i) => (i.kind === 'notice' && typeof i.message === 'object' ? [i.message.key] : []))
+    expect(keys).toContain('roundtable.state.readOnly.unverified')
+    expect(keys).not.toContain('roles.notice.watchFailed')
   })
 })
 
@@ -498,10 +505,10 @@ describe('corbeille, archivage, plafond, redémarrage (lot 4)', () => {
     const slow = env.rt(mother).seats.find((s) => s.profileId === 'lent')
     await env.manager.delete(slow?.childId ?? '', { fromAgent: false })
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
-    expect(env.rt(mother).seats.find((s) => s.letter === slow?.letter)).toMatchObject({
-      removed: true,
-      stopped: 'removed'
-    })
+    // Rien de figé : la place est arrêtée, l'interface lit l'existence de sa conversation.
+    const removed = env.rt(mother).seats.find((s) => s.letter === slow?.letter)
+    expect(removed).toMatchObject({ state: 'stopped', stopped: 'removed' })
+    expect(removed?.removed).toBeUndefined()
     expect(env.replies(mother).at(-1)).toContain('its conversation was deleted')
     rmSync(lock)
   })
@@ -542,7 +549,7 @@ describe('corbeille, archivage, plafond, redémarrage (lot 4)', () => {
     env.costCap.setCap(mother, { limit: 0.001, unit: 'USD' })
     await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
     await env.waitFor(() => env.rt(mother).synthesis?.state === 'held', 'synthèse retenue')
-    env.roundtables.stop(mother, env.rt(mother).roundtableId)
+    await env.roundtables.stop(mother, env.rt(mother).roundtableId)
     const card = env.items(mother).findLast((i) => i.kind === 'cost-cap')
     env.costCap.answer(mother, card?.id ?? 0, 'continue')
     await new Promise((resolve) => setTimeout(resolve, 50))
@@ -554,7 +561,7 @@ describe('corbeille, archivage, plafond, redémarrage (lot 4)', () => {
     const { env, mother } = await setup({ panel: ['--verrou-fin-de-tour', lockFile()] })
     await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
     const id = env.rt(mother).roundtableId
-    env.roundtables.stop(mother, id)
+    await env.roundtables.stop(mother, id)
     const cancel = vi.spyOn(env.manager, 'cancel')
     // Ce que pose l'hôte quand un message de synthèse en route part quand même.
     env.manager.post(mother, {
@@ -595,6 +602,8 @@ describe('corbeille, archivage, plafond, redémarrage (lot 4)', () => {
     envs.push(env)
     const rt = env.rt(mother)
     expect(rt).toMatchObject({ phase: 'interrupted', interruptedFrom: 'collecting' })
+    // Plus aucun participant « en cours » dans la barre latérale.
+    expect(env.manager.state().conversations.filter((c) => c.roundtable?.active)).toEqual([])
     expect(rt.seats.find((s) => s.profileId === 'lent')).toMatchObject({
       state: 'stopped',
       stopped: 'restart'
@@ -628,10 +637,10 @@ describe('corbeille, archivage, plafond, redémarrage (lot 4)', () => {
       type: 'cost-cap-reached',
       reached: { limit: 0.01, unit: 'USD', spent: 0.02, step: 0.01, interrupted: true }
     })
-    expect(env.rt(mother).seats.find((s) => s.letter === slow?.letter)).toMatchObject({
-      state: 'stopped',
-      stopped: 'cost-cap'
-    })
+    await env.waitFor(
+      () => env.rt(mother).seats.find((s) => s.letter === slow?.letter)?.stopped === 'cost-cap',
+      'arrêté par le plafond'
+    )
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
     rmSync(lock)
   })
@@ -639,6 +648,13 @@ describe('corbeille, archivage, plafond, redémarrage (lot 4)', () => {
   it('redémarrage pendant la réplique : « Demander la décision » l’envoie avec les répliques gardées', async () => {
     const { env, mother } = await setup({ lead: 'echo' })
     // État relu d'un fil d'avant le redémarrage : réplique de A rendue, celle de B interrompue.
+    // Conversations des participants, toujours là (relues du fil après le redémarrage).
+    const child = async () => {
+      const id = (await env.manager.create({ profileId: 'panel' })).summary.id
+      env.manager.keepDraft(id, 'Participant')
+      return id
+    }
+    const [childA, childB] = [await child(), await child()]
     env.manager.post(mother, {
       type: 'roundtable',
       roundtable: {
@@ -651,7 +667,7 @@ describe('corbeille, archivage, plafond, redémarrage (lot 4)', () => {
             label: 'R',
             agentLabel: 'P',
             letter: 'A',
-            childId: 'enfant-a',
+            childId: childA,
             state: 'answered',
             rebuttal: { state: 'answered', stance: 'nuances' }
           },
@@ -660,7 +676,7 @@ describe('corbeille, archivage, plafond, redémarrage (lot 4)', () => {
             label: 'P',
             agentLabel: 'P',
             letter: 'B',
-            childId: 'enfant-b',
+            childId: childB,
             state: 'answered',
             rebuttal: { state: 'stopped', stopped: 'restart' }
           }
@@ -674,7 +690,7 @@ describe('corbeille, archivage, plafond, redémarrage (lot 4)', () => {
     env.manager.post(mother, {
       type: 'child-report',
       report: {
-        childId: 'enfant-a',
+        childId: childA,
         title: 'A',
         outcome: 'done',
         files: [],

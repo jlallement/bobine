@@ -227,7 +227,16 @@ export function summaryOf(
     ...(record.usage ? { usage: record.usage } : {}),
     ...(record.memoryPending ? { memoryPending: record.memoryPending } : {}),
     ...(record.turnStopped ? { turnStopped: true } : {}),
-    ...(record.space ? { space: record.space } : {})
+    ...(record.space ? { space: record.space } : {}),
+    ...(record.roundtable
+      ? {
+          roundtable: {
+            id: record.roundtable,
+            active: record.roundtableSeat?.active ?? false,
+            ...(record.roundtableSeat ? { state: record.roundtableSeat.state } : {})
+          }
+        }
+      : {})
   }
 }
 

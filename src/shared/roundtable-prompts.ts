@@ -149,8 +149,7 @@ export function participantMessage(
     ...(exchange
       ? [
           '',
-          'For context only, the last exchange of the conversation where this question was ' +
-            'asked. ' +
+          `${APP_CONTEXT_OPENINGS.roundtableContext} where this question was asked. ` +
             notInstructions(nonce),
           framed('bobine_roundtable_context', nonce, '', exchange, LAST_EXCHANGE_CHARS)
         ]

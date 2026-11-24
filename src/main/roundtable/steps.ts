@@ -48,6 +48,8 @@ export interface StepsHost {
   tours: (motherId: string) => Roundtable[]
   /** Texte d'un avis (`opinion`) ou d'une réplique, gardé en mémoire ou relu du fil de la mère. */
   textOf: (rt: Roundtable, kind: 'opinion' | 'rebuttal', letter: string) => string | undefined
+  /** Conversation d'un participant absente (corbeille, effacée) : son avis ne part pas. */
+  gone: (childId: string | undefined) => boolean
   /** Vérifications de lecture seule des participants finies (l'avertissement part avec l'avis). */
   watchesSettled: (rt: Roundtable) => Promise<void>
   now: () => number
@@ -126,7 +128,7 @@ export class MotherSteps {
   onEvent(motherId: string, event: AgentEvent): void {
     switch (event.type) {
       case 'user-message':
-        return this.sent(motherId, event.from)
+        return this.sent(motherId, event.from, event.model?.name)
       case 'cost-cap-reached': {
         const ref = this.sending.get(motherId)
         if (!ref || event.reached.held === undefined) return
@@ -150,7 +152,7 @@ export class MotherSteps {
     }
   }
 
-  private sent(motherId: string, from: MessageOrigin | undefined): void {
+  private sent(motherId: string, from: MessageOrigin | undefined, model?: string): void {
     this.costWatch.delete(motherId)
     // La réplique va aux participants, pas à cette conversation (`seat-events.ts`).
     if (from?.kind !== 'roundtable' || from.step === 'rebuttal') return
@@ -165,10 +167,21 @@ export class MotherSteps {
       return
     }
     this.answering.set(motherId, ref)
+    // Qui rédige vraiment : l'agent et le modèle de la conversation au départ de la demande.
+    const summary = this.host.conversations.state().conversations.find((c) => c.id === motherId)
     this.host.apply(motherId, ref.roundtableId, {
       type: 'step-sent',
       step: ref.step,
-      at: this.host.now()
+      at: this.host.now(),
+      ...(summary
+        ? {
+            by: {
+              profileId: summary.profileId,
+              label: summary.profileLabel,
+              ...(model ? { model } : {})
+            }
+          }
+        : {})
     })
   }
 
@@ -207,6 +220,7 @@ export class MotherSteps {
 
   private pending(motherId: string): { rt: Roundtable; step: RoundtableStepKind } | undefined {
     for (const rt of this.host.tours(motherId)) {
+      if (rt.stopping) continue
       const step = waitingStep(rt)
       if (step) return { rt, step }
     }
@@ -234,11 +248,19 @@ export class MotherSteps {
       step === 'synthesis'
         ? synthesisRequest(
             rt.question,
-            opinionInputs(rt, (seat) => this.host.textOf(rt, 'opinion', seat.letter))
+            opinionInputs(
+              rt,
+              (seat) => this.host.textOf(rt, 'opinion', seat.letter),
+              this.host.gone
+            )
           )
         : verdictRequest(
             rt.question,
-            rebuttalInputs(rt, (seat) => this.host.textOf(rt, 'rebuttal', seat.letter))
+            rebuttalInputs(
+              rt,
+              (seat) => this.host.textOf(rt, 'rebuttal', seat.letter),
+              this.host.gone
+            )
           )
     const from: MessageOrigin = {
       kind: 'roundtable',

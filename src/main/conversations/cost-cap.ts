@@ -16,6 +16,8 @@
  */
 import type { IpcHandlers } from '@shared/ipc'
 import type { AgentEvent, ConversationEvent, CostCapAnswer } from '@shared/agent'
+import { t } from 'i18next'
+import { stripAppContext } from '@shared/app-context'
 import { attachmentName, type PromptAttachment } from '@shared/attachments'
 import {
   capDecision,
@@ -64,6 +66,20 @@ function watched(event: AgentEvent): boolean {
     (update.sessionUpdate === 'tool_call_update' &&
       (update.status === 'completed' || update.status === 'failed'))
   )
+}
+
+/**
+ * Aperçu du message retenu sur la carte du plafond : jamais une consigne interne de l'app (fiche
+ * 285, recette). Demande d'un tour de table : son libellé ; message d'un participant sans
+ * provenance (sa question, avec le bloc de son rôle) : « Question du tour de table » ; tout autre
+ * message, coupé avant le premier bloc de l'app.
+ */
+export function heldPreview(message: Held, participant: boolean): string {
+  const from = message.options.from
+  if (from?.kind === 'roundtable') return t(`roundtable.held.${from.step}`)
+  if (participant) return t('roundtable.held.question')
+  const text = stripAppContext(message.text) ?? ''
+  return text || message.attachments.map(attachmentName).join(', ')
 }
 
 export class CostCapGuard {
@@ -159,7 +175,7 @@ export class CostCapGuard {
     const reached = capReached(view.transcript, prefs)
     if (!reached) return false
     this.held.set(id, message)
-    const preview = message.text.trim() || message.attachments.map(attachmentName).join(', ')
+    const preview = heldPreview(message, view.summary.roundtable !== undefined)
     this.post(id, reached.cap, reached.spent, prefs, false, preview.slice(0, HELD_PREVIEW))
     return true
   }

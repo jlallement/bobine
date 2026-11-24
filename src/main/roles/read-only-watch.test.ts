@@ -225,4 +225,25 @@ describe('garde-fou des rôles en lecture seule (fiche 223)', () => {
     await watch.settled('a')
     expect(unjudged).toEqual(['a'])
   })
+
+  it('fiche 285 : hors dépôt git, rien n’est surveillé, sans avis ni avertissement', async () => {
+    const posted: [string, AgentEvent][] = []
+    const run: Run = async () => ({
+      code: 128,
+      stdout: Buffer.from(''),
+      stderr: 'not a git repository'
+    })
+    const watch = new ReadOnlyWatch({
+      conversations: { post: (id, event) => posted.push([id, event]) > 0 },
+      summary: () => CHILD,
+      run,
+      inRepo: () => false
+    })
+    await watch.prepare('f')
+    watch.onEvent({ conversationId: 'f', event: userMessage })
+    watch.onEvent({ conversationId: 'f', event: turnEnd })
+    await watch.settled('f')
+    expect(watch.watching).toBe(0)
+    expect(posted).toEqual([])
+  })
 })

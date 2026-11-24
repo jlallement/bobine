@@ -6740,10 +6740,17 @@
       "unavailable": "Le tour de table n’est pas encore disponible dans cette version.",
       "unknown": "Ce tour de table n’existe pas dans cette conversation.",
       "attachmentsLost": "Les pièces jointes de ce tour ne sont plus disponibles depuis le redémarrage de l’app : lancez un nouveau tour de table.",
-      "question": "La question dépasse 8 000 caractères : raccourcissez-la, ou joignez le détail en fichier."
+      "question": "La question dépasse 8 000 caractères : raccourcissez-la, ou joignez le détail en fichier.",
+      "archivedGesture": "Cette conversation est archivée : désarchivez-la pour continuer son tour de table."
     },
     "export_one": "Tour de table à {{count}} participant",
     "export_many": "Tour de table à {{count}} participants",
-    "export_other": "Tour de table à {{count}} participants"
+    "export_other": "Tour de table à {{count}} participants",
+    "held": {
+      "synthesis": "Demande de synthèse du tour de table",
+      "verdict": "Demande de décision du tour de table",
+      "rebuttal": "Réplique du tour de table",
+      "question": "Question du tour de table"
+    }
   }
 }

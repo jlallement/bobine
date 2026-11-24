@@ -10,6 +10,7 @@
  * Fiche 197 : chaque fil garde une copie de l'enregistrement de sa conversation (`record`). Index
  * et copie perdus, la liste est refaite à partir des fils ; un fil absent de l'index y revient.
  */
+import type { RoundtableSeatState } from '@shared/roundtable'
 import { mkdirSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -87,6 +88,8 @@ export interface ConversationRecord {
    * commande ni écriture accordée (`host-options.ts`).
    */
   roundtable?: string
+  /** Sa place dans le tour (fiche 285) : son état, et le tour en cours ou non. */
+  roundtableSeat?: { state: RoundtableSeatState; active: boolean }
 }
 
 export const SAFE_ID = /^[\w-]+$/
@@ -140,11 +143,18 @@ function withSpace(record: ConversationRecord): ConversationRecord {
 
 /** Participant d'un tour de table (fiche 285) : un identifiant court, sinon retiré. */
 function withSeat(record: ConversationRecord): ConversationRecord {
-  const seat = record.roundtable
-  if (seat === undefined || (typeof seat === 'string' && seat && seat.length <= 200)) return record
-  const { roundtable: _ignored, ...rest } = record
-  return rest
+  const { roundtable: id, roundtableSeat: seat, ...rest } = record
+  if (id === undefined) return rest
+  if (typeof id !== 'string' || !id || id.length > 200) return rest
+  const valid =
+    typeof seat === 'object' &&
+    seat !== null &&
+    SEAT_STATES.includes(seat.state) &&
+    typeof seat.active === 'boolean'
+  return { ...rest, roundtable: id, ...(valid ? { roundtableSeat: seat } : {}) }
 }
+
+const SEAT_STATES: readonly unknown[] = ['waiting', 'working', 'answered', 'stopped', 'error']
 
 /** Tour arrêté (fiche 258) : seule valeur retenue, `true` ; toute autre est retirée. */
 function withTurnStopped(record: ConversationRecord): ConversationRecord {

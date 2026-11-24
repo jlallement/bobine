@@ -6450,9 +6450,16 @@
       "unavailable": "The roundtable is not available yet in this version.",
       "unknown": "This roundtable does not exist in this conversation.",
       "attachmentsLost": "The attachments of this roundtable are no longer available since the app restarted: start a new roundtable.",
-      "question": "The question is longer than 8,000 characters: shorten it, or attach the details as a file."
+      "question": "The question is longer than 8,000 characters: shorten it, or attach the details as a file.",
+      "archivedGesture": "This conversation is archived: unarchive it to continue its roundtable."
     },
     "export_one": "Roundtable with {{count}} participant",
-    "export_other": "Roundtable with {{count}} participants"
+    "export_other": "Roundtable with {{count}} participants",
+    "held": {
+      "synthesis": "Roundtable synthesis request",
+      "verdict": "Roundtable decision request",
+      "rebuttal": "Roundtable rebuttal",
+      "question": "Roundtable question"
+    }
   }
 }

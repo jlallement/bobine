@@ -9,6 +9,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { rolesForAgent } from '@shared/roles'
 import { describe, expect, it } from 'vitest'
 import { builtinRoles } from './builtin'
 import { rolesHandlers } from './ipc'
@@ -59,6 +60,9 @@ describe('bibliothèque des rôles (fiche 223)', () => {
       'tech-lead',
       'ux-ui-expert'
     ])
+    // « Participant » (fiche 285) : listé pour les Réglages, marqué interne, jamais dit aux agents.
+    expect(roles.filter((r) => r.internal).map((r) => r.name)).toEqual(['participant'])
+    expect(rolesForAgent(roles).shown.map((r) => r.name)).not.toContain('participant')
     // Aucun agent, mode ni modèle imposé (ADR-0011).
     expect(roles.some((r) => r.agent || r.mode || r.model)).toBe(false)
   })

@@ -789,6 +789,16 @@ export interface ConversationSummary {
   memoryPending?: number
   /** Espace Discussion (fiche 224) : dossier tenu par Bobine ; absent = espace Code. */
   space?: ConversationSpace
+  /**
+   * Participant d'un tour de table (fiche 285) : le tour, s'il est en cours (recueil ou réplique :
+   * la barre latérale ne montre le participant que tant qu'il l'est), et l'état de sa place (une
+   * place en erreur ou arrêtée avant sa question n'est jamais « finie »).
+   */
+  roundtable?: {
+    id: string
+    active: boolean
+    state?: import('./roundtable').RoundtableSeatState
+  }
 }
 
 /** Espace d'une conversation (fiche 224) : `code` (un dossier de projet) ou `discussion`. */

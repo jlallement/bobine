@@ -163,11 +163,17 @@ function searchableText(transcript: TranscriptState): SearchText {
     .flatMap((item) =>
       // Message de l'utilisateur sans ce que l'app y joint (consigne cachée d'un rôle, contexte :
       // fiche 272, recette) ; jamais montré ailleurs, il ne l'est pas dans un extrait.
+      // Demande d'un tour de table (synthèse, décision, réplique, fiche 285) : texte interne de
+      // l'app, jamais cherché ni montré ; la question du tour l'est, par son élément.
       item.kind === 'user'
-        ? [stripAppContext(item.text) ?? '']
+        ? item.from?.kind === 'roundtable'
+          ? []
+          : [stripAppContext(item.text) ?? '']
         : item.kind === 'agent'
           ? [plainText(item.text)]
-          : []
+          : item.kind === 'roundtable'
+            ? [item.question]
+            : []
     )
     .join('\n\n')
   return { text, folded: foldSameLength(text) }

@@ -6,6 +6,7 @@
 import { t } from 'i18next'
 import type { IpcHandlers } from '@shared/ipc'
 import type { RoundtableLetter } from '@shared/roundtable'
+import { QUESTION_CHARS } from '@shared/roundtable-prompts'
 import {
   parseOptionalLetter,
   parseRoundtableId,
@@ -53,6 +54,11 @@ export function roundtableHandlers(
     'roundtable:options': (conversationId) => available().options(conversation(conversationId)),
     'roundtable:start': (conversationId, request) => {
       const id = conversation(conversationId)
+      // Question trop longue : l'erreur typée du tour, sur tout chemin (pas « paramètre invalide »).
+      const question = (request as { question?: unknown } | null)?.question
+      if (typeof question === 'string' && question.trim().length > QUESTION_CHARS) {
+        return { ok: false, error: 'question' }
+      }
       const parsed = parseRoundtableStartRequest(request)
       return available().start(id, parsed)
     },
