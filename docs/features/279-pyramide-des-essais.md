@@ -1,6 +1,6 @@
 # 279 — Pyramide des essais remise à l'endroit
 
-- **Statut** : en cours — étapes 1 et 2 faites (2026-11-24) ; reste la campagne `e2e.yml` complète sur les suites réduites
+- **Statut** : en cours — étapes 1 et 2 faites, lots 2 et 3 du plan de vitesse codés (2026-11-24) ; reste la campagne `e2e.yml` complète sur les suites réduites
 - **Dépend de** : 115 (lanceur e2e), 277 (journées types, `e2e/affirm.mjs`), ADR-0069
 - **Agents** : les deux — rien de propre à un agent ; essais contre l'agent factice seulement
 
@@ -137,3 +137,35 @@ guidé par ESLint.
     - le contrôle du menu « Zoom avant » de `browser-view` ne joue que si l'app est au premier
       plan du Mac. Il est aussi sauté sans ces changements (essayé deux fois) ;
     - un libellé de `pilote` porte une durée mesurée (« < 1 s »).
+
+- 2026-11-24 — **Lots 2 et 3 du plan de vitesse** (branche `test/vitesse-theme-jobs`, rien
+  poussé, aucune e2e jouée en local ; décisions de l'utilisateur du 2026-11-24, ADR-0071) :
+  - **Sombre ciblé.** `dark: true` dans `e2e/catalog.mjs` pour les suites qui ont un contrôle
+    propre au sombre, relu dans chaque suite : `aurore` (`--bg` d'`auroraNight`), `composer` (Plan
+    distinct de l'accent sur `black` et `fjordNight`), `settings` (fond de `fjordNight` ; menu ☰
+    opaque sur Aurore nuit hors macOS), `fun` (fond de `black`), `tables` (couleurs `hljs` aux
+    jetons du thème), `mermaid` (diagramme aux couleurs de `variantOf(scheme)`),
+    `command-output` (fond et vert ANSI de la variante), `turn-guards` (alerte du compteur aux
+    jetons du thème), `parcours-outils` (sortie de commande aux jetons du thème),
+    `browser-annotate` (épingle dessinée à l'`--accent` du thème). 10 suites.
+  - **Écarts à la liste du plan** (14 suites) : `filles`, `polices` et `terminal` n'ont en sombre
+    que des captures (Aurore nuit, `31-terminal-black`), aucun `check` ; `parcours-reglages`
+    passe en sombre puis revient au système dans les deux thèmes (`nativeTheme.themeSource`), sans
+    rien qui dépende du thème joué. Leur rendu sombre ne change qu'avec un fichier de thème ou de
+    style, qui fait jouer tout le sombre. Aucune autre suite n'a de contrôle lié au thème
+    (`history`, `inbox`, `mcp` comparent des couleurs entre elles ; `profil` a une branche réservée
+    au clair ; `android` ne s'en sert que pour un marqueur).
+  - Lanceur (`scripts/e2e-select.mts`, `e2e/run.mjs`) : `--themes auto|both|light|dark`
+    (`--light`, `--dark` gardés) ; `auto` par défaut ; `THEME_SOURCES` (catalogue) touché par
+    `--changed` → le sombre pour toutes les suites jouées ; `--if-needed` → les deux thèmes
+    partout ; seule une suite complète `both` pose le tampon vert. `e2e.yml` : `--themes both` la
+    nuit (`schedule`) seulement, sur les trois passages du Mac.
+  - **Jobs.** `--jobs` par défaut : `min(5, floor(cœurs / 3))` en local (5 sur le Mac à 15
+    cœurs), 3 en CI (`GITHUB_ACTIONS` ou `CI`) ; Linux sur GitHub garde son `--jobs 2`.
+  - `pnpm e2e --dry-run` : 227 tâches avant (3 jobs) → 125 après (5 jobs) ; `--themes both` et
+    `--if-needed` : 227.
+  - Tests du lanceur : sélection des thèmes (suite déclarée sombre, fichier CSS touché, `--themes
+    both`, `--if-needed`, nuit dans `e2e.yml`), jobs par défaut. `AGENTS.md`, `docs/README.md`,
+    fiche 115 et ADR-0071.
+  - Non fait : les deux passages complets verts à 5 tâches que le plan demandait avant de changer
+    le défaut (pas d'e2e locale dans ce lot), et la campagne `e2e.yml` de la branche.

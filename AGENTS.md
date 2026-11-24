@@ -33,7 +33,7 @@ Lire avant toute tâche non triviale :
 | Tests seuls | `pnpm test` |
 | Build | `pnpm build` |
 | Formater | `pnpm format` |
-| **Essais de bout en bout** | pendant le travail, les suites touchées (`pnpm e2e --changed --dry-run` pour les nommer) jouées **sur GitHub** : `e2e.yml` lancé à la main sur la branche, macOS + Linux (`systeme: les-deux`) ; **avant de pousser `main`** : `verify` et ces suites vertes sur GitHub ; suite complète (≈ 13 à 21 min à 3 tâches depuis la réduction de la fiche 279, estimation à remesurer) **chaque nuit** sur GitHub et **en local juste avant un tag** : `pnpm build && pnpm e2e --if-needed` ; fumée : journées `parcours-*` (fiche 277) ; suites instables en quarantaine (`e2e/catalog.mjs`) — ADR-0069 ; options du lanceur (`--list`, `--jobs N`, `--dry-run`, `--lang en`) : fiche 115 |
+| **Essais de bout en bout** | pendant le travail, les suites touchées (`pnpm e2e --changed --dry-run` pour les nommer) jouées **sur GitHub** : `e2e.yml` lancé à la main sur la branche, macOS + Linux (`systeme: les-deux`) ; **avant de pousser `main`** : `verify` et ces suites vertes sur GitHub ; suite complète (≈ 13 à 21 min à 3 tâches depuis la réduction de la fiche 279, estimation à remesurer) **chaque nuit** sur GitHub et **en local juste avant un tag** : `pnpm build && pnpm e2e --if-needed` ; fumée : journées `parcours-*` (fiche 277) ; suites instables en quarantaine (`e2e/catalog.mjs`) — ADR-0069 ; thèmes : le clair pour toutes les suites, le sombre pour celles qui vérifient un rendu sombre (`dark` du catalogue), le sombre partout quand un fichier de thème ou de style est touché (`--changed`), la nuit et avant un tag ; `--themes both` pour tout jouer — ADR-0071 ; `--jobs` par défaut : un pour 3 cœurs, au plus 5 (3 sur GitHub), `--jobs 3` si d'autres travaux lourds tournent ; options du lanceur (`--list`, `--jobs N`, `--themes`, `--dry-run`, `--lang en`) : fiche 115 |
 | Essais de bout en bout sous Linux (en local, Docker) | `pnpm e2e:linux [suites…]` : Ubuntu 24.04 dans Docker (Docker Desktop lancé), `xvfb` + openbox, `node_modules` Linux dans un volume à part (ceux du Mac jamais touchés), captures dans `e2e/captures/linux/` ; `--reset` repart d'un volume vide ; `BOBINE_E2E_CPUS=1` simule une machine lente — fiche 145 |
 | Agent ACP factice | `pnpm mock-agent --list` — voir `docs/mock-agent.md` |
 | App installable (.app + .dmg) | `pnpm package` — puis `pnpm e2e:packaged` (sous Linux et Windows : l'app installée, `.deb` ou NSIS, fiche 229) ; signature à blanc : `pnpm package --dry-run` (Developer ID, notarisation : fiche 111) |
@@ -58,7 +58,9 @@ Une tâche est terminée seulement si :
    Si l'interface change : les suites e2e touchées passent **sur GitHub** (`e2e.yml` sur la
    branche, macOS + Linux), et leurs captures ont été regardées ; c'est la condition pour pousser
    `main`. La suite complète tourne chaque nuit sur GitHub et en local juste avant un tag
-   (`pnpm e2e --if-needed`). Nouvelle fonction : son étape dans le parcours `parcours-*` concerné ;
+   (`pnpm e2e --if-needed`), aux deux thèmes partout ; ailleurs, le sombre ne joue que pour les
+   suites qui vérifient un rendu sombre, et pour toutes quand un fichier de thème ou de style est
+   touché (ADR-0071). Nouvelle fonction : son étape dans le parcours `parcours-*` concerné ;
    essai instable : quarantaine nommée, corrigé à côté ; 1.0 gelée (corrections seulement) —
    méthode complète : ADR-0069. Sur GitHub, `verify`
    tourne à chaque pull request et poussée sur `main`, **bloquant sur macOS, Linux et Windows**

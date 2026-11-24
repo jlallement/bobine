@@ -10,12 +10,38 @@ import {
   type PlatformFeatures
 } from '../src/shared/platform.ts'
 
-/** Thèmes joués par défaut. */
+/** Les deux thèmes. */
 export const BOTH = ['light', 'dark'] as const
 export type Scheme = (typeof BOTH)[number]
 
-/** Processus en parallèle par défaut (`--jobs`). */
+/**
+ * Thèmes à jouer (`--themes`, ADR-0071) : `auto` (par défaut), le clair pour toutes les suites et
+ * le sombre seulement pour celles qui vérifient un rendu sombre (`dark` du catalogue) ; `both`,
+ * les deux partout (nuit, `--if-needed`, un fichier de thème touché) ; `light` ou `dark`, un seul
+ * thème partout (`--light`, `--dark`).
+ */
+export const THEME_MODES = ['auto', 'both', 'light', 'dark'] as const
+export type ThemeMode = (typeof THEME_MODES)[number]
+
+/** Processus en parallèle par défaut sur GitHub (`--jobs`) : runners à 3 cœurs. */
 export const DEFAULT_JOBS = 3
+/**
+ * Au plus, par défaut, sur une machine locale (fiche 279, mesuré sur un Mac à 15 cœurs) : à
+ * 5 tâches le temps machine ne monte que de 2 % ; à 8, chaque lancement double, saturation.
+ */
+export const LOCAL_MAX_JOBS = 5
+
+/** Sur une machine d'intégration continue (GitHub Actions ou `CI`) ? */
+export const isCi = (env: Readonly<Record<string, string | undefined>>): boolean =>
+  env.GITHUB_ACTIONS === 'true' || env.CI === 'true'
+
+/**
+ * `--jobs` par défaut : 3 en CI ; en local, un job pour 3 cœurs, entre 1 et `LOCAL_MAX_JOBS`
+ * (les attentes des suites sont des minuteurs, pas du calcul). Avec d'autres travaux lourds à
+ * côté, `--jobs 3` à la main.
+ */
+export const defaultJobs = (cores: number, ci: boolean): number =>
+  ci ? DEFAULT_JOBS : Math.max(1, Math.min(LOCAL_MAX_JOBS, Math.floor(cores / 3)))
 /**
  * Au plus : les ports des apps d'essai sont partagés entre les processus (plages de 300 ports
  * coupées en autant de tranches), 12 tranches de 25 ports restent confortables.
@@ -28,8 +54,14 @@ export interface CatalogEntry {
   readonly name: string
   /** Fichier de la suite dans `e2e/suites/`. */
   readonly file: string
-  /** Thèmes joués ; `[null]` : la suite ne prend pas de thème. */
+  /** Thèmes possibles ; `[null]` : la suite ne prend pas de thème. */
   readonly themes: readonly (Scheme | null)[]
+  /**
+   * Vérifie un rendu propre au sombre (un contrôle qui dépend du thème : jetons, palette sombre) :
+   * jouée aussi en sombre à chaque passage. Les autres ne le sont qu'en `--themes both` (nuit,
+   * avant un tag, fichier de thème touché), ADR-0071.
+   */
+  readonly dark?: boolean
   /**
    * Fichiers dont la suite dépend (motifs : `*` sans `/`, `**` avec, un `/` final pour un dossier).
    * Absent : la suite est jouée à chaque `--changed`. Son propre fichier s'y ajoute toujours.
@@ -85,7 +117,8 @@ export const supported = (entry: CatalogEntry, features: PlatformFeatures): bool
 /** Options de `pnpm e2e`. */
 export interface Options {
   suites: string[]
-  schemes: Scheme[]
+  /** Thèmes demandés (`--themes`, `--light`, `--dark`) ; `auto` par défaut. */
+  themes: ThemeMode
   lang: string
   jobs: number
   changed: boolean
@@ -105,10 +138,32 @@ export interface Options {
 }
 
 /** Options qui prennent une valeur (`--jobs 3` ou `--jobs=3`). */
-const VALUED = ['--lang', '--jobs', '--base']
+const VALUED = ['--lang', '--jobs', '--base', '--themes']
 
-/** Lit les arguments de `pnpm e2e` ; lève une erreur lisible si l'un d'eux ne va pas. */
-export function parseArgs(argv: readonly string[]): Options {
+/** Thèmes demandés : `--themes`, ou ses raccourcis `--light` et `--dark`, un seul des trois. */
+function themesOf(values: ReadonlyMap<string, string>, flags: ReadonlySet<string>): ThemeMode {
+  const given = [
+    ...(values.has('--themes') ? ['--themes'] : []),
+    ...['--light', '--dark'].filter((f) => flags.has(f))
+  ]
+  if (given.length > 1) throw new Error(`thèmes : un seul de ${given.join(', ')}`)
+  if (flags.has('--light')) return 'light'
+  if (flags.has('--dark')) return 'dark'
+  const themes = values.get('--themes') ?? 'auto'
+  if (!(THEME_MODES as readonly string[]).includes(themes)) {
+    throw new Error(`--themes : ${THEME_MODES.join(', ')} (reçu : ${themes})`)
+  }
+  return themes as ThemeMode
+}
+
+/**
+ * Lit les arguments de `pnpm e2e` ; lève une erreur lisible si l'un d'eux ne va pas.
+ * `defaults.jobs` : `--jobs` par défaut (`defaultJobs`, d'après la machine).
+ */
+export function parseArgs(
+  argv: readonly string[],
+  defaults: { jobs: number } = { jobs: DEFAULT_JOBS }
+): Options {
   const values = new Map<string, string>()
   const flags = new Set<string>()
   const suites: string[] = []
@@ -140,23 +195,24 @@ export function parseArgs(argv: readonly string[]): Options {
   ]
   const unknown = [...flags].filter((f) => !known.includes(f))
   if (unknown.length) throw new Error(`option inconnue : ${unknown.join(', ')}`)
-  const jobsText = values.get('--jobs') ?? String(DEFAULT_JOBS)
+  const jobsText = values.get('--jobs') ?? String(defaults.jobs)
   const jobs = Number(jobsText)
   if (!Number.isInteger(jobs) || jobs < 1 || jobs > MAX_JOBS) {
     throw new Error(`--jobs : un entier de 1 à ${MAX_JOBS} (reçu : ${jobsText})`)
   }
   const lang = values.get('--lang') ?? 'fr'
   if (!['fr', 'en'].includes(lang)) throw new Error(`Langue inconnue : ${lang} (fr ou en)`)
+  const themes = themesOf(values, flags)
   const ifNeeded = flags.has('--if-needed')
-  if (
-    ifNeeded &&
-    (suites.length || flags.has('--changed') || flags.has('--light') || flags.has('--dark'))
-  ) {
-    throw new Error('--if-needed joue la suite complète : sans suite, --changed, --light ni --dark')
+  if (ifNeeded && (suites.length || flags.has('--changed') || !['auto', 'both'].includes(themes))) {
+    throw new Error(
+      '--if-needed joue la suite complète, aux deux thèmes : sans suite, --changed, --light ni --dark'
+    )
   }
   return {
     suites,
-    schemes: flags.has('--light') ? ['light'] : flags.has('--dark') ? ['dark'] : [...BOTH],
+    // Avant un tag : la suite complète aux deux thèmes partout (ADR-0071).
+    themes: ifNeeded ? 'both' : themes,
     lang,
     jobs,
     changed: flags.has('--changed'),
@@ -170,9 +226,26 @@ export function parseArgs(argv: readonly string[]): Options {
   }
 }
 
-/** Suite complète : toutes les suites, les deux thèmes (celle qui peut poser le tampon vert). */
+/**
+ * Suite complète : toutes les suites, les deux thèmes partout (celle qui peut poser le tampon
+ * vert). Le passage par défaut (`auto` : clair, et sombre ciblé) n'en est pas une.
+ */
 export const isFullRun = (o: Options): boolean =>
-  !o.suites.length && !o.changed && !o.skip.length && o.schemes.length === BOTH.length
+  !o.suites.length && !o.changed && !o.skip.length && o.themes === 'both'
+
+/**
+ * Thèmes joués pour de bon : en `auto`, un fichier de thème ou de style modifié (`touched`, voir
+ * `THEME_SOURCES` du catalogue) fait jouer le sombre à toutes les suites, comme une source.
+ */
+export const effectiveThemes = (themes: ThemeMode, touched: readonly string[]): ThemeMode =>
+  themes === 'auto' && touched.length ? 'both' : themes
+
+/** Thèmes d'une suite dans ce mode, parmi ceux qu'elle prend. */
+export function schemesOf(entry: CatalogEntry, mode: ThemeMode): (Scheme | null)[] {
+  const wanted: readonly Scheme[] =
+    mode === 'both' ? BOTH : mode === 'auto' ? (entry.dark ? BOTH : ['light']) : [mode]
+  return entry.themes.filter((s) => s === null || wanted.includes(s))
+}
 
 /** Motif de fichier en expression régulière : `**` traverse les dossiers, `*` et `?` non. */
 export function globToRegExp(glob: string): RegExp {
@@ -256,21 +329,19 @@ export interface Task {
 export function tasksFor(
   catalog: readonly CatalogEntry[],
   names: readonly string[] | null,
-  schemes: readonly Scheme[],
+  mode: ThemeMode,
   features: PlatformFeatures = ALL_FEATURES
 ): Task[] {
   return catalog
     .filter((e) => (!names || names.includes(e.name)) && supported(e, features))
     .flatMap((e) =>
-      e.themes
-        .filter((s) => s === null || schemes.includes(s))
-        .map((scheme) => ({
-          key: `${e.name}:${scheme ?? '-'}`,
-          name: e.name,
-          scheme,
-          ...(e.alone ? { alone: true } : {}),
-          ...(e.locks ? { locks: e.locks } : {})
-        }))
+      schemesOf(e, mode).map((scheme) => ({
+        key: `${e.name}:${scheme ?? '-'}`,
+        name: e.name,
+        scheme,
+        ...(e.alone ? { alone: true } : {}),
+        ...(e.locks ? { locks: e.locks } : {})
+      }))
     )
 }
 

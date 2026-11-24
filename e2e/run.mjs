@@ -1,14 +1,18 @@
 /**
  * Essais de bout en bout de l'interface, contre l'app buildée et l'agent factice.
  *
- *   pnpm build && pnpm e2e              toutes les suites, thèmes clair et sombre, 3 en parallèle
+ *   pnpm build && pnpm e2e              toutes les suites en clair, et en sombre celles qui
+ *                                       vérifient un rendu sombre (`dark` du catalogue, ADR-0071)
  *   pnpm e2e plan history               seulement ces suites
- *   pnpm e2e plan --dark                seulement le thème sombre
+ *   pnpm e2e plan --dark                seulement le thème sombre (`--light` : le clair)
+ *   pnpm e2e --themes both              les deux thèmes pour toutes les suites (nuit, avant un tag)
  *   pnpm e2e --jobs 1                   une suite à la fois, dans ce processus (fiche 115)
  *   pnpm e2e --changed                  les suites touchées par les fichiers modifiés depuis main
+ *                                       (un fichier de thème ou de style touché : toutes en sombre)
  *   pnpm e2e --changed --base origin/main   … depuis une autre base
  *   pnpm e2e --if-needed                la suite complète, sauf si elle est déjà verte pour ces
- *                                       sources et ce build (`pnpm e2e:pretag`, avant un tag)
+ *                                       sources et ce build (`pnpm e2e:pretag`, avant un tag),
+ *                                       les deux thèmes partout
  *   pnpm e2e --changed --dry-run        ce qui serait joué, sans rien lancer
  *   pnpm e2e --list                     liste des suites
  *   pnpm e2e --skip perf                tout sauf ces suites (dites, et la suite n'est plus complète)
@@ -18,10 +22,13 @@
  *   pnpm e2e --indicative perf          sur GitHub, chaque contrôle en échec devient une annotation
  *                                       `::warning::` ; code de sortie inchangé (fiche 250)
  *
- * En parallèle (`--jobs N`, 3 par défaut), chaque suite et chaque thème tournent dans leur propre
+ * En parallèle (`--jobs N` ; par défaut un job pour 3 cœurs, au plus 5, et 3 sur GitHub : fiche
+ * 279 ; `--jobs 3` à la main si d'autres travaux lourds tournent), chaque suite et chaque thème
+ * tournent dans leur propre
  * processus (`pool.mjs`) : une ligne par suite finie (durée, job), sa sortie entière si elle
  * échoue (`--verbose` : toujours). Une suite qui prend une ressource de toute la machine tourne
- * seule ou sous verrou (`catalog.mjs`). Une suite complète verte (sans filtre, les deux thèmes)
+ * seule ou sous verrou (`catalog.mjs`). Une suite complète verte (sans filtre, les deux thèmes
+ * partout : `--themes both` ou `--if-needed`)
  * pose `e2e/.last-green.json` ; `e2e/.durations.json` garde les durées pour l'ordre de passage.
  *
  * Captures dans e2e/captures/ (ignorées par git). En cas d'échec, une capture
@@ -37,11 +44,16 @@
  */
 import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, rmSync } from 'node:fs'
+import { availableParallelism } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
+  defaultJobs,
+  effectiveThemes,
+  firstMatch,
   formatDuration,
   indicativeWarnings,
+  isCi,
   isFullRun,
   orderTasks,
   parseArgs,
@@ -52,7 +64,7 @@ import {
   tasksFor
 } from '../scripts/e2e-select.mts'
 import { currentPlatformFeatures } from '../src/main/platform.ts'
-import { GLOBAL_SOURCES, SUITES } from './catalog.mjs'
+import { GLOBAL_SOURCES, SUITES, THEME_SOURCES } from './catalog.mjs'
 import { SUITE_TIMEOUT_MS, runPool } from './pool.mjs'
 import {
   changedFiles,
@@ -65,7 +77,9 @@ import {
 
 let options
 try {
-  options = parseArgs(process.argv.slice(2))
+  options = parseArgs(process.argv.slice(2), {
+    jobs: defaultJobs(availableParallelism(), isCi(process.env))
+  })
 } catch (error) {
   console.error(error.message)
   process.exit(2)
@@ -103,6 +117,8 @@ if (options.ifNeeded) {
 
 /** Suites à jouer : celles nommées, plus celles touchées par les fichiers modifiés (`--changed`). */
 let names = options.suites.length ? [...options.suites] : null
+/** Fichiers de thème ou de style modifiés (`--changed`) : le sombre pour toutes les suites. */
+let themeTouched = []
 if (options.changed) {
   let files
   try {
@@ -121,6 +137,12 @@ if (options.changed) {
   }
   if (!selection.everything.length && selection.unmapped.length) {
     console.log(`Hors carte (aucune suite) : ${selection.unmapped.join(', ')}`)
+  }
+  themeTouched = files.filter((f) => firstMatch(f, THEME_SOURCES))
+  if (themeTouched.length && options.themes === 'auto') {
+    console.log(
+      `→ thème ou style touché (${themeTouched.join(', ')}) : sombre pour toutes les suites jouées`
+    )
   }
   names = [...new Set([...(names ?? []), ...selection.suites.map((s) => s.name)])]
   if (!names.length) {
@@ -157,11 +179,20 @@ const skipped = SUITES.filter((s) => (!names || names.includes(s.name)) && !supp
 for (const s of skipped) console.log(`↷ ${s.name} sautée : demande ${s.needs.join(', ')}`)
 // Une suite sautée : ce n'est plus une suite complète (rien n'est noté vert).
 const fullRun = isFullRun(options) && !skipped.length && !quarantined.length
-const tasks = tasksFor(SUITES, names, options.schemes, features)
+const themes = effectiveThemes(options.themes, themeTouched)
+const tasks = tasksFor(SUITES, names, themes, features)
+const THEMES_SAID = {
+  auto: 'clair partout, sombre pour les suites qui vérifient un rendu sombre',
+  both: 'clair et sombre partout',
+  light: 'clair seulement',
+  dark: 'sombre seulement'
+}
 const parallel = options.jobs > 1 && tasks.length > 1
 const ordered = parallel ? orderTasks(tasks, readDurations()) : tasks
 if (options.dryRun) {
-  console.log(`${tasks.length} tâche(s), ${parallel ? `${options.jobs} jobs` : 'une à la fois'} :`)
+  console.log(
+    `${tasks.length} tâche(s), ${parallel ? `${options.jobs} jobs` : 'une à la fois'}, ${THEMES_SAID[themes]} :`
+  )
   for (const t of ordered) console.log(`  ${t.key}${t.alone ? ' (seule)' : ''}`)
   process.exit(0)
 }
@@ -184,7 +215,7 @@ const fingerprint = fullRun ? sourceFingerprint() : null
 const started = Date.now()
 let result
 if (parallel) {
-  console.log(`▶ ${tasks.length} tâches, ${options.jobs} jobs\n`)
+  console.log(`▶ ${tasks.length} tâches, ${options.jobs} jobs, ${THEMES_SAID[themes]}\n`)
   result = await runPool(ordered, options)
 } else {
   result = await runHere(tasks)

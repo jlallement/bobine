@@ -82,7 +82,11 @@ const readJson = (file) => {
 /** Dernière suite complète verte pour cette langue : `{ fingerprint, date, duration, jobs }`. */
 export const lastGreen = (lang) => readJson(STAMP)[lang]
 
-/** Pose le tampon vert de cette langue (les autres langues gardent le leur). */
+/**
+ * Pose le tampon vert de cette langue (les autres langues gardent le leur). Seule une suite
+ * complète aux deux thèmes partout le pose (`isFullRun`, ADR-0071) : le passage par défaut, sombre
+ * ciblé, n'en est pas une.
+ */
 export function writeGreen(lang, entry) {
   writeFileSync(STAMP, `${JSON.stringify({ ...readJson(STAMP), [lang]: entry }, null, 2)}\n`)
 }

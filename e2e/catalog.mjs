@@ -7,6 +7,10 @@
  * pour tout un dossier. Le fichier de la suite s'y ajoute toujours. Une suite sans `sources` est
  * jouée à chaque `--changed`. Un fichier de `GLOBAL_SOURCES` modifié fait jouer toutes les suites.
  * Une carte incomplète n'est pas grave : `pnpm e2e --if-needed` joue tout avant le push.
+ *
+ * Thèmes (ADR-0071) : chaque suite est jouée en clair ; en sombre seulement si elle a `dark: true`
+ * (un contrôle qui dépend du thème sombre, pas une simple capture), sauf en `--themes both` (nuit,
+ * `--if-needed`) ou quand un fichier de `THEME_SOURCES` est touché : le sombre partout.
  */
 
 const BOTH = ['light', 'dark']
@@ -70,6 +74,21 @@ export const GLOBAL_SOURCES = [
   'package.json',
   'pnpm-lock.yaml',
   'electron.vite.config.ts'
+]
+
+/**
+ * Fichiers de thème et de style (ADR-0071) : touché par `--changed`, l'un d'eux fait jouer le
+ * sombre à toutes les suites jouées, pas seulement à celles marquées `dark`.
+ */
+export const THEME_SOURCES = [
+  'src/renderer/**/*.css',
+  'src/shared/themes.ts',
+  'src/shared/theme-aurora.ts',
+  `${R}theme.ts`,
+  `${R}appearance.*`,
+  `${C}settings/Appearance*.tsx`,
+  'scripts/themes-css.mts',
+  'e2e/palette.mjs'
 ]
 
 /** Cartes d'outils de l'agent (permission, sortie, groupes). */
@@ -190,6 +209,8 @@ export const SUITES = [
     file: 'composer.mjs',
     run: 'composerSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : Plan distinct de l'accent sur Nuit noire et Fjord nuit.
+    dark: true,
     sources: [
       `${C}composer/`,
       `${C}common/`,
@@ -444,6 +465,8 @@ export const SUITES = [
     file: 'command-output.mjs',
     run: 'terminalSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : fond et vert ANSI de Nuit noire.
+    dark: true,
     sources: [
       ...TOOLS,
       `${C}thread/TerminalView.tsx`,
@@ -629,6 +652,8 @@ export const SUITES = [
     file: 'browser-annotate.mjs',
     run: 'browserAnnotateSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : épingle dessinée dans la page à l'accent du sombre.
+    dark: true,
     sources: [
       `${C}panel/BrowserTab.tsx`,
       `${C}panel/PageAnnotator.tsx`,
@@ -834,6 +859,8 @@ export const SUITES = [
     file: 'settings.mjs',
     run: 'settingsSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : fond de Fjord nuit ; menu ☰ opaque sur Aurore nuit hors macOS.
+    dark: true,
     sources: [
       `${C}settings/`,
       `${C}dialogs/SearchDialog.tsx`,
@@ -1600,6 +1627,8 @@ export const SUITES = [
     file: 'aurore.mjs',
     run: 'auroreSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : Aurore nuit : fond `--bg` aux jetons d'`auroraNight`.
+    dark: true,
     sources: [
       ...SETTINGS,
       ...APPEARANCE,
@@ -1613,6 +1642,8 @@ export const SUITES = [
     file: 'fun.mjs',
     run: 'funSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : fond de Nuit noire.
+    dark: true,
     sources: [
       ...SETTINGS,
       ...APPEARANCE,
@@ -1700,7 +1731,15 @@ export const SUITES = [
       'src/shared/subagent.ts'
     ]
   },
-  { name: 'tables', file: 'tables.mjs', run: 'tablesSuite', themes: BOTH, sources: [] },
+  {
+    name: 'tables',
+    file: 'tables.mjs',
+    run: 'tablesSuite',
+    themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : couleurs `hljs` aux jetons du sombre et de Nuit noire.
+    dark: true,
+    sources: []
+  },
   {
     // Fiche 145 (D9) : Inter et JetBrains Mono livrées, ligatures du code (Réglages › Apparence).
     name: 'polices',
@@ -1893,6 +1932,8 @@ export const SUITES = [
     file: 'mermaid.mjs',
     run: 'mermaidSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : diagramme redessiné aux couleurs de Nuit noire puis du sombre.
+    dark: true,
     sources: [`${C}thread/MermaidBlock.tsx`, `${R}mermaid-render.ts`, `${R}theme.ts`]
   },
   {
@@ -2014,6 +2055,8 @@ export const SUITES = [
     file: 'pendant-tour.mjs',
     run: 'turnGuardsSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : couleur d'alerte du compteur aux jetons du sombre.
+    dark: true,
     sources: [
       `${C}thread/StalledNotice.tsx`,
       `${C}thread/CostCapCard.tsx`,
@@ -2131,6 +2174,8 @@ export const SUITES = [
     file: 'parcours-outils.mjs',
     run: 'parcoursOutilsSuite',
     themes: BOTH,
+    // Rendu sombre vérifié (ADR-0071) : sortie de commande aux jetons du sombre.
+    dark: true,
     sources: [
       ...PARCOURS,
       ...PANEL,
