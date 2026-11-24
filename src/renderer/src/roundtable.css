@@ -23,8 +23,9 @@
 /* Une seule ligne, sobre, entre la question et la barre ; jamais coupée par des points. */
 .roundtable-line {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 2px 8px;
   min-width: 0;
   margin: 2px 0 6px -2px;
   font-size: 13px;
@@ -63,6 +64,11 @@
 .roundtable-line-cost {
   color: var(--muted);
   min-width: 0;
+}
+/* Saisie trop étroite même pour la forme courte : le surcoût passe à la ligne, entier. */
+.roundtable-cost-full,
+.roundtable-cost-short {
+  white-space: nowrap;
 }
 .roundtable-line-alert {
   color: var(--text-2);
@@ -308,7 +314,7 @@
 .roundtable-foot-short {
   display: none;
 }
-.roundtable-stop-all {
+.btn.roundtable-stop-all {
   display: inline-flex;
   align-items: center;
   gap: 5px;

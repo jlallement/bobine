@@ -15,6 +15,7 @@ import type { AgentCommand } from '@shared/agent'
 import { appCommandOf } from '@shared/app-commands'
 import { toggleChoice, type RoundtableChoice } from '@shared/roundtable'
 import type { RoundtableOptions, RoundtableStartResult } from '@shared/roundtable-ipc'
+import { saveDraft } from '../../drafts'
 import { ipcErrorText } from '../../ipc-errors'
 import { enterAction, lineState, type LineState, type MenuEntry } from './roundtable-view'
 import { onRoundtableMenuRequest } from './roundtable-menu-request'
@@ -93,7 +94,9 @@ export function useRoundtableCompose({
     if (!usable) return
     setActive(true)
     setRefusal(undefined)
-  }, [usable])
+    // Déjà en tour de table (menu rouvert, commande retapée) : les options sont relues quand même.
+    reload()
+  }, [usable, reload])
   const exit = useCallback(() => {
     setActive(false)
     setMenuOpen(false)
@@ -118,6 +121,19 @@ export function useRoundtableCompose({
 
   const state: LineState = useMemo(() => lineState(choices, options), [choices, options])
 
+  /** Options relues tout de suite (avant d'envoyer sur un refus peut-être dépassé). */
+  const fresh = async (): Promise<LineState> => {
+    if (!conversationId) return state
+    const asked = ++request.current
+    try {
+      const read = await window.api.roundtable.options(conversationId)
+      if (asked === request.current) setOptions(read)
+      return lineState(choices, read)
+    } catch {
+      return state
+    }
+  }
+
   const toggle = (entry: Pick<MenuEntry, 'choice' | 'modelChoice'>) => {
     const next = toggleChoice(choices, entry.choice, entry.modelChoice)
     setLocal(next)
@@ -141,7 +157,9 @@ export function useRoundtableCompose({
    */
   const submit = async (question: string, attachments: PromptAttachment[]): Promise<boolean> => {
     if (!conversationId || sending) return false
-    const action = enterAction(state)
+    // Un refus lu plus tôt (tour en cours depuis fini, places libérées) : relu avant de conclure.
+    const current = state.kind === 'refused' || state.kind === 'slots' ? await fresh() : state
+    const action = enterAction(current)
     if (action === 'menu') {
       setMenuOpen(true)
       return false
@@ -248,7 +266,16 @@ export function useComposerRoundtable(
       changeText: (value: string, caret?: number) => void
     ) => {
       const sent = attachments.items.map((a) => a.id)
-      if (!(await rt.submit(question, attachments.toSend()))) return
+      const payload = attachments.toSend()
+      const key = props.draftKey
+      // Le tour posé dans le fil peut remonter la saisie (accueil d'une conversation vide → fil) :
+      // le brouillon ne doit pas la rouvrir en tour de table avec la question déjà partie.
+      if (key) saveDraft(key, { text: '', attachments: [] })
+      if (!(await rt.submit(question, payload))) {
+        // Refusé : le brouillon redevient ce qui est dans la saisie.
+        if (key) saveDraft(key, { text: `/roundtable ${text.current}`, attachments: payload })
+        return
+      }
       // Rappelé par ↑, le message repart en tour de table (fiche 227).
       recordSent(`/roundtable ${question}`)
       // Pendant l'envoi, l'utilisateur a pu écrire ou joindre autre chose : seul ce qui est parti

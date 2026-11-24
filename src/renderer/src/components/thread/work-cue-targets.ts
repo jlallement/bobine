@@ -22,9 +22,13 @@ export function delegatedWorkTargets(
 ): CueTarget[] {
   const launches = new Map<string, Started>()
   const reports = new Map<string, number>()
+  // Participants d'un tour de table (fiche 285) : leur ligne est dans la carte du tour.
+  const tours = new Map<string, number>()
   for (const item of items) {
     if (item.kind === 'child-started') launches.set(item.childId, item)
     else if (item.kind === 'child-report') reports.set(item.childId, item.id)
+    else if (item.kind === 'roundtable')
+      for (const seat of item.seats) if (seat.childId) tours.set(seat.childId, item.id)
   }
   const carded = workCards(items)
   // Ancre de chaque travail rangé : sa carte-réponse, sa ligne de carte de groupe, ou sa carte
@@ -40,7 +44,7 @@ export function delegatedWorkTargets(
     return [
       {
         key: child.id,
-        itemId: anchors.get(child.id) ?? reports.get(child.id) ?? launch.id,
+        itemId: tours.get(child.id) ?? anchors.get(child.id) ?? reports.get(child.id) ?? launch.id,
         label: launch.role?.label ?? launch.title,
         ...(launch.role ? { role: launch.role } : {}),
         state: cueState(childState(child, attention[child.id]), !!launch.role)

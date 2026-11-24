@@ -144,7 +144,7 @@ export function RoundtableParticipants({
           </Fragment>
         ))}
       </div>
-      {searching && found.length === 0 && (
+      {searching && found.length === 0 && searchEntries(main, query).length === 0 && (
         <div className="menu-item model-none" role="status" data-testid="roundtable-none">
           {t('modelMenu.none')}
         </div>

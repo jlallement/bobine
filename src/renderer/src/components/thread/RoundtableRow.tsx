@@ -34,7 +34,7 @@ import type {
   RoundtableStopReason
 } from '@shared/roundtable'
 import type { ChildTool } from '../roles/RoleWork'
-import { rebuttalSummary, reportText, seatElapsed } from '../roundtable/roundtable-view'
+import { rebuttalSummary, reportText, seatElapsed, seatLabel } from '../roundtable/roundtable-view'
 import { FoldedAnswer } from './WorkAnswer'
 import { RowActivity } from './WorkGroupRow'
 import { elapsedText, useNow } from './WorkCard'
@@ -124,7 +124,7 @@ const iconOf = (seat: Pick<RoundtableSeat, 'state' | 'error'>): IconState =>
 function SeatName({ seat }: { seat: Pick<RoundtableSeat, 'label' | 'agentLabel'> }) {
   return (
     <span className="work-group-name" data-testid="roundtable-row-name">
-      {seat.label}
+      {seatLabel(seat)}
       {seat.agentLabel !== seat.label && (
         <span className="work-group-sub"> · {seat.agentLabel}</span>
       )}
@@ -348,7 +348,7 @@ function RowButtons({ seat, actions }: { seat: RoundtableSeat; actions: RowActio
         <button
           type="button"
           className="icon-button small"
-          aria-label={t('roundtable.card.stopSeat', { name: seat.label })}
+          aria-label={t('roundtable.card.stopSeat', { name: seatLabel(seat) })}
           title={t('roundtable.card.stop')}
           onClick={actions.stop}
           disabled={actions.busy}
@@ -360,7 +360,7 @@ function RowButtons({ seat, actions }: { seat: RoundtableSeat; actions: RowActio
       {actions.otherModel ? (
         <button
           type="button"
-          className="btn small quiet"
+          className="btn small ghost"
           onClick={actions.otherModel}
           data-testid="roundtable-other-model"
         >
@@ -370,7 +370,7 @@ function RowButtons({ seat, actions }: { seat: RoundtableSeat; actions: RowActio
         actions.relaunch && (
           <button
             type="button"
-            className="btn small quiet"
+            className="btn small ghost"
             onClick={actions.relaunch}
             disabled={actions.busy}
             data-testid="roundtable-relaunch"

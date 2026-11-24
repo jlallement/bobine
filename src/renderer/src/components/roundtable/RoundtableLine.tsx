@@ -173,10 +173,10 @@ export function RoundtableLine({
   // le laisse où l'on a cliqué.
   const outside = useRef(false)
   const { state } = roundtable
-  const counted = state.kind === 'ready' || state.kind === 'slots'
-  const label = counted
-    ? t('roundtable.line.participants', { count: state.count })
-    : t('roundtable.line.choose')
+  // Dès deux retenus, le bouton les compte (même si le tour ne peut pas partir d'ici).
+  const count = roundtable.choices.length
+  const label =
+    count >= 2 ? t('roundtable.line.participants', { count }) : t('roundtable.line.choose')
   return (
     <div className="roundtable-line" data-testid="roundtable-line" data-state={state.kind}>
       <RoundtableIcon size={15} className="roundtable-line-icon" />

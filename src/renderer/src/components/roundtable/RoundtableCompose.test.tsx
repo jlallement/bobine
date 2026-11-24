@@ -402,8 +402,8 @@ describe('relecture : clavier, focus, envoi lent, brouillon, Discussion', () => 
 
   it('lectures d’options concurrentes : seule la dernière réponse compte', async () => {
     let first: (o: RoundtableOptions) => void = () => {}
+    api.options.mockResolvedValue(options({ freeSlots: 1 }))
     api.options.mockImplementationOnce(() => new Promise((resolve) => (first = resolve)))
-    api.options.mockResolvedValueOnce(options({ freeSlots: 1 }))
     const t = setup()
     t.type('/roundtable Q')
     fireEvent.click(screen.getByTestId('roundtable-participants'))
@@ -457,6 +457,16 @@ describe('ce qui empêche le départ, dit clairement, la question gardée', () =
     await act(async () => t.enter())
     expect(api.start).not.toHaveBeenCalled()
     expect((screen.getByTestId('send') as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('refus lu plus tôt (tour fini depuis) : relu à Entrée, le tour part', async () => {
+    api.options.mockResolvedValue(options({ refused: 'running' }))
+    const t = setup()
+    t.type('/roundtable Q')
+    await screen.findByTestId('roundtable-refused')
+    api.options.mockResolvedValue(options())
+    await act(async () => t.enter())
+    expect(api.start).toHaveBeenCalledTimes(1)
   })
 
   it('places manquantes : la ligne le dit à la place du surcoût, avec « Réglages »', async () => {

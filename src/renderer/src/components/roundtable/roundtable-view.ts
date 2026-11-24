@@ -334,8 +334,15 @@ export function totalText(total: RoundtableTotal): string | undefined {
 /** Nom montré au survol d'une lettre : « DeepSeek V4.1 Flash · OpenCode », « IBM Bob ». */
 export const seatName = (seat: Pick<RoundtableSeat, 'label' | 'agentLabel'>): string =>
   seat.agentLabel && seat.agentLabel !== seat.label
-    ? `${seat.label} · ${seat.agentLabel}`
-    : seat.label
+    ? `${seatLabel(seat)} · ${seat.agentLabel}`
+    : seatLabel(seat)
+
+/**
+ * Nom court d'un participant, comme dans le menu : le modèle sans son fournisseur (« Fx/Alpha »
+ * → « Alpha ») ; un agent sans modèle garde son nom.
+ */
+export const seatLabel = (seat: Pick<RoundtableSeat, 'label' | 'agentLabel'>): string =>
+  seat.label === seat.agentLabel ? seat.label : shortModelName(seat.label)
 
 /** Table des lettres, côté interface seulement (décision D1). */
 export function letterNames(seats: readonly RoundtableSeat[]): Readonly<Record<string, string>> {

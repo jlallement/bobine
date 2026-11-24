@@ -31,7 +31,7 @@ import { useChildTools } from '../roles/RoleWork'
 import { RoundtableIcon } from '../roundtable/RoundtableIcon'
 import { RoundtableTag } from '../roundtable/RoundtableLine'
 import { requestRoundtableMenu } from '../roundtable/roundtable-menu-request'
-import { listText, seatReports, totalText } from '../roundtable/roundtable-view'
+import { listText, seatLabel, seatReports, totalText } from '../roundtable/roundtable-view'
 import { RoundtableRow } from './RoundtableRow'
 import type { SubtasksInfo } from './Subtasks'
 import { currentReport, workUsage } from './work-card'
@@ -225,7 +225,7 @@ export function RoundtableCard({
   const rebutted = item.seats.some((s) => s.rebuttal)
   const working = item.seats.filter((s) => s.state === 'working' || s.state === 'waiting')
   const activity = useChildTools(working.flatMap((s) => (s.childId ? [s.childId] : [])))
-  const names = listText(item.seats.map((s) => s.label))
+  const names = listText(item.seats.map(seatLabel))
   return (
     <div
       className="work-group roundtable-card"
@@ -392,7 +392,7 @@ function RoundtableFoot({
         {gestures && (
           <button
             type="button"
-            className="btn small danger roundtable-stop-all"
+            className="btn small ghost roundtable-stop-all"
             aria-label={t('roundtable.card.stopAll')}
             title={t('roundtable.card.stopAll')}
             onClick={() => gestures.stop()}
