@@ -491,7 +491,7 @@ describe('tour de table : élément du fil', () => {
     expect([...participantIds(items)]).toEqual(['c-b'])
   })
 
-  it('export Markdown : une ligne et la question', () => {
+  it('export Markdown : la question en message « Tour de table », les avis sous leur nom, la synthèse marquée, rien d’interne', () => {
     const summary: ConversationSummary = {
       id: 'c1',
       title: 'T',
@@ -502,12 +502,84 @@ describe('tour de table : élément du fil', () => {
       status: 'stopped',
       draft: false
     }
-    const md = exportConversation(
-      summary,
-      { items: [{ kind: 'roundtable', id: 1, ...roundtable() }], nextId: 2 },
+    const base = roundtable()
+    const rt: Roundtable = {
+      ...base,
+      phase: 'synthesized',
+      seats: base.seats.map((s, i) => ({
+        ...s,
+        childId: `c-${i}`,
+        state: 'answered',
+        askedAt: 10 + i
+      })),
+      synthesis: {
+        state: 'answered',
+        count: 3,
+        requestedAt: 2,
+        by: { profileId: 'opencode', label: 'OpenCode', model: 'GPT-7' }
+      }
+    }
+    const report = (i: number, reply: string): TranscriptItem =>
+      ({
+        kind: 'child-report',
+        id: 10 + i,
+        childId: `c-${i}`,
+        title: `c-${i}`,
+        outcome: 'done',
+        files: [],
+        fileCount: 0,
+        added: 0,
+        removed: 0,
+        excerpt: reply,
+        reply,
+        askedAt: 10 + i,
+        at: 20
+      }) as TranscriptItem
+    const items: TranscriptItem[] = [
+      { kind: 'roundtable', id: 1, ...rt },
+      {
+        kind: 'child-started',
+        id: 2,
+        childId: 'c-0',
+        title: 'DeepSeek',
+        prompt: 'pg-boss ou BullMQ ?\n\n<bobine_role name="participant">You are a participant',
+        card: 'rt-1',
+        at: 1
+      },
+      report(0, 'Avis de DeepSeek.'),
+      report(1, 'Avis de GLM.'),
+      report(2, 'Avis de Bob.'),
+      {
+        kind: 'user',
+        id: 30,
+        text: 'Roundtable: 3 participants answered the question below independently',
+        from: { kind: 'roundtable', id: 'rt-1', title: 'Q', step: 'synthesis' }
+      },
+      { kind: 'agent', id: 31, text: 'Ma synthèse.' }
+    ]
+    const md = exportConversation(summary, { items, nextId: 32 }, 'markdown')
+    expect(md).toContain('## Vous · Tour de table\n\npg-boss ou BullMQ ?')
+    expect(md).toContain('### DeepSeek · OpenCode\n\nAvis de DeepSeek.')
+    expect(md).toContain('### IBM Bob\n\nAvis de Bob.')
+    expect(md).toContain('## Synthèse du tour de table · GPT-7\n\nMa synthèse.')
+    expect(md).not.toMatch(/Roundtable:|bobine_role|You are a participant/)
+    // Export de la conversation d'un participant : la question, sans la consigne de l'app.
+    const own = exportConversation(
+      { ...summary, id: 'c-0' },
+      {
+        items: [
+          {
+            kind: 'user',
+            id: 1,
+            text: 'pg-boss ou BullMQ ?\n\nFor context only, the last exchange of the conversation where…\n<bobine_role name="participant">You are a participant'
+          }
+        ],
+        nextId: 2
+      },
       'markdown'
     )
-    expect(md).toContain('> Tour de table à 3 participants\n>\n> pg-boss ou BullMQ ?')
+    expect(own).toContain('pg-boss ou BullMQ ?')
+    expect(own).not.toMatch(/For context only|bobine_role/)
   })
 
   it('provenance de la synthèse : aucun contexte d’origine, même file que son tour', () => {

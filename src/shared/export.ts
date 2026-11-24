@@ -12,6 +12,8 @@ import { originKey, type MessageOrigin } from './children'
 import { handoverName } from './handover'
 import { shortHash } from './worktree-cycle'
 import { formatCap } from './cost-cap'
+import { stripAppContext } from './app-context'
+import { participantIds } from './roundtable'
 
 export type ExportFormat = 'markdown' | 'json'
 
@@ -85,7 +87,13 @@ export function exportConversation(
     `- ${t('export.exportedAt', { date: dateOf(now) })}`,
     ''
   ]
-  for (const item of transcript.items) lines.push(...itemLines(item, transcript, agent), '')
+  // Participants d'un tour de table (fiche 285) : leurs avis sortent avec le tour, sous leur nom.
+  const seats = participantChildren(transcript.items)
+  for (const item of transcript.items) {
+    if ((item.kind === 'child-started' || item.kind === 'child-report') && seats.has(item.childId))
+      continue
+    lines.push(...itemLines(item, transcript, agent), '')
+  }
   if (hasUsage(transcript.usage)) lines.push('---', '', usageSummary(transcript.usage, agent), '')
   return `${lines
     .join('\n')
@@ -120,25 +128,35 @@ function originHeading(from: MessageOrigin): string {
   return t(key, { title: from.title })
 }
 
+/** Message de l'utilisateur, ou d'une autre conversation (sortie d'`itemLines`, complexité bornée). */
+function userLines(item: Extract<TranscriptItem, { kind: 'user' }>): string[] {
+  // Demande interne d'un tour de table (fiche 285) : jamais son texte en anglais ; la réponse
+  // qui suit est marquée (synthèse, décision), la réplique d'un participant aussi.
+  if (item.from?.kind === 'roundtable') {
+    return item.from.step === 'rebuttal' ? [`> ${t('roundtable.rebuttal.title')}`] : []
+  }
+  const attached = (item.attachments ?? []).map((a) => a.name)
+  return [
+    `## ${item.from ? originHeading(item.from) : t('export.you')}`,
+    '',
+    ...(attached.length
+      ? [`*${t('export.attachments', { files: attached.join(', ') })}*`, '']
+      : []),
+    // Sans les blocs que l'app joint (consigne d'un rôle, contexte d'un tour de table…).
+    stripAppContext(item.text) ?? '',
+    // Textes collés (fiche 155) : leur contenu, à la suite du message.
+    ...(item.attachments ?? []).flatMap((a) =>
+      a.kind === 'text' ? ['', `*${a.name}*`, '', ...longFenced(a.text)] : []
+    )
+  ]
+}
+
 function itemLines(item: TranscriptItem, transcript: TranscriptState, agent: string): string[] {
   switch (item.kind) {
-    case 'user': {
-      const attached = (item.attachments ?? []).map((a) => a.name)
-      return [
-        `## ${item.from ? originHeading(item.from) : t('export.you')}`,
-        '',
-        ...(attached.length
-          ? [`*${t('export.attachments', { files: attached.join(', ') })}*`, '']
-          : []),
-        item.text,
-        // Textes collés (fiche 155) : leur contenu, à la suite du message.
-        ...(item.attachments ?? []).flatMap((a) =>
-          a.kind === 'text' ? ['', `*${a.name}*`, '', ...longFenced(a.text)] : []
-        )
-      ]
-    }
+    case 'user':
+      return userLines(item)
     case 'agent':
-      return [`## ${agent}`, '', item.text]
+      return [`## ${stepHeading(item, transcript) ?? agent}`, '', item.text]
     case 'role-request':
       // Bulle « @Rôle … » (fiche 263) : la demande, à qui elle est allée.
       return [
@@ -220,13 +238,13 @@ function itemLines(item: TranscriptItem, transcript: TranscriptState, agent: str
     default:
       // Cartes de fin de tour, éléments des conversations filles : à part (complexité bornée,
       // fiche 089).
-      return guardLines(item) ?? childLines(item as ChildItem)
+      return guardLines(item, transcript.items) ?? childLines(item as ChildItem)
   }
 }
 
 /** Plafond de coût (fiche 157), limite d'étapes (fiche 209) : une ligne ; tour de table (fiche 285). */
-function guardLines(item: TranscriptItem): string[] | undefined {
-  if (item.kind === 'roundtable') return roundtableLines(item)
+function guardLines(item: TranscriptItem, items: readonly TranscriptItem[]): string[] | undefined {
+  if (item.kind === 'roundtable') return roundtableLines(item, items)
   if (item.kind === 'cost-cap') {
     return [`> ${t('turnGuards.cap.export', { limit: formatCap(item.limit, item.unit) })}`]
   }
@@ -234,13 +252,65 @@ function guardLines(item: TranscriptItem): string[] | undefined {
   return [`> ${t(item.refused ? 'turnGuards.limit.exportRefused' : 'turnGuards.limit.export')}`]
 }
 
-/** Tour de table (fiche 285) : la question ; les avis sont dans les conversations des participants. */
-function roundtableLines(item: Extract<TranscriptItem, { kind: 'roundtable' }>): string[] {
+/**
+ * Tour de table (fiche 285) : la question comme un message de l'utilisateur, marqué « Tour de
+ * table », puis l'avis de chaque participant sous son vrai nom (le compte rendu gardé dans le fil).
+ */
+function roundtableLines(
+  item: Extract<TranscriptItem, { kind: 'roundtable' }>,
+  items: readonly TranscriptItem[]
+): string[] {
+  const opinions = item.seats.flatMap((seat) => {
+    const report = items.findLast(
+      (i) =>
+        i.kind === 'child-report' &&
+        i.childId === seat.childId &&
+        i.outcome === 'done' &&
+        (seat.askedAt === undefined || i.askedAt === seat.askedAt)
+    )
+    const reply = report?.kind === 'child-report' ? report.reply?.trim() : undefined
+    const name = seat.agentLabel === seat.label ? seat.label : `${seat.label} · ${seat.agentLabel}`
+    return ['', `### ${name}`, '', reply && seat.state === 'answered' ? reply : `*${seat.state}*`]
+  })
   return [
+    `## ${t('export.you')} · ${t('roundtable.name')}`,
+    '',
+    ...(item.attachments?.length
+      ? [`*${t('export.attachments', { files: item.attachments.join(', ') })}*`, '']
+      : []),
+    item.question,
+    '',
     `> ${t('roundtable.export', { count: item.seats.length })}`,
-    '>',
-    ...quoted(item.question)
+    ...opinions
   ]
+}
+
+/** Conversations des participants des tours du fil (places, et lancements à la clé d'un tour). */
+function participantChildren(items: readonly TranscriptItem[]): Set<string> {
+  const ids = participantIds(items)
+  const tours = new Set(items.flatMap((i) => (i.kind === 'roundtable' ? [i.roundtableId] : [])))
+  for (const i of items) {
+    if (i.kind === 'child-started' && i.card && tours.has(i.card)) ids.add(i.childId)
+  }
+  return ids
+}
+
+/** Réponse à une demande d'un tour de table : « Synthèse du tour de table · <modèle> ». */
+function stepHeading(
+  item: Extract<TranscriptItem, { kind: 'agent' }>,
+  transcript: TranscriptState
+): string | undefined {
+  const before = transcript.items.filter((i) => i.id < item.id)
+  const asked = before.findLast((i) => i.kind === 'user')
+  if (asked?.kind !== 'user' || asked.from?.kind !== 'roundtable') return undefined
+  const { id, step } = asked.from
+  if (step === 'rebuttal') return undefined
+  const rt = before.findLast((i) => i.kind === 'roundtable' && i.roundtableId === id)
+  const by = rt?.kind === 'roundtable' ? (rt[step]?.by ?? rt.synthesizer) : undefined
+  const model = by?.model ?? by?.label ?? ''
+  return t(step === 'synthesis' ? 'roundtable.synthesis.label' : 'roundtable.decision.label', {
+    model
+  })
 }
 
 /** Préparation du worktree (fiche 175) : une ligne, la commande et son issue. */
