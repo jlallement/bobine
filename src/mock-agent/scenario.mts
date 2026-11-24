@@ -166,7 +166,12 @@ export type Step =
       path: string
       content?: string
       edit?: { from: string; to: string }
-      /** Fichier créé annoncé avec `oldText: ""` au lieu de `null`, comme Bob 2.0.6. */
+      /**
+       * Fichier créé annoncé avec `oldText: ""` au lieu de `null`, directement `in_progress` (sans
+       * proposition avant l'écriture) : forme jamais relevée chez Bob, qui propose l'outil puis
+       * attend l'autorisation (scénario `creation-bob`). Le main ne peut rien constater : l'app y
+       * voit une modification (fiche 203, limite connue).
+       */
       emptyOldText?: boolean
     }
   /**

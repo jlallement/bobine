@@ -18,7 +18,7 @@ describe('remettre les fichiers dans leur état d’alors (fiche 023)', () => {
     writeFileSync(join(root, 'pareil.txt'), 'avant')
     const changes = [
       full(join(root, 'a.txt'), 'avant', 'après'),
-      full(join(root, 'cree.txt'), '', 'nouveau'),
+      full(join(root, 'cree.txt'), null, 'nouveau'),
       full(join(root, 'touche.txt'), 'v1', 'v2'),
       full(join(root, 'pareil.txt'), 'avant', 'après'),
       full('/etc/hosts', 'x', 'y')
@@ -39,6 +39,17 @@ describe('remettre les fichiers dans leur état d’alors (fiche 023)', () => {
     expect(readFileSync(join(root, 'a.txt'), 'utf8')).toBe('avant')
     expect(existsSync(join(root, 'cree.txt'))).toBe(false)
     expect(readFileSync(join(root, 'touche.txt'), 'utf8')).toBe('modifié à la main')
+  })
+
+  it('fichier vide existant réécrit (`oldText: ""`, fiche 203) : remis vide, jamais supprimé', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'restore-'))
+    const file = join(root, 'vide.txt')
+    writeFileSync(file, 'contenu\n')
+    const change = full(file, '', 'contenu\n')
+    const [item] = await planRestore(root, [change])
+    expect(item).toMatchObject({ status: 'restore', created: false, target: '' })
+    await applyRestore(root, [change])
+    expect(readFileSync(file, 'utf8')).toBe('')
   })
 
   it('diffs par extrait (OpenCode) : défaits du dernier au premier', async () => {

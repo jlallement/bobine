@@ -8,6 +8,9 @@ What changes for you, version by version. Shown in Settings › About.
 
 - Several pieces of work proposed at once: the card always lists them in the order the agent
   proposed them, the same every time, and a line already shown no longer changes place.
+- An existing empty file rewritten by the agent: Changes › Conversation no longer marks it
+  “created” (its tool card already said it was edited), and **Revert this change** or **Branch from
+  this message** now leave it empty instead of deleting it.
 
 ## 1.0.0-rc.4 — November 23, 2026
 

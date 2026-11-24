@@ -82,6 +82,15 @@ sur sa ligne quand le chemin était long. Maquette validée par l'utilisateur
 
 ## Journal
 
+- 2026-11-24 — Écart trouvé en écrivant des tests : Modifications › Conversation (`conversationChanges`,
+  règle de la fiche 140) comptait encore `oldText: ""` comme une création, contre la conclusion
+  ci-dessous : un fichier vide existant réécrit par Bob avait le badge « A » sous une carte
+  « Modification », et « Annuler cette modification » / « Repartir de ce message » le supprimaient
+  (`undoEdits`, `planRestore`, même règle). Faits relus d'abord : trace réelle Bob 2.0.9 (création,
+  `oldText: ""`, outil proposé `pending` avant l'écriture) et OpenCode 2.2.5 (`oldText: null` pour
+  une création) — le constat du main au moment de la proposition est le seul signal, déjà en place.
+  Corrigé : seul `oldText` nul est une création partout (détail au journal de la fiche 140).
+
 - 2026-11-08 — Correctif de recette réelle (Bob 2.0.9) : la création de `notes/alpha.txt` se
   lisait « Modification de … ». Contrat réel relevé d'abord (script jetable hors du dépôt, dossier
   sous le dossier temporaire, `bob acp` **sans** `--trust` — Bob 2.0.9 approuve en ACP un dossier
