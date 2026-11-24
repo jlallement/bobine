@@ -364,5 +364,19 @@ export const childScenarios: Record<string, Scenario> = {
         ]
       }
     ]
+  },
+  'titre-contexte-bob': {
+    description:
+      'Comme Bob 2.1.0 à la recette du 2026-11-24 : titre de tâche tiré du contexte joint par l’app, « Résumer le projet bobine_capabilities » (`session_info_update`), puis une réponse — fiche 254',
+    steps: [
+      {
+        kind: 'update',
+        update: {
+          sessionUpdate: 'session_info_update',
+          title: 'Résumer le projet bobine_capabilities'
+        }
+      },
+      { kind: 'text', text: 'Petit projet Node : une fonction et son test.' }
+    ]
   }
 }

@@ -165,6 +165,7 @@ profil factice déclare alors `roleExport` comme Bob ou OpenCode et passe ces op
 | `shell-en-preparation` | Outil `shell` (`kind: execute`) annoncé avec le seul `{cwd}` pendant 3 s, puis `in_progress` avec sa commande, puis `completed` avec une sortie JSON dont les chaînes ont des retours à la ligne (D6 : sortie indentée, fiche 128) |
 | `plan` | Plan en trois étapes qui progresse |
 | `titres-bob` | Titres bruts comme Bob 2.0.6, trois autorisations à la suite : « Applying diff to <chemin absolu> », « cd <dossier> && npm test 2>&1 », « Updating todo list » avec `rawInput.todos` — fiche 125 |
+| `titre-contexte-bob` | Comme Bob 2.1.0 à la recette du 2026-11-24 : titre de tâche tiré du contexte joint par l’app (« Résumer le projet bobine_capabilities », `session_info_update`), puis une réponse ; l’app garde le titre du message — fiche 254 |
 | `commande-bob` | Comme Bob 2.0.9 : la commande de la capture m07 (193 caractères, cinq commandes) dans le **titre seulement**, sans `rawInput`, à autoriser — 0.11, M1 (e2e `autorisation-commande`) |
 | `commande-courte` | `git status --short` dans `rawInput.command`, titre générique « Run shell command », à autoriser — 0.11, M1 |
 | `commande-tres-longue` | Commande de 31 lignes (heredoc) dans `rawInput.command`, `cwd: /tmp/build-2291` hors du dossier de la conversation, à autoriser — 0.11, M1 |

@@ -95,6 +95,8 @@ function environment(extraArgs: string[] = []) {
     { ...mock('titres', 'echo', '--titres'), emptySessionTitle: /^Factice : vide/ },
     // Titre de session = début du texte envoyé, blocs de l'app compris, comme Bob (fiche 125).
     mock('titres-bob', 'echo', '--titres-invite'),
+    // Titre tiré du contexte joint par l'app, comme Bob 2.1.0 (fiche 254).
+    mock('titre-contexte', 'titre-contexte-bob'),
     // Comme OpenCode : la session d'un sous-agent se rejoue (fiche 053).
     {
       ...mock('sous-agent', 'sous-agent-opencode'),
@@ -938,6 +940,24 @@ describe('ConversationManager', () => {
     expect(manager.view(branch).transcript.items.find((i) => i.kind === 'branch')).toMatchObject({
       fromTitle: 'Renommer les fichiers'
     })
+    manager.stopAll()
+  })
+
+  it('titre de l’agent tiré du contexte joint par l’app : refusé, sauf si l’utilisateur en parle (fiche 254)', async () => {
+    const env = environment()
+    const { manager } = env.launch()
+    const id = (await manager.configure(manager.state().activeId, { profileId: 'titre-contexte' }))
+      .summary.id
+    await manager.prompt(id, 'Lis ce petit projet et résume-le en trois lignes')
+    await waitFor(() =>
+      manager.view(id).transcript.items.some((i) => i.kind === 'agent' && i.text.includes('Node'))
+    )
+    expect(manager.view(id).summary.title).toBe('Lis ce petit projet et résume-le en trois lignes')
+
+    // L'utilisateur parle lui-même de la balise : le titre de l'agent est pris.
+    const own = (await manager.create({ profileId: 'titre-contexte' })).summary.id
+    await manager.prompt(own, 'Que fait le bloc bobine_capabilities ?')
+    await waitFor(() => manager.view(own).summary.title === 'Résumer le projet bobine_capabilities')
     manager.stopAll()
   })
 

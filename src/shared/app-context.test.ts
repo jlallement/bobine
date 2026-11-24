@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { stripAppContext } from './app-context'
+import { borrowsAppWords, stripAppContext } from './app-context'
 import { branchContext } from './branch'
 import {
   capabilitiesContext,
@@ -65,5 +65,34 @@ describe('stripAppContext (fiche 125)', () => {
       'This conversation is about tests'
     )
     expect(stripAppContext('   ')).toBeUndefined()
+  })
+})
+
+describe('borrowsAppWords : titre tiré de ce que l’app joint (fiche 254)', () => {
+  it('un mot de l’app absent des messages de l’utilisateur : titre emprunté', () => {
+    // Recettes Bob du 2026-11-19 (rc1) et du 2026-11-24 (1.0).
+    const asked = 'Lis ce petit projet et résume-le en trois lignes.'
+    expect(borrowsAppWords('Résumer le projet bobine_capabilities', [asked])).toBe(true)
+    expect(borrowsAppWords('Résumé du projet Bobine en trois lignes', [asked])).toBe(true)
+    expect(borrowsAppWords('Mémoire : bobine_memory', ['Que retiens-tu ?'])).toBe(true)
+    expect(borrowsAppWords('Child_conversations à lancer', ['Fais les deux chantiers'])).toBe(true)
+    expect(borrowsAppWords('Résumé de bobine_capabilities', [])).toBe(true)
+  })
+
+  it('aucun mot de l’app, ou l’utilisateur l’emploie lui-même : titre gardé', () => {
+    expect(borrowsAppWords('Résumer le projet petit-stock', ['Résume'])).toBe(false)
+    expect(borrowsAppWords('Corriger le build de Bobine', ['Corrige le build de bobine'])).toBe(
+      false
+    )
+    expect(borrowsAppWords('Expliquer bobine_capabilities', ['Explique bobine_capabilities'])).toBe(
+      false
+    )
+    // Parler de Bobine ne suffit pas pour une balise que l'utilisateur n'a pas citée.
+    expect(borrowsAppWords('Bobine : bobine_capabilities', ['Explique Bobine'])).toBe(true)
+  })
+
+  it('ce que l’app a joint au message de l’utilisateur ne compte pas comme ses mots', () => {
+    const sent = `Lis ce projet\n\n${capabilitiesContext('whenFitting')}`
+    expect(borrowsAppWords('Résumer le projet Bobine', [sent])).toBe(true)
   })
 })

@@ -9,6 +9,9 @@ What changes for you, version by version. Shown in Settings › About.
 - The “Delete” dialog of a child conversation whose branch is already merged no longer reports
   lost commits; only commits that no other branch keeps are counted. Same fix in Settings › Data ›
   Orphan worktrees.
+- The title the agent gives a conversation no longer comes from what Bobine adds to your first
+  message (“Summarize the bobine_capabilities project”): the conversation then keeps the title
+  taken from your message.
 
 ## 1.0.0 — November 24, 2026
 
