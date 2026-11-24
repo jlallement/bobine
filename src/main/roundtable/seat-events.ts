@@ -34,7 +34,7 @@ export interface SeatRef {
 }
 
 export interface SeatEventsHost {
-  conversations: Pick<ConversationManager, 'view' | 'state' | 'settingsView'>
+  conversations: Pick<ConversationManager, 'view' | 'state' | 'settingsView' | 'post'>
   read: (motherId: string, roundtableId: string) => Roundtable | undefined
   apply: (motherId: string, roundtableId: string, event: RoundtableEvent) => Roundtable | undefined
   live: (
@@ -171,6 +171,14 @@ export class SeatEvents {
     if (rt.phase === 'collecting' && seat.state === 'waiting') {
       this.apply(ref, { type: 'seat-working', letter: ref.letter, at, ...asked })
       const readOnly = this.actualReadOnly(ref, childId, seat)
+      // Hors git, rien n'est vérifié : la conversation du participant le dit comme sa ligne.
+      if (readOnly === 'unverified') {
+        this.host.conversations.post(childId, {
+          type: 'notice',
+          level: 'info',
+          message: { key: 'roundtable.state.readOnly.unverified' }
+        })
+      }
       if (readOnly !== seat.readOnly) {
         this.apply(ref, {
           type: 'seat-launched',

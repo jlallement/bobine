@@ -463,7 +463,14 @@ describe('lecture seule (décision C3)', () => {
       participants: [FAST, choice('ecrit', 'factice-rapide')]
     })
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
-    expect(env.rt(mother).seats.find((s) => s.profileId === 'ecrit')?.readOnly).toBe('unverified')
+    const outside = env.rt(mother).seats.find((s) => s.profileId === 'ecrit')
+    expect(outside?.readOnly).toBe('unverified')
+    // Sa conversation dit la même chose que sa ligne, sans « surveillance impossible ».
+    const keys = env
+      .items(outside?.childId ?? '')
+      .flatMap((i) => (i.kind === 'notice' && typeof i.message === 'object' ? [i.message.key] : []))
+    expect(keys).toContain('roundtable.state.readOnly.unverified')
+    expect(keys).not.toContain('roles.notice.watchFailed')
   })
 })
 

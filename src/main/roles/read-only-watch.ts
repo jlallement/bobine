@@ -37,6 +37,11 @@ export interface ReadOnlyWatchDeps {
   group?: (id: string) => string | undefined
   /** Le tour n'a pas pu être jugé (dossier partagé avec un autre écrivain, git en échec). */
   unjudged?: (id: string) => void
+  /**
+   * Le dossier est dans un dépôt git ; sinon, rien n'est surveillé, sans avertissement : c'est un
+   * état attendu (lecture seule « non vérifiée », fiche 285). Défaut : oui.
+   */
+  inRepo?: (workspace: string) => boolean
 }
 
 interface Turn {
@@ -105,7 +110,7 @@ export class ReadOnlyWatch {
    */
   async prepare(id: string): Promise<void> {
     const child = this.find(id)
-    if (!watched(child)) return
+    if (!watched(child) || !this.inRepo(child.workspace)) return
     const { workspace } = child
     const fingerprint = await folderFingerprint(this.deps.run, workspace).catch(
       (error: unknown) => {
@@ -126,6 +131,10 @@ export class ReadOnlyWatch {
     return this.turns.size
   }
 
+  private inRepo(workspace: string): boolean {
+    return this.deps.inRepo?.(workspace) ?? true
+  }
+
   private find(id: string): ConversationSummary | undefined {
     try {
       return this.deps.summary(id)
@@ -144,7 +153,7 @@ export class ReadOnlyWatch {
       return
     }
     const child = this.find(id)
-    if (!watched(child)) return
+    if (!watched(child) || !this.inRepo(child.workspace)) return
     const { workspace } = child
     this.begin(
       id,

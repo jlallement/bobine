@@ -186,6 +186,7 @@ export class ChildConversations {
         this.participantWatch.changed?.(id)
       },
       group: (id) => this.participantWatch.group?.(id),
+      inRepo: (workspace) => inGitRepo(workspace),
       unjudged: (id) => this.participantWatch.unjudged?.(id)
     })
     this.reviews = new ChildReviews({
