@@ -10,6 +10,7 @@ import type {
 } from '@shared/agent'
 import { MOCK_AGENT_ENTRY } from '../mock-agent/testing.mts'
 import { AgentHost } from './agent/agent-host'
+import { ApiKeyStore, type Cipher } from './agent-config/api-keys'
 import type { AgentProfile } from './agent/profiles'
 import { ConversationManager } from './conversations/manager'
 import { createHandlers, registerIpcHandlers, type IpcSenderEvent } from './ipc'
@@ -41,7 +42,7 @@ const unused = new Proxy(
   }
 )
 
-function app(options: { workspace?: string | null } = {}) {
+function app(options: { workspace?: string | null; apiKeys?: ApiKeyStore } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'ipc-agent-'))
   const workspace = mkdtempSync(join(tmpdir(), 'ipc-agent-ws-'))
   const profile: AgentProfile = {
@@ -49,7 +50,9 @@ function app(options: { workspace?: string | null } = {}) {
     label: 'Agent factice',
     command: process.execPath,
     args: [MOCK_AGENT_ENTRY, '--scenario', 'echo', '--delay', '0', '--store', join(root, 'store')],
-    env: {}
+    env: {},
+    // Comme Bob : une clé d'API enregistrée par l'app (fiche 022).
+    apiKeys: [{ env: 'MOCK_AGENT_API_KEY', label: 'Clé de l’agent factice' }]
   }
   const events: ConversationEvent[] = []
   const manager = new ConversationManager({
@@ -61,7 +64,8 @@ function app(options: { workspace?: string | null } = {}) {
     pathEnv: () => process.env['PATH'],
     emit: (e) => events.push(e),
     emitList: () => {},
-    agentHome: mkdtempSync(join(tmpdir(), 'maison-vide-'))
+    agentHome: mkdtempSync(join(tmpdir(), 'maison-vide-')),
+    ...(options.apiKeys ? { apiKeys: options.apiKeys } : {})
   })
   const saveFile = vi.fn(async (name: string) => join(root, name))
   const reveal = vi.fn()
@@ -178,6 +182,39 @@ describe('IPC branché sur le vrai gestionnaire, contre l’agent factice', () =
     expect(view.rememberedTools).toEqual([])
     await answer('allow_once')
     expect(a.requests()).toHaveLength(before + 1)
+  })
+
+  it('clé d’API enregistrée par le canal (fiche 022) : jamais renvoyée à l’interface, ni à l’enregistrement ni ensuite', async () => {
+    const secret = 'carotte-fraise-42'
+    // Faux chiffrement réversible : le trousseau du système n'est jamais touché.
+    const cipher: Cipher = {
+      available: () => Promise.resolve(true),
+      encrypt: (text) => Promise.resolve(Buffer.from(`enc:${text}`).reverse()),
+      decrypt: (data) =>
+        Promise.resolve({ text: Buffer.from(data).reverse().toString().slice(4), reencrypt: false })
+    }
+    const keys = new ApiKeyStore(
+      join(mkdtempSync(join(tmpdir(), 'cles-')), 'api-keys.json'),
+      cipher
+    )
+    const a = app({ apiKeys: keys })
+    started.push(a.manager)
+    const saved = await a.call<AgentSettingsView>(
+      'settings:setApiKey',
+      'mock',
+      'MOCK_AGENT_API_KEY',
+      secret
+    )
+    expect(keys.has('mock', 'MOCK_AGENT_API_KEY')).toBe(true)
+    // La vue dit qu'une clé est enregistrée, sans sa valeur.
+    expect(JSON.stringify(saved)).toMatch(/"env":"MOCK_AGENT_API_KEY"[^}]*"stored":true/)
+    expect(JSON.stringify(saved)).not.toContain(secret)
+    expect(JSON.stringify(await a.call('settings:get'))).not.toContain(secret)
+    expect(JSON.stringify(await a.call('conversations:get'))).not.toContain(secret)
+    // L'agent, lui, la reçoit dans son environnement.
+    expect(await keys.credentials('mock', [{ env: 'MOCK_AGENT_API_KEY', label: '' }])).toEqual({
+      MOCK_AGENT_API_KEY: secret
+    })
   })
 
   it('export Markdown et JSON par le canal : le fil réel écrit sur le disque, montré dans le Finder', async () => {
