@@ -692,7 +692,8 @@ export class ConversationManager {
         throw new Error(t('children.error.noStartChild'))
       }
       // Contexte d'une branche (fiche 023), message d'une autre conversation (fiche 097).
-      return { done: host.send(text, attachments, options) }
+      // « Arrêter » pendant la préparation (fiche 278) : le message part, son tour s'arrête aussitôt.
+      return { done: this.sendOrder.follow(id, host.send(text, attachments, options), host) }
     })
     await sending.done
   }
@@ -864,14 +865,17 @@ export class ConversationManager {
   }
 
   cancel(id: string): Promise<void> {
-    return this.interrupting(id)?.cancel() ?? Promise.resolve()
+    return this.interrupting(id, true)?.cancel() ?? Promise.resolve()
   }
 
   /** L'utilisateur arrête la réponse : un outil qui échoue ensuite est interrompu (fiche 126). */
-  private interrupting(id: string): AgentHost | undefined {
+  private interrupting(id: string, stop = false): AgentHost | undefined {
     const conversation = this.get(id)
     const busy = conversation.host?.snapshot().status === 'busy'
     if (busy) this.onEvent(conversation, { type: 'cancel-requested' })
+    // « Arrêter » sans tour en cours, message en route (démarrage, dossier) : l'arrêt le suit
+    // (fiche 278), sinon il serait perdu et le tour irait à son terme.
+    else if (stop) this.sendOrder.stopPending(id)
     return conversation.host
   }
 

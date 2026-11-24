@@ -2,6 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { L, LANG, MAIN_PORT, check, mainProcess, withApp } from '../lib.mjs'
+import { NETWORK_BACK_MARKER } from '../../src/mock-agent/scenarios-opencode-2-3.mts'
 import {
   ROWS,
   choose,
@@ -173,10 +174,15 @@ export async function parcoursReglagesSuite(scheme) {
           await journee.step('proxy retiré : l’agent revient', async () => {
             await setProxy(ui, '')
             await newConversation(ui)
-            await ui.send('/scenario reseau-revenu-2-3')
+            // Le réseau revient quand l'essai a vu le bandeau (fichier lu par l'agent factice à
+            // chaque reprise) : un bandeau de quelques centaines de millisecondes échappait au
+            // relevé sur un runner chargé (macOS CI 2026-11-24, fiche 278).
+            await ui.send('/scenario reseau-revenu-au-signal-2-3')
             await ui.waitFor(`!!${ui.$('agent-unreachable')}`, 15000)
             const hint = await ui.ev(`${ui.$('agent-unreachable-hint')}.innerText`)
+            writeFileSync(join(workspace, NETWORK_BACK_MARKER), '')
             await ui.waitFor(`!${ui.$('agent-unreachable')}`, 30000)
+            rmSync(join(workspace, NETWORK_BACK_MARKER), { force: true })
             await ui.ready()
             check(
               hint === L('agentRetry.noProxy') && (await ui.lastAgentText()).length > 0,

@@ -1416,6 +1416,25 @@ describe('ConversationManager', () => {
     app.manager.stopAll()
   })
 
+  it('arrêter pendant le démarrage de l’agent, message en route : son tour s’arrête (fiche 278)', async () => {
+    const env = environment(['--delay', '2'])
+    const app = env.launch()
+    const id = app.manager.state().activeId
+    // Fille qui vient d'être lancée (e2e `session`) : « Arrêter » avant que l'agent ait démarré.
+    const turn = app.manager.prompt(id, '/scenario attend-stop')
+    await waitFor(() => app.status(id) === 'starting')
+    await app.manager.cancel(id)
+    await turn
+    const ends = app.events.flatMap((e) =>
+      e.conversationId === id && e.event.type === 'turn-end' ? [e.event.stopReason] : []
+    )
+    expect(ends).toEqual(['cancelled'])
+    // Rien ne reste en suspens : le message suivant fait son tour.
+    await app.manager.prompt(id, 'Ensuite')
+    expect(app.status(id)).toBe('ready')
+    app.manager.stopAll()
+  })
+
   it('mise en veille puis réveil (fiche 103) : le fil de l’app est gardé, réponse interrompue comprise', async () => {
     const env = environment(['--delay', '2'])
     const app = env.launch({ maxLive: 1 })

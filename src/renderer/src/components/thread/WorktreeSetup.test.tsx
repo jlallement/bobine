@@ -100,6 +100,24 @@ describe('Préparation du worktree (fiche 175)', () => {
     expect(screen.getByText(/sans attendre la fin/)).toBeTruthy()
   })
 
+  it('boutons à viser : le fil ne défile pas sous le pointeur ; finie, il suit de nouveau (fiche 250)', () => {
+    // macOS CI 2026-11-24 : « Autoriser » visé pendant que la réponse au message s'écrivait
+    // dessous ; le fil, qui suivait le bas, a déplacé la carte entre le survol et l'appui.
+    const hold = () => screen.getByTestId('worktree-setup').hasAttribute('data-scroll-hold')
+    const running = { command: 'pnpm i', startedAt: '2026-11-06T10:00:00.000Z' }
+    const cases: [WorktreeSetup, boolean][] = [
+      [{ archive: 'make clean', state: 'approval', signature: 's' }, true],
+      [{ ...running, state: 'running' }, true],
+      [{ ...running, state: 'running', proceeded: true }, false],
+      [{ ...running, state: 'done' }, false]
+    ]
+    for (const [setup, expected] of cases) {
+      const { unmount } = view(setup)
+      expect(hold()).toBe(expected)
+      unmount()
+    }
+  })
+
   it('arrêtée par l’utilisateur ; exécution planifiée non autorisée', () => {
     const { unmount } = view({ command: 'pnpm i', state: 'failed', stopped: true })
     expect(screen.getByTestId('worktree-setup-state').textContent).toBe('Arrêtée')

@@ -3,9 +3,13 @@
  * n'envoie que des mises à jour d'état (OpenCode 2.3.0 derrière un proxy injoignable, recette du
  * 2026-11-23) se tait quand même aux yeux de l'utilisateur. Seuil raccourci (`BOBINE_SILENCE_MS`).
  */
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { AgentEvent, AgentSnapshot } from '@shared/agent'
 import { MOCK_AGENT_ENTRY } from '../../mock-agent/testing.mts'
+import { NETWORK_BACK_MARKER } from '../../mock-agent/scenarios-opencode-2-3.mts'
 import { AgentHost, type AgentHostOptions } from './agent-host'
 import { OPENCODE_RETRY_STATUS } from './opencode-retry'
 import { eventLog } from './test-events'
@@ -134,5 +138,27 @@ describe('AgentHost : modèle injoignable annoncé par l’agent (fiche 275)', (
     expect(seen).toContain(2)
     expect(host.snapshot().unreachable).toBeUndefined()
     host.stop()
+  }, 20_000)
+
+  it('réseau revenu au signal (e2e `parcours-reglages`, fiche 278) : reprises jusqu’au fichier', async () => {
+    const workspace = mkdtempSync(join(tmpdir(), 'reseau-signal-'))
+    try {
+      const { host, until, snapshots } = createHost('reseau-revenu-au-signal-2-3', {
+        profile: profile('reseau-revenu-au-signal-2-3'),
+        workspace
+      })
+      await host.start()
+      const turn = host.prompt('Bonjour')
+      // Bien au-delà des deux reprises de `reseau-revenu-2-3` : le bandeau reste.
+      await until(() => (host.snapshot().unreachable?.attempt ?? 0) >= 5)
+      expect(host.snapshot().status).toBe('busy')
+      writeFileSync(join(workspace, NETWORK_BACK_MARKER), '')
+      await turn
+      expect(host.snapshot().unreachable).toBeUndefined()
+      expect(snapshots().some((s) => s.unreachable !== undefined)).toBe(true)
+      host.stop()
+    } finally {
+      rmSync(workspace, { recursive: true, force: true })
+    }
   }, 20_000)
 })

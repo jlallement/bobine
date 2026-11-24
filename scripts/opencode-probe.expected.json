@@ -24,7 +24,7 @@
       "legacyModes": false,
       "options": ["mode:mode", "model:model"],
       "modes": ["build", "plan"],
-      "commands": ["compact", "goal", "init", "review"]
+      "commands": ["automation", "compact", "goal", "init", "review"]
     },
     "session/list": {
       "fields": ["cwd", "sessionId", "title", "updatedAt"],
@@ -345,5 +345,9 @@
       "plan": false,
       "unknown": []
     }
+  },
+  "offline": {
+    "opencodeVersion": "2.4.1",
+    "recordedAt": "2026-11-23"
   }
 }

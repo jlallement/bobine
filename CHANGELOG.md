@@ -10,6 +10,10 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   proposés, le même d’une fois à l’autre, et une ligne affichée ne change plus de place.
 - Sommaire d’une longue conversation : tout en bas du fil, le dernier message est bien celui mis en
   avant, même quand les derniers échanges sont courts.
+- **Arrêter** une conversation fille qui vient d’être lancée (son agent démarre encore) l’arrête
+  bien : le tour ne va plus à son terme.
+- Préparation d’un worktree à autoriser : la carte ne bouge plus sous le pointeur pendant que
+  la réponse s’écrit dessous, « Autoriser » n’est plus manqué.
 
 ## 1.0.0-rc.4 — 23 novembre 2026
 

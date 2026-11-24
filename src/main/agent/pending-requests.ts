@@ -6,6 +6,7 @@
  * à attendre l'utilisateur ne compte pas dans la durée du tour (fiche 255).
  */
 import type {
+  CreateElicitationRequest,
   CreateElicitationResponse,
   PermissionOption,
   RequestPermissionRequest,
@@ -15,6 +16,7 @@ import type { AgentEvent, ElicitationAnswer, ElicitationPrompt } from '@shared/a
 import { validateElicitationContent } from '@shared/elicitation'
 import type { PermissionRisk } from '@shared/permissions'
 import { safeUrl } from './process-utils'
+import { elicitationPrompt } from './announced'
 import { t } from 'i18next'
 
 const MAX_WITHDRAWN = 50
@@ -112,6 +114,26 @@ export class PendingRequests {
       at: Date.now()
     })
     pending.resolve({ outcome: { outcome: 'cancelled' } })
+  }
+
+  /**
+   * Formulaire ou page demandés par l'agent (`elicitation/create`), traduits pour l'interface ;
+   * forme inconnue : déclinée, et dite dans le fil (sorti d'`AgentHost`, plafond de lignes).
+   */
+  fromAgent(
+    params: CreateElicitationRequest
+  ): CreateElicitationResponse | Promise<CreateElicitationResponse> {
+    const prompt = elicitationPrompt(params)
+    if (prompt) return this.elicitation(prompt)
+    this.emit({
+      type: 'notice',
+      level: 'warning',
+      message: {
+        key: 'agentHost.notice.elicitationUnsupported',
+        params: { message: params.message }
+      }
+    })
+    return { action: 'decline' }
   }
 
   /** Formulaire ou page demandés à l'utilisateur ; la réponse résout la promesse. */
