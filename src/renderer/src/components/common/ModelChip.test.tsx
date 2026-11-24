@@ -1,7 +1,9 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import type { SessionControl } from '@shared/agent'
+import { t } from 'i18next'
+import { ComposerFocus } from './Menus'
 import { ModelChip, modelOptions, modelProvider, shortModelName } from './ModelMenu'
 
 beforeAll(() => {
@@ -168,5 +170,87 @@ describe('puce du modèle (fiches 090, 092)', () => {
     fireEvent.click(screen.getByTestId('control-model-openai/GPT-6.1 Sol'))
     expect(onSetControl).not.toHaveBeenCalled()
     expect(screen.queryByTestId('model-menu-content')).toBeNull()
+  })
+})
+
+/**
+ * Remplaçants des vérifications de composant de `e2e/suites/composer.mjs` (n° 13, 15) et
+ * `connexion-expiree.mjs` (n° 22).
+ */
+describe('puce du modèle — remplaçants des e2e', () => {
+  it('longue liste ouverte : le modèle en cours amené au milieu de la partie visible (composer n° 13)', () => {
+    // jsdom ne met rien en page : des lignes de 30 px dans une liste de 300 px.
+    const proto = HTMLElement.prototype
+    const saved = {
+      offsetTop: Object.getOwnPropertyDescriptor(proto, 'offsetTop'),
+      offsetHeight: Object.getOwnPropertyDescriptor(proto, 'offsetHeight'),
+      clientHeight: Object.getOwnPropertyDescriptor(Element.prototype, 'clientHeight')
+    }
+    Object.defineProperty(proto, 'offsetTop', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return Number(this.dataset.index ?? 0) * 30
+      }
+    })
+    Object.defineProperty(proto, 'offsetHeight', { configurable: true, get: () => 30 })
+    Object.defineProperty(Element.prototype, 'clientHeight', { configurable: true, get: () => 300 })
+    try {
+      const { highlighted } = open(long)
+      const index = NAMES.indexOf('openai/GPT-6.1 Sol')
+      expect(highlighted()).toBe('control-model-openai/GPT-6.1 Sol')
+      const list = screen.getByRole('listbox')
+      expect(list.scrollTop).toBe(index * 30 - (300 - 30) / 2)
+    } finally {
+      for (const [name, descriptor] of Object.entries(saved)) {
+        const target = name === 'clientHeight' ? Element.prototype : proto
+        if (descriptor) Object.defineProperty(target, name, descriptor)
+      }
+    }
+  })
+
+  it('choix au clavier dans la zone de saisie : modèle réglé, focus rendu à la saisie (composer n° 15)', async () => {
+    const onSetControl = vi.fn()
+    const focusInput = vi.fn(() => document.getElementById('saisie')?.focus())
+    render(
+      <Tooltip.Provider>
+        <div className="composer-dock">
+          <textarea id="saisie" />
+          <ComposerFocus.Provider value={focusInput}>
+            <ModelChip control={long} disabled={false} onSetControl={onSetControl} />
+          </ComposerFocus.Provider>
+        </div>
+      </Tooltip.Provider>
+    )
+    fireEvent.click(screen.getByTestId('model-chip'))
+    const search = screen.getByTestId('model-search')
+    fireEvent.change(search, { target: { value: 'luna fast' } })
+    fireEvent.keyDown(search, { key: 'ArrowDown' })
+    await act(async () => fireEvent.keyDown(search, { key: 'Enter' }))
+    expect(onSetControl).toHaveBeenCalledWith('model', 'openai/GPT-6 Luna Fast')
+    expect(screen.queryByTestId('model-menu-content')).toBeNull()
+    // Radix rend le focus au tour suivant (FocusScope) : la saisie, pas la puce.
+    await waitFor(() => expect(focusInput).toHaveBeenCalled())
+    expect(document.activeElement?.id).toBe('saisie')
+  })
+
+  it('modèle refusé faute de connexion : marqué dans la liste, toujours choisissable (connexion-expiree n° 22)', () => {
+    const refused: SessionControl = {
+      ...model,
+      options: [
+        { value: 'openai/gpt-5.5', name: 'openai/GPT-5.5', group: 'OpenAI', authRequired: true },
+        { value: 'openai/gpt-6.1-sol', name: 'openai/GPT-6.1 Sol', group: 'OpenAI' }
+      ]
+    }
+    const { onSetControl } = open(refused)
+    const option = screen.getByTestId('control-model-openai/gpt-5.5')
+    expect(option.querySelector('[data-testid=model-auth-required]')?.textContent).toBe(
+      t('modelMenu.authRequired')
+    )
+    expect(option.getAttribute('title')).toContain(t('modelMenu.authRequiredTip'))
+    expect(
+      screen.getByTestId('control-model-openai/gpt-6.1-sol').querySelector('.model-auth-tag')
+    ).toBeNull()
+    fireEvent.click(option)
+    expect(onSetControl).toHaveBeenCalledWith('model', 'openai/gpt-5.5')
   })
 })
