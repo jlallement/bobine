@@ -224,12 +224,8 @@ export function ImageAnnotator({
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault()
           commitText()
-        } else if (e.key === 'Escape') {
-          // Abandonne ce texte, sans fermer l'annotation.
-          e.preventDefault()
-          e.stopPropagation()
-          setTyping(null)
         }
+        // Échap : voir `onEscapeKeyDown` de la fenêtre, qui l'entend avant la saisie.
       }}
       onBlur={commitText}
       placeholder={t('annotator.textPlaceholder')}
@@ -242,7 +238,18 @@ export function ImageAnnotator({
     <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="dialog-overlay" />
-        <Dialog.Content className="dialog annotator" onKeyDown={onKeyDown} data-testid="annotator">
+        <Dialog.Content
+          className="dialog annotator"
+          onKeyDown={onKeyDown}
+          // Radix écoute Échap sur le document, avant la saisie du texte : pendant une saisie, Échap
+          // abandonne ce texte sans fermer l'annotation ; sinon il la ferme.
+          onEscapeKeyDown={(event) => {
+            if (!typing) return
+            event.preventDefault()
+            setTyping(null)
+          }}
+          data-testid="annotator"
+        >
           <Dialog.Title className="sr-only">{t('annotator.title')}</Dialog.Title>
           <Dialog.Description className="sr-only">{t('annotator.description')}</Dialog.Description>
           <div className="annotator-bar">

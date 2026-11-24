@@ -2,6 +2,13 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixes
+
+- Image annotation: **Esc** while typing a text now discards only that text; the annotation stays
+  open (it used to close entirely). Outside text entry, Esc closes it as before.
+
 ## 1.0.0-rc.4 — November 23, 2026
 
 ### New

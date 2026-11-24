@@ -2,6 +2,13 @@
 
 Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrections
+
+- Annotation d’une image : **Échap** pendant la saisie d’un texte abandonne seulement ce texte ;
+  l’annotation reste ouverte (elle se fermait entièrement). Hors saisie, Échap la ferme comme avant.
+
 ## 1.0.0-rc.4 — 23 novembre 2026
 
 ### Nouveau
