@@ -558,6 +558,22 @@ export async function withApp(
      */
     const inspected = extraArgs.some((arg) => String(arg).startsWith('--inspect'))
     let main
+    /**
+     * État réel des pages du navigateur intégré, joint aux échecs (macOS CI 2026-11-24 : onglet neuf
+     * resté « en chargement », cause non établie) : processus de rendu lancé (`pid`), page validée
+     * ou non (`url`), réponse attendue, débogueur attaché (`cdp-tab.ts`, `whenReady`).
+     */
+    const mainPages = async () => {
+      try {
+        main ??= await mainProcess()
+        const pages = await main.evaluate(
+          `require('electron').webContents.getAllWebContents().filter((w) => w.getType() !== 'window').map((w) => ({ id: w.id, type: w.getType(), url: w.getURL(), title: w.getTitle(), loading: w.isLoading(), waitingForResponse: w.isWaitingForResponse(), crashed: w.isCrashed(), pid: w.getOSProcessId(), debugger: w.debugger.isAttached() }))`
+        )
+        return (pages ?? []).map((p) => JSON.stringify(p)).join('\n') || '(aucune)'
+      } catch (error) {
+        return `(illisible : ${error.message})`
+      }
+    }
     const withNativeViews = async (png) => {
       if (!inspected) return png
       main ??= await mainProcess()
@@ -953,7 +969,8 @@ export async function withApp(
           [
             `--- Texte de la fenêtre ---\n${text ?? ''}`,
             `--- Console du renderer (${consoleLines.length} dernières lignes) ---\n${consoleLines.join('\n')}`,
-            `--- Sortie de l'app (journal du main) ---\n${output}`
+            `--- Sortie de l'app (journal du main) ---\n${output}`,
+            ...(inspected ? [`--- Pages du main (hors fenêtres) ---\n${await mainPages()}`] : [])
           ].join('\n\n')
         )
       }
