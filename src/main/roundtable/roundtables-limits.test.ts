@@ -278,6 +278,69 @@ describe('lecture seule (décision C3)', () => {
     )
   })
 
+  it('deux participants qui lisent par le shell, l’un écrit : le changement est dit à tous ceux qui se chevauchent', async () => {
+    const lock = lockFile()
+    const { env, mother } = await setup({
+      profiles: (mock) => [
+        mock(
+          'shell',
+          'avis-participant',
+          [
+            '--scenario-par-modele',
+            'factice-rapide=participant-lit-shell,factice-precis=participant-lit-ecrit',
+            '--verrou-fin-de-tour',
+            lock
+          ],
+          { writesWithoutAsking: true }
+        )
+      ]
+    })
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [choice('shell', 'factice-rapide'), choice('shell', 'factice-precis')]
+    })
+    // Les deux tours en cours en même temps, chacun après sa lecture par le shell.
+    await env.waitFor(
+      () =>
+        env
+          .rt(mother)
+          .seats.every(
+            (s) =>
+              s.state === 'working' &&
+              env.items(s.childId ?? '').some((i) => i.kind === 'tool' && i.title === 'cat calc.js')
+          ),
+      'deux participants au travail, après leur lecture'
+    )
+    rmSync(lock)
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    expect(env.rt(mother).seats.map((s) => s.changedFolder)).toEqual([true, true])
+  })
+
+  it('tour qui ne peut pas être jugé (la conversation écrit dans le même dossier) : « non vérifiée »', async () => {
+    const lock = lockFile()
+    const { env, mother } = await setup({
+      profiles: (mock) => [
+        mock('ecrit', 'avis-participant', ['--verrou-fin-de-tour', lock], {
+          writesWithoutAsking: true
+        })
+      ]
+    })
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [FAST, choice('ecrit', 'factice-rapide')]
+    })
+    const writer = () => env.rt(mother).seats.find((s) => s.profileId === 'ecrit')
+    await env.waitFor(() => writer()?.state === 'working', 'participant au travail')
+    expect(writer()?.readOnly).toBe('requested')
+    // Un outil qui peut écrire, lancé par la conversation qui a posé la question.
+    env.manager.post(mother, {
+      type: 'update',
+      update: { sessionUpdate: 'tool_call', toolCallId: 'm1', title: 'npm i', kind: 'execute' }
+    })
+    rmSync(lock)
+    await env.waitFor(() => writer()?.readOnly === 'unverified', 'lecture seule non vérifiée')
+  })
+
   it('hors dépôt git : le tour marche, lecture seule « non vérifiée » pour un agent qui écrit sans demander', async () => {
     const { env, mother } = await setup({
       noGit: true,

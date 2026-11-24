@@ -81,6 +81,7 @@ export interface RoundtablesDeps {
     | 'relaunchParticipant'
     | 'followUp'
     | 'onFolderChanged'
+    | 'watchGroups'
     | 'watchSettled'
   >
   attention: () => AttentionState
@@ -153,6 +154,15 @@ export class Roundtables implements RoundtableService {
       const ref = this.seatsByChild.get(childId)
       if (ref) apply(ref.motherId, ref.roundtableId, this.seats.folderChanged(ref))
     })
+    // Participants d'un même tour : un seul groupe pour le garde-fou ; un tour qu'il n'a pas pu
+    // juger ramène la lecture seule « demandée » à « non vérifiée ».
+    deps.children.watchGroups(
+      (childId) => this.seatsByChild.get(childId)?.roundtableId,
+      (childId) => {
+        const ref = this.seatsByChild.get(childId)
+        if (ref) this.seats.unjudged(ref, childId)
+      }
+    )
   }
 
   private now(): number {

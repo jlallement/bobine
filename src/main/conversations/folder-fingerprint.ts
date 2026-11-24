@@ -1,12 +1,40 @@
 /**
  * Empreinte d'un dossier git (sortie de `children-review.ts`, fiche 177 ; reprise par les rôles en
- * lecture seule, fiche 223) : HEAD, état, diff des fichiers suivis, taille et date des fichiers
- * nouveaux (leur contenu n'est pas dans le diff). Deux empreintes différentes : le dossier a changé.
+ * lecture seule, fiche 223, et les participants d'un tour de table, fiche 285). Deux empreintes
+ * différentes : le dossier a changé.
+ *
+ * Ce qui est vu : HEAD et la branche courante ; l'état (`git status`) ; le diff des fichiers suivis ;
+ * taille et date des fichiers nouveaux (leur contenu n'est pas dans le diff) ; les entrées ignorées
+ * du premier niveau où git les regroupe (`!! node_modules/`), et taille et date de celles qui sont
+ * des fichiers (`.env`) ; le contenu de `.git/config` et la liste des crochets (`hooks/`, taille et
+ * date), qu'un agent pourrait changer pour faire exécuter du code plus tard.
+ *
+ * Ce qui n'est **pas** vu, et ne se promet pas : les écritures hors du dossier (dossier personnel,
+ * autre dépôt), le contenu des dossiers ignorés (un fichier ajouté dans `node_modules/` ou `dist/`),
+ * le reste de `.git` (objets, références hors de HEAD). Coût mesuré le 2026-11-24 sur le dépôt de
+ * Bobine (≈ 970 Mo de `node_modules`, Mac M-series) : ≈ 150 ms par empreinte contre ≈ 35 ms avant
+ * (le `git status --ignored`, sans parcourir les dossiers ignorés) ; deux empreintes par tour.
  */
 import { createHash } from 'node:crypto'
-import { stat } from 'node:fs/promises'
-import { join } from 'node:path'
+import { readFile, readdir, stat } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
 import type { Run } from '../simulator/run'
+
+/** Taille et date d'un fichier, ou `-1` s'il manque. */
+async function stamp(path: string): Promise<string> {
+  const info = await stat(path).catch(() => null)
+  return `${info?.size ?? -1}\0${info?.mtimeMs ?? -1}`
+}
+
+/** Config et crochets du dépôt (`--git-common-dir` : le même pour un worktree). */
+async function gitSetup(commonDir: string): Promise<string> {
+  const config = await readFile(join(commonDir, 'config')).catch(() => Buffer.from('-'))
+  const hooks = await readdir(join(commonDir, 'hooks')).catch(() => [] as string[])
+  const stamps = await Promise.all(
+    hooks.sort().map(async (name) => `${name}\0${await stamp(join(commonDir, 'hooks', name))}`)
+  )
+  return `${config.toString('base64')}\0${stamps.join('\0')}`
+}
 
 /**
  * Lève si une commande git échoue ou dépasse son délai (dossier hors d'un dépôt, dépôt sans
@@ -20,17 +48,24 @@ export async function folderFingerprint(run: Run, workspace: string): Promise<st
     }
     return result.stdout
   }
+  const lines = (out: Buffer | string) => out.toString('utf8').split('\0').filter(Boolean)
   const hash = createHash('sha256')
   hash.update(await git(['rev-parse', 'HEAD']))
+  hash.update(await git(['rev-parse', '--abbrev-ref', 'HEAD']))
   hash.update(await git(['status', '--porcelain=v1', '-z', '-uall', '--', '.']))
   hash.update(await git(['diff', 'HEAD', '--binary', '--', '.']))
-  const untracked = (await git(['ls-files', '-z', '--others', '--exclude-standard']))
-    .toString('utf8')
-    .split('\0')
-    .filter(Boolean)
-  for (const file of untracked) {
-    const info = await stat(join(workspace, file)).catch(() => null)
-    hash.update(`${file}\0${info?.size ?? -1}\0${info?.mtimeMs ?? -1}\0`)
+  for (const file of lines(await git(['ls-files', '-z', '--others', '--exclude-standard']))) {
+    hash.update(`${file}\0${await stamp(join(workspace, file))}\0`)
   }
+  // Ignorés regroupés par dossier (`traditional`, sans `-uall`) : jamais tout `node_modules/`.
+  const ignored = lines(
+    await git(['status', '--porcelain=v1', '-z', '--ignored=traditional', '-unormal', '--', '.'])
+  ).filter((line) => line.startsWith('!! '))
+  for (const line of ignored) {
+    const path = line.slice(3)
+    hash.update(`${line}\0${path.endsWith('/') ? '' : await stamp(join(workspace, path))}\0`)
+  }
+  const commonDir = (await git(['rev-parse', '--git-common-dir'])).toString('utf8').trim()
+  hash.update(await gitSetup(resolve(workspace, commonDir || '.git')))
   return hash.digest('hex')
 }

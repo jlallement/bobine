@@ -164,6 +164,9 @@ export class ChildConversations {
   private readonly reservedSlots = new Map<string, number>()
   /** Dossier changé pendant le tour d'une fille en lecture seule (tour de table, fiche 285). */
   private readonly folderListeners = new Set<(id: string) => void>()
+  /** Tour qui n'a pas pu être jugé (lecture seule seulement demandée), et groupes du garde-fou. */
+  private readonly unjudgedListeners = new Set<(id: string) => void>()
+  private watchGroup: ((id: string) => string | undefined) | undefined
 
   constructor(conversations: ChildHost, options: ChildOptions = {}) {
     this.conversations = conversations
@@ -179,6 +182,10 @@ export class ChildConversations {
       changed: (id) => {
         this.reviews.changed(id)
         for (const listener of this.folderListeners) listener(id)
+      },
+      group: (id) => this.watchGroup?.(id),
+      unjudged: (id) => {
+        for (const listener of this.unjudgedListeners) listener(id)
       }
     })
     this.reviews = new ChildReviews({
@@ -833,6 +840,22 @@ export class ChildConversations {
   onFolderChanged(listener: (id: string) => void): () => void {
     this.folderListeners.add(listener)
     return () => this.folderListeners.delete(listener)
+  }
+
+  /**
+   * Tour de table (fiche 285) : groupes du garde-fou (les participants d'un même tour) et tours
+   * qu'il n'a pas pu juger ; rend le désabonnement.
+   */
+  watchGroups(
+    group: (id: string) => string | undefined,
+    unjudged: (id: string) => void
+  ): () => void {
+    this.watchGroup = group
+    this.unjudgedListeners.add(unjudged)
+    return () => {
+      this.watchGroup = undefined
+      this.unjudgedListeners.delete(unjudged)
+    }
   }
 
   /** Vérification de lecture seule de fin de tour finie pour cette fille. */

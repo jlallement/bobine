@@ -102,6 +102,19 @@ export class SeatEvents {
     return inGit ? 'requested' : 'unverified'
   }
 
+  /** Le garde-fou n'a pas pu juger un tour : « lecture seule demandée » n'est plus vérifiée. */
+  unjudged(ref: SeatRef, childId: string): void {
+    const found = this.seat(ref)
+    if (found?.seat.readOnly !== 'requested') return
+    this.apply(ref, {
+      type: 'seat-launched',
+      letter: ref.letter,
+      childId,
+      readOnly: 'unverified',
+      at: found.seat.startedAt ?? this.host.now()
+    })
+  }
+
   /** Le premier message n'a pas pu partir : modèle strict refusé, agent qui ne démarre pas… */
   launchFailed(ref: SeatRef, error: unknown): void {
     const found = this.seat(ref)

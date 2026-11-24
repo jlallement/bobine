@@ -181,4 +181,48 @@ describe('garde-fou des rôles en lecture seule (fiche 223)', () => {
     ])
     expect(s.changed).toEqual([])
   })
+
+  it('fiche 285 : participants d’un même tour — un outil des autres ne les rend pas « partagés », un écart est dit à tous ceux qui se chevauchent', async () => {
+    let folder = 'propre'
+    const run: Run = async (_file, args) => ({
+      code: 0,
+      stdout: Buffer.from(args[0] === 'status' ? folder : ''),
+      stderr: ''
+    })
+    const changed: string[] = []
+    const unjudged: string[] = []
+    const participant = (id: string) => summary(id, { ...CHILD, id })
+    const watch = new ReadOnlyWatch({
+      conversations: { post: () => true },
+      summary: (id) => (id === 'm' ? summary('m') : participant(id)),
+      run,
+      changed: (id) => changed.push(id),
+      group: (id) => (id === 'a' || id === 'b' ? 'tour' : undefined),
+      unjudged: (id) => unjudged.push(id)
+    })
+    const send = (id: string, event: AgentEvent) => watch.onEvent({ conversationId: id, event })
+    const execute: AgentEvent = {
+      type: 'update',
+      update: { sessionUpdate: 'tool_call', toolCallId: 't', title: 'cat', kind: 'execute' }
+    }
+    send('a', userMessage)
+    send('b', userMessage)
+    // Les deux lisent par le shell ; `a` écrit en plus.
+    send('a', execute)
+    send('b', execute)
+    // Empreintes de départ prises (le git factice répond au tour de boucle suivant).
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    folder = `${folder}+`
+    send('a', turnEnd)
+    send('b', turnEnd)
+    await Promise.all([watch.settled('a'), watch.settled('b')])
+    expect([...new Set(changed)].sort()).toEqual(['a', 'b'])
+    expect(unjudged).toEqual([])
+    // Un outil d'une autre conversation du dossier (la mère) : le tour n'est pas jugé, et c'est dit.
+    send('a', userMessage)
+    send('m', execute)
+    send('a', turnEnd)
+    await watch.settled('a')
+    expect(unjudged).toEqual(['a'])
+  })
 })

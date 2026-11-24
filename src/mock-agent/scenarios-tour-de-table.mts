@@ -78,6 +78,18 @@ function opinion(text: string, model: string | undefined, attachments: number, e
   ]
 }
 
+/** Lecture par le shell, terminée (un outil qui pourrait écrire, pour le garde-fou). */
+const shellRead: Step = {
+  kind: 'update',
+  update: {
+    sessionUpdate: 'tool_call',
+    toolCallId: 'participant_shell',
+    title: 'cat calc.js',
+    kind: 'execute',
+    status: 'completed'
+  }
+}
+
 /** Avis, ou réplique si le message est celui de la réplique. */
 const participant = (
   steps: (text: string, model: string | undefined, attachments: number) => Step[]
@@ -154,6 +166,23 @@ export const roundtableScenarios: Record<string, Scenario> = {
         path: 'note-participant.md',
         content: 'écrit malgré la lecture seule\n'
       },
+      ...opinion(text, model, attachments)
+    ])
+  },
+  'participant-lit-shell': {
+    description:
+      'Tour de table : participant qui lit par le shell (`tool_call` `kind: execute`, « cat calc.js »), puis donne son avis',
+    steps: participant((text, model, attachments) => [
+      shellRead,
+      ...opinion(text, model, attachments)
+    ])
+  },
+  'participant-lit-ecrit': {
+    description:
+      'Tour de table : participant qui lit par le shell, puis écrit `note-participant.md` sans demander, puis donne son avis (deux participants qui exécutent, l’un écrit : revue sécurité)',
+    steps: participant((text, model, attachments) => [
+      shellRead,
+      { kind: 'write-file', path: 'note-participant.md', content: 'écrit par le shell\n' },
       ...opinion(text, model, attachments)
     ])
   },

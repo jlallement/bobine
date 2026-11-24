@@ -30,6 +30,13 @@ export interface ReadOnlyWatchDeps {
   run: Run
   /** Un écart constaté (fiche 265 : la carte du Code reviewer le dit aussi). */
   changed?: (id: string) => void
+  /**
+   * Groupe de conversations qui travaillent ensemble sur le même dossier (participants d'un même
+   * tour de table, fiche 285) : leurs outils ne rendent pas les tours des autres « partagés ».
+   */
+  group?: (id: string) => string | undefined
+  /** Le tour n'a pas pu être jugé (dossier partagé avec un autre écrivain, git en échec). */
+  unjudged?: (id: string) => void
 }
 
 interface Turn {
@@ -38,6 +45,9 @@ interface Turn {
   baseline: Promise<string | undefined>
   /** Une autre conversation du dossier a lancé un outil qui peut écrire pendant le tour. */
   shared: boolean
+  /** Groupe de la conversation (`group`), et les tours du même groupe qui ont chevauché celui-ci. */
+  group?: string
+  overlaps: Set<string>
 }
 
 /** Fille en lecture seule suivie ici : un rôle de conseil, ou le Code reviewer (fiche 265). */
@@ -130,24 +140,40 @@ export class ReadOnlyWatch {
     const ready = this.prepared.get(id)
     this.prepared.delete(id)
     if (ready) {
-      this.turns.set(id, {
-        workspace: ready.workspace,
-        baseline: Promise.resolve(ready.fingerprint),
-        shared: false
-      })
+      this.begin(id, ready.workspace, Promise.resolve(ready.fingerprint))
       return
     }
     const child = this.find(id)
     if (!watched(child)) return
     const { workspace } = child
-    this.turns.set(id, {
+    this.begin(
+      id,
       workspace,
-      baseline: folderFingerprint(this.deps.run, workspace).catch((error: unknown) => {
+      folderFingerprint(this.deps.run, workspace).catch((error: unknown) => {
         log.warn('Lecture seule : empreinte de départ impossible :', messageOf(error))
         return undefined
-      }),
-      shared: false
-    })
+      })
+    )
+  }
+
+  /** Tour suivi ; les tours en cours du même groupe se chevauchent avec lui. */
+  private begin(id: string, workspace: string, baseline: Promise<string | undefined>): void {
+    const group = this.deps.group?.(id)
+    const turn: Turn = {
+      workspace,
+      baseline,
+      shared: false,
+      overlaps: new Set(),
+      ...(group ? { group } : {})
+    }
+    if (group) {
+      for (const [otherId, other] of this.turns) {
+        if (other.group !== group) continue
+        other.overlaps.add(id)
+        turn.overlaps.add(otherId)
+      }
+    }
+    this.turns.set(id, turn)
   }
 
   private noteTool(id: string, update: { sessionUpdate: string; kind?: string | null }): void {
@@ -155,13 +181,20 @@ export class ReadOnlyWatch {
     if (update.sessionUpdate !== 'tool_call' && update.sessionUpdate !== 'tool_call_update') return
     if (!update.kind || !WRITING_KINDS.has(update.kind)) return
     const workspace = this.find(id)?.workspace
+    // Même groupe (participants d'un tour de table) : pas « partagé » ; un changement du dossier
+    // sera dit à tous les tours qui se chevauchent (`check`).
+    const group = this.deps.group?.(id)
     for (const [childId, turn] of this.turns) {
-      if (childId !== id && turn.workspace === workspace) turn.shared = true
+      const sameGroup = group !== undefined && turn.group === group
+      if (childId !== id && turn.workspace === workspace && !sameGroup) turn.shared = true
     }
   }
 
   private async check(id: string, turn: Turn): Promise<void> {
-    if (turn.shared) return
+    if (turn.shared) {
+      this.deps.unjudged?.(id)
+      return
+    }
     const before = await turn.baseline
     const after = before
       ? await folderFingerprint(this.deps.run, turn.workspace).catch((error: unknown) => {
@@ -178,11 +211,14 @@ export class ReadOnlyWatch {
         level: 'warning',
         message: { key: 'roles.notice.watchFailed' }
       })
+      this.deps.unjudged?.(id)
       return
     }
     if (after === before) return
     log.warn(`Rôle en lecture seule (${id.slice(0, 8)}) : le dossier a changé pendant son tour`)
     this.deps.changed?.(id)
+    // Sans savoir lequel a écrit : chaque tour du groupe qui a chevauché celui-ci le dit aussi.
+    for (const other of turn.overlaps) this.deps.changed?.(other)
     this.deps.conversations.post(id, {
       type: 'notice',
       level: 'warning',
