@@ -101,6 +101,11 @@ export interface RoundtableRebuttal {
   /** Retenue par le plafond de sa conversation : « réplique retenue : plafond atteint ». */
   held?: true
   detail?: string
+  /**
+   * Heure d'envoi de la réplique dans la conversation du participant (ajout du lot main) : le
+   * compte rendu dont `askedAt` est égal porte la réplique.
+   */
+  askedAt?: number
 }
 
 /** Un participant dans l'élément du tour. */
@@ -121,6 +126,12 @@ export interface RoundtableSeat extends RoundtableParticipant {
   removed?: true
   startedAt?: number
   endedAt?: number
+  /**
+   * Heure d'envoi de la question dans la conversation du participant (ajout du lot main) : le
+   * compte rendu dont `askedAt` est égal porte son avis, quels que soient les tours d'avant
+   * (relance, erreur) ou d'après (réplique, messages de l'utilisateur).
+   */
+  askedAt?: number
   rebuttal?: RoundtableRebuttal
 }
 
@@ -206,8 +217,8 @@ export type RoundtableEvent =
       readOnly: RoundtableReadOnly
       at: number
     }
-  /** Modèle vérifié, question partie. */
-  | { type: 'seat-working'; letter: RoundtableLetter; at: number }
+  /** Modèle vérifié, question partie ; `askedAt` : heure d'envoi de la question. */
+  | { type: 'seat-working'; letter: RoundtableLetter; at: number; askedAt?: number }
   | { type: 'seat-answered'; letter: RoundtableLetter; at: number }
   | {
       type: 'seat-failed'
@@ -242,6 +253,8 @@ export type RoundtableEvent =
       stopped?: RoundtableStopReason
       held?: true
       detail?: string
+      /** Heure d'envoi de la réplique, redite à chaque évènement de la réplique. */
+      askedAt?: number
       at: number
     }
   /** « Arrêter le tour de table » : tout s'arrête, sans synthèse. */
@@ -468,7 +481,13 @@ function reduceSeat(
     case 'seat-working':
       return collecting
         ? withSeat(rt, event.letter, (s) =>
-            s.state === 'waiting' ? { ...s, state: 'working' } : s
+            s.state === 'waiting'
+              ? {
+                  ...s,
+                  state: 'working',
+                  ...(event.askedAt !== undefined ? { askedAt: event.askedAt } : {})
+                }
+              : s
           )
         : rt
     case 'seat-answered':
@@ -504,7 +523,7 @@ function reduceSeat(
       if (!canRelaunch(rt, event.letter)) return rt
       const { interruptedFrom: _from, ...rest } = rt
       return withSeat({ ...rest, phase: 'collecting' }, event.letter, (s) => {
-        const { error: _e, stopped: _s, detail: _d, endedAt: _end, ...seat } = s
+        const { error: _e, stopped: _s, detail: _d, endedAt: _end, askedAt: _a, ...seat } = s
         return { ...seat, state: 'waiting' }
       })
     }

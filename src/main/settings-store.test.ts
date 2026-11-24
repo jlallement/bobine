@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { mkdtempSync } from 'node:fs'
+import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
@@ -8,6 +8,7 @@ import type { AgentProfile } from './agent/profiles'
 import type { Settings } from './settings'
 import { loadSettings, saveSettings } from './settings'
 import { normalizeMessage } from '@shared/tips'
+import { parseRoundtableChoices } from '@shared/roundtable-ipc'
 import { SettingsStore } from './settings-store'
 import { ApiKeyStore } from './agent-config/api-keys'
 
@@ -46,6 +47,33 @@ describe('SettingsStore (fiche 089)', () => {
     expect(settings.preferences().editor).toBeUndefined()
     settings.setPreferences({ editor: 'idea' })
     expect(settings.preferences().editor).toBe('idea')
+  })
+
+  it('fiche 285 : participants retenus du tour de table relus par `parseRoundtableChoices`, enregistrés, relus du disque', () => {
+    const { settings, save } = store()
+    expect(settings.preferences().roundtableParticipants).toEqual([])
+    const raw = [
+      { profileId: 'opencode', model: { controlId: 'model', value: 'a/b', name: ' B ' } },
+      { profileId: 'opencode', model: { controlId: 'model', value: 'a/b', name: 'B' } },
+      { profileId: 'Bob Évil' },
+      { profileId: 'bob', extra: 'ignoré' }
+    ]
+    settings.setPreferences({ roundtableParticipants: raw })
+    const kept = settings.preferences().roundtableParticipants
+    expect(kept).toEqual(parseRoundtableChoices(raw))
+    expect(kept).toEqual([
+      { profileId: 'opencode', model: { controlId: 'model', value: 'a/b', name: 'B' } },
+      { profileId: 'bob' }
+    ])
+    // Rien d'autre ne change : une autre préférence les garde.
+    settings.setPreferences({ theme: 'dark' })
+    expect(settings.preferences().roundtableParticipants).toEqual(kept)
+    const file = join(mkdtempSync(join(tmpdir(), 'reglages-')), 'settings.json')
+    writeFileSync(file, JSON.stringify(save.mock.lastCall?.[0]))
+    expect(
+      new SettingsStore({ initial: loadSettings(file), save: vi.fn(), profiles: [] }).preferences()
+        .roundtableParticipants
+    ).toEqual(kept)
   })
 
   it('enregistre chaque changement ; seuls ceux qui comptent pour l’app sont signalés', () => {

@@ -64,6 +64,11 @@ export class SeatEvents {
   }
 
   private apply(ref: SeatRef, event: RoundtableEvent): void {
+    // L'heure d'envoi de la réplique suit chaque évènement de la réplique (il la remplace).
+    if (event.type === 'rebuttal-seat' && event.askedAt === undefined) {
+      const askedAt = this.seat(ref)?.seat.rebuttal?.askedAt
+      if (askedAt !== undefined) event = { ...event, askedAt }
+    }
     this.host.apply(ref.motherId, ref.roundtableId, event)
   }
 
@@ -120,7 +125,7 @@ export class SeatEvents {
   onEvent(childId: string, ref: SeatRef, event: AgentEvent): void {
     switch (event.type) {
       case 'user-message':
-        return this.started(childId, ref, event.text)
+        return this.started(childId, ref, event.text, event.at)
       case 'turn-end':
         return this.ended(childId, ref, event.stopReason)
       case 'turn-error':
@@ -130,13 +135,18 @@ export class SeatEvents {
     }
   }
 
-  private started(childId: string, ref: SeatRef, text: string): void {
+  private started(childId: string, ref: SeatRef, text: string, sentAt?: number): void {
     const found = this.seat(ref)
     if (!found) return
     const { rt, seat } = found
     const at = this.host.now()
+    // Heure du message dans le fil du participant : celle que porte son compte rendu (`askedAt`).
+    const askedAt =
+      sentAt ??
+      this.host.conversations.view(childId).transcript.items.findLast((i) => i.kind === 'user')?.at
+    const asked = askedAt !== undefined ? { askedAt } : {}
     if (rt.phase === 'collecting' && seat.state === 'waiting') {
-      this.apply(ref, { type: 'seat-working', letter: ref.letter, at })
+      this.apply(ref, { type: 'seat-working', letter: ref.letter, at, ...asked })
       const readOnly = this.actualReadOnly(ref, childId, seat)
       if (readOnly !== seat.readOnly) {
         this.apply(ref, {
@@ -153,7 +163,7 @@ export class SeatEvents {
     if (rt.phase !== 'rebutting' || this.pendingRebuttals.get(childId) !== text) return
     this.pendingRebuttals.delete(childId)
     if (seat.rebuttal?.state === 'waiting') {
-      this.apply(ref, { type: 'rebuttal-seat', letter: ref.letter, state: 'working', at })
+      this.apply(ref, { type: 'rebuttal-seat', letter: ref.letter, state: 'working', at, ...asked })
     }
   }
 

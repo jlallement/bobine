@@ -3,7 +3,7 @@
  * indépendance des participants, synthèse anonymisée envoyée au repos, cloisonnement, réplique
  * unique, décision. Aucun vrai agent.
  */
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -24,6 +24,9 @@ async function setup(options: Parameters<typeof roundtableEnv>[0] = {}) {
 }
 
 const QUESTION = 'Quelle piste pour la moyenne de calc.js ?'
+/** Image d'un pixel (PNG), jointe à la question. */
+const PIXEL =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
 
 /** Verrou de fin de tour de l'agent factice : tant qu'il existe, aucun tour ne finit. */
 function lockFile(): string {
@@ -37,17 +40,30 @@ describe('tour de table : lancer et recueillir (fiche 285, lot 1)', () => {
     const { env, mother } = await setup({ lead: 'echo' })
     const result = await env.roundtables.start(mother, {
       question: QUESTION,
-      participants: [FAST, PRECISE]
+      participants: [FAST, PRECISE],
+      attachments: [{ kind: 'image', name: 'schema.png', mimeType: 'image/png', data: PIXEL }]
     })
     expect(result).toEqual({ ok: true, roundtableId: expect.any(String) })
     const rt = env.rt(mother)
-    expect(rt).toMatchObject({ question: QUESTION, withLastExchange: true, phase: 'collecting' })
+    expect(rt).toMatchObject({
+      question: QUESTION,
+      withLastExchange: true,
+      attachments: ['schema.png'],
+      phase: 'collecting'
+    })
     expect(rt.synthesizer).toMatchObject({ profileId: 'lead', label: 'Factice lead' })
     expect(rt.seats.map((s) => [s.label, s.agentLabel, s.readOnly])).toEqual([
       ['Factice rapide', 'Factice panel', 'enforced'],
       ['Factice précis', 'Factice panel', 'enforced']
     ])
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    // La bulle de la question vient de l'élément du tour : aucun message de plus dans le fil.
+    expect(
+      env
+        .users(mother)
+        .filter((u) => !u.from)
+        .map((u) => u.text)
+    ).toEqual(['Quelle moyenne pour calc.js ?'])
 
     for (const seat of env.rt(mother).seats) {
       const childId = seat.childId ?? ''
@@ -68,6 +84,7 @@ describe('tour de table : lancer et recueillir (fiche 285, lot 1)', () => {
       const reply = env.replies(childId).join('\n')
       expect(reply).toContain('autres avis : aucun')
       expect(reply).toContain('lecture seule : oui')
+      expect(reply).toContain('pièces jointes : 1')
       expect(seat.state).toBe('answered')
     }
     // Chaque modèle a bien répondu avec le sien (modèle strict).
@@ -140,6 +157,31 @@ describe('tour de table : lancer et recueillir (fiche 285, lot 1)', () => {
   })
 })
 
+describe('tour de table : la synthèse attend le repos (fiche 285, lot 2)', () => {
+  it('un message de l’utilisateur pendant le recueil part sans les avis ; la synthèse attend la fin de sa réponse', async () => {
+    const lock = lockFile()
+    rmSync(lock)
+    const { env, mother } = await setup({ lead: 'echo', leadArgs: ['--verrou-fin-de-tour', lock] })
+    // Le premier échange est fait ; la réponse suivante de la mère est tenue par le verrou.
+    writeFileSync(lock, '')
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    const answer = env.manager.prompt(mother, 'Pendant ce temps')
+    await env.waitFor(
+      () => env.rt(mother).phase === 'synthesizing',
+      'tous ont répondu, synthèse attendue'
+    )
+    expect(env.rt(mother).synthesis?.state).toBe('waiting')
+    expect(env.users(mother).some((u) => u.from?.kind === 'roundtable')).toBe(false)
+    rmSync(lock)
+    await answer
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    // La réponse au message de l'utilisateur n'a reçu aucun avis.
+    const replies = env.replies(mother)
+    expect(replies.at(-2)).toContain('Pendant ce temps')
+    expect(replies.at(-2)).not.toContain('la piste')
+  })
+})
+
 describe('tour de table : réplique et décision (fiche 285, lot 3)', () => {
   it('la synthèse et sa lettre vont à chaque participant, puis la décision part seule ; une seule réplique', async () => {
     const { env, mother } = await setup()
@@ -157,6 +199,15 @@ describe('tour de table : réplique et décision (fiche 285, lot 3)', () => {
       // La synthèse seule : jamais les avis des autres.
       expect(sent).not.toContain('<bobine_opinion')
       expect(seat.rebuttal).toMatchObject({ state: 'answered', stance: 'maintains' })
+      // Avis et réplique désignés sans ambiguïté : le compte rendu dont `askedAt` est le leur.
+      const reports = env
+        .items(mother)
+        .flatMap((i) => (i.kind === 'child-report' && i.childId === childId ? [i] : []))
+      expect(reports.find((r) => r.askedAt === seat.askedAt)?.reply).toContain('la piste')
+      expect(reports.find((r) => r.askedAt === seat.rebuttal?.askedAt)?.reply).toContain(
+        'Position : maintenue'
+      )
+      expect(seat.askedAt).not.toBe(seat.rebuttal?.askedAt)
       expect(env.replies(childId).at(-1)).toContain('autres avis : aucun')
     }
     const verdict = env.users(mother).at(-1)

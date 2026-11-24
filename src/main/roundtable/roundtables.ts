@@ -265,11 +265,13 @@ export class Roundtables implements RoundtableService {
     const tour = this.live.get(rt.roundtableId)
     const kept = (kind === 'opinion' ? tour?.opinions : tour?.rebuttals)?.get(letter)
     if (kept) return kept
-    const childId = rt.seats.find((s) => s.letter === letter)?.childId
+    const seat = rt.seats.find((s) => s.letter === letter)
+    const askedAt = kind === 'opinion' ? seat?.askedAt : seat?.rebuttal?.askedAt
     const motherId = tour?.motherId
     if (!motherId) return undefined
     try {
-      return reportReply(this.deps.conversations.view(motherId).transcript.items, childId)
+      const items = this.deps.conversations.view(motherId).transcript.items
+      return reportReply(items, seat?.childId, askedAt)
     } catch {
       return undefined
     }

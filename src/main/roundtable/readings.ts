@@ -41,12 +41,18 @@ export function stepReply(
  */
 export function reportReply(
   items: readonly TranscriptItem[],
-  childId: string | undefined
+  childId: string | undefined,
+  /** Heure d'envoi du message auquel il répond (`askedAt` de la place) : ce compte rendu-là. */
+  askedAt?: number
 ): string | undefined {
   if (!childId) return undefined
   const done: ChildOutcome = 'done'
   const report = items.findLast(
-    (i) => i.kind === 'child-report' && i.childId === childId && i.outcome === done
+    (i) =>
+      i.kind === 'child-report' &&
+      i.childId === childId &&
+      i.outcome === done &&
+      (askedAt === undefined || i.askedAt === askedAt)
   )
   return report?.kind === 'child-report' ? report.reply?.trim() || undefined : undefined
 }

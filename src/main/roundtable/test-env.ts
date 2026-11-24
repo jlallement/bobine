@@ -27,6 +27,8 @@ import { setupRoundtables } from './setup'
 export interface EnvOptions {
   /** Scénario de la conversation qui arbitre (défaut : `synthese-tour-de-table`). */
   lead?: string
+  /** Options de plus pour la conversation qui arbitre. */
+  leadArgs?: string[]
   /** Options de plus pour les participants `panel`. */
   panel?: string[]
   /** Autres profils (participants d'un autre agent). */
@@ -96,7 +98,7 @@ export async function roundtableEnv(options: EnvOptions = {}) {
   const late: { children?: ChildConversations; roundtables?: Roundtables } = {}
   const manager = new ConversationManager({
     profiles: [
-      mock('lead', options.lead ?? 'synthese-tour-de-table'),
+      mock('lead', options.lead ?? 'synthese-tour-de-table', options.leadArgs ?? []),
       mock('panel', 'avis-participant', options.panel ?? []),
       ...(options.profiles?.(mock) ?? [])
     ],

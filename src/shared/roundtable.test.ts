@@ -231,6 +231,39 @@ describe('tour de table : réducteur', () => {
     expect(seat(again, 'B')?.error).toBeUndefined()
   })
 
+  it('avis et réplique désignés par l’heure d’envoi de leur message (`askedAt`), relance comprise', () => {
+    const asked = apply(
+      roundtable(),
+      { type: 'seat-working', letter: 'A', at: 2, askedAt: 20 },
+      { type: 'seat-failed', letter: 'A', error: 'agent-error', at: 3 }
+    )
+    expect(seat(asked, 'A')?.askedAt).toBe(20)
+    // Relancé : l'ancienne heure ne désigne plus rien, la nouvelle la remplace.
+    const relaunched = reduceRoundtable(asked, { type: 'seat-relaunched', letter: 'A', at: 4 })
+    expect(seat(relaunched, 'A')?.askedAt).toBeUndefined()
+    const again = reduceRoundtable(relaunched, {
+      type: 'seat-working',
+      letter: 'A',
+      at: 5,
+      askedAt: 50
+    })
+    expect(seat(again, 'A')?.askedAt).toBe(50)
+    const rebutting = apply(
+      roundtable(),
+      { type: 'seat-launched', letter: 'A', childId: 'c-a', readOnly: 'enforced', at: 1 },
+      { type: 'seat-launched', letter: 'B', childId: 'c-b', readOnly: 'enforced', at: 1 },
+      { type: 'seat-answered', letter: 'A', at: 2 },
+      { type: 'seat-answered', letter: 'B', at: 2 },
+      { type: 'seat-stopped', letter: 'C', reason: 'user', at: 2 },
+      { type: 'step-sent', step: 'synthesis', at: 3 },
+      { type: 'step-answered', step: 'synthesis', at: 4 },
+      { type: 'rebuttal', at: 5 },
+      { type: 'rebuttal-seat', letter: 'A', state: 'working', askedAt: 60, at: 6 },
+      { type: 'rebuttal-seat', letter: 'A', state: 'answered', askedAt: 60, at: 7 }
+    )
+    expect(seat(rebutting, 'A')?.rebuttal).toEqual({ state: 'answered', askedAt: 60 })
+  })
+
   it('« Synthétiser sans attendre » : dès deux avis, les autres arrêtés ; refusé avant', () => {
     const one = apply(roundtable(), { type: 'seat-answered', letter: 'A', at: 2 })
     expect(reduceRoundtable(one, { type: 'synthesize', at: 3 })).toBe(one)

@@ -170,7 +170,10 @@ describe('quorum, arrêts et relance (lots 2 et 4)', () => {
     await env.roundtables.relaunch(mother, id, failed?.letter ?? 'A')
     await env.waitFor(() => env.users(childId).length === 2, 'question renvoyée')
     await env.waitFor(() => env.rt(mother).phase === 'insufficient', 'de nouveau sans synthèse')
-    expect(env.rt(mother).seats.find((s) => s.childId === childId)?.state).toBe('error')
+    const relaunched = env.rt(mother).seats.find((s) => s.childId === childId)
+    expect(relaunched?.state).toBe('error')
+    // L'heure d'envoi désigne la question relancée, pas la première.
+    expect(relaunched?.askedAt).toBe(env.users(childId)[1]?.at)
   })
 
   it('« Synthétiser sans attendre » dès deux avis : le participant lent est arrêté, la synthèse le nomme', async () => {
@@ -407,5 +410,90 @@ describe('corbeille, archivage, plafond, redémarrage (lot 4)', () => {
     expect(received).toContain('la piste A')
     expect(received).toContain('la piste B')
     expect(received).toContain('stopped when the app restarted')
+  })
+
+  it('participant arrêté par le plafond de sa conversation : « arrêté : plafond atteint », pas une erreur', async () => {
+    const lock = lockFile()
+    const { env, mother } = await setup({ profiles: slowProfile(lock) })
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [FAST, PRECISE, choice('lent', 'factice-rapide')]
+    })
+    await env.waitFor(
+      () => env.rt(mother).seats.find((s) => s.profileId === 'lent')?.state === 'working',
+      'participant lent au travail'
+    )
+    const slow = env.rt(mother).seats.find((s) => s.profileId === 'lent')
+    // Ce que pose le gardien du plafond (fiche 157) quand il interrompt le tour.
+    env.manager.post(slow?.childId ?? '', {
+      type: 'cost-cap-reached',
+      reached: { limit: 0.01, unit: 'USD', spent: 0.02, step: 0.01, interrupted: true }
+    })
+    expect(env.rt(mother).seats.find((s) => s.letter === slow?.letter)).toMatchObject({
+      state: 'stopped',
+      stopped: 'cost-cap'
+    })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    rmSync(lock)
+  })
+
+  it('redémarrage pendant la réplique : « Demander la décision » l’envoie avec les répliques gardées', async () => {
+    const { env, mother } = await setup({ lead: 'echo' })
+    // État relu d'un fil d'avant le redémarrage : réplique de A rendue, celle de B interrompue.
+    env.manager.post(mother, {
+      type: 'roundtable',
+      roundtable: {
+        roundtableId: 'rt-ancien',
+        question: QUESTION,
+        synthesizer: { profileId: 'lead', label: 'Factice lead' },
+        seats: [
+          {
+            ...FAST,
+            label: 'R',
+            agentLabel: 'P',
+            letter: 'A',
+            childId: 'enfant-a',
+            state: 'answered',
+            rebuttal: { state: 'answered', stance: 'nuances' }
+          },
+          {
+            ...PRECISE,
+            label: 'P',
+            agentLabel: 'P',
+            letter: 'B',
+            childId: 'enfant-b',
+            state: 'answered',
+            rebuttal: { state: 'stopped', stopped: 'restart' }
+          }
+        ],
+        phase: 'interrupted',
+        interruptedFrom: 'rebutting',
+        synthesis: { state: 'answered', count: 2, requestedAt: 1 },
+        at: 1
+      }
+    })
+    env.manager.post(mother, {
+      type: 'child-report',
+      report: {
+        childId: 'enfant-a',
+        title: 'A',
+        outcome: 'done',
+        files: [],
+        fileCount: 0,
+        added: 0,
+        removed: 0,
+        excerpt: '',
+        reply: 'Position : nuancée. Ma réplique gardée.',
+        at: 2
+      }
+    })
+    expect(() => env.roundtables.rebuttal(mother, 'rt-ancien')).toThrow(/Une seule réplique/)
+    env.roundtables.decide(mother, 'rt-ancien')
+    await env.waitFor(() => env.rt(mother).phase === 'decided', 'décision rendue')
+    const received = env.replies(mother).at(-1) ?? ''
+    expect(received).toContain('<bobine_roundtable step="verdict" answered="1" absent="1">')
+    expect(received).toContain('Ma réplique gardée.')
+    expect(received).toContain('no rebuttal (stopped when the app restarted)')
+    expect(env.users(mother).at(-1)?.from).toMatchObject({ kind: 'roundtable', step: 'verdict' })
   })
 })
