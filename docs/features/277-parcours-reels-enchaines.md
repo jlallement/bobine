@@ -155,6 +155,18 @@ Après la rc.4 (passage GitHub 45342287255, premiers essais des étapes du 2026-
    `useConversations`) : une suppression faite garde ses conversations tues jusqu'à la liste qui
    ne les a plus ; une suppression refusée les libère tout de suite. Test unitaire rouge → vert
    (`useConversations.remove.test.ts`). À confirmer sur GitHub (intermittent).
+   **Pas suffisant** : passage 45345873473, sombre macOS, même ligne (`conversation:appTools`,
+   +60 ms après le lancement du brouillon qui remplace la mère, après l'arrêt des agents). Seul
+   appelant possible à ce moment : l'effet de l'onglet Session (`useAppToolsTokens`, relu à chaque
+   changement de statut). Cause retenue : la porte du preload se rouvrait **à la réception** de la
+   liste, alors que React exécute les effets d'un rendu plus tard ; un rendu fait juste avant (mère
+   encore affichée, statut changé par l'arrêt de son agent) laissait en attente un effet qui part
+   après la réouverture. Corrigé : la porte ne se rouvre que dans un effet, après le rendu qui
+   n'affiche plus la conversation supprimée (React a alors exécuté tous les effets en attente).
+   Test rouge → vert : la liste reçue hors de `act`, la porte reste fermée jusqu'au rendu.
+   L'ordre exact n'a pas pu être observé (pas d'e2e locale) : `parcours-deleguer` 6 pose donc un
+   relevé IPC (`ipcTrace`, `e2e/parcours.mjs` : appels reçus nommant la mère, listes et
+   évènements poussés, horodatés), affiché seulement si l'étape échoue.
 4. **Sommaire : en bas du fil, le dernier message n'est jamais le courant** (`parcours-longue`,
    étape 2, macOS et Linux, clair et sombre). Le message lu est le dernier dont le haut passe le
    premier tiers du fil ; en fin de fil d'échanges courts, le haut des derniers messages n'y
@@ -203,3 +215,6 @@ l'être. Le parcours vérifie donc le proxy dans une nouvelle conversation.
   (`BOBINE_MOCK_AGENT=1`), l'étape inchangée. `parcours-longue` 2 et `parcours-deleguer` 6 : vrais
   défauts de l'app (3 et 4 ci-dessus), étapes inchangées, corrigés dans l'app. Rien joué en local
   (ADR-0069) : suites à relancer sur GitHub.
+- 2026-11-24 (passage GitHub 45345873473) : premier lancement, longue, `sommaire`, `filles` verts ;
+  `parcours-deleguer` 6 encore rouge en sombre (défaut 3) : porte rouverte après le rendu, relevé
+  IPC en cas d'échec (option `trace` de `day().step`).
