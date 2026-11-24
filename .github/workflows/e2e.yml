@@ -79,29 +79,32 @@ jobs:
       # Sans suites demandées : tout sauf les suites indicatives sur ce runner, jouées à part juste
       # après (décision du 2026-11-23, fiche 250). Machine virtuelle sans GPU, CPU partagé : les
       # seuils de `perf` (durées), le débit du flux de `simulator` (images/s) et le flux vidéo
-      # d'`android` y mesurent la machine, pas l'app. Elles restent bloquantes en local (avant
-      # chaque envoi et chaque tag), et le sont ici quand on les nomme.
+      # d'`android` y mesurent la machine, pas l'app. `browser` et `parcours-outils` aussi
+      # (décision du 2026-11-24, fiche 250) : sur cette VM le navigateur intégré reste lent et
+      # instable (reprise de page d'une branche, tour de l'agent > 15 s), alors que Linux et le Mac
+      # local sont verts. Elles restent bloquantes en local (avant chaque tag), sous Linux, et ici
+      # quand on les nomme.
       - name: Essais (français)
         run: |
           read -ra suites <<< "$SUITES"
           skip=()
-          [[ ${#suites[@]} -eq 0 ]] && skip=(--skip perf --skip simulator --skip android)
+          [[ ${#suites[@]} -eq 0 ]] && skip=(--skip perf --skip simulator --skip android --skip browser --skip parcours-outils)
           pnpm e2e ${skip[@]+"${skip[@]}"} ${suites[@]+"${suites[@]}"}
       - name: Essais (anglais)
         run: |
           read -ra suites <<< "$SUITES"
           skip=()
-          [[ ${#suites[@]} -eq 0 ]] && skip=(--skip perf --skip simulator --skip android)
+          [[ ${#suites[@]} -eq 0 ]] && skip=(--skip perf --skip simulator --skip android --skip browser --skip parcours-outils)
           pnpm e2e --lang en ${skip[@]+"${skip[@]}"} ${suites[@]+"${suites[@]}"}
       # Jouées et montrées (une annotation par contrôle en échec, `--indicative`), sans faire
       # échouer le job (voir plus haut). Français puis anglais, comme les autres.
-      - name: Suites indicatives sur ce runner (perf, simulator, android)
+      - name: Suites indicatives sur ce runner (perf, simulator, android, browser, parcours-outils)
         if: always() && env.SUITES == ''
         continue-on-error: true
         run: |
           rc=0
-          pnpm e2e --indicative perf simulator android || rc=1
-          pnpm e2e --indicative --lang en perf simulator android || rc=1
+          pnpm e2e --indicative perf simulator android browser parcours-outils || rc=1
+          pnpm e2e --indicative --lang en perf simulator android browser parcours-outils || rc=1
           exit $rc
       - name: Captures
         if: always()

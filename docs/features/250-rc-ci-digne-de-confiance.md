@@ -649,3 +649,10 @@ Dependabot comme les autres.
   sans. Essais unitaires `paint-gate.test.ts` (logique d'attente) et `cdp-tab.test.ts` (appui
   retenu, erreur sans appui envoyé, déplacement libre, onglet caché peint puis remis), rouges sans
   le branchement dans `CdpTab`. À relancer sur GitHub macOS : `browser parcours-outils`, trois fois.
+
+- 2026-11-24 — Décision de l'utilisateur : `browser` et `parcours-outils` deviennent indicatives sur le
+  runner macOS de GitHub (comme `perf`, `simulator`, `android`), bloquantes en local, sous Linux et
+  quand on les nomme. Deux vrais défauts trouvés en route sont corrigés (chargement d'onglet borné à
+  20 s ; entrées de l'agent retenues jusqu'à la première peinture, ciblé à l'agent). Restent ouverts,
+  à traiter à côté : (1) « branche : le navigateur reprend la page de l'originale » (`BrowserManager.inherit`
+  avale ses erreurs ; cause inconnue) ; (2) tour de l'agent > 15 s sur la VM, sans cause établie.
