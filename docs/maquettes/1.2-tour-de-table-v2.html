@@ -1,0 +1,1520 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tour de table — maquettes 1.2</title>
+    <style>
+      /*
+       * Jetons : thèmes réels de Bobine (src/renderer/src/themes.generated.css), accent par défaut,
+       * repris tels quels des premières maquettes. Aucune couleur ajoutée : les teintes de
+       * participant (--p1..--p3) de la v1 sont retirées avec la vue côte à côte. Version finale
+       * du 2026-11-24 : les options écartées (participants 2 et 3, surcoût 2, après-synthèse 2)
+       * sont retirées.
+       * Clair par défaut, sombre selon le système ; ?theme=dark|light et ?only=<id> pour les captures.
+       */
+      :root {
+        --bg: #faf9f5;
+        --sidebar: #f3f1ea;
+        --surface: #ffffff;
+        --surface-2: #f0eee6;
+        --surface-3: #e8e5db;
+        --border: #e3e0d6;
+        --border-strong: #8f8b81;
+        --text: #2b2a26;
+        --text-2: #4d4b45;
+        --muted: #6d6b64;
+        --accent: #b75534;
+        --on-accent: #ffffff;
+        --ok: #22683a;
+        --ok-soft: #e6f4ea;
+        --warn: #905f18;
+        --warn-soft: #fbf1df;
+        --err: #b3261e;
+        --err-soft: #fbe7e4;
+        --shadow: 0 1px 3px rgb(0 0 0 / 0.05), 0 4px 16px rgb(0 0 0 / 0.04);
+        --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.1), 0 1px 3px rgb(0 0 0 / 0.06);
+        --doc-bg: #ecebe5;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --bg: #262624;
+          --sidebar: #1f1e1d;
+          --surface: #30302e;
+          --surface-2: #383835;
+          --surface-3: #42413d;
+          --border: #3e3d39;
+          --border-strong: #7d7b74;
+          --text: #f0eee6;
+          --text-2: #d4d1c7;
+          --muted: #a6a39a;
+          --accent: #db8062;
+          --on-accent: #1a1918;
+          --ok: #7fcb93;
+          --ok-soft: #233a2a;
+          --warn: #e0a84f;
+          --warn-soft: #3d3222;
+          --err: #f08a7a;
+          --err-soft: #432a27;
+          --shadow: 0 1px 3px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.2);
+          --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
+          --doc-bg: #191918;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme='dark'] {
+        --bg: #262624;
+        --sidebar: #1f1e1d;
+        --surface: #30302e;
+        --surface-2: #383835;
+        --surface-3: #42413d;
+        --border: #3e3d39;
+        --border-strong: #7d7b74;
+        --text: #f0eee6;
+        --text-2: #d4d1c7;
+        --muted: #a6a39a;
+        --accent: #db8062;
+        --on-accent: #1a1918;
+        --ok: #7fcb93;
+        --ok-soft: #233a2a;
+        --warn: #e0a84f;
+        --warn-soft: #3d3222;
+        --err: #f08a7a;
+        --err-soft: #432a27;
+        --shadow: 0 1px 3px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.2);
+        --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
+        --doc-bg: #191918;
+        color-scheme: dark;
+      }
+      :root {
+        --radius-xs: 4px;
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 20px;
+        --radius-pill: 999px;
+        --font-ui: 'Bobine Inter', 'Inter', -apple-system, system-ui, sans-serif;
+        --font-mono: 'Bobine JetBrains Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;
+      }
+      @font-face {
+        font-family: 'Bobine Inter';
+        src: url('../../src/renderer/src/assets/fonts/InterVariable.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      @font-face {
+        font-family: 'Bobine JetBrains Mono';
+        src: url('../../src/renderer/src/assets/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--doc-bg);
+        color: var(--text);
+        font-family: var(--font-ui);
+        font-size: 14px;
+        -webkit-font-smoothing: antialiased;
+      }
+      code {
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+      }
+      svg.i {
+        width: 15px;
+        height: 15px;
+        flex-shrink: 0;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      svg.i.s {
+        width: 13px;
+        height: 13px;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .ok {
+        color: var(--ok);
+      }
+      .warn {
+        color: var(--warn);
+      }
+      .err {
+        color: var(--err);
+      }
+      .acc {
+        color: var(--accent);
+      }
+      .num {
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* ===== Page (lisible sur téléphone : une colonne, 900 px au plus) ===== */
+      .page {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 28px 16px 80px;
+      }
+      .page > header h1 {
+        font-size: 24px;
+        margin: 0 0 8px;
+      }
+      .lead {
+        color: var(--text-2);
+        line-height: 1.55;
+        margin: 0 0 8px;
+      }
+      .reco-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0 0;
+        font-size: 13.5px;
+      }
+      .reco-table td {
+        border-top: 1px solid var(--border);
+        padding: 7px 8px 7px 0;
+        vertical-align: top;
+        line-height: 1.45;
+      }
+      .reco-table td:first-child {
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      /* Une « planche » = une capture. Titre visible, une phrase, puis la zone cadrée serré. */
+      .shot {
+        background: var(--doc-bg);
+        padding: 26px 28px 30px;
+        margin-top: 28px;
+        border-top: 1px solid var(--border);
+      }
+      .shot > .sh h2 {
+        font-size: 21px;
+        line-height: 1.3;
+        margin: 0 0 6px;
+        letter-spacing: -0.01em;
+      }
+      .shot > .sh h2 .k {
+        color: var(--muted);
+        font-weight: 500;
+      }
+      .shot > .sh p {
+        font-size: 15px;
+        color: var(--text-2);
+        line-height: 1.5;
+        margin: 0 0 18px;
+      }
+      .stage {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .stage.narrow {
+        width: 420px;
+        padding: 14px;
+      }
+      .note {
+        font-size: 13.5px;
+        color: var(--muted);
+        line-height: 1.5;
+        margin: 12px 2px 0;
+      }
+
+      /* ===== Messages ===== */
+      .msg-user {
+        align-self: flex-end;
+        max-width: 88%;
+        padding: 10px 16px;
+        border-radius: var(--radius-lg);
+        background: var(--surface-2);
+        line-height: 1.5;
+        font-size: 14px;
+      }
+      .rt-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 1px 8px 1px 6px;
+        margin-right: 6px;
+        border-radius: var(--radius-pill);
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+        border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+        vertical-align: 1px;
+        white-space: nowrap;
+      }
+      .msg-agent {
+        font-size: 14.5px;
+        line-height: 1.6;
+      }
+      .msg-agent p {
+        margin: 0 0 0.7em;
+      }
+      .msg-agent h4 {
+        font-size: 14.5px;
+        margin: 0.9em 0 0.3em;
+      }
+      .msg-agent h4:first-of-type {
+        margin-top: 0;
+      }
+      .msg-agent ul {
+        margin: 0 0 0.6em;
+        padding-left: 1.3em;
+      }
+      .tag-line {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 12.5px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .tag-line svg {
+        color: var(--accent);
+      }
+      .fade {
+        color: var(--muted);
+        font-size: 13px;
+        font-style: italic;
+      }
+
+      /* ===== Saisie ===== */
+      .composer {
+        position: relative;
+        background: var(--surface);
+        border: 1px solid var(--border-strong);
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+        padding: 12px 10px 8px 16px;
+      }
+      .composer .input {
+        font-size: 15px;
+        line-height: 1.5;
+        padding: 2px 6px 8px 0;
+      }
+      .composer .ph {
+        color: var(--muted);
+      }
+      .caret {
+        display: inline-block;
+        width: 1.5px;
+        height: 18px;
+        background: var(--text);
+        vertical-align: -3px;
+        margin-left: 1px;
+      }
+      .bar {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        margin-left: -6px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .bar .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        height: 30px;
+        padding: 0 8px;
+        border-radius: var(--radius-sm);
+        white-space: nowrap;
+      }
+      .bar .chip.on {
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 10%, transparent);
+      }
+      .grow {
+        flex: 1;
+        min-width: 0;
+      }
+      .send {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-sm);
+        background: var(--accent);
+        color: var(--on-accent);
+        display: inline-grid;
+        place-items: center;
+        flex-shrink: 0;
+        position: relative;
+      }
+      /* La ligne du tour de table : une seule, sobre, au-dessus de la barre. */
+      .rt-line {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 6px -2px;
+        font-size: 13px;
+        color: var(--text-2);
+        white-space: nowrap;
+      }
+      .rt-line > svg {
+        color: var(--accent);
+      }
+      .rt-line .sep {
+        color: var(--muted);
+      }
+      .rt-line .pick-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 2px 6px;
+        margin: -2px -4px;
+        border-radius: var(--radius-xs);
+        color: var(--text);
+      }
+      .rt-line .pick-btn.open {
+        background: var(--surface-2);
+      }
+      .rt-line .cost {
+        color: var(--muted);
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .rt-line .x {
+        margin-left: auto;
+        color: var(--muted);
+      }
+      .rt-line a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      kbd {
+        font-family: var(--font-ui);
+        font-size: 11px;
+        line-height: 15px;
+        padding: 0 5px;
+        border-radius: var(--radius-xs);
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      /* ===== Menus ===== */
+      .menu {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        box-shadow: var(--shadow-menu);
+        padding: 4px;
+        font-size: 13.5px;
+      }
+      .menu .mi {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 6px 10px;
+        border-radius: var(--radius-xs);
+        white-space: nowrap;
+      }
+      .menu .mi > svg {
+        color: var(--muted);
+      }
+      .menu .mi.on {
+        background: var(--surface-2);
+      }
+      .menu .mi small {
+        color: var(--muted);
+        margin-left: auto;
+        font-size: 12.5px;
+        padding-left: 16px;
+      }
+      .menu .mt {
+        font-size: 12px;
+        color: var(--muted);
+        padding: 6px 10px 2px;
+      }
+      .menu hr {
+        border: 0;
+        border-top: 1px solid var(--border);
+        margin: 4px 2px;
+      }
+      .menu .mi.dim {
+        color: var(--muted);
+      }
+      .box {
+        width: 15px;
+        height: 15px;
+        border-radius: 4px;
+        border: 1.5px solid var(--border-strong);
+        flex-shrink: 0;
+        display: grid;
+        place-items: center;
+      }
+      .box.on {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--on-accent);
+      }
+      .box.on svg {
+        width: 11px;
+        height: 11px;
+        stroke-width: 3;
+      }
+      .tip {
+        position: absolute;
+        right: 0;
+        bottom: calc(100% + 8px);
+        background: var(--text);
+        color: var(--bg);
+        font-size: 12.5px;
+        line-height: 1.4;
+        padding: 6px 10px;
+        border-radius: 6px;
+        white-space: nowrap;
+        box-shadow: var(--shadow-menu);
+      }
+
+      /* ===== Carte du tour de table (cousine de la carte de groupe, fiche 264) ===== */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        font-size: 13.5px;
+      }
+      .card-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+      }
+      .card-head > svg {
+        color: var(--accent);
+      }
+      .card-head .t {
+        font-weight: 600;
+      }
+      .card-head .state {
+        margin-left: auto;
+        color: var(--muted);
+        font-size: 13px;
+        white-space: nowrap;
+      }
+      .row {
+        border-top: 1px solid var(--border);
+        padding: 9px 14px;
+        display: grid;
+        grid-template-columns: 16px minmax(0, 1fr) auto;
+        column-gap: 10px;
+        align-items: start;
+      }
+      .row > .st {
+        margin-top: 2px;
+      }
+      .row .nm {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .row .nm .ag {
+        color: var(--muted);
+      }
+      .row .sub {
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 1px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .row .sub.wrap {
+        white-space: normal;
+      }
+      .row .rt {
+        color: var(--muted);
+        font-size: 13px;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 1px;
+      }
+      .row.open {
+        background: color-mix(in srgb, var(--bg) 40%, var(--surface));
+      }
+      .avis {
+        grid-column: 2 / 4;
+        margin-top: 8px;
+        font-size: 13.5px;
+        line-height: 1.55;
+        color: var(--text);
+      }
+      .avis b {
+        font-weight: 600;
+      }
+      .avis ul {
+        margin: 2px 0 6px;
+        padding-left: 1.2em;
+      }
+      .avis p {
+        margin: 0 0 6px;
+      }
+      .avis .more {
+        display: flex;
+        gap: 16px;
+        margin-top: 6px;
+        font-size: 13px;
+      }
+      .avis .more span {
+        color: var(--accent);
+      }
+      .card-foot {
+        border-top: 1px solid var(--border);
+        padding: 9px 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 13px;
+        color: var(--muted);
+        background: color-mix(in srgb, var(--bg) 40%, var(--surface));
+      }
+      .card-foot .grow {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .card-foot .num {
+        color: var(--text-2);
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 30px;
+        padding: 0 12px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-strong);
+        color: var(--text);
+        background: var(--surface);
+        font-size: 13px;
+        white-space: nowrap;
+      }
+      .btn.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--on-accent);
+      }
+      .btn.quiet {
+        border-color: transparent;
+        background: none;
+        color: var(--text-2);
+        padding: 0 6px;
+      }
+      .btn.danger {
+        border-color: transparent;
+        background: none;
+        color: var(--err);
+        padding: 0 6px;
+      }
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .actions .hint {
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .send.dim {
+        opacity: 0.45;
+      }
+      .rt-line .pick-btn.hover {
+        position: relative;
+        background: var(--surface-2);
+      }
+      .tip.left {
+        left: -6px;
+        right: auto;
+      }
+      .tip.below {
+        left: -4px;
+        right: auto;
+        bottom: auto;
+        top: calc(100% + 4px);
+        z-index: 1;
+      }
+      .tip-sub {
+        display: block;
+        margin-top: 4px;
+        opacity: 0.75;
+        white-space: normal;
+        width: 330px;
+      }
+      .pref {
+        position: relative;
+        border-bottom: 1px dotted var(--muted);
+      }
+      .pref.hover {
+        background: var(--surface-2);
+        border-radius: 3px;
+      }
+      .menu .mfoot {
+        font-size: 12px;
+        color: var(--muted);
+        padding: 4px 10px 6px;
+        white-space: normal;
+        line-height: 1.4;
+      }
+      .card-head .names {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* Capture d'une seule planche : ?only=<id> */
+      body.only .page > header,
+      body.only .shot:not(.keep) {
+        display: none;
+      }
+      body.only .page {
+        padding: 0;
+        max-width: none;
+      }
+      body.only .shot.keep {
+        margin: 0;
+        border-top: 0;
+      }
+      @media (max-width: 560px) {
+        .shot {
+          padding: 20px 16px 24px;
+        }
+        .stage {
+          padding: 12px;
+        }
+        .stage.narrow {
+          width: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <h1>Tour de table — maquettes finales</h1>
+        <p class="lead">
+          Version retenue le 2026-11-24, après la passe de simplification et les choix de
+          l’utilisateur. Un tour de table se lance en deux gestes (<code>/roundtable</code> ou le
+          bouton, puis <kbd>Entrée</kbd>) ; les participants se règlent une fois, dans un menu à
+          cases. Une seule ligne grise dit le surcoût en jetons avant l’envoi ; le pied de la carte
+          dit ce qui a été réellement consommé.
+        </p>
+        <p class="lead">
+          Exemple suivi : projet <code>atelier</code> (API Node + Postgres). La conversation tourne
+          sur <b>OpenCode · GPT-6.1 Sol</b>, qui fait la synthèse ; les participants sont
+          <b>DeepSeek V4.1 Flash</b>, <b>GLM 5.3 Flash</b> (OpenCode) et <b>IBM Bob</b>.
+        </p>
+        <table class="reco-table">
+          <tr>
+            <td>Participants</td>
+            <td>Menu à cases ouvert par « 3 participants ▾ » ; le dernier choix est retenu</td>
+          </tr>
+          <tr>
+            <td>Surcoût</td>
+            <td>
+              Dans la ligne du tour de table, sous la question : « + synthèse · ≈ 4 fois les jetons
+              d’une question simple », gris, une ligne ; même phrase à côté de la réplique
+            </td>
+          </tr>
+          <tr>
+            <td>Après la synthèse</td>
+            <td>Carte repliée en une ligne ; les avis restent à un clic</td>
+          </tr>
+          <tr>
+            <td>Synthèse</td>
+            <td>
+              Avis anonymisés pour le modèle qui synthétise (« Participant A, B, C », ordre mélangé)
+              ; vrais noms dans l’interface
+            </td>
+          </tr>
+        </table>
+      </header>
+
+      <!-- ============================================================ Lancement -->
+      <section class="shot" id="lancement-1-commande">
+        <div class="sh">
+          <h2>Lancement · 1 — la commande</h2>
+          <p>
+            On tape « /rou » : le menu des commandes propose le tour de table. Le bouton de la barre
+            fait la même chose.
+          </p>
+        </div>
+        <div class="stage">
+          <div class="menu" style="width: 440px">
+            <div class="mt">Commandes</div>
+            <div class="mi on">
+              <i data-i="table"></i><b>/roundtable</b
+              ><small>Poser la question à plusieurs modèles</small>
+            </div>
+            <div class="mi">
+              <i data-i="file"></i>/review<small>Relire les modifications</small>
+            </div>
+          </div>
+          <div class="composer">
+            <div class="input">/rou<span class="caret"></span></div>
+            <div class="bar">
+              <span class="chip"><i data-i="clip"></i></span>
+              <span class="chip"><i data-i="table"></i></span>
+              <span class="chip"><i data-i="shield"></i>Demander</span>
+              <span class="grow"></span>
+              <span class="chip">GPT-6.1 Sol <i data-i="down" data-c="i s"></i></span>
+              <span class="chip">OpenCode <i data-i="down" data-c="i s"></i></span>
+              <span class="send"><i data-i="up"></i></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="shot" id="lancement-2-pret">
+        <div class="sh">
+          <h2>Lancement · 2 — prêt à partir</h2>
+          <p>
+            La question est tapée. Une seule ligne, sous la question, dit avec qui et combien de
+            jetons. <kbd>Entrée</kbd> envoie, sans autre étape.
+          </p>
+        </div>
+        <div class="stage">
+          <div class="composer">
+            <div class="input">
+              <span class="rt-pill"><i data-i="table" data-c="i s"></i>Tour de table</span>On doit
+              ajouter une file de tâches (e-mails, exports PDF, webhooks sortants). Postgres seul
+              avec pg-boss, Redis + BullMQ, ou un service géré comme SQS ? On est à environ
+              20&nbsp;000 tâches par jour.<span class="caret"></span>
+            </div>
+            <div class="rt-line">
+              <i data-i="table" data-c="i s"></i>
+              <span class="pick-btn">3 participants <i data-i="down" data-c="i s"></i></span>
+              <span class="cost">+ synthèse · ≈ 4 fois les jetons d’une question simple</span>
+              <span class="x"><i data-i="x" data-c="i s"></i></span>
+            </div>
+            <div class="bar">
+              <span class="chip"><i data-i="clip"></i></span>
+              <span class="chip on"><i data-i="table"></i></span>
+              <span class="chip"><i data-i="shield"></i>Demander</span>
+              <span class="grow"></span>
+              <span class="chip">GPT-6.1 Sol <i data-i="down" data-c="i s"></i></span>
+              <span class="chip">OpenCode <i data-i="down" data-c="i s"></i></span>
+              <span class="send"><i data-i="up"></i></span>
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          <kbd>Échap</kbd> ou la croix ramène à une question simple. Le modèle et l’agent de la
+          barre restent ceux de la conversation, qui fera la synthèse.
+        </p>
+      </section>
+
+      <!-- ============================================================ Premier usage -->
+      <section class="shot" id="premier-usage">
+        <div class="sh">
+          <h2>Premier usage — personne n’est encore choisi</h2>
+          <p>
+            Tant qu’aucun participant n’est retenu, la ligne invite à les choisir et
+            <kbd>Entrée</kbd> ouvre le menu au lieu d’envoyer. Aucun autre écran, aucun bouton «
+            Enregistrer ».
+          </p>
+        </div>
+        <div class="stage">
+          <div class="composer">
+            <div class="input">
+              <span class="rt-pill"><i data-i="table" data-c="i s"></i>Tour de table</span>On doit
+              ajouter une file de tâches (e-mails, exports PDF…<span class="caret"></span>
+            </div>
+            <div class="rt-line">
+              <i data-i="table" data-c="i s"></i>
+              <span class="pick-btn"
+                >Choisir les participants <i data-i="down" data-c="i s"></i
+              ></span>
+              <span class="cost">2 à 5 modèles</span>
+              <span class="x"><i data-i="x" data-c="i s"></i></span>
+            </div>
+            <div class="bar">
+              <span class="chip"><i data-i="clip"></i></span>
+              <span class="chip on"><i data-i="table"></i></span>
+              <span class="chip"><i data-i="shield"></i>Demander</span>
+              <span class="grow"></span>
+              <span class="chip">GPT-6.1 Sol <i data-i="down" data-c="i s"></i></span>
+              <span class="send dim"><i data-i="up"></i></span>
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          Une fois deux cases cochées, la ligne prend sa forme habituelle (« 2 participants ▾ +
+          synthèse · ≈ 3 fois les jetons… ») et <kbd>Entrée</kbd> envoie. Le choix est retenu dès
+          qu’on coche : c’est le même menu les fois suivantes.
+        </p>
+      </section>
+
+      <!-- ============================================================ Participants -->
+      <section class="shot" id="participants">
+        <div class="sh">
+          <h2>Participants — menu à cases</h2>
+          <p>
+            « 3 participants » ouvre un menu comme celui du modèle : on coche, c’est retenu pour la
+            prochaine fois. Le surcoût suit le nombre de cases.
+          </p>
+        </div>
+        <div class="stage">
+          <div class="menu" style="width: 420px; margin-left: 20px">
+            <div class="mt">Participants · 2 à 5</div>
+            <div class="mi">
+              <span class="box on"><i data-i="check"></i></span>DeepSeek V4.1 Flash<small
+                >OpenCode</small
+              >
+            </div>
+            <div class="mi">
+              <span class="box on"><i data-i="check"></i></span>GLM 5.3 Flash<small>OpenCode</small>
+            </div>
+            <div class="mi">
+              <span class="box on"><i data-i="check"></i></span>IBM Bob<small>IBM Bob</small>
+            </div>
+            <div class="mi"><span class="box"></span>MiMo v2.6 Flash<small>OpenCode</small></div>
+            <div class="mi"><span class="box"></span>Nemotron 3.5 Super<small>OpenCode</small></div>
+            <hr />
+            <div class="mi dim"><i data-i="search"></i>Autres modèles…</div>
+            <hr />
+            <div class="mfoot">
+              Chacun reçoit la question et peut lire les fichiers de ce dossier.
+            </div>
+          </div>
+          <div class="composer">
+            <div class="input">
+              <span class="rt-pill"><i data-i="table" data-c="i s"></i>Tour de table</span>On doit
+              ajouter une file de tâches (e-mails, exports PDF…
+            </div>
+            <div class="rt-line">
+              <i data-i="table" data-c="i s"></i>
+              <span class="pick-btn open">3 participants <i data-i="down" data-c="i s"></i></span>
+              <span class="cost">+ synthèse · ≈ 4 fois les jetons d’une question simple</span>
+            </div>
+            <div class="bar">
+              <span class="chip"><i data-i="clip"></i></span>
+              <span class="chip on"><i data-i="table"></i></span>
+              <span class="chip"><i data-i="shield"></i>Demander</span>
+              <span class="grow"></span>
+              <span class="chip">GPT-6.1 Sol <i data-i="down" data-c="i s"></i></span>
+              <span class="send"><i data-i="up"></i></span>
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          Le dernier choix est le choix par défaut : pas de bouton « Enregistrer », pas de groupe à
+          nommer, rien dans les Réglages. Un même modèle ne se coche qu’une fois ; Bob figure une
+          seule fois, sans choix de modèle.
+        </p>
+      </section>
+
+      <!-- ============================================================ Surcoût -->
+      <section class="shot" id="surcout">
+        <div class="sh">
+          <h2>Surcoût — dans la ligne, sous la question</h2>
+          <p>
+            Toujours visible avant l’envoi, en gris, sur une ligne. Ce qui est multiplié est dit :
+            la consommation de jetons. Au survol, le détail de ce qui part et où.
+          </p>
+        </div>
+        <div class="stage" style="padding-top: 72px">
+          <div class="composer">
+            <div class="input">
+              <span class="rt-pill"><i data-i="table" data-c="i s"></i>Tour de table</span>On doit
+              ajouter une file de tâches (e-mails, exports PDF…
+            </div>
+            <div class="rt-line">
+              <i data-i="table" data-c="i s"></i>
+              <span class="pick-btn hover"
+                >3 participants <i data-i="down" data-c="i s"></i>
+                <span class="tip left">
+                  DeepSeek V4.1 Flash et GLM 5.3 Flash · par OpenCode<br />
+                  IBM Bob · par IBM Bob<br />
+                  <span class="tip-sub"
+                    >Chacun reçoit la question, les fichiers joints et le dernier échange de cette
+                    conversation.</span
+                  >
+                </span>
+              </span>
+              <span class="cost">+ synthèse · ≈ 4 fois les jetons d’une question simple</span>
+            </div>
+            <div class="bar">
+              <span class="chip"><i data-i="clip"></i></span>
+              <span class="chip on"><i data-i="table"></i></span>
+              <span class="chip"><i data-i="shield"></i>Demander</span>
+              <span class="grow"></span>
+              <span class="chip">GPT-6.1 Sol <i data-i="down" data-c="i s"></i></span>
+              <span class="send"><i data-i="up"></i></span>
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          Le chiffre suit le nombre de participants : 2 participants + synthèse ≈ 3 fois, 5 ≈ 6
+          fois. C’est un compte de tours, pas une estimation : il ne dépend d’aucun prix. Un
+          participant qui lit beaucoup de code peut consommer davantage.
+        </p>
+      </section>
+
+      <!-- ============================================================ Carte en cours -->
+      <section class="shot" id="carte-en-cours">
+        <div class="sh">
+          <h2>Carte en cours</h2>
+          <p>
+            Une ligne par participant : qui, ce qu’il fait, depuis quand. « Synthétiser sans
+            attendre » apparaît dès deux avis.
+          </p>
+        </div>
+        <div class="stage">
+          <div class="msg-user">
+            <span class="rt-pill"><i data-i="table" data-c="i s"></i>Tour de table</span>On doit
+            ajouter une file de tâches (e-mails, exports PDF, webhooks sortants). Postgres seul avec
+            pg-boss, Redis + BullMQ, ou un service géré comme SQS ? On est à environ 20&nbsp;000
+            tâches par jour.
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <i data-i="table"></i><span class="t">Tour de table</span
+              ><span class="state">2 avis sur 3</span>
+            </div>
+            <div class="row">
+              <i data-i="checkc" data-c="i st ok"></i>
+              <div>
+                <div class="nm">GLM 5.3 Flash <span class="ag">· OpenCode</span></div>
+              </div>
+              <div class="rt">a répondu · 0:51</div>
+            </div>
+            <div class="row">
+              <i data-i="checkc" data-c="i st ok"></i>
+              <div>
+                <div class="nm">DeepSeek V4.1 Flash <span class="ag">· OpenCode</span></div>
+              </div>
+              <div class="rt">a répondu · 1:22</div>
+            </div>
+            <div class="row">
+              <i data-i="spin" data-c="i st acc"></i>
+              <div>
+                <div class="nm">IBM Bob</div>
+                <div class="sub">Lit infra/terraform/main.tf</div>
+              </div>
+              <div class="rt">2:14</div>
+            </div>
+            <div class="card-foot">
+              <span class="grow">Lecture seule · chacun répond sans voir les autres</span>
+              <span class="btn">Synthétiser sans attendre</span>
+              <span class="btn danger"><i data-i="stop" data-c="i s"></i>Arrêter</span>
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          Ni jetons ni coût par ligne, ni bandeau d’attente : Bob est souvent le plus lent, c’est
+          normal.
+        </p>
+      </section>
+
+      <!-- ============================================================ Avis rendus -->
+      <section class="shot" id="avis-liste">
+        <div class="sh">
+          <h2>Avis rendus — liste repliable</h2>
+          <p>
+            Chaque ligne donne la réponse courte et la confiance. Un clic déplie l’avis entier, un
+            seul à la fois.
+          </p>
+        </div>
+        <div class="stage">
+          <div class="card">
+            <div class="card-head">
+              <i data-i="table"></i><span class="t">Tour de table</span
+              ><span class="state">3 avis · synthèse en cours</span>
+            </div>
+            <div class="row">
+              <i data-i="chev" data-c="i st muted"></i>
+              <div>
+                <div class="nm">DeepSeek V4.1 Flash <span class="ag">· OpenCode</span></div>
+                <div class="sub">Redis + BullMQ : retries, priorités et tableau de bord prêts.</div>
+              </div>
+              <div class="rt">confiance moyenne</div>
+            </div>
+            <div class="row open">
+              <i data-i="chevd" data-c="i st muted"></i>
+              <div>
+                <div class="nm">GLM 5.3 Flash <span class="ag">· OpenCode</span></div>
+                <div class="sub">
+                  pg-boss sur Postgres : aucune infra en plus, l’enfilage dans la transaction.
+                </div>
+              </div>
+              <div class="rt">confiance haute</div>
+              <div class="avis">
+                <p>
+                  <b>Réponse courte.</b> pg-boss, dans la base existante. À 20&nbsp;000 tâches par
+                  jour (0,25 par seconde), Postgres suffit largement.
+                </p>
+                <p><b>Arguments</b></p>
+                <ul>
+                  <li>
+                    L’enfilage se fait dans la même transaction que la facture : plus de webhook
+                    sans facture (<code>src/billing/invoice.ts:88</code>).
+                  </li>
+                  <li>Aucune base de plus à sauvegarder ni à superviser.</li>
+                </ul>
+                <p>
+                  <b>Ce qui me ferait changer d’avis.</b> Un débit soutenu au-delà de 50 tâches par
+                  seconde.
+                </p>
+                <div class="avis-more more">
+                  <span>Lire la suite</span><span>Ouvrir sa conversation</span>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <i data-i="chev" data-c="i st muted"></i>
+              <div>
+                <div class="nm">IBM Bob</div>
+                <div class="sub">
+                  Un service géré (SQS) : rien à opérer, files de lettres mortes incluses.
+                </div>
+              </div>
+              <div class="rt">confiance basse</div>
+            </div>
+            <div class="card-foot">
+              <span class="grow"
+                >Consommé : <span class="num">26 k jetons · 0,42 Bobcoin</span></span
+              >
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          Le pied ne donne que les chiffres que les agents ont communiqués, dans leurs unités, sans
+          conversion ni estimation. Le détail par participant est au survol. Pour poser une question
+          à un participant, on ouvre sa conversation.
+        </p>
+      </section>
+
+      <!-- ============================================================ Après la synthèse -->
+      <section class="shot" id="apres-synthese">
+        <div class="sh">
+          <h2>Après la synthèse — carte repliée en une ligne</h2>
+          <p>
+            Quand la synthèse arrive, la carte se replie : la synthèse devient la seule chose à
+            lire. Un clic sur la ligne rouvre les avis.
+          </p>
+        </div>
+        <div class="stage">
+          <div class="card">
+            <div class="card-head">
+              <i data-i="table"></i><span class="t">Tour de table</span>
+              <span class="muted names">· DeepSeek V4.1 Flash, GLM 5.3 Flash, IBM Bob</span>
+              <span class="state">3 avis <i data-i="chev" data-c="i s"></i></span>
+            </div>
+            <div class="card-foot">
+              <span class="grow"
+                >Consommé : <span class="num">47,5 k jetons · 0,06 $ + 0,42 Bobcoin</span></span
+              >
+            </div>
+          </div>
+          <div class="msg-agent">
+            <div class="tag-line">
+              <i data-i="table" data-c="i s"></i>Synthèse du tour de table · GPT-6.1 Sol
+            </div>
+            <h4>Accords</h4>
+            <ul>
+              <li>Personne ne veut d’une file maison sur une table écrite à la main.</li>
+            </ul>
+            <h4>Ma recommandation</h4>
+            <p>
+              <b>pg-boss</b>, derrière une petite interface <code>JobQueue</code>, pour pouvoir
+              passer à BullMQ sans toucher aux appelants…
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ Synthèse et actions -->
+      <section class="shot" id="synthese-actions">
+        <div class="sh">
+          <h2>Synthèse et actions</h2>
+          <p>
+            Le modèle qui synthétise reçoit les avis sous « Participant A, B, C », dans un ordre
+            mélangé ; l’interface redonne les vrais noms. Une action principale, appliquer ; une
+            action secondaire, la réplique, avec son surcoût en gris.
+          </p>
+        </div>
+        <div class="stage">
+          <div class="msg-agent">
+            <div class="tag-line">
+              <i data-i="table" data-c="i s"></i>Synthèse du tour de table · GPT-6.1 Sol
+            </div>
+            <h4>Ce que je rejette</h4>
+            <ul style="margin-bottom: 2.2em">
+              <li>
+                <b>Redis + BullMQ</b> maintenant (<span class="pref">Participant A</span>) : une
+                base de plus à superviser pour 0,25 tâche par seconde.
+              </li>
+              <li>
+                <b>SQS</b> (<span class="pref hover"
+                  >Participant C<span class="tip below">IBM Bob</span></span
+                >) : l’hébergement est chez Scaleway ; un second fournisseur pour une file.
+              </li>
+            </ul>
+            <h4>Ce qui reste ouvert</h4>
+            <ul>
+              <li>
+                À partir de quel volume repartir vers une file dédiée ? Proposé : au-delà de 50
+                tâches par seconde.
+              </li>
+            </ul>
+            <h4>Ma recommandation</h4>
+            <p>
+              <b>pg-boss</b>, derrière une petite interface <code>JobQueue</code>. Archivage à 7
+              jours, alerte si une tâche attend plus de 2 minutes. Confiance haute.
+            </p>
+          </div>
+          <div class="actions">
+            <span class="btn primary"
+              ><i data-i="apply" data-c="i s"></i>Demander à OpenCode de l’appliquer</span
+            >
+            <span class="btn"
+              ><i data-i="reply" data-c="i s"></i>Faire réagir les participants</span
+            >
+            <span class="hint">≈ 4 fois les jetons d’une question simple</span>
+          </div>
+        </div>
+        <p class="note">
+          Les lettres sont tirées au hasard à chaque tour et le modèle qui synthétise n’a pas leur
+          table : il juge les arguments, pas les marques, même quand son propre modèle participe.
+        </p>
+      </section>
+
+      <!-- ============================================================ Réplique -->
+      <section class="shot" id="replique">
+        <div class="sh">
+          <h2>Réplique</h2>
+          <p>
+            Même carte, une section de plus : chacun dit s’il maintient, nuance ou se rallie. Puis
+            la conversation tranche.
+          </p>
+        </div>
+        <div class="stage">
+          <div class="card">
+            <div class="card-head">
+              <i data-i="reply"></i><span class="t">Réplique</span
+              ><span class="state">3 réponses</span>
+            </div>
+            <div class="row">
+              <i data-i="chev" data-c="i st muted"></i>
+              <div>
+                <div class="nm">DeepSeek V4.1 Flash <span class="ag">· OpenCode</span></div>
+                <div class="sub">
+                  D’accord pour pg-boss à ce volume ; garder l’interface pour changer.
+                </div>
+              </div>
+              <div class="rt">nuance</div>
+            </div>
+            <div class="row">
+              <i data-i="chev" data-c="i st muted"></i>
+              <div>
+                <div class="nm">GLM 5.3 Flash <span class="ag">· OpenCode</span></div>
+                <div class="sub">Archivage à 7 jours et index partiel : la table reste petite.</div>
+              </div>
+              <div class="rt">maintient</div>
+            </div>
+            <div class="row">
+              <i data-i="chev" data-c="i st muted"></i>
+              <div>
+                <div class="nm">IBM Bob</div>
+                <div class="sub">
+                  Sans outbox, SQS ne garantit rien ; pg-boss règle le problème.
+                </div>
+              </div>
+              <div class="rt">se rallie</div>
+            </div>
+            <div class="card-foot">
+              <span class="grow"
+                >Consommé en tout :
+                <span class="num">78,4 k jetons · 0,11 $ + 0,60 Bobcoin</span></span
+              >
+            </div>
+          </div>
+          <div class="msg-agent">
+            <div class="tag-line">
+              <i data-i="table" data-c="i s"></i>Décision du tour de table · GPT-6.1 Sol
+            </div>
+            <p>
+              <b>pg-boss, confirmé.</b> La réplique n’a rien apporté contre ; elle a précisé deux
+              garde-fous : archivage à 7 jours, interface <code>JobQueue</code> dès maintenant.
+            </p>
+          </div>
+          <div class="actions">
+            <span class="btn primary"
+              ><i data-i="apply" data-c="i s"></i>Demander à OpenCode de l’appliquer</span
+            >
+          </div>
+        </div>
+        <p class="note">
+          Une seule réplique : le bouton disparaît après usage. La décision a la même étiquette que
+          la synthèse, sans encadré vert.
+        </p>
+      </section>
+
+      <!-- ============================================================ Cas dégradés -->
+      <section class="shot" id="degrade-erreur">
+        <div class="sh">
+          <h2>Cas dégradé · un participant en erreur</h2>
+          <p>
+            La raison en clair sur sa ligne. Quand tous ont fini avec au moins deux avis, la
+            synthèse part seule et nomme l’absent.
+          </p>
+        </div>
+        <div class="stage">
+          <div class="card">
+            <div class="card-head">
+              <i data-i="table"></i><span class="t">Tour de table</span
+              ><span class="state">2 avis · synthèse en cours</span>
+            </div>
+            <div class="row">
+              <i data-i="checkc" data-c="i st ok"></i>
+              <div>
+                <div class="nm">DeepSeek V4.1 Flash <span class="ag">· OpenCode</span></div>
+              </div>
+              <div class="rt">a répondu</div>
+            </div>
+            <div class="row">
+              <i data-i="checkc" data-c="i st ok"></i>
+              <div>
+                <div class="nm">GLM 5.3 Flash <span class="ag">· OpenCode</span></div>
+              </div>
+              <div class="rt">a répondu</div>
+            </div>
+            <div class="row">
+              <i data-i="xc" data-c="i st err"></i>
+              <div>
+                <div class="nm">IBM Bob</div>
+                <div class="sub">En erreur : Server Error (-32603) au bout de 0:38</div>
+              </div>
+              <div class="rt">sans avis</div>
+            </div>
+            <div class="card-foot">
+              <span class="grow">Synthèse avec 2 avis : un participant n’a pas répondu.</span>
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          Tant que d’autres participants travaillent encore, la ligne en erreur propose « Relancer
+          ». Après un redémarrage de l’app, rien ne part seul : le pied propose « Synthétiser avec 2
+          avis ».
+        </p>
+      </section>
+
+      <section class="shot" id="degrade-modele-refuse">
+        <div class="sh">
+          <h2>Cas dégradé · modèle refusé</h2>
+          <p>
+            Pas de remplacement silencieux par un autre modèle : on le dit, et on propose d’en
+            choisir un.
+          </p>
+        </div>
+        <div class="stage">
+          <div class="card">
+            <div class="card-head">
+              <i data-i="table"></i><span class="t">Tour de table</span
+              ><span class="state">1 avis sur 3</span>
+            </div>
+            <div class="row">
+              <i data-i="checkc" data-c="i st ok"></i>
+              <div>
+                <div class="nm">GLM 5.3 Flash <span class="ag">· OpenCode</span></div>
+              </div>
+              <div class="rt">a répondu</div>
+            </div>
+            <div class="row">
+              <i data-i="alert" data-c="i st warn"></i>
+              <div>
+                <div class="nm">MiMo v2.6 Flash <span class="ag">· OpenCode</span></div>
+                <div class="sub wrap">Modèle non proposé par OpenCode pour le moment.</div>
+              </div>
+              <div class="rt"><span class="btn quiet">Choisir un autre modèle</span></div>
+            </div>
+            <div class="row">
+              <i data-i="spin" data-c="i st acc"></i>
+              <div>
+                <div class="nm">IBM Bob</div>
+                <div class="sub">Lit src/jobs/mailer.ts</div>
+              </div>
+              <div class="rt">1:40</div>
+            </div>
+            <div class="card-foot">
+              <span class="grow">Lecture seule · chacun répond sans voir les autres</span
+              ><span class="btn danger"><i data-i="stop" data-c="i s"></i>Arrêter</span>
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          « Choisir un autre modèle » ouvre le menu des participants : le changement vaut pour les
+          tours suivants. Ce tour continue sans lui, comme avec un participant en erreur.
+        </p>
+      </section>
+
+      <section class="shot" id="degrade-un-seul-avis">
+        <div class="sh">
+          <h2>Cas dégradé · un seul avis</h2>
+          <p>
+            Avec un seul avis, il n’y a rien à confronter : pas de synthèse, et rien n’est consommé
+            pour elle. « Relancer » reste sur les lignes sans avis.
+          </p>
+        </div>
+        <div class="stage">
+          <div class="card">
+            <div class="card-head">
+              <i data-i="table"></i><span class="t">Tour de table</span
+              ><span class="state">1 avis sur 3</span>
+            </div>
+            <div class="row">
+              <i data-i="checkc" data-c="i st ok"></i>
+              <div>
+                <div class="nm">GLM 5.3 Flash <span class="ag">· OpenCode</span></div>
+              </div>
+              <div class="rt">a répondu</div>
+            </div>
+            <div class="row">
+              <i data-i="xc" data-c="i st err"></i>
+              <div>
+                <div class="nm">DeepSeek V4.1 Flash <span class="ag">· OpenCode</span></div>
+                <div class="sub">En erreur : modèle injoignable</div>
+              </div>
+              <div class="rt"><span class="btn quiet">Relancer</span></div>
+            </div>
+            <div class="row">
+              <i data-i="stop" data-c="i st muted"></i>
+              <div>
+                <div class="nm">IBM Bob</div>
+                <div class="sub">Arrêté par vous</div>
+              </div>
+              <div class="rt"><span class="btn quiet">Relancer</span></div>
+            </div>
+            <div class="card-foot"><span class="grow">Un seul avis : pas de synthèse.</span></div>
+          </div>
+        </div>
+        <p class="note">
+          Si le plafond par conversation de l’app est actif et atteint, les participants en cours
+          s’arrêtent avec la raison « plafond de la conversation atteint » sur leur ligne : même
+          présentation, aucun réglage propre au tour de table.
+        </p>
+      </section>
+
+      <!-- ============================================================ Fenêtre étroite -->
+      <section class="shot" id="fenetre-etroite" data-w="520">
+        <div class="sh">
+          <h2>Fenêtre étroite</h2>
+          <p>
+            La ligne du tour de table tient sur une ligne : la forme courte du surcoût garde le mot
+            « jetons ». La carte garde une ligne par participant.
+          </p>
+        </div>
+        <div class="stage narrow">
+          <div class="card">
+            <div class="card-head">
+              <i data-i="table"></i><span class="t">Tour de table</span
+              ><span class="state">2 avis sur 3</span>
+            </div>
+            <div class="row">
+              <i data-i="checkc" data-c="i st ok"></i>
+              <div>
+                <div class="nm">GLM 5.3 Flash <span class="ag">· OpenCode</span></div>
+              </div>
+              <div class="rt">0:51</div>
+            </div>
+            <div class="row">
+              <i data-i="checkc" data-c="i st ok"></i>
+              <div>
+                <div class="nm">DeepSeek V4.1 Flash <span class="ag">· OpenCode</span></div>
+              </div>
+              <div class="rt">1:22</div>
+            </div>
+            <div class="row">
+              <i data-i="spin" data-c="i st acc"></i>
+              <div>
+                <div class="nm">IBM Bob</div>
+                <div class="sub">Lit infra/terraform/main.tf</div>
+              </div>
+              <div class="rt">2:14</div>
+            </div>
+            <div class="card-foot">
+              <span class="grow">Lecture seule</span><span class="btn">Synthétiser</span
+              ><span class="btn danger"><i data-i="stop" data-c="i s"></i></span>
+            </div>
+          </div>
+          <div class="composer">
+            <div class="input">
+              <span class="rt-pill"><i data-i="table" data-c="i s"></i>Tour de table</span>Et pour
+              les webhooks…<span class="caret"></span>
+            </div>
+            <div class="rt-line">
+              <i data-i="table" data-c="i s"></i>
+              <span class="pick-btn">3 participants <i data-i="down" data-c="i s"></i></span>
+              <span class="cost">+ synthèse · ≈ 4 fois plus de jetons</span>
+            </div>
+            <div class="bar">
+              <span class="chip"><i data-i="clip"></i></span>
+              <span class="chip on"><i data-i="table"></i></span>
+              <span class="grow"></span>
+              <span class="chip">GPT-6.1 Sol <i data-i="down" data-c="i s"></i></span>
+              <span class="send"><i data-i="up"></i></span>
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          Sous 560 px de saisie, « ≈ 4 fois les jetons d’une question simple » devient « ≈ 4 fois
+          plus de jetons » ; la phrase longue reste dans l’infobulle. Sous 480 px, « Synthétiser
+          sans attendre » devient « Synthétiser ».
+        </p>
+      </section>
+    </div>
+
+    <script>
+      const P = {
+        table:
+          '<circle cx="12" cy="12" r="4"/><circle cx="12" cy="3.5" r="1.5"/><circle cx="12" cy="20.5" r="1.5"/><circle cx="3.5" cy="12" r="1.5"/><circle cx="20.5" cy="12" r="1.5"/>',
+        chev: '<path d="m9 18 6-6-6-6"/>',
+        chevd: '<path d="m6 9 6 6 6-6"/>',
+        down: '<path d="m6 9 6 6 6-6"/>',
+        up: '<path d="M12 19V5M5 12l7-7 7 7"/>',
+        spin: '<path d="M21 12a9 9 0 1 1-6.2-8.6"/>',
+        check: '<path d="M20 6 9 17l-5-5"/>',
+        checkc: '<circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/>',
+        xc: '<circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/>',
+        x: '<path d="M18 6 6 18M6 6l12 12"/>',
+        alert:
+          '<path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/>',
+        stop: '<rect x="5" y="5" width="14" height="14" rx="2"/>',
+        clip: '<path d="m21 11-8.6 8.6a5.7 5.7 0 0 1-8-8l8.6-8.6a3.8 3.8 0 0 1 5.3 5.3L9.7 17a1.9 1.9 0 0 1-2.7-2.7l8-8"/>',
+        shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>',
+        search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+        plus: '<path d="M12 5v14M5 12h14"/>',
+        file: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6"/>',
+        reply: '<path d="M9 14 4 9l5-5"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/>',
+        apply: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>'
+      }
+      for (const el of document.querySelectorAll('i[data-i]')) {
+        el.outerHTML = `<svg class="${el.dataset.c || 'i'}" viewBox="0 0 24 24" aria-hidden="true">${P[el.dataset.i] || ''}</svg>`
+      }
+      const params = new URLSearchParams(location.search)
+      if (params.get('theme'))
+        document.documentElement.setAttribute('data-theme', params.get('theme'))
+      if (params.get('only')) {
+        document.body.classList.add('only')
+        document.getElementById(params.get('only'))?.classList.add('keep')
+      }
+    </script>
+  </body>
+</html>
