@@ -709,6 +709,8 @@ async function start(): Promise<void> {
     attention: () => attention.state(),
     providers: () => providers.list(),
     nativeRoleMode: roles.forChildren.nativeRoleMode,
+    checkModels: async (id) =>
+      (await conversations.checkAgent(id, { disposable })).snapshot?.controls,
     dropHeld: (id, rt) =>
       costCap.dropHeld(
         id,

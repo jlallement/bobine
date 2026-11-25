@@ -82,6 +82,12 @@ export interface RoundtableAgentOption {
   recent: HandoverModel[]
   /** Les autres modèles connus, derrière « Autres modèles… ». */
   others: HandoverModel[]
+  /**
+   * Agent à choix de modèle dont aucun modèle n'est encore connu (contre-recette N2) :
+   * `loading` — Bobine les demande à l'agent, relire `roundtable:options` un peu plus tard ;
+   * `default` — inconnus : l'agent se propose seul, « <agent> · modèle par défaut ».
+   */
+  modelsState?: 'loading' | 'default'
 }
 
 /** Ce qu'il faut à la ligne du tour de table et au menu des participants. */

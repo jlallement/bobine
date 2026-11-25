@@ -1230,3 +1230,20 @@ le main n'a pas livré l'étape 1) :
   suivi » passe avant la confiance. Réplique pas encore partie : « en attente : il finit son
   travail en cours ». Permissions : aucune carte d'autorisation pour un participant (e2e `Omega`).
 
+
+- 2026-11-25 : contre-recette réelle, partie main (branche `1.2-fix4-engine`).
+  - N1 (Bob participant libéré tard) : son agent attendait 65 s fixes après la synthèse, même
+    quand son coût était lu depuis longtemps ; avec une synthèse longue, l'échéance tombait au
+    lancement du tour suivant. Désormais libéré dès qu'un coût suit son dernier tour
+    (`IdleWaiters.costAfterTurn`), 65 s restant l'échéance.
+  - N2 (ligne « OpenCode » seule) : un agent à choix de modèle sans modèle connu est essayé hors
+    conversation (`agent-models.ts`, par l'essai du diagnostic : session supprimée aussitôt, aucune
+    en profil jetable) ; `RoundtableAgentOption.modelsState` dit `loading` pendant l'essai,
+    `default` si rien n'est connu (« <agent> · modèle par défaut ») ; un essai sans modèle n'est pas
+    refait avant 10 min.
+  - N3 (coût d'une synthèse en échec) : le total d'une étape additionne toutes ses tentatives,
+    en erreur ou arrêtées comprises, coût lu après coup compris (`RoundtableStep.spent`, interne).
+    Trace de Bob 2.1.0 gardée : scénario `synthese-erreur-serveur`, `docs/acp.md`.
+    Cause trouvée en chemin : l'hôte ne relisait pas le coût hors protocole après un tour en échec
+    (seulement après un tour répondu) ; il le relit désormais aussi (`agent-host.ts`), sinon il
+    n'arrivait qu'au tour suivant.

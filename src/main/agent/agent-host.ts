@@ -694,7 +694,8 @@ export class AgentHost {
       log.info(
         `Tour fini ${scopeText(this.logScope())} : ${stopReason} en ${formatDuration(Date.now() - turnStarted)}`
       )
-      if (!retrying) this.afterTurn(connection, resumeQueue, stopReason !== 'erreur')
+      // Un tour en échec coûte aussi (Bob 2.1.0, contre-recette du 2026-11-25) : coût relu de même.
+      if (!retrying) this.afterTurn(connection, resumeQueue, true)
     }
   }
 
@@ -754,7 +755,7 @@ export class AgentHost {
    * Après un tour fini, arrêté ou en échec : l'agent redevient prêt, puis partent la réponse
    * tardive et, si `resumeQueue` ou « Envoyer maintenant », la file d'attente.
    */
-  private afterTurn(connection: ClientConnection, resumeQueue: boolean, answered = false): void {
+  private afterTurn(connection: ClientConnection, resumeQueue: boolean, readCost = false): void {
     this.stopWatch.clearCancel()
     // Tour fini, arrêté ou en échec : ses sous-agents aussi, et ses cartes en cours.
     this.subagents.settle()
@@ -763,7 +764,7 @@ export class AgentHost {
     if (this.connection === connection && this.is('busy') && !connection.signal.aborted) {
       this.setStatus('ready')
     }
-    if (answered) this.cost.turnEnded() // Une fois prêt : plafond franchi hors tour (fiches 157, 235).
+    if (readCost) this.cost.turnEnded() // Une fois prêt : plafond franchi hors tour (fiches 157, 235).
     const sendQueue = resumeQueue || this.sendNowPending
     this.sendNowPending = false
     this.flushLateAnswer()

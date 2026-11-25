@@ -32,6 +32,8 @@ export interface EnvOptions {
   lead?: string
   /** Options de plus pour la conversation qui arbitre. */
   leadArgs?: string[]
+  /** Attente de la relecture du coût avant de libérer un participant (`lateCostMs`). */
+  lateCostMs?: number
   /** Champs de plus du profil de la conversation qui arbitre. */
   leadProfile?: Partial<AgentProfile>
   /** Options de plus pour les participants `panel`. */
@@ -139,6 +141,7 @@ export async function roundtableEnv(options: EnvOptions = {}) {
     attention: () => ({}),
     providers: () => [],
     random: () => 0,
+    ...(options.lateCostMs !== undefined ? { lateCostMs: options.lateCostMs } : {}),
     dropHeld: (id, rt) =>
       costCap.dropHeld(
         id,

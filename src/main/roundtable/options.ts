@@ -31,6 +31,7 @@ import { destinationOf, type ProvidersList } from '../conversations/handover'
 import { inGitRepo } from '../conversations/helpers'
 import type { ConversationManager } from '../conversations/manager'
 import type { InstalledMode } from '../roles/launch'
+import type { AgentModels } from './agent-models'
 
 /** Mode installé pour le rôle « Participant » dans cet agent, pour ce dossier (décision C3). */
 export type ParticipantMode = (profileId: string, motherId: string) => InstalledMode | undefined
@@ -40,6 +41,8 @@ export interface OptionsDeps {
   children: Pick<ChildConversations, 'capacity'>
   providers: ProvidersList
   participantMode?: ParticipantMode
+  /** Modèles d'un agent sans session, demandés à l'agent (`agent-models.ts`). */
+  models?: Pick<AgentModels, 'ensure'>
 }
 
 /** Pourquoi aucun tour ne peut partir de cette conversation, quelle que soit la sélection. */
@@ -86,32 +89,6 @@ export function arbiterInSeats(
     isArbiter(seat, arbiter, !!profiles.find((p) => p.id === seat.profileId)?.childModel)
   )
 }
-
-/**
- * Agents des participants arrêtés une fois au repos (recette réelle, G1) : rien ne les garde
- * vivants après leur avis. `release` revérifie le tour (une réplique repartie ne lâche rien) ;
- * une conversation affichée garde son agent (`releaseIdle`).
- */
-export function releaseWhenIdle(
-  rt: Pick<Roundtable, 'seats'>,
-  idle: (childId: string) => Promise<void>,
-  release: (childId: string) => void,
-  lateCost: (childId: string) => boolean
-): void {
-  for (const seat of rt.seats) {
-    const childId = seat.childId
-    if (!childId || seat.removed) continue
-    void idle(childId).then(() => {
-      // Coût lu hors protocole après la réponse (`costSource`, Bob) : l'agent attend la fin de sa
-      // relecture, sinon le plafond de la réplique ne le verrait qu'après son envoi.
-      if (!lateCost(childId)) return release(childId)
-      setTimeout(() => release(childId), LATE_COST_MS).unref()
-    })
-  }
-}
-
-/** Fin de la relecture du coût après un tour (`session-cost.ts` : une minute au plus), et un peu. */
-const LATE_COST_MS = 65_000
 
 /** Le dossier de la conversation est dans un dépôt git (empreinte de la lecture seule possible). */
 export const folderInGit = (workspace: string): boolean =>
@@ -198,6 +175,16 @@ function agentOption(
   }
 }
 
+/** Agent disponible à choix de modèle, sans modèle connu : demandés à l'agent (N2). */
+function withModelsState(
+  option: RoundtableAgentOption,
+  models: OptionsDeps['models']
+): RoundtableAgentOption {
+  if (!option.available || !option.modelChoice || !models) return option
+  if (option.recent.length || option.others.length) return option
+  return { ...option, modelsState: models.ensure(option.profileId) }
+}
+
 /** `roundtable:options` pour la conversation `conversationId` (vérifiée par `view`, qui lève). */
 export function roundtableOptions(deps: OptionsDeps, conversationId: string): RoundtableOptions {
   const view = deps.conversations.view(conversationId)
@@ -214,12 +201,8 @@ export function roundtableOptions(deps: OptionsDeps, conversationId: string): Ro
     const session = profile.id === summary.profileId ? ownSession : undefined
     const installed = deps.participantMode?.(profile.id, conversationId)
     const readOnly = expectedReadOnly(profile, inGit, installed)
-    const option = agentOption(
-      profile,
-      modelSource(memory[profile.id], session),
-      providers,
-      readOnly
-    )
+    const source = modelSource(memory[profile.id], session)
+    const option = withModelsState(agentOption(profile, source, providers, readOnly), deps.models)
     // Agent sans choix de modèle qui arbitre : il ne peut pas participer.
     return !option.modelChoice && profile.id === arbiter.profileId
       ? { ...option, available: false, reason: t('roundtable.error.selection.arbiter') }
