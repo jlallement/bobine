@@ -6,7 +6,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ConversationSummary, ProfileSummary, SessionControl } from '@shared/agent'
-import { otherModel, ReviewDialog } from './ReviewDialog'
+import { ReviewDialog } from './ReviewDialog'
 
 const author: ConversationSummary = {
   id: 'm',
@@ -52,32 +52,36 @@ beforeEach(() => {
   startReview.mockReset().mockResolvedValue({ id: 'r' })
 })
 
-describe('« Faire relire… » : le Code reviewer, un autre modèle (fiche 265)', () => {
-  it('otherModel : même fournisseur d’abord, sinon le premier autre ; jamais un modèle refusé', () => {
-    expect(otherModel(MODELS)).toBe('precis')
-    expect(
-      otherModel(
-        model([
-          { value: 'rapide', name: 'Rapide', group: 'a' },
-          { value: 'b1', name: 'B1', group: 'b' }
-        ])
+describe('« Faire relire… » : le Code reviewer, le modèle de la conversation (fiche 265)', () => {
+  // Recette du 2026-11-25 (20:28) : conversation sur openai/GPT-6.1 Sol ; OpenCode annonce aussi
+  // openai/GPT-5.5, que le compte n'a pas, en tête du fournisseur : il était présélectionné. Le
+  // modèle de la conversation vient de répondre : c'est lui, présélectionné et envoyé.
+  it('le modèle de la conversation présélectionné, jamais un autre annoncé', async () => {
+    const sol = 'openai/gpt-6.1-sol'
+    open(
+      model(
+        [
+          { value: 'openai/gpt-5.5', name: 'openai/GPT-5.5', group: 'openai' },
+          { value: sol, name: 'openai/GPT-6.1 Sol', group: 'openai' },
+          { value: 'openai/gpt-6.1-terra', name: 'openai/GPT-6.1 Terra', group: 'openai' }
+        ],
+        sol
       )
-    ).toBe('b1')
-    expect(
-      otherModel(
-        model([
-          { value: 'rapide', name: 'Rapide' },
-          { value: 'ferme', name: 'Fermé', authRequired: true }
-        ])
-      )
-    ).toBeNull()
-    expect(otherModel(model([{ value: 'rapide', name: 'Rapide' }]))).toBeNull()
+    )
+    await act(async () => {})
+    expect((screen.getByTestId('review-model') as HTMLSelectElement).value).toBe(sol)
+    expect(plain(screen.getByTestId('review-suggested').textContent)).toContain(
+      'Agent et modèle de la conversation relue : à confirmer'
+    )
+    await act(async () => void fireEvent.click(screen.getByTestId('review-launch')))
+    expect(startReview).toHaveBeenCalledWith('m', { model: { controlId: 'model', value: sol } })
   })
 
-  it('un autre modèle proposé d’office, dit ; il part avec la relecture', async () => {
+  it('un autre modèle choisi : dit (un regard neuf) ; il part avec la relecture', async () => {
     open(MODELS)
     await act(async () => {})
-    expect((screen.getByTestId('review-model') as HTMLSelectElement).value).toBe('precis')
+    expect((screen.getByTestId('review-model') as HTMLSelectElement).value).toBe('rapide')
+    fireEvent.change(screen.getByTestId('review-model'), { target: { value: 'precis' } })
     expect(plain(screen.getByTestId('review-suggested').textContent)).toBe(
       'Autre que celui de la conversation (Rapide) : un regard neuf trouve davantage.'
     )
@@ -103,7 +107,7 @@ describe('« Faire relire… » : le Code reviewer, un autre modèle (fiche 265)
     })
   })
 
-  it('modèle gratuit : un autre modèle gratuit d’abord ; un modèle payant choisi est signalé', async () => {
+  it('modèle gratuit : un autre gratuit choisi, rien à dire ; un modèle payant choisi est signalé', async () => {
     const free = model(
       [
         { value: 'zen/a-free', name: 'A (free)', group: 'zen' },
@@ -112,10 +116,10 @@ describe('« Faire relire… » : le Code reviewer, un autre modèle (fiche 265)
       ],
       'zen/a-free'
     )
-    expect(otherModel(free)).toBe('or/b:free')
     open(free)
     await act(async () => {})
-    expect((screen.getByTestId('review-model') as HTMLSelectElement).value).toBe('or/b:free')
+    expect((screen.getByTestId('review-model') as HTMLSelectElement).value).toBe('zen/a-free')
+    fireEvent.change(screen.getByTestId('review-model'), { target: { value: 'or/b:free' } })
     expect(screen.queryByTestId('review-cost-change')).toBeNull()
     fireEvent.change(screen.getByTestId('review-model'), { target: { value: 'zen/payant' } })
     expect(screen.getByTestId('review-cost-change').textContent).toContain('pas gratuit')

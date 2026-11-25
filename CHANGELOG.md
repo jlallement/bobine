@@ -6,6 +6,9 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ### Corrigé
 
+- **Faire relire…** : le modèle proposé est celui de la conversation relue, qui vient de répondre ;
+  plus un autre modèle annoncé par l’agent mais pas ouvert à votre compte. Un autre modèle se
+  choisit toujours dans le dialogue.
 - **Annoter la page** : les bulles des remarques posées restent fermées ; celle d’une épingle
   s’ouvre à son survol. Elles ne cachent plus la page, et un clic pour une nouvelle remarque ne
   rouvre plus une remarque déjà posée (dont le texte pouvait être remplacé sans qu’on le voie).

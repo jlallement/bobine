@@ -69,10 +69,15 @@ async function reviewRun(ui, { workspace, turnLock }) {
   )
   await ui.shot('177-1-faire-relire')
 
-  // Dialogue : le Code reviewer, ce qui est relu, un autre modèle proposé, le coût.
+  // Dialogue : le Code reviewer, ce qui est relu, le modèle de la conversation (jamais un autre
+  // d'office, recette du 2026-11-25), le coût.
   await ui.click(ui.$('changes-review'))
   await ui.waitFor(`!!${ui.$('review-dialog')}`)
   await ui.waitFor(`!!${ui.$('review-model')}`)
+  check(
+    (await ui.ev(`${ui.$('review-suggested')}.textContent`)) === L('review.dialog.suggested'),
+    'relecture : le modèle de la conversation proposé'
+  )
   await ui.shot('177-2-dialogue')
   // Le relecteur est retenu par le verrou : on le voit au travail sans le prendre au vol.
   writeFileSync(turnLock, '')

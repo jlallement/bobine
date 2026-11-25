@@ -6,6 +6,9 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixed
 
+- **Request a review…**: the suggested model is the reviewed conversation’s, which has just
+  answered; no longer another model the agent lists but your account doesn’t have. You can still
+  pick another model in the dialog.
 - **Annotate the page**: the bubbles of placed notes stay closed; a pin’s bubble opens when you
   hover it. They no longer hide the page, and a click for a new note no longer reopens a note
   already placed (whose text could be replaced without you noticing).

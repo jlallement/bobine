@@ -250,6 +250,29 @@ Pas de nouvelle dépendance.
   sombre, une campagne. Captures regardées : `265-relecture-en-cours`, `-remarques`,
   `-remarques-900`, `-transmise`, `-travail`, `-travail-900`, `177-1`, `177-2`, `177-4`, `177-5`.
 
+### 2026-11-25 — recette (1.2.0-beta.2) : le modèle de la conversation, plus un autre d'office
+
+- **Trace** (journal de recette, 20:28) : conversation sur openai/GPT-6.1 Sol (OpenCode, compte
+  ChatGPT) ; « Faire relire… » présélectionnait openai/GPT-5.5, que le compte n'a pas. Cause :
+  `otherModel` (D39 ci-dessus) prenait le premier autre modèle du même groupe parmi ceux que la
+  session annonce, et OpenCode annonce GPT-5.5 en tête du fournisseur `openai`, ouvert ou non au
+  compte. Un modèle refusé comme indisponible n'est pas retenu par l'app (fiche 259) : aucune
+  liste ne permettait de l'écarter.
+- **Décision** (tech lead, pour la beta.2) : D39 est retirée. Le modèle présélectionné est celui de
+  la conversation relue, qui vient de répondre ; un autre modèle choisi reste dit (« un regard
+  neuf trouve davantage »), et un modèle payant à la place d'un gratuit aussi. Le guide le disait
+  déjà (« ceux de la conversation relue sont proposés »).
+- **Essais** : `ReviewDialog.test.tsx` rejoue la trace (Sol présélectionné et envoyé ; rouge avant :
+  `openai/gpt-5.5`) ; e2e `relecture` : le dialogue dit « Agent et modèle de la conversation
+  relue ».
+- **Autres présélections, même agent** : « Lancer en parallèle… » et la carte « Tâches proposées »
+  prennent déjà le modèle de la mère, sauf un modèle proposé nommément par l'agent dans sa
+  proposition (affiché comme sa proposition, avec sa raison) ; un rôle n'a de modèle que celui que
+  l'utilisateur y a écrit. Le tour de table (fichiers d'un autre chantier) propose ses
+  participants enregistrés et les « Récents » du profil, où entre tout modèle choisi dans une
+  session, même refusé au premier message (`noteModels`, à chaque instantané) : c'est l'origine
+  probable de « GPT-5.5 (récents) » à 18:28 ; non changé ici.
+
 ## Limites connues
 
 - `@code-reviewer` refusé pendant que l'agent de la conversation répond (comme « Faire relire » :
