@@ -127,7 +127,7 @@ export function RoundtableParticipants({
   // change pas de taille pendant la frappe (S3).
   const [listHeight, setListHeight] = useState<number | undefined>()
   const openSearch = () => {
-    setListHeight(body.current?.offsetHeight)
+    setListHeight(body.current?.getBoundingClientRect().height)
     setSearching(true)
     setActive(main.length)
     // Le champ apparaît au rendu suivant.

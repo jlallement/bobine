@@ -215,7 +215,8 @@ export async function searchStill(ui, label) {
   await ui.waitFor(`!!${ui.$('roundtable-none')}`)
   const typed = await top('.roundtable-search')
   check(
-    button === field && field === typed,
+    // Au pixel près (le placement du menu arrondit les demi-pixels).
+    Math.abs(button - field) <= 1 && field === typed,
     `${label} : le champ prend la place du bouton et ne bouge pas à la frappe (${button} → ${field} → ${typed})`
   )
 }

@@ -679,3 +679,12 @@
   -webkit-box-orient: vertical;
   box-sizing: content-box;
 }
+
+/* « Autres modèles… » et le champ de recherche : la même boîte, au pixel près (M2). */
+.roundtable-others,
+.model-search.roundtable-search {
+  box-sizing: border-box;
+  height: 36px;
+  padding-top: 0;
+  padding-bottom: 0;
+}

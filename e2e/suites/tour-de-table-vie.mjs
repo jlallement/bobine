@@ -429,7 +429,7 @@ async function failedSynthesisCost(scheme) {
         )
         // S4 : le fil ne suit pas le bas (remonté) ; au repli de la carte, son haut ne bouge pas
         // et le fil ne défile pas jusqu'à la fin de la synthèse.
-        await ui.viewport(1280, 560)
+        await ui.viewport(1280, 420)
         const scroller = `document.querySelector('.main > .scroll')`
         // Remonté à la molette, comme un utilisateur : le fil ne suit plus le bas.
         await ui.ev(`(${scroller}.scrollTop = ${scroller}.scrollHeight, true)`)
@@ -438,6 +438,8 @@ async function failedSynthesisCost(scheme) {
         )
         await ui.wheel(box, 0, -3000)
         await ui.waitFor(`${scroller}.scrollTop === 0`, 5000)
+        // L'app le sait : « ↓ » paraît (le fil ne suit plus le bas).
+        await ui.waitFor(`!!${ui.$('scroll-to-bottom')}`, 5000)
         const cardTop = `Math.round(document.querySelector('[data-testid=roundtable-card]').getBoundingClientRect().top)`
         const before = await ui.ev(cardTop)
         // Un clic sans défilement (le bouton peut être sous le bord de la fenêtre).
