@@ -1,6 +1,8 @@
-import { rmSync } from 'node:fs'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { affirm, probes } from '../affirm.mjs'
-import { L, check, withApp } from '../lib.mjs'
+import { L, LANG, check, withApp } from '../lib.mjs'
 import {
   BY_MODEL,
   PEER,
@@ -30,6 +32,7 @@ export async function lifecycle(scheme) {
   await heldSynthesis(scheme)
   await twoTours(scheme)
   await arbiterWrites(scheme)
+  await failedSynthesisCost(scheme)
 }
 
 /** Participants du tour dans la barre latérale (icône du tour). */
@@ -356,5 +359,66 @@ async function arbiterWrites(scheme) {
     )
   } finally {
     rmSync(workspace, { recursive: true, force: true })
+  }
+}
+
+/**
+ * Contre-recette N1/N3 : la synthèse échoue d'abord (`-32603`, comme Bob 2.1.0), puis, relancée,
+ * répond ; le pied « Consommé » compte les deux tentatives (coût lu comme Bob, après coup).
+ */
+async function failedSynthesisCost(scheme) {
+  const workspace = repo()
+  const home = mkdtempSync(join(tmpdir(), 'bob-e2e-tour-de-table-home-'))
+  try {
+    await withApp(
+      scheme,
+      async (ui) => {
+        await ui.ready()
+        await ui.closePanel()
+        await arbiterModel(ui)
+        await ui.ev(`${ui.$('composer-input')}.focus()`)
+        await ui.type('/roundtable Et si la synthèse tombe ?')
+        await ui.waitFor(`!!${ui.$('roundtable-line')}`)
+        await choose(ui, ['Alpha', 'Beta'])
+        await ui.ev(`${ui.$('composer-input')}.focus()`)
+        await ui.enter()
+        // Première demande de synthèse en échec : dite, et reprise par « Synthétiser ».
+        await ui.waitFor(`!!${ui.$('roundtable-step-failed')}`, 60_000)
+        check(
+          (await ui.ev(`${ui.$('roundtable-progress')}.textContent`)) ===
+            L('roundtable.card.synthesisFailed'),
+          'synthèse en échec : « synthèse non rendue »'
+        )
+        await ui.click(ui.$('roundtable-synthesize'))
+        await ui.waitFor(`!!${ui.$('roundtable-answer-label')}`, 60_000)
+        // 2 avis et 2 tentatives de synthèse à 0,0125 : 0,05, relus après coup.
+        const total = (0.05).toLocaleString(LANG === 'en' ? 'en-US' : 'fr-FR', {
+          minimumFractionDigits: 2
+        })
+        await ui.waitFor(
+          `${ui.$('roundtable-used')}?.textContent.includes(${JSON.stringify(total)})`,
+          15_000
+        )
+        await affirm(ui, '285-consomme-apres-echec', [
+          probes.custom(
+            '« Consommé » : le total, tentative en échec comprise',
+            `const t = document.querySelector('[data-testid=roundtable-used]').textContent
+            return { ok: t.includes(${JSON.stringify(total)}), detail: t }`
+          )
+        ])
+      },
+      undefined,
+      'synthese-tour-de-table',
+      env(workspace, {
+        MOCK_AGENT_SCENARIO_BY_MODEL: `${BY_MODEL()},factice-precis=synthese-erreur-serveur`,
+        BOBINE_CONFIG_HOME: home,
+        MOCK_AGENT_USAGE: 'bob',
+        MOCK_AGENT_CURRENCY: 'bobcoins',
+        MOCK_AGENT_COST_SOURCE: 'bob-db'
+      })
+    )
+  } finally {
+    rmSync(workspace, { recursive: true, force: true })
+    rmSync(home, { recursive: true, force: true })
   }
 }
