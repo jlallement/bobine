@@ -25,6 +25,7 @@ import type {
   Usage
 } from '../shared/acp-sdk.mts'
 import { closeStdout } from './close-stdout.mts'
+import { waitWhileLocked } from './verrou-fin-de-tour.mts'
 import { say, sayAll, type MockLanguage } from './langue.mts'
 
 /** Connexion faite dans un terminal (`touch .mock-agent-logged-in`, comme `opencode auth login`). */
@@ -51,6 +52,11 @@ export type Step =
   | { kind: 'update'; update: SessionUpdate }
   /** Pause, en multiples du délai de base (`--delay`). */
   | { kind: 'pause'; ticks: number }
+  /**
+   * Tenu tant que le verrou `--verrou-fin-de-tour` existe, en plein tour (essais qui ne doivent pas
+   * dépendre de la vitesse) ; une interruption l'arrête. Sans verrou : rien.
+   */
+  | { kind: 'hold' }
   /**
    * Branches jouées en même temps (appels d'outils parallèles, comme OpenCode) ; l'étape se termine
    * quand toutes ont fini (fiche 124).
@@ -388,6 +394,8 @@ export interface TurnContext {
   /** Serveurs MCP fournis par le client pour cette session. */
   mcpServers?: McpServer[]
   signal: AbortSignal
+  /** Verrou de `--verrou-fin-de-tour`, que l'étape `hold` attend aussi. */
+  turnLock?: string
   /** Délai de base (pauses des scénarios, outils), en millisecondes. 0 = aussi vite que possible. */
   delayMs: number
   /**
@@ -452,6 +460,8 @@ async function playStep(step: Step, ctx: TurnContext): Promise<void> {
       return send(ctx, sayAll(step.update, lang(ctx)))
     case 'pause':
       return tick(ctx, step.ticks)
+    case 'hold':
+      return ctx.turnLock ? waitWhileLocked(ctx.turnLock, ctx.sessionId, ctx.signal) : undefined
     case 'parallel':
       await Promise.all(step.branches.map((branch) => playSteps(branch, ctx)))
       return

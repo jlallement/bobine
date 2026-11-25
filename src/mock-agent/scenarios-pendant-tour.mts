@@ -12,6 +12,8 @@ export const SILENT_TICKS = 1500
 /** Coûts cumulés annoncés pendant `cout-qui-monte`, un par outil (en dollars). */
 export const RISING_COSTS = [0.4, 0.8, 1.2, 1.6]
 
+const HOLD: Step = { kind: 'hold' }
+
 const update = (u: Extract<Step, { kind: 'update' }>['update']): Step => ({
   kind: 'update',
   update: u
@@ -94,7 +96,9 @@ export const turnGuardScenarios: Record<string, Scenario> = {
     description: `Quatre lectures, le coût cumulé annoncé pendant chacune (${RISING_COSTS.join(' → ')} $) : plafond franchi en plein outil, tour interrompu à sa fin (fiche 157)`,
     steps: [
       { kind: 'text', text: 'Je parcours les modules un par un. ' },
-      ...RISING_COSTS.flatMap((cost, i) => costlyTool(i, cost)),
+      // Tenu après la troisième lecture (plafond franchi) avec `--verrou-fin-de-tour` : la quatrième ne
+      // part qu'une fois le verrou levé, jamais avant l'interruption (essais sous charge).
+      ...RISING_COSTS.flatMap((cost, i) => [...costlyTool(i, cost), ...(i === 2 ? [HOLD] : [])]),
       { kind: 'text', text: 'Tous les modules sont lus.' }
     ]
   },

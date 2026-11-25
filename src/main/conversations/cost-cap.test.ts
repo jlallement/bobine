@@ -1,4 +1,4 @@
-import { mkdtempSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
@@ -61,15 +61,24 @@ const PREFS: CapPreferences = { costCapEnabled: true, costCapAmount: 1, costCapT
 
 describe('gardien du plafond de coût (fiche 157)', () => {
   it('coût qui monte : attend la fin de l’outil en cours, interrompt, puis « Continuer » relance', async () => {
-    const { manager, guard, id, items, card } = environment('cout-qui-monte', PREFS)
+    // L'agent est tenu après la troisième lecture tant que ce verrou existe : la quatrième ne peut
+    // pas partir avant l'interruption, quelle que soit la vitesse de la machine (CI Windows).
+    const lock = join(mkdtempSync(join(tmpdir(), 'plafond-verrou-')), 'verrou')
+    writeFileSync(lock, '')
+    const { manager, guard, id, items, card } = environment('cout-qui-monte', PREFS, [
+      '--verrou-fin-de-tour',
+      lock
+    ])
     await manager.startActive()
     await manager.prompt(id, 'Lis les modules')
     await waitFor(() => !!card())
     const tools = items().flatMap((i) => (i.kind === 'tool' ? [`${i.toolCallId}:${i.status}`] : []))
     // Plafond (1 $) franchi pendant la troisième lecture (1,2 $) : elle finit, puis le tour est
-    // interrompu ; la quatrième ne finit pas (sur une machine chargée, elle a pu commencer).
+    // interrompu ; la quatrième ne finit pas.
     expect(tools.slice(0, 3)).toEqual(['cout-1:completed', 'cout-2:completed', 'cout-3:completed'])
     expect(tools.slice(3).every((t) => !t.endsWith(':completed'))).toBe(true)
+    // Le relancé (« Continuer ») ne doit pas être tenu.
+    rmSync(lock)
     expect(card()).toMatchObject({ limit: 1, unit: 'USD', spent: 1.2, step: 1, interrupted: true })
     // La carte vient après l'avis d'interruption du tour.
     expect(items().at(-1)?.kind).toBe('cost-cap')

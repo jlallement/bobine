@@ -737,6 +737,7 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
           loggedIn: authenticated,
           model: session.model,
           signal: turn.signal,
+          ...(options.turnLock ? { turnLock: options.turnLock } : {}),
           delayMs: options.delayMs,
           ...(options.chunkDelayMs !== undefined ? { chunkDelayMs: options.chunkDelayMs } : {}),
           client,
