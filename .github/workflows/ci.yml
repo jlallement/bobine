@@ -129,12 +129,14 @@ jobs:
       # Un worker de vitest pour deux cœurs, sous Windows seulement (fiche 250) : avec le défaut de
       # vitest (cœurs − 1), des essais de 1 à 2 s y dépassaient par moments leur délai de 15 s
       # (2026-11-25, deux tentatives rouges sur des essais différents). macOS et Linux : inchangés.
-      - name: Workers des tests (un pour deux cœurs)
+      - name: Workers des tests (un pour deux cœurs) et délai par essai
         run: |
           cores="$(node -p 'require("node:os").availableParallelism()')"
           workers=$(( cores / 2 > 1 ? cores / 2 : 1 ))
           echo "Cœurs : $cores · workers de vitest : $workers (défaut de vitest : $(( cores > 1 ? cores - 1 : 1 )))"
           echo "BOBINE_TEST_WORKERS=$workers" >> "$GITHUB_ENV"
+          # Délai par essai : 30 s au lieu de 15 (runner qui cale par moments ; fiche 250).
+          echo "BOBINE_TEST_TIMEOUT_MS=30000" >> "$GITHUB_ENV"
 
       - run: ./scripts/verify
 

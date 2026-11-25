@@ -220,6 +220,9 @@ Dependabot comme les autres.
   `scripts/test-report.mts` : cœurs, workers, charge (pas sous Windows), mémoire, les dix essais
   les plus lents, que les tests passent ou non. Délai d'essai porté à 30 s sous Windows en CI :
   commit séparé, facultatif.
+- 2026-11-25 — Délai par essai à 30 s sous Windows en CI (`BOBINE_TEST_TIMEOUT_MS`, posé par
+  `ci.yml`, au moins 15 s ; partout ailleurs 15 s) : en plus des workers, jamais à leur place. Un
+  essai bloqué échoue toujours, 15 s plus tard ; les délais propres à un essai sont inchangés.
 
 ## Reste à vérifier sur GitHub (après la poussée)
 

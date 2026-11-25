@@ -25,6 +25,13 @@ const workers = Number(process.env.BOBINE_TEST_WORKERS)
 const maxWorkers = Number.isInteger(workers) && workers > 0 ? workers : undefined
 
 /**
+ * Délai par essai : 15 s, ou `BOBINE_TEST_TIMEOUT_MS` (entier, au moins 15 s) posé par `ci.yml`
+ * sous Windows (30 s, fiche 250 : le runner y cale par moments ; un essai bloqué échoue quand même).
+ */
+const timeout = Number(process.env.BOBINE_TEST_TIMEOUT_MS)
+const testTimeout = Number.isInteger(timeout) && timeout >= 15_000 ? timeout : 15_000
+
+/**
  * Deux projets (fiche 043) : « node » pour le main, le preload, le partagé et l'agent factice ;
  * « renderer » (jsdom + Testing Library) pour les composants React. `pnpm coverage` ajoute le
  * rapport de couverture (texte, et `coverage/` en HTML, ignoré par git).
@@ -33,7 +40,7 @@ export default defineConfig({
   resolve: { alias },
   test: {
     globalSetup: ['scripts/vitest-tmp.ts'],
-    testTimeout: 15_000,
+    testTimeout,
     ...(maxWorkers ? { maxWorkers } : {}),
     coverage: {
       provider: 'v8',
