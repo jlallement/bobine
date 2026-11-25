@@ -208,6 +208,30 @@ describe('pied « Consommé »', () => {
     expect(text).not.toContain('sans chiffre')
   })
 
+  it('modèles gratuits à 0 $ : « gratuit », jamais « coût inconnu » (recette de la 1.2.0-beta.1, G-B1)', () => {
+    const zero = { amount: 0, currency: 'USD' }
+    const free = roundtableTotal(
+      [
+        { total: 30_000, cost: zero, free: true },
+        { total: 34_000, cost: zero, free: true }
+      ],
+      [{ total: 70_000, cost: zero, free: true }]
+    )
+    expect(totalText(free)).toBe('134k jetons · gratuit')
+    // Tour mixte : « gratuit + 0,21 Bobcoins ».
+    const mixed = roundtableTotal(
+      [{ total: 30_000, cost: zero, free: true }],
+      [{ cost: { amount: 0.2134, currency: 'bobcoins' } }]
+    )
+    expect(totalText(mixed)).toContain('gratuit + 0,21')
+    // Un coût nul d'un modèle qui ne se dit pas gratuit reste inconnu.
+    const paid = roundtableTotal([
+      { total: 10, cost: zero },
+      { total: 10, cost: zero, free: true }
+    ])
+    expect(totalText(paid)).toContain('coût inconnu')
+  })
+
   it('rien de communiqué : pas de pied', () => {
     expect(totalText(roundtableTotal([undefined, undefined]))).toBeUndefined()
   })

@@ -10,6 +10,7 @@ import { t } from 'i18next'
 import { afterEach, describe, expect, it } from 'vitest'
 import { bobDbCosts } from '../agent/bob-costs'
 import { deleteConversation } from '../conversations/family-delete'
+import { opinionDigest } from '@shared/roundtable-prompts'
 import { roundtableHandlers } from './ipc'
 import {
   FAST,
@@ -761,4 +762,108 @@ describe('coût tardif d’une tentative en échec, relance immédiate', () => {
     )
     expect(env.rt(mother).synthesis?.usage?.cost?.amount).toBe(0.0125)
   }, 60_000)
+})
+
+describe('recette de la 1.2.0-beta.1 : le coût d’« Appliquer » reste hors du tour (S-B1)', () => {
+  const bobOptions = (bobDb: string): EnvOptions => ({
+    lead: 'arbitre-applique-comme-bob',
+    leadArgs: ['--bob-db', bobDb, '--cout-bob'],
+    leadProfile: { costSource: bobDbCosts(bobDb) }
+  })
+  const newBobDb = () => join(mkdtempSync(join(tmpdir(), 'tour-bob-')), 'bob.db')
+  async function bobArbiter(bobDb = newBobDb()) {
+    return { ...(await setup(bobOptions(bobDb))), bobDb }
+  }
+  const cost = (env: RoundtableEnv, id: string) => summaryOf(env, id)?.usage?.cost?.amount
+
+  it('décision rendue, puis « Appliquer » qui dépense en plein tour : la décision garde son coût', async () => {
+    const { env, mother } = await bobArbiter()
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    await env.waitFor(() => cost(env, mother) === 0.025, 'coût de la synthèse relu', 15_000)
+    env.roundtables.rebuttal(mother, env.rt(mother).roundtableId)
+    await env.waitFor(() => env.rt(mother).phase === 'decided', 'décision rendue', 20_000)
+    await env.waitFor(() => cost(env, mother) === 0.0375, 'coût de la décision relu', 15_000)
+    expect(env.rt(mother).verdict?.usage?.cost?.amount).toBe(0.0125)
+    // « Demander à … de l'appliquer » : un message ordinaire, qui dépense en plein tour.
+    await env.manager.prompt(mother, 'Applique ta recommandation du tour de table.')
+    await env.waitFor(() => cost(env, mother) === 0.35, 'coût de l’application relu', 15_000)
+    expect(env.rt(mother).synthesis?.usage?.cost?.amount).toBe(0.0125)
+    expect(env.rt(mother).verdict?.usage?.cost?.amount).toBe(0.0125)
+  }, 45_000)
+
+  it('synthèse sans réplique, puis un message ordinaire : la synthèse garde son coût', async () => {
+    const { env, mother } = await bobArbiter()
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    await env.waitFor(() => cost(env, mother) === 0.025, 'coût de la synthèse relu', 15_000)
+    await env.manager.prompt(mother, 'Applique la recommandation.')
+    await env.waitFor(() => cost(env, mother) === 0.3375, 'coût du message relu', 15_000)
+    expect(env.rt(mother).synthesis?.usage?.cost?.amount).toBe(0.0125)
+  }, 45_000)
+
+  it('après un redémarrage de l’app, « Appliquer » n’ajoute rien au tour', async () => {
+    const first = await bobArbiter()
+    const { mother, bobDb } = first
+    await first.env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await first.env.waitFor(() => first.env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    await first.env.waitFor(() => cost(first.env, mother) === 0.025, 'coût relu', 15_000)
+    first.env.stop()
+    await first.env.manager.settled()
+    const env = await roundtableEnv({
+      ...bobOptions(bobDb),
+      root: first.env.root,
+      repo: first.env.repo
+    })
+    envs.push(env)
+    await env.manager.prompt(mother, 'Applique la recommandation.')
+    await env.waitFor(() => cost(env, mother) === 0.3375, 'coût du message relu', 15_000)
+    expect(env.rt(mother).synthesis?.usage?.cost?.amount).toBe(0.0125)
+  }, 45_000)
+})
+
+describe('recette de la 1.2.0-beta.1 : avis long sans réponse courte (G-B4)', () => {
+  it('l’avis réel compte et donne le début de son texte à sa ligne', async () => {
+    const { env, mother } = await setup({
+      panel: ['--scenario-par-modele', 'factice-precis=avis-long-sans-reponse-courte']
+    })
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    const seat = env.rt(mother).seats.find((s) => s.model?.value === 'factice-precis')
+    const reply = env.replies(seat?.childId ?? '').join('\n')
+    expect(reply.length).toBeGreaterThan(3000)
+    const digest = opinionDigest(reply)
+    expect(digest).toMatchObject({ followed: false })
+    expect(digest.excerpt?.startsWith('Let me first explore')).toBe(true)
+  })
+})
+
+describe('recette de la 1.2.0-beta.1 : commande lancée par l’arbitre pendant la synthèse (G-B2)', () => {
+  it('lancée sans demander : l’étape le dit ; demandée puis refusée, ou absente : rien', async () => {
+    const { env, mother } = await setup({ lead: 'arbitre-commande' })
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    expect(env.rt(mother).synthesis?.ranCommand).toBe(true)
+    // Demandée puis refusée d'office (agent qui demande, comme Bob) : jamais partie, rien n'est dit.
+    const asked = await setup({ lead: 'arbitre-demande-commande' })
+    await asked.env.roundtables.start(asked.mother, {
+      question: QUESTION,
+      participants: [FAST, PRECISE]
+    })
+    await asked.env.waitFor(() => asked.env.rt(asked.mother).phase === 'synthesized', 'synthèse')
+    expect(asked.env.replies(asked.mother).at(-1)).toContain('Avis reçus')
+    const refused = asked.env
+      .items(asked.mother)
+      .find((i) => i.kind === 'tool' && i.title === 'npm test')
+    expect(refused?.kind === 'tool' && refused.status).toBe('failed')
+    expect(asked.env.rt(asked.mother).synthesis?.ranCommand).toBeUndefined()
+    // Une commande hors de l'étape n'est pas l'affaire du tour.
+    const quiet = await setup()
+    await quiet.env.roundtables.start(quiet.mother, {
+      question: QUESTION,
+      participants: [FAST, PRECISE]
+    })
+    await quiet.env.waitFor(() => quiet.env.rt(quiet.mother).phase === 'synthesized', 'synthèse')
+    expect(quiet.env.rt(quiet.mother).synthesis?.ranCommand).toBeUndefined()
+  })
 })

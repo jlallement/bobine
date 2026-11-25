@@ -117,6 +117,8 @@ export interface MockAgentOptions {
    * se termine pas (`verrou-fin-de-tour.mts`).
    */
   turnLock?: string
+  /** `--cout-nul` : chaque tour annonce un coût de 0 (comme OpenCode pour ses modèles gratuits). */
+  zeroCost?: boolean
   /** `--verrou-demarrage` : `initialize` attend que ce fichier disparaisse. */
   startLock?: string
   /**
@@ -754,6 +756,14 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
           },
           afterTurnPlayed: () => persist(session),
           ...(options.bobDb ? { bobDb: options.bobDb } : {}),
+          ...(options.bobCost && options.bobDb
+            ? {
+                chargeBobNow: (amount: number) => {
+                  session.cost = Math.round(((session.cost ?? 0) + amount) * 1e6) / 1e6
+                  writeBobTaskCostLogged(options.bobDb ?? '', session.sessionId, session.cost)
+                }
+              }
+            : {}),
           ...(options.withoutPlan ? { withoutPlan: true } : {}),
           ...(options.backgroundMs !== undefined ? { backgroundMs: options.backgroundMs } : {}),
           language,
@@ -800,8 +810,8 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
         session.contextUsed =
           real?.context.used ??
           (reportedContext ?? session.contextUsed ?? 0) + usage.inputTokens + usage.outputTokens
-        session.cost =
-          Math.round(((session.cost ?? 0) + (real ? real.cost : MOCK_TURN_COST)) * 1e6) / 1e6
+        const turnCost = options.zeroCost ? 0 : real ? real.cost : MOCK_TURN_COST
+        session.cost = Math.round(((session.cost ?? 0) + turnCost) * 1e6) / 1e6
         await client.notify(methods.client.session.update, {
           sessionId: session.sessionId,
           update: {

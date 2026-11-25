@@ -232,6 +232,8 @@ function seatMeta(
     )
   } else if (c.trouble) meta.push(c.trouble)
   else if (c.digest?.short) meta.push(c.digest.short)
+  // Sans réponse courte lisible : le début de l'avis, jamais une ligne vide (G-B4).
+  else if (c.digest?.excerpt) meta.push(c.digest.excerpt)
   // La lecture seule est dite une fois, au pied de la carte (A3) ; le dossier modifié a sa ligne.
   return meta
 }

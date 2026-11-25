@@ -296,6 +296,19 @@ function RoundtableAnswerFrame({
           )}
         </div>
       )}
+      {first && step?.ranCommand && !step.changedFolder && (
+        // Commande lancée sans demander pendant une étape en lecture seule (G-B2) : une ligne
+        // discrète, de la même famille que le dossier modifié, une seule par étape.
+        <div className="roundtable-step-changed" role="note" data-testid="roundtable-step-command">
+          <TriangleAlert size={13} aria-hidden />
+          {t(
+            turn.step === 'synthesis'
+              ? 'roundtable.synthesis.ranCommand'
+              : 'roundtable.decision.ranCommand',
+            { agent: by?.label ?? '' }
+          )}
+        </div>
+      )}
       {children}
       {last &&
         group &&

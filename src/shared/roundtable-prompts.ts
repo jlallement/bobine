@@ -414,6 +414,11 @@ export interface OpinionDigest {
   confidence?: RoundtableConfidence
   /** Les cinq rubriques ont été trouvées ; sinon « format non suivi ». */
   followed: boolean
+  /**
+   * Sans réponse courte lue : le début de l'avis, en texte brut, pour que sa ligne repliée dise
+   * quelque chose (recette de la 1.2.0-beta.1, G-B4).
+   */
+  excerpt?: string
 }
 
 /** Réponse courte gardée sur la ligne repliée, au plus. */
@@ -423,10 +428,15 @@ type Section = 'short' | 'arguments' | 'assumptions' | 'change' | 'confidence'
 
 /** Rubriques reconnues, en anglais et en français (langues de l'interface). */
 const HEADINGS: readonly [Section, RegExp][] = [
-  ['short', /^(?:short answer|réponse courte)/iu],
+  // Variantes relevées chez les vrais modèles (recette de la 1.2.0-beta.1, G-B4) : « Réponse
+  // brève » (MiMo), « Suppositions », « Ce qui changerait mon avis ».
+  ['short', /^(?:short answer|brief answer|réponse (?:courte|brève|en bref)|en bref)/iu],
   ['arguments', /^arguments?/iu],
-  ['assumptions', /^(?:assumptions?|hypothèses?)/iu],
-  ['change', /^(?:what would change my mind|ce qui me ferait changer d['’]avis)/iu],
+  ['assumptions', /^(?:assumptions?|hypothèses?|suppositions?)/iu],
+  [
+    'change',
+    /^(?:what would change my mind|ce qui (?:me )?(?:ferait|ferais) changer d['’]avis|ce qui changerait (?:mon|ma) avis)/iu
+  ],
   ['confidence', /^(?:confidence|confiance)/iu]
 ]
 
@@ -490,15 +500,17 @@ export function opinionDigest(text: string): OpinionDigest {
   const confidence = CONFIDENCE.map(([level, re]) => ({ level, at: confidenceText.search(re) }))
     .filter((c) => c.at !== -1)
     .sort((a, b) => a.at - b.at)[0]?.level
+  const cut = (value: string) =>
+    value.length > SHORT_ANSWER_CHARS ? `${value.slice(0, SHORT_ANSWER_CHARS - 1)}…` : value
+  // Le début de l'avis, sans ses titres (« ## Analyse », « **2. Arguments** »).
+  const body = text
+    .split('\n')
+    .filter((line) => !headingOf(line) && !/^\s*#/.test(line))
+    .join('\n')
+  const start = shortText ? '' : plain(body.slice(0, SHORT_ANSWER_CHARS * 4))
   return {
-    ...(shortText
-      ? {
-          short:
-            shortText.length > SHORT_ANSWER_CHARS
-              ? `${shortText.slice(0, SHORT_ANSWER_CHARS - 1)}…`
-              : shortText
-        }
-      : {}),
+    ...(shortText ? { short: cut(shortText) } : {}),
+    ...(start ? { excerpt: cut(start) } : {}),
     ...(confidence ? { confidence } : {}),
     // Sans réponse courte lue, la ligne repliée n'a rien à montrer : format non suivi.
     followed: !!shortText && HEADINGS.every(([section]) => sections.has(section))

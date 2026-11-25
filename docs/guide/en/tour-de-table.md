@@ -85,10 +85,13 @@ answer carries a single label line, “Roundtable synthesis · <model> · N opin
 folds into two lines: the header and **Used** (a click opens it again; rows are then sorted by
 letter). Hovering or focusing “Participant C” shows the real name.
 
-The synthesis and the decision are read-only: the conversation can neither write nor run a
-command during those turns. If its agent goes ahead anyway, a warning shows under the label, with
-the changed files. **Ask … to apply it** sends the conversation an ordinary message: the only time
-files change.
+The synthesis and the decision are read-only. What is **guaranteed**: an agent that asks for
+permission before writing or running a command (IBM Bob, for instance) is refused automatically
+during those turns. What is only **requested**: an agent that acts without asking (OpenCode with
+its default settings) is told not to write anything or run any command, but Bobine cannot stop it.
+It checks afterwards: if the folder changed, a warning shows under the label, with the changed
+files; if the agent ran a command, a line says so. **Ask … to apply it** sends the conversation an
+ordinary message: the intended time for files to change.
 
 The conversation’s model writes the synthesis: it cannot be a participant (it would judge its own
 opinion). In the menu its box is disabled and says why; if you switch the conversation to a

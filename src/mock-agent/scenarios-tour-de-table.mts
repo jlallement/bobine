@@ -179,6 +179,34 @@ export const roundtableScenarios: Record<string, Scenario> = {
     description: 'Tour de table : avis libre, sans les cinq rubriques (« format non suivi »)',
     steps: participant(() => [{ kind: 'text', text: 'Je pense que oui, mais je ne détaille pas.' }])
   },
+  'avis-long-sans-reponse-courte': {
+    description:
+      'Tour de table : avis de plus de 3 000 caractères, comme Nemotron à la recette de la 1.2.0-beta.1 (G-B4) : préambule, « ## Analyse du risque principal », des arguments, « Assumptions », « Confidence: medium », mais aucune réponse courte : la ligne montre le début de l’avis',
+    steps: participant(() => [
+      {
+        kind: 'text',
+        text: [
+          'Let me first explore the repository and the file in question.',
+          '',
+          '## Analyse du risque principal',
+          '',
+          ...Array.from(
+            { length: 30 },
+            (_, i) =>
+              `Point ${i + 1} : la moyenne de calc.js divise par la longueur sans garde, ce qui donne NaN sur une liste vide.`
+          ),
+          '',
+          '## Arguments (5 points max)',
+          '1. **Liste vide** : `xs.length` vaut 0.',
+          '## Assumptions',
+          '- Les appelants passent parfois une liste vide.',
+          '## What would change my mind',
+          '- Un test qui montre une garde ailleurs.',
+          '## Confidence: medium'
+        ].join('\n')
+      }
+    ])
+  },
   'avis-lent': {
     description:
       'Tour de table : participant lent (100 pas de `--delay`, 4 s par défaut, annulable), puis avis au format. Dans les essais, le verrou de fin de tour (`--verrou-fin-de-tour`) tient le tour aussi longtemps que voulu',
@@ -372,6 +400,145 @@ export const roundtableScenarios: Record<string, Scenario> = {
         build: ({ text }) =>
           /<bobine_roundtable_[0-9a-f]+ step="verdict"/.test(text)
             ? [VERDICT_ERROR_ONCE, ...arbiter(text)]
+            : arbiter(text)
+      }
+    ]
+  },
+  'arbitre-applique-comme-bob': {
+    description:
+      'Conversation qui arbitre comme `synthese-tour-de-table`, puis, à un message qui demande d’appliquer, applique comme Bob 2.1.0 (recette de la 1.2.0-beta.1, S-B1) : dépense écrite dans la base de Bob pendant le tour (`bob-cost` 0,3, avec `--cout-bob`), outil `execute` fini (l’app relit alors le coût, en plein tour), puis la réponse',
+    steps: [
+      {
+        kind: 'computed',
+        build: ({ text }) =>
+          isStep(text) || !/appliqu/i.test(text)
+            ? arbiter(text)
+            : [
+                {
+                  kind: 'update',
+                  update: {
+                    sessionUpdate: 'tool_call',
+                    toolCallId: 'apply_cmd',
+                    title: 'npm test',
+                    kind: 'execute',
+                    status: 'in_progress'
+                  }
+                },
+                { kind: 'bob-cost', amount: 0.3 },
+                {
+                  kind: 'update',
+                  update: {
+                    sessionUpdate: 'tool_call_update',
+                    toolCallId: 'apply_cmd',
+                    status: 'completed'
+                  }
+                },
+                { kind: 'text', text: 'Recommandation appliquée.' }
+              ]
+      }
+    ]
+  },
+  'arbitre-commande': {
+    description:
+      'Conversation qui arbitre et lance une commande sans demander pendant la synthèse ou la décision, comme OpenCode à la recette de la 1.2.0-beta.1 (`node -e …`, outil `execute`), puis répond comme `synthese-tour-de-table` : la carte le dit (G-B2)',
+    steps: [
+      {
+        kind: 'computed',
+        build: ({ text }) =>
+          isStep(text)
+            ? [
+                {
+                  kind: 'update',
+                  update: {
+                    sessionUpdate: 'tool_call',
+                    toolCallId: 'arbiter_cmd',
+                    title: 'node -e "console.log(process.version)"',
+                    kind: 'execute',
+                    status: 'pending'
+                  }
+                },
+                {
+                  kind: 'update',
+                  update: {
+                    sessionUpdate: 'tool_call_update',
+                    toolCallId: 'arbiter_cmd',
+                    status: 'in_progress'
+                  }
+                },
+                {
+                  kind: 'update',
+                  update: {
+                    sessionUpdate: 'tool_call_update',
+                    toolCallId: 'arbiter_cmd',
+                    status: 'completed'
+                  }
+                },
+                ...arbiter(text)
+              ]
+            : arbiter(text)
+      }
+    ]
+  },
+  'arbitre-demande-commande': {
+    description:
+      'Conversation qui arbitre et demande l’autorisation de lancer une commande (`execute`, comme Bob) pendant la synthèse ou la décision : refusée d’office, l’outil finit en échec sans partir, puis répond comme `synthese-tour-de-table` (G-B2 : rien n’est dit)',
+    steps: [
+      {
+        kind: 'computed',
+        build: ({ text }) =>
+          isStep(text)
+            ? [
+                {
+                  kind: 'update',
+                  update: {
+                    sessionUpdate: 'tool_call',
+                    toolCallId: 'arbiter_cmd_ask',
+                    title: 'npm test',
+                    kind: 'execute',
+                    status: 'pending'
+                  }
+                },
+                {
+                  kind: 'permission',
+                  toolCall: { toolCallId: 'arbiter_cmd_ask', title: 'npm test', kind: 'execute' },
+                  options: [
+                    { optionId: 'allow', name: 'Allow once', kind: 'allow_once' },
+                    { optionId: 'reject', name: 'Reject', kind: 'reject_once' }
+                  ],
+                  branches: {
+                    allow: [
+                      {
+                        kind: 'update',
+                        update: {
+                          sessionUpdate: 'tool_call_update',
+                          toolCallId: 'arbiter_cmd_ask',
+                          status: 'in_progress'
+                        }
+                      },
+                      {
+                        kind: 'update',
+                        update: {
+                          sessionUpdate: 'tool_call_update',
+                          toolCallId: 'arbiter_cmd_ask',
+                          status: 'completed'
+                        }
+                      },
+                      ...arbiter(text)
+                    ],
+                    reject: [
+                      {
+                        kind: 'update',
+                        update: {
+                          sessionUpdate: 'tool_call_update',
+                          toolCallId: 'arbiter_cmd_ask',
+                          status: 'failed'
+                        }
+                      },
+                      ...arbiter(text)
+                    ]
+                  }
+                }
+              ]
             : arbiter(text)
       }
     ]

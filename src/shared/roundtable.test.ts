@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  attemptsTotal,
   ROUNDTABLE_LETTERS,
   canRebut,
   canRelaunch,
@@ -33,6 +34,7 @@ import {
   asData,
   lastExchangeText,
   opinionDigest,
+  SHORT_ANSWER_CHARS,
   participantMessage,
   PARTICIPANT_BRIEF,
   rebuttalMessage,
@@ -825,7 +827,8 @@ describe('tour de table : lecture des avis', () => {
 
   it('format non suivi : rien ne s’invente', () => {
     expect(opinionDigest('Je pense que pg-boss suffit. Arguments solides.')).toEqual({
-      followed: false
+      followed: false,
+      excerpt: 'Je pense que pg-boss suffit. Arguments solides.'
     })
   })
 
@@ -973,7 +976,11 @@ describe('tour de table : recette réelle (S1, S2, S3, G6, C3)', () => {
       '## Confiance',
       'haute'
     ].join('\n')
-    expect(opinionDigest(text)).toEqual({ confidence: 'high', followed: false })
+    expect(opinionDigest(text)).toEqual({
+      confidence: 'high',
+      followed: false,
+      excerpt: 'x x x haute'
+    })
   })
 })
 
@@ -1095,5 +1102,70 @@ describe('tour de table : consommation de toutes les tentatives d’une étape (
     rt = apply(rt, ...race('verdict', { type: 'decide', at: 15 }))
     expect(rt.phase).toBe('decided')
     expect(rt.verdict?.usage).toEqual({ turns: 2, total: 10, cost: bob(0.2015) })
+  })
+})
+
+describe('tour de table : gratuité d’une étape (recette de la 1.2.0-beta.1, G-B1)', () => {
+  it('toutes les tentatives de modèles gratuits : le total le dit ; sinon non', () => {
+    const usd = { amount: 0, currency: 'USD' }
+    const free = attemptsTotal([
+      { at: 1, usage: { total: 10, free: true }, costStart: 0, costEnd: usd },
+      { at: 2, usage: { total: 5, free: true }, costStart: 0, costEnd: usd }
+    ])
+    expect(free).toEqual({ total: 15, cost: usd, free: true })
+    const mixed = attemptsTotal([
+      { at: 1, usage: { total: 10, free: true }, costEnd: usd },
+      { at: 2, usage: { total: 5 }, costEnd: usd }
+    ])
+    expect(mixed?.free).toBeUndefined()
+  })
+})
+
+describe('lecture des avis réels (recette de la 1.2.0-beta.1, G-B4)', () => {
+  it('« Réponse brève » et « Suppositions » (MiMo) : la réponse courte est lue', () => {
+    const text = [
+      '## Réponse brève',
+      'Corriger d’abord l’écriture non atomique de `src/persistance.js:13`.',
+      '',
+      '## Arguments',
+      '1. **Perte totale possible** : `writeFileSync` tronque puis réécrit.',
+      '## Suppositions',
+      '- Le crash pendant l’écriture est crédible.',
+      '## Ce qui me ferait changer d’avis',
+      'Un test qui montre un `NaN` propagé.',
+      '## Confiance',
+      'Moyenne.'
+    ].join('\n')
+    expect(opinionDigest(text)).toEqual({
+      short: 'Corriger d’abord l’écriture non atomique de src/persistance.js:13.',
+      confidence: 'medium',
+      followed: true
+    })
+  })
+
+  it('avis long sans réponse courte (Nemotron) : la ligne a le début de l’avis', () => {
+    const text = [
+      'Let me first explore the repository and the file in question.',
+      '',
+      'Examinons le fichier `src/alertes.js`.',
+      '',
+      '## Analyse du risque principal',
+      '',
+      'Le fichier contient une fonction `brancherAlertes` qui prévient sous le seuil.',
+      ...Array.from({ length: 40 }, (_, i) => `Détail ${i} : ${'x'.repeat(60)}`),
+      '## Arguments (5 points max)',
+      '1. **Accès non sécurisé** (ligne 5).',
+      '## Assumptions',
+      '- Rien.',
+      '## What would change my mind',
+      '- Un test.',
+      '## Confidence: medium'
+    ].join('\n')
+    expect(text.length).toBeGreaterThan(3000)
+    const digest = opinionDigest(text)
+    expect(digest.followed).toBe(false)
+    expect(digest.short).toBeUndefined()
+    expect(digest.excerpt?.startsWith('Let me first explore the repository')).toBe(true)
+    expect(digest.excerpt?.length).toBeLessThanOrEqual(SHORT_ANSWER_CHARS)
   })
 })

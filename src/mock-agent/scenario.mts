@@ -157,6 +157,12 @@ export type Step =
    */
   | { kind: 'bob-subagent'; id: string; title?: string; cost?: number; done?: boolean }
   /**
+   * Coût de la tâche écrit **pendant** le tour (`--cout-bob`), comme Bob 2.1.0 qui enregistre sa
+   * dépense au fil des requêtes (recette de la 1.2.0-beta.1, « Appliquer ») : l'app le relit à la
+   * fin d'un outil, avant la fin du tour. Sans `--cout-bob` : rien.
+   */
+  | { kind: 'bob-cost'; amount: number }
+  /**
    * Modifie un fichier du dossier de la session, comme l'outil d'édition d'un agent : carte d'outil
    * avec le diff (texte complet avant / après), écriture réelle, puis outil terminé.
    * `edit` : remplace un extrait ; sinon `content` est le nouveau contenu complet.
@@ -414,6 +420,8 @@ export interface TurnContext {
   afterTurnPlayed?: () => void
   /** Base de Bob où écrire les sous-agents (étape `bob-subagent`), jamais celle de l'utilisateur. */
   bobDb?: string
+  /** Dépense écrite tout de suite dans la base de Bob (étape `bob-cost`, `--cout-bob`). */
+  chargeBobNow?: (amount: number) => void
   /** Agent sans plan (`--sans-plan`, fiche 139) : les mises à jour `plan` ne partent pas. */
   withoutPlan?: boolean
   /**
@@ -547,6 +555,9 @@ async function playStep(step: Step, ctx: TurnContext): Promise<void> {
     }
     case 'bob-subagent':
       if (ctx.bobDb) writeBobSubagent(ctx.bobDb, ctx.sessionId, step)
+      return
+    case 'bob-cost':
+      ctx.chargeBobNow?.(step.amount)
       return
     case 'ask-user':
       return playSteps(

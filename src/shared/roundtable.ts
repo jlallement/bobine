@@ -209,6 +209,11 @@ export interface RoundtableStep {
   changedFolder?: true
   /** Quelques fichiers touchés, lus dans `git status` (au plus `STEP_CHANGED_FILES`). */
   changedFiles?: string[]
+  /**
+   * L'agent a lancé une commande pendant le tour de l'étape (outil `execute` parti, pas refusé) :
+   * la lecture seule n'était que demandée (recette de la 1.2.0-beta.1, G-B2).
+   */
+  ranCommand?: true
 }
 
 /** Une tentative d'une étape : ses jetons, et son coût en relevés cumulés de la conversation. */
@@ -336,6 +341,8 @@ export type RoundtableEvent =
     }
   /** Le dossier a changé pendant le tour de l'étape (constaté après sa réponse). */
   | { type: 'step-changed-folder'; step: RoundtableStepKind; files: string[] }
+  /** L'agent a lancé une commande pendant le tour de l'étape. */
+  | { type: 'step-ran-command'; step: RoundtableStepKind }
   /** « Faire réagir les participants » : une seule fois par tour. */
   | { type: 'rebuttal'; at: number }
   | {
@@ -539,13 +546,17 @@ export function attemptsTotal(
       continue
     }
     const start = Math.max(attempt.costStart ?? covered ?? 0, covered ?? -Infinity)
-    const amount = Math.max(0, end.amount - start)
+    const amount = round6(Math.max(0, end.amount - start))
     cost = addDigests(cost ? { cost } : undefined, {
       cost: { amount, currency: end.currency }
     })?.cost
     covered = Math.max(covered ?? -Infinity, end.amount)
   }
-  return cost ? { ...total, cost } : total
+  // Modèles gratuits (fiche 266) : un coût nul y est « gratuit », pas « coût inconnu » (G-B1).
+  const used = sorted.flatMap((a) => (a.usage ? [a.usage] : []))
+  const free = used.length > 0 && used.every((u) => u.free === true)
+  const result = cost ? { ...total, cost } : total
+  return result && free ? { ...result, free: true } : result
 }
 
 /** Résultat de la tentative visée (la dernière par défaut) : le total est recalculé. */
@@ -692,6 +703,10 @@ function reduceStep(
     case 'step-usage':
       // Coût communiqué après coup : à la tentative qu'il vise, même si une autre est en route.
       return withStep(rt, key, withAttempt(step, event, event.attempt))
+    case 'step-ran-command':
+      return step.state === 'waiting' || step.ranCommand
+        ? rt
+        : withStep(rt, key, { ...step, ranCommand: true })
     case 'step-changed-folder': {
       // Constaté à la fin du tour : l'étape a répondu (ou échoué) entre-temps.
       if (step.state === 'waiting') return rt
@@ -843,6 +858,7 @@ export function reduceRoundtable(rt: Roundtable, event: RoundtableEvent): Roundt
     case 'step-failed':
     case 'step-usage':
     case 'step-changed-folder':
+    case 'step-ran-command':
       return recount(reduceStep(rt, event))
     default: {
       const next = reduceSeat(rt, event)
@@ -1052,8 +1068,11 @@ export function newSeats(
 export interface RoundtableTotal {
   /** Jetons communiqués, tous tours confondus ; absent si aucun agent n'en donne. */
   tokens?: number
-  /** Un montant par unité (« USD », « bobcoin »…), dans l'ordre d'apparition. */
-  costs: { amount: number; currency: string }[]
+  /**
+   * Un montant par unité (« USD », « bobcoin »…), dans l'ordre d'apparition. `free` : tout ce qui
+   * compte dans cette unité vient de modèles gratuits (un total nul s'y lit « gratuit »).
+   */
+  costs: { amount: number; currency: string; free?: true }[]
   /** Participants qui n'ont rien communiqué (« 1 participant sans chiffre »). */
   silent: number
 }
@@ -1073,7 +1092,8 @@ export function roundtableTotal(
   steps: readonly (UsageDigest | undefined)[] = []
 ): RoundtableTotal {
   let tokens: number | undefined
-  const costs: { amount: number; currency: string }[] = []
+  const costs: { amount: number; currency: string; free?: true }[] = []
+  const paid = new Set<string>()
   let silent = 0
   const add = (digest: UsageDigest | undefined, participant: boolean) => {
     const used = digest ? digestTokens(digest) : undefined
@@ -1081,11 +1101,13 @@ export function roundtableTotal(
     if (participant && used === undefined && !cost) silent++
     if (used !== undefined) tokens = (tokens ?? 0) + used
     if (!cost) return
+    if (digest?.free !== true) paid.add(cost.currency)
     const same = costs.find((c) => c.currency === cost.currency)
     if (same) same.amount = round6(same.amount + cost.amount)
     else costs.push({ amount: round6(cost.amount), currency: cost.currency })
   }
   for (const digest of participants) if (digest !== null) add(digest, true)
   for (const digest of steps) add(digest, false)
-  return { ...(tokens !== undefined ? { tokens } : {}), costs, silent }
+  const marked = costs.map((c) => (paid.has(c.currency) ? c : { ...c, free: true as const }))
+  return { ...(tokens !== undefined ? { tokens } : {}), costs: marked, silent }
 }

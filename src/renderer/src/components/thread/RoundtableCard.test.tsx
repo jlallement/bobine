@@ -306,6 +306,18 @@ describe('avis rendus et synthèse en cours', () => {
     expect(within(row('A')).getByTestId('roundtable-format').textContent).toBe('format non suivi')
   })
 
+  it('G-B4 (recette de la 1.2.0-beta.1) : un long avis sans réponse courte montre son début sur sa ligne', () => {
+    const long = [
+      'Let me first explore the repository.',
+      '## Analyse du risque principal',
+      ...Array.from({ length: 50 }, (_, i) => `Détail ${i} : ${'x'.repeat(60)}`),
+      '## Confidence: medium'
+    ].join('\n')
+    show(thread(synthesizing(), { A: [long], B: OPINIONS.B }))
+    expect(within(row('A')).getByTestId('roundtable-format').textContent).toBe('format non suivi')
+    expect(row('A').textContent).toContain('Let me first explore the repository.')
+  })
+
   it('synthèse retenue par le plafond de la conversation : dit dans l’en-tête', () => {
     show(thread(synthesizing([{ type: 'step-held', step: 'synthesis' }]), OPINIONS))
     expect(plain(screen.getByTestId('roundtable-progress').textContent)).toBe(
@@ -766,6 +778,19 @@ describe('gestes : un à la fois, refus dits', () => {
 })
 
 describe('réplique et décision', () => {
+  it('G-B2 (recette de la 1.2.0-beta.1) : une commande lancée pendant la synthèse est dite en une ligne', () => {
+    show(
+      synthesized(done(), SYNTHESIS).map((i) =>
+        i.kind === 'roundtable' && i.synthesis
+          ? { ...i, synthesis: { ...i.synthesis, ranCommand: true as const } }
+          : i
+      )
+    )
+    const notes = screen.getAllByTestId('roundtable-step-command')
+    expect(notes).toHaveLength(1)
+    expect(notes[0]?.textContent).toContain('a lancé une commande pendant la synthèse')
+  })
+
   it('C3 (recette) : un avis sans réponse courte lue dit « format non suivi », même avec sa confiance', () => {
     show(
       synthesized(done(), SYNTHESIS).map((i) =>
