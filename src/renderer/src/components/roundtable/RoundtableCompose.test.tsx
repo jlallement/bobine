@@ -11,6 +11,7 @@ import type { AgentSnapshot } from '@shared/agent'
 import type { RoundtableChoice } from '@shared/roundtable'
 import type { RoundtableOptions, RoundtableStartResult } from '@shared/roundtable-ipc'
 import css from '../../roundtable.css?raw'
+import styles from '../../styles.css?raw'
 import { Composer } from '../composer/Composer'
 import { loadDraft, saveDraft } from '../../drafts'
 import { requestRoundtableMenu } from './roundtable-menu-request'
@@ -651,5 +652,48 @@ describe('ce qui empêche le départ, dit clairement, la question gardée', () =
     t.enter()
     expect(await screen.findByTestId('roundtable-menu')).toBeTruthy()
     expect(api.start).not.toHaveBeenCalled()
+  })
+})
+
+describe('barre de saisie repliée (GitHub, Linux à 760 px)', () => {
+  it('au niveau 4, le bouton du tour de table passe dans le menu de 📎, comme les réglages', async () => {
+    const callbacks: (() => void)[] = []
+    const notify = () => callbacks.forEach((c) => c())
+    const original = globalThis.ResizeObserver
+    globalThis.ResizeObserver = class {
+      constructor(callback: () => void) {
+        callbacks.push(callback)
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver
+    try {
+      setup([deep, b], { onCaptureScreen: vi.fn() })
+      const bar = screen.getByTestId('composer-bar')
+      // Ne tient qu'au niveau 4 (le CSS y cache le bouton : sa largeur ne compte plus).
+      Object.defineProperty(bar, 'clientWidth', { configurable: true, get: () => 600 })
+      Object.defineProperty(bar, 'scrollWidth', {
+        configurable: true,
+        get: () => (bar.dataset.fold === '4' ? 580 : 700)
+      })
+      act(() => notify())
+      await waitFor(() => expect(bar.dataset.fold).toBe('4'))
+      expect(
+        screen.getByTestId('roundtable-toggle').closest('.roundtable-toggle-slot')
+      ).toBeTruthy()
+      fireEvent.pointerDown(screen.getByTestId('attach'), { button: 0, ctrlKey: false })
+      const item = await screen.findByTestId('attach-roundtable')
+      fireEvent.click(item)
+      await waitFor(() => expect(screen.getByTestId('roundtable-tag')).toBeTruthy())
+    } finally {
+      globalThis.ResizeObserver = original
+    }
+  })
+
+  it('le CSS cache le bouton à sa place aux niveaux 4 et 5, comme les réglages de la session', () => {
+    expect(styles).toMatch(
+      /:is\(\[data-fold='4'\], \[data-fold='5'\]\) > \.roundtable-toggle-slot\s*\{\s*display: none;/
+    )
   })
 })

@@ -11,7 +11,8 @@ import type {
 } from '@shared/agent'
 import type { ConversationUsage } from '@shared/usage'
 import type { UsageActions } from '../../useTurnGuards'
-import { ComposerFocus, ModeChip, SessionSettingsMenu, Tip } from '../common/Menus'
+import * as Dropdown from '@radix-ui/react-dropdown-menu'
+import { ComposerFocus, ItemText, ModeChip, SessionSettingsMenu, Tip } from '../common/Menus'
 import { AgentMenu } from './AgentMenu'
 import { ModelChip } from '../common/ModelMenu'
 import { ChipPlaceholder, useRememberChipWidths, useReservedWidths } from './chip-slots'
@@ -118,28 +119,41 @@ export function ComposerBar(props: Props) {
           onPickFiles={props.onPickFiles}
           onCaptureScreen={props.onCaptureScreen}
           {...(fold >= OPTIONS_FOLD && props.onCaptureScreen
-            ? { extra: sessionSettings(true) }
+            ? {
+                extra: (
+                  <>
+                    {props.roundtable && <RoundtableMenuItem {...props.roundtable} />}
+                    {sessionSettings(true)}
+                  </>
+                )
+              }
             : {})}
         />
         {props.roundtable && (
-          <Tip
-            label={t(
-              props.roundtable.blocked ? 'roundtable.command.running' : 'roundtable.command.button'
-            )}
-          >
-            <button
-              type="button"
-              className="chip icon-chip roundtable-toggle"
-              aria-pressed={props.roundtable.active}
-              aria-label={t('roundtable.command.button')}
-              // Un tour en cours : désactivé, l'infobulle dit pourquoi (B11).
-              aria-disabled={props.roundtable.blocked || undefined}
-              onClick={props.roundtable.blocked ? undefined : props.roundtable.onToggle}
-              data-testid="roundtable-toggle"
+          // Replié avec les réglages de la session (niveau 4, dans le menu de 📎) : toujours dans la
+          // page, caché par le CSS, pour que la mesure du repli compte sa largeur.
+          <span className="roundtable-toggle-slot">
+            <Tip
+              label={t(
+                props.roundtable.blocked
+                  ? 'roundtable.command.running'
+                  : 'roundtable.command.button'
+              )}
             >
-              <RoundtableIcon size={16} />
-            </button>
-          </Tip>
+              <button
+                type="button"
+                className="chip icon-chip roundtable-toggle"
+                aria-pressed={props.roundtable.active}
+                aria-label={t('roundtable.command.button')}
+                // Un tour en cours : désactivé, l'infobulle dit pourquoi (B11).
+                aria-disabled={props.roundtable.blocked || undefined}
+                onClick={props.roundtable.blocked ? undefined : props.roundtable.onToggle}
+                data-testid="roundtable-toggle"
+              >
+                <RoundtableIcon size={16} />
+              </button>
+            </Tip>
+          </span>
         )}
         {props.modeControl && !props.hideMode ? (
           <ModeChip
@@ -220,4 +234,21 @@ function chosenModel(
 ): { value: string; name: string } | undefined {
   if (control?.type !== 'select') return undefined
   return control.options.find((o) => o.value === control.currentValue)
+}
+
+/** Le bouton du tour de table, replié dans le menu de 📎 quand la barre manque de place. */
+function RoundtableMenuItem(props: { active: boolean; blocked?: boolean; onToggle: () => void }) {
+  const { t } = useTranslation()
+  return (
+    <Dropdown.CheckboxItem
+      className="menu-item"
+      checked={props.active}
+      disabled={props.blocked}
+      onSelect={props.onToggle}
+      data-testid="attach-roundtable"
+    >
+      <RoundtableIcon size={16} className="menu-icon" />
+      <ItemText title={t('roundtable.command.tag')} />
+    </Dropdown.CheckboxItem>
+  )
 }
