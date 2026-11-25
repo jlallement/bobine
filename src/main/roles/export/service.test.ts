@@ -360,6 +360,70 @@ describe('mode natif vérifié sur le disque (revue sécurité, fiche 285)', () 
   })
 })
 
+describe('mode natif : tous les emplacements d’OpenCode (contre-revue, fiche 285)', () => {
+  const install = (exports: RoleExports) =>
+    exports.install(role(), { profileId: 'opencode', scope: 'user' }, undefined, {
+      useInBobine: true
+    })
+  const intact = { id: 'code-reviewer', readOnly: true }
+  const cases: [string, () => string, string][] = [
+    [
+      'opencode.json du projet',
+      () => join(project, 'opencode.json'),
+      '{ "agents": { "code-reviewer": {} } }'
+    ],
+    [
+      'opencode.jsonc du projet, clé `agent`',
+      () => join(project, 'opencode.jsonc'),
+      '// x\n{ "agent": { "code-reviewer": { "mode": "primary" } } }'
+    ],
+    [
+      '.opencode/opencode.json',
+      () => join(project, '.opencode', 'opencode.json'),
+      '{"agents":{"code-reviewer":{}}}'
+    ],
+    [
+      '.opencode/agent/ (singulier)',
+      () => join(project, '.opencode', 'agent', 'code-reviewer.md'),
+      '---\nmode: primary\n---\nÉcris.\n'
+    ],
+    [
+      '.opencode/agents/ d’un dossier parent',
+      () => join(project, '..', '.opencode', 'agents', 'code-reviewer.md'),
+      'x'
+    ],
+    [
+      'opencode.json global',
+      () => join(home, '.config', 'opencode', 'opencode.json'),
+      '{"agents":{"code-reviewer":{}}}'
+    ],
+    ['agent/ global', () => join(home, '.config', 'opencode', 'agent', 'code-reviewer.md'), 'x'],
+    [
+      'réglages du système',
+      () => join(root, 'systeme', 'opencode', 'opencode.json'),
+      '{"agents":{"code-reviewer":{}}}'
+    ]
+  ]
+  for (const [name, file, text] of cases) {
+    it(`redéfini par ${name} : plus garanti`, () => {
+      const exports = new RoleExports({
+        profiles: () => PROFILES,
+        locations: { home, systemConfig: join(root, 'systeme') },
+        registry: new RoleExportRegistry(join(data, 'role-exports.json')),
+        backupDir: join(data, 'backups')
+      })
+      install(exports)
+      expect(exports.nativeMode('opencode', 'code-reviewer', project)).toEqual(intact)
+      mkdirSync(join(file(), '..'), { recursive: true })
+      writeFileSync(file(), text)
+      expect(exports.nativeMode('opencode', 'code-reviewer', project)).toMatchObject({
+        stale: 'roleChanged'
+      })
+      rmSync(file())
+    })
+  }
+})
+
 describe('installations sans rôle (renommé, supprimé)', () => {
   it('restent visibles et se retirent ; projet : seulement dans son dossier', () => {
     const exports = service()

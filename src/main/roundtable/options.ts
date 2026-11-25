@@ -63,8 +63,10 @@ export function expectedReadOnly(
   // Profil introuvable : rien ne dit comment l'agent écrit, rien n'est promis.
   if (!profile) return 'unverified'
   if (!profile.writesWithoutAsking) return 'enforced'
+  // Hors dépôt git, rien n'est vérifiable : jamais promis, même avec le rôle installé.
+  if (!inGit) return 'unverified'
   if (installed?.readOnly && !installed.stale) return 'native'
-  return inGit ? 'requested' : 'unverified'
+  return 'requested'
 }
 
 /**

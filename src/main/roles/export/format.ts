@@ -24,6 +24,11 @@ export interface ExportLocations {
   home: string
   /** `XDG_CONFIG_HOME` (OpenCode) ; absent : `<home>/.config`. */
   xdgConfigHome?: string
+  /**
+   * Dossier des réglages du système (`/Library/Application Support` sur macOS, `/etc` sous Linux,
+   * `%ProgramData%` sous Windows), où un agent peut aussi être défini ; absent : pas regardé.
+   */
+  systemConfig?: string
 }
 
 /** Notre entrée dans le texte du fichier. */
@@ -64,6 +69,17 @@ export interface RoleExportAdapter {
   put: (text: string | undefined, role: ExportedRole) => TextChange
   /** Texte du fichier une fois l'entrée retirée ; `null` : supprimer le fichier. */
   drop: (text: string, id: string) => TextChange
+  /**
+   * Un autre emplacement que lit l'agent définit, redéfinit ou complète un agent de cet
+   * identifiant (fiche 285, revue sécurité) : l'installation de Bobine n'est alors plus garantie.
+   * Chaque adaptateur déclare tous ceux que la documentation publique de l'agent nomme.
+   */
+  definedElsewhere?: (
+    scope: RoleExportScope,
+    id: string,
+    loc: ExportLocations,
+    workspace?: string
+  ) => boolean
 }
 
 /** Empreinte stable d'un texte ou d'une valeur. */

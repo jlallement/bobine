@@ -12,7 +12,8 @@
  *
  * Un fichier par agent : le fichier entier est à Bobine ; le retirer le supprime.
  */
-import { join } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { stringify } from 'yaml'
 import {
   exportedPrompt,
@@ -50,6 +51,63 @@ export function openCodeAgentFile(role: ExportedRole): string {
   return `---\n${stringify(header, { lineWidth: 0 })}---\n${exportedPrompt(role)}\n`
 }
 
+/** Dossiers d'un projet où OpenCode cherche sa configuration : le dossier, puis ses parents. */
+function upwards(workspace: string): string[] {
+  const dirs: string[] = []
+  for (let dir = workspace; ; dir = dirname(dir)) {
+    dirs.push(dir)
+    if (dirname(dir) === dir) return dirs
+  }
+}
+
+/** Un fichier de configuration (`opencode.json(c)`) qui nomme cet agent comme une clé. */
+function namedIn(file: string, id: string): boolean {
+  if (!existsSync(file)) return false
+  try {
+    // Prudent : la clé `"<id>":` n'importe où (sous `agent` ou `agents`, JSONC compris) suffit.
+    const key = new RegExp(`"${id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"\\s*:`)
+    return key.test(readFileSync(file, 'utf8'))
+  } catch {
+    return true // Illisible : rien n'est garanti.
+  }
+}
+
+/**
+ * Tous les endroits où OpenCode lit un agent, d'après sa documentation publique (« Agents »,
+ * « Config », relevée le 2026-11-25) : fichiers Markdown `agents/<id>.md` (et `agent/`, forme
+ * singulière d'anciennes versions) dans `.opencode/` du dossier et de ses parents, dans la
+ * configuration globale et celle du système ; clés `agents` (et `agent`) des fichiers
+ * `opencode.json(c)` du dossier, de ses parents, de `.opencode/`, global et du système. Le fichier
+ * écrit par Bobine (`own`) n'en fait pas partie.
+ */
+function definedElsewhere(
+  scope: Parameters<NonNullable<RoleExportAdapter['definedElsewhere']>>[0],
+  id: string,
+  loc: Parameters<RoleExportAdapter['place']>[2],
+  workspace?: string
+): boolean {
+  const own = OPENCODE_AGENTS.place(scope, id, loc, workspace).file
+  const global = join(loc.xdgConfigHome ?? join(loc.home, '.config'), 'opencode')
+  const system = loc.systemConfig ? [join(loc.systemConfig, 'opencode')] : []
+  const configDirs = [
+    ...(workspace ? upwards(workspace).flatMap((d) => [d, join(d, '.opencode')]) : []),
+    global,
+    ...system
+  ]
+  const agentDirs = [
+    ...(workspace ? upwards(workspace).map((d) => join(d, '.opencode')) : []),
+    global,
+    ...system
+  ]
+  const markdown = agentDirs
+    .flatMap((d) => [join(d, 'agents', `${id}.md`), join(d, 'agent', `${id}.md`)])
+    .filter((file) => file !== own)
+  if (markdown.some((file) => existsSync(file))) return true
+  return configDirs.some(
+    (d) => namedIn(join(d, 'opencode.json'), id) || namedIn(join(d, 'opencode.jsonc'), id)
+  )
+}
+
 export const OPENCODE_AGENTS: RoleExportAdapter = {
   format: 'opencode-agents',
   place: (scope, id, loc, workspace) => {
@@ -74,5 +132,6 @@ export const OPENCODE_AGENTS: RoleExportAdapter = {
     const text = openCodeAgentFile(role)
     return { text, fingerprint: fingerprint(text) }
   },
-  drop: () => ({ text: null })
+  drop: () => ({ text: null }),
+  definedElsewhere
 }

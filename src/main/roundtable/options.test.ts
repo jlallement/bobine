@@ -32,5 +32,12 @@ describe('lecture seule d’un participant (revue sécurité, fiche 285)', () =>
         stale: 'roleChanged'
       })
     ).toBe('requested')
+    // Hors dépôt git : jamais « garantie », même installé.
+    expect(
+      expectedReadOnly({ id: 'oc', writesWithoutAsking: true }, false, {
+        id: 'participant',
+        readOnly: true
+      })
+    ).toBe('unverified')
   })
 })

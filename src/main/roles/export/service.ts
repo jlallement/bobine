@@ -282,6 +282,11 @@ export class RoleExports {
     const { locations } = this.options
     const place = adapter.place(record.scope, record.id, locations, record.workspace)
     if (this.stateOf(record, adapter, place, undefined) !== 'upToDate') return false
+    // Un autre emplacement lu par l'agent redéfinit cet agent (opencode.json, parents…).
+    if (
+      adapter.definedElsewhere?.(record.scope, record.id, locations, workspace ?? record.workspace)
+    )
+      return false
     if (record.scope !== 'user' || !workspace) return true
     const project = adapter.place('project', record.id, locations, workspace)
     const read = readTarget(project.file, project.root, 'project', project.shown)
