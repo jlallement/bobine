@@ -92,6 +92,16 @@ export class IdleWaiters {
     for (const resolve of waiting ?? []) resolve()
   }
 
+  /**
+   * La liste a changé : une conversation attendue qui ne travaille plus est rendue. Son statut
+   * listé peut changer sans évènement de son agent : une fille dont le lancement est abandonné
+   * avant sa question (tour arrêté pendant le lancement) quitte « démarre » par la liste seule ;
+   * sans cette relecture, l'arrêt du tour attendait sa borne.
+   */
+  recheck(): void {
+    for (const id of [...this.waiters.keys()]) if (!this.busy(id)) this.release(id)
+  }
+
   /** Conversation partie : son coût n'est plus attendu. */
   private forgetCost(id: string): void {
     this.costRead.delete(id)

@@ -521,10 +521,14 @@ export function addDigests(a: UsageDigest | undefined, b: UsageDigest | undefine
  * qui comprend déjà le coût d'une tentative suivante n'est pas compté deux fois). Sans relevé, le
  * coût du tour tel que communiqué.
  */
-export function attemptsTotal(attempts: readonly StepAttempt[]): UsageDigest | undefined {
+export function attemptsTotal(
+  attempts: readonly StepAttempt[],
+  /** Coût déjà compté par une étape d'avant (la synthèse, pour la décision). */
+  floor?: number
+): UsageDigest | undefined {
   const sorted = [...attempts].sort((a, b) => a.at - b.at)
   let total: UsageDigest | undefined
-  let covered: number | undefined
+  let covered: number | undefined = floor
   let cost: { amount: number; currency: string } | undefined
   for (const attempt of sorted) {
     const { cost: turnCost, ...tokens } = attempt.usage ?? {}
@@ -562,6 +566,23 @@ function withAttempt(
   const all = attempts.map((a, i) => (i === index ? next : a))
   const usage = attemptsTotal(all)
   return { ...step, attempts: all, ...(usage ? { usage } : {}) }
+}
+
+/** Dernier relevé de coût des tentatives d'une étape. */
+const lastCost = (step: RoundtableStep | undefined): number | undefined => {
+  const ends = (step?.attempts ?? []).flatMap((a) => (a.costEnd ? [a.costEnd.amount] : []))
+  return ends.length ? Math.max(...ends) : undefined
+}
+
+/**
+ * La décision ne recouvre pas la synthèse : un relevé tardif de la synthèse, arrivé pendant la
+ * décision, reste à la synthèse (machine lente, CI du 2026-11-25). Recalculé à chaque évènement.
+ */
+function recount(rt: Roundtable): Roundtable {
+  const verdict = rt.verdict
+  if (!verdict?.attempts) return rt
+  const usage = attemptsTotal(verdict.attempts, lastCost(rt.synthesis))
+  return usage ? { ...rt, verdict: { ...verdict, usage } } : rt
 }
 
 /** Nouvelle tentative d'une étape : ses tentatives passées et leur total restent. */
@@ -822,7 +843,7 @@ export function reduceRoundtable(rt: Roundtable, event: RoundtableEvent): Roundt
     case 'step-failed':
     case 'step-usage':
     case 'step-changed-folder':
-      return reduceStep(rt, event)
+      return recount(reduceStep(rt, event))
     default: {
       const next = reduceSeat(rt, event)
       return next === rt ? rt : advance(next, event.at)

@@ -1048,6 +1048,36 @@ describe('tour de table : consommation de toutes les tentatives d’une étape (
     expect(rt.synthesis?.usage?.cost).toEqual(bob(0.2015))
   })
 
+  it('décision qui part avant le relevé tardif de la synthèse : chaque étape garde le sien', () => {
+    let rt = apply(
+      answered(roundtable()),
+      { type: 'step-sent', step: 'synthesis', at: 4, costStart: 0.0125 },
+      // Bob écrit le coût de la synthèse après sa réponse : pas encore relu.
+      { type: 'step-answered', step: 'synthesis', at: 5, costEnd: bob(0.0125) },
+      { type: 'rebuttal', at: 6 },
+      ...roundtable().seats.map((s): RoundtableEvent => ({
+        type: 'rebuttal-seat',
+        letter: s.letter,
+        state: 'answered',
+        at: 7
+      })),
+      { type: 'step-sent', step: 'verdict', at: 10, costStart: 0.0125 },
+      // Relevé tardif de la synthèse, arrivé pendant la décision.
+      { type: 'step-usage', step: 'synthesis', attempt: 4, costEnd: bob(0.025) },
+      { type: 'step-failed', step: 'verdict', detail: 'Internal error', costEnd: bob(0.025) },
+      { type: 'step-usage', step: 'verdict', attempt: 10, costEnd: bob(0.0375) },
+      { type: 'decide', at: 15 },
+      { type: 'step-sent', step: 'verdict', at: 20, costStart: 0.0375 },
+      { type: 'step-answered', step: 'verdict', at: 30, costEnd: bob(0.0375) },
+      { type: 'step-usage', step: 'verdict', attempt: 20, costEnd: bob(0.05) }
+    )
+    expect(rt.synthesis?.usage?.cost).toEqual(bob(0.0125))
+    expect(rt.verdict?.usage?.cost).toEqual(bob(0.025))
+    expect(rt.phase).toBe('decided')
+    rt = apply(rt, { type: 'step-usage', step: 'synthesis', attempt: 4, costEnd: bob(0.025) })
+    expect(rt.verdict?.usage?.cost).toEqual(bob(0.025))
+  })
+
   it('décision : même chose', () => {
     let rt = apply(
       answered(roundtable()),
