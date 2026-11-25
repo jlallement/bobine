@@ -1492,3 +1492,11 @@ le main n'a pas livré l'étape 1) :
     maquette : la ligne apparaît deux fois après la réplique.
   - Essais : `RoundtableCard.test.tsx` (données d'abonnement, repliée et dépliée ; rouge avant) ;
     e2e `tour-de-table` : capture `285-carte-apres-replique` et vérification (rouge avant).
+
+- 2026-11-25 : `verify` rouge sous charge 49 (fix17) sur « relecture trop tardive (attente bornée
+  dépassée) ». Cause produit : une étape partie à la borne finit avant l'écriture tardive du coût
+  du tour d'avant ; la relecture du nouveau tour (`SessionCost`) prenait cette écriture pour son
+  changement et s'arrêtait (relectures et veille), et le coût de l'étape n'était lu qu'au tour
+  suivant. Corrigé : un tour fini pendant la relecture du précédent laisse un premier changement à
+  celui-ci et continue de lire pour le sien (rien n'est tu, seule la fin de lecture en dépend).
+  Essai à horloge simulée dans `session-cost.test.ts` (rouge avant).

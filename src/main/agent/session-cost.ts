@@ -100,13 +100,24 @@ export class SessionCost {
   /** Fin d'un tour : relu tout de suite, puis plus tard jusqu'à ce que le coût change. */
   turnEnded(): void {
     const cycle = ++this.cycle
+    // Relecture du tour d'avant pas finie (étape partie à la borne, fix17) : son écriture tardive
+    // peut tomber pendant celle-ci ; un premier changement lui est laissé, la lecture continue.
+    // Rien n'est jamais tu : chaque changement est annoncé, seule la fin de la lecture en dépend.
+    let spare = this.reading
     if (this.source) {
       this.reading = true
       this.emit({ type: 'cost-reading', active: true })
     }
     this.report()
-    const atTurnEnd = this.last
-    this.watchUntilChange(atTurnEnd)
+    let atTurnEnd = this.last
+    const changed = (): boolean => {
+      if (this.last === atTurnEnd) return false
+      if (!spare) return true
+      spare = false
+      atTurnEnd = this.last
+      return false
+    }
+    this.watchUntilChange(changed)
     const readLater = ([delay, ...rest]: readonly number[], since: number): void => {
       // Dernière relecture à heure fixe sans changement : fini quand même (rien de plus à
       // attendre), sauf si un tour plus récent a lancé la sienne.
@@ -116,14 +127,14 @@ export class SessionCost {
       }
       setTimeout(() => {
         this.report()
-        if (this.last === atTurnEnd) readLater(rest, delay)
+        if (!changed()) readLater(rest, delay)
       }, delay - since).unref()
     }
     readLater(LATE_READS_MS, 0)
   }
 
-  /** Guette la source jusqu'à ce que le coût change, ou une minute au plus. */
-  private watchUntilChange(atTurnEnd: number | undefined): void {
+  /** Guette la source jusqu'à ce que le coût change (`changed`), ou une minute au plus. */
+  private watchUntilChange(changed: () => boolean): void {
     this.stopWatching()
     const watch = this.source?.watch
     if (!watch) return
@@ -133,7 +144,7 @@ export class SessionCost {
       settle = setTimeout(() => {
         settle = undefined
         this.report()
-        if (this.last !== atTurnEnd) this.stopWatching()
+        if (changed()) this.stopWatching()
       }, WATCH_SETTLE_MS)
       settle.unref()
     })

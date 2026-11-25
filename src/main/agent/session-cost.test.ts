@@ -186,6 +186,35 @@ describe('SessionCost', () => {
   })
 
   describe('relecture d’après un tour (`cost-reading`, fiche 285)', () => {
+    it('tour fini avant l’écriture tardive du précédent : le coût du sien est lu aussi', () => {
+      // Étape partie à la borne (CI chargée, fix17) : l'écriture du tour d'avant tombe pendant la
+      // relecture du nouveau tour ; elle n'est pas son changement, celui du tour suit.
+      vi.useFakeTimers()
+      const written: { amount?: number } = {}
+      const source: CostSource = {
+        id: 'bob-db',
+        currency: 'bobcoins',
+        session: () => written.amount
+      }
+      const events: AgentEvent[] = []
+      const cost = new SessionCost(
+        source,
+        () => 's1',
+        (e) => events.push(e)
+      )
+      cost.turnEnded()
+      vi.advanceTimersByTime(1000)
+      cost.turnEnded()
+      // Écriture du tour d'avant, lue à 1,5 s du nouveau tour ; puis celle du nouveau tour.
+      written.amount = 0.0125
+      vi.advanceTimersByTime(1500)
+      written.amount = 0.025
+      vi.advanceTimersByTime(4000)
+      expect(reports(events).map((e) => e.type === 'usage-report' && e.cost.amount)).toEqual([
+        0.0125, 0.025
+      ])
+    })
+
     it('finie dès qu’un coût est relevé (ici, tout de suite)', () => {
       vi.useFakeTimers()
       const { cost, events } = setup([1, 4])
