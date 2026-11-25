@@ -23,15 +23,16 @@ import { freeModels } from '@shared/usage'
 import type { Roundtable, RoundtableEvent, RoundtableStepKind } from '@shared/roundtable'
 import { synthesisRequest, verdictRequest } from '@shared/roundtable-prompts'
 import type { ConversationManager } from '../conversations/manager'
-import { log } from '../log'
+import { agentLog, log } from '../log'
 import { lastTurnDigest, opinionInputs, rebuttalInputs } from './readings'
 import type { FolderBaseline, StepFolder } from './step-folder'
 
 /** Titre d'une demande du tour dans le fil (la question, coupée). */
 const TITLE_CHARS = 80
 /**
- * Attente, avant le départ d'une étape, de la relecture du coût du tour d'avant (agent au coût lu
- * après coup, Bob) : au-delà des relectures à heure fixe (1,5 s puis 5 s, `session-cost.ts`).
+ * Attente, avant le départ d'une étape, de la fin de la relecture du coût du tour d'avant (agent au
+ * coût lu après coup, Bob) : au-delà des relectures à heure fixe (1,5 s puis 5 s,
+ * `session-cost.ts`). Dépassée, le lecteur n'a pas fini (en échec) : départ inconnu.
  */
 export const PREVIOUS_COST_WAIT_MS = 6_000
 
@@ -42,7 +43,7 @@ export interface StepRef {
 
 /** Ce que les demandes à la conversation demandent à l'orchestrateur. */
 export interface StepsHost {
-  conversations: Pick<ConversationManager, 'prompt' | 'profileOf'> & {
+  conversations: Pick<ConversationManager, 'prompt'> & {
     state: () => ConversationsState
     view: (id: string) => Pick<ConversationView, 'snapshot' | 'transcript'>
   }
@@ -109,11 +110,12 @@ export class MotherSteps {
   /** Comparaisons de fin d'étape en cours (essais). */
   private readonly comparing = new Map<string, Promise<void>>()
   /**
-   * Conversations au coût lu après coup dont le coût du dernier tour n'est pas encore relu, avec
-   * les départs d'étape qui l'attendent. Sans cette attente, le relevé tardif du tour d'avant
-   * tomberait après le départ de l'étape et lui serait compté (fix16).
+   * Conversations dont le lecteur de coût relit encore celui du dernier tour (`cost-reading`), avec
+   * les départs d'étape qui attendent la fin de cette relecture. Sans cette attente, le relevé
+   * tardif du tour d'avant tomberait après le départ de l'étape et lui serait compté (fix16).
+   * Tenue par conversation : la relecture d'un participant ne concerne que lui.
    */
-  private readonly costPending = new Map<string, Set<() => void>>()
+  private readonly costPending = new Map<string, Set<(known: boolean) => void>>()
   /** Départ d'étape dont le coût de départ est inconnu (attente du relevé d'avant dépassée). */
   private readonly startUnknown = new Set<string>()
 
@@ -158,37 +160,45 @@ export class MotherSteps {
   }
 
   /**
-   * Tout évènement de toute conversation : fin de tour d'un agent au coût lu après coup, relecture
-   * attendue ; relevé arrivé, les départs d'étape qui l'attendaient repartent.
+   * Tout évènement de toute conversation (`id` : la sienne) : relecture du coût commencée, les
+   * départs d'étape de cette conversation l'attendent ; finie, ils repartent.
    */
   observeCost(id: string, event: AgentEvent): void {
-    if (event.type === 'turn-end' || event.type === 'turn-error') {
-      if (this.host.conversations.profileOf(id)?.costSource && !this.costPending.has(id)) {
-        this.costPending.set(id, new Set())
-      }
-    } else if (event.type === 'usage-report' && event.cost) {
-      const waiting = this.costPending.get(id)
-      this.costPending.delete(id)
-      for (const resume of waiting ?? []) resume()
+    if (event.type !== 'cost-reading') return
+    if (event.active) {
+      if (!this.costPending.has(id)) this.costPending.set(id, new Set())
+      return
     }
+    const waiting = this.costPending.get(id)
+    this.costPending.delete(id)
+    for (const resume of waiting ?? []) resume(!event.unknown)
   }
 
-  /** Coût du tour d'avant relu (ou rien à attendre) : `true` ; attente dépassée : `false`. */
-  private previousCostRead(id: string): Promise<boolean> {
+  /**
+   * Coût du tour d'avant connu (rien à relire, ou relecture finie sur un coût lu) : `true` ;
+   * relecture pas finie dans la borne, ou finie sans coût lisible : `false`.
+   */
+  private previousCostRead(id: string, label: string): Promise<boolean> {
     const waiting = this.costPending.get(id)
     if (!waiting) return Promise.resolve(true)
+    const since = this.host.now()
     return new Promise((resolve) => {
-      const done = (read: boolean) => {
+      const done = (known: boolean) => {
         clearTimeout(timer)
-        waiting.delete(onReport)
-        resolve(read)
+        waiting.delete(done)
+        // Visible au niveau Détaillé (recette avec le vrai Bob) : combien l'étape a attendu.
+        const outcome = known ? 'coût relu' : 'départ inconnu, coût non compté'
+        agentLog.line(
+          { conversation: id },
+          `${label} : relecture du coût du tour d'avant attendue ${this.host.now() - since} ms (${outcome})`
+        )
+        resolve(known)
       }
-      const onReport = () => done(true)
       const timer = setTimeout(
         () => done(false),
         this.host.previousCostWaitMs ?? PREVIOUS_COST_WAIT_MS
       )
-      waiting.add(onReport)
+      waiting.add(done)
     })
   }
 
@@ -434,7 +444,11 @@ export class MotherSteps {
     // Posé avant l'empreinte et l'appel : le plafond retient le message pendant l'appel
     // (`step-held`), et rien d'autre ne part entre-temps.
     this.sending.set(motherId, ref)
-    const ready = Promise.all([this.prepareFolder(motherId), this.previousCostRead(motherId)])
+    const label = `Tour de table ${rt.roundtableId.slice(0, 8)} : ${step}`
+    const ready = Promise.all([
+      this.prepareFolder(motherId),
+      this.previousCostRead(motherId, label)
+    ])
     void ready.then(([, costRead]) => {
       if (this.sending.get(motherId) !== ref) return
       // Tour arrêté pendant l'empreinte : la demande ne part pas.

@@ -51,6 +51,7 @@ const { values } = parseArgs({
     'journal-messages': { type: 'string' },
     'cout-bob': { type: 'boolean' },
     'cout-bob-delai': { type: 'string' },
+    'cout-bob-gratuit': { type: 'string' },
     'sans-cout': { type: 'boolean' },
     'cout-nul': { type: 'boolean' },
     'dossiers-en-plus': { type: 'boolean' },
@@ -181,6 +182,9 @@ const connection = connectMockAgent(stream, {
   ...(values['journal-messages'] ? { promptLog: values['journal-messages'] } : {}),
   ...(values['cout-bob'] ? { bobCost: true } : {}),
   ...(values['cout-bob-delai'] ? { bobCostDelayMs: Number(values['cout-bob-delai']) } : {}),
+  ...(values['cout-bob-gratuit']
+    ? { bobFreeTurns: values['cout-bob-gratuit'].split(',').map(Number) }
+    : {}),
   ...(values['sans-cout'] ? { withoutCost: true } : {}),
   ...(values['cout-nul'] ? { zeroCost: true } : {}),
   ...(values['dossiers-en-plus'] ? { additionalDirectories: true } : {}),

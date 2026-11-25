@@ -910,6 +910,90 @@ describe('coût tardif de l’échange d’avant : jamais compté dans le tour (
     expect(tourBobcoins(env, mother)).toBe(0.0125)
   }, 40_000)
 
+  /** Participant façon Bob (coût lu après coup), à sa propre base. */
+  const bobSeat =
+    (bobDb: string, args: string[] = []): EnvOptions['profiles'] =>
+    (mock) => [
+      {
+        ...mock('bob', 'avis-participant', ['--bob-db', bobDb, '--cout-bob', ...args], {
+          childModelChoice: undefined
+        }),
+        costSource: bobDbCosts(bobDb)
+      }
+    ]
+  /** Ordre des évènements utiles : fins de relecture du coût, départ de la synthèse. */
+  function timeline(env: RoundtableEnv, mother: string) {
+    const seen: string[] = []
+    env.manager.subscribe({
+      event: ({ conversationId, event }) => {
+        const who = conversationId === mother ? 'mère' : 'participant'
+        if (event.type === 'cost-reading' && !event.active) seen.push(`relecture finie (${who})`)
+        if (event.type === 'user-message' && event.from?.kind === 'roundtable')
+          seen.push(`${event.from.step} partie (${who})`)
+      }
+    })
+    return seen
+  }
+
+  it('tour d’avant sans dépense : l’étape part à la fin de la relecture, pas à la borne, et son coût compte', async () => {
+    const bobDb = join(mkdtempSync(join(tmpdir(), 'tour-bob-')), 'bob.db')
+    const seatDb = join(mkdtempSync(join(tmpdir(), 'tour-bob-')), 'bob.db')
+    const env = await roundtableEnv({
+      leadArgs: ['--bob-db', bobDb, '--cout-bob', '--cout-bob-gratuit', '2'],
+      leadProfile: { costSource: bobDbCosts(bobDb) },
+      // Borne large : partir à la borne ferait échouer l'essai (délai de 20 s).
+      previousCostWaitMs: 60_000,
+      profiles: bobSeat(seatDb)
+    })
+    envs.push(env)
+    const mother = await motherWithExchange(env)
+    await env.waitFor(() => cost(env, mother) === 0.0125, 'coût du premier échange relu', 20_000)
+    const seen = timeline(env, mother)
+    // Deuxième échange sans dépense : le coût de la conversation ne change pas.
+    await env.manager.prompt(mother, 'Et pour la médiane ?')
+    const asked = Date.now()
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, choice('bob')] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue', 20_000)
+    // Partie après la relecture de la mère (≈ 5 s), bien avant la borne.
+    expect(Date.now() - asked).toBeLessThan(20_000)
+    const sent = seen.indexOf('synthesis partie (mère)')
+    expect(seen.slice(0, sent)).toContain('relecture finie (mère)')
+    // Tenue par conversation : la relecture du participant, finie avant, n'a pas levé l'attente.
+    expect(seen.indexOf('relecture finie (participant)')).toBeLessThan(
+      seen.indexOf('relecture finie (mère)')
+    )
+    await env.waitFor(() => cost(env, mother) === 0.025, 'coût de la synthèse relu', 20_000)
+    await env.waitFor(
+      () => env.rt(mother).synthesis?.usage?.cost?.amount === 0.0125,
+      'coût de la synthèse compté',
+      20_000
+    )
+    expect(env.rt(mother).synthesis?.attempts?.[0]?.startUnknown).toBeUndefined()
+  }, 60_000)
+
+  it('relecture d’un participant en cours : l’arbitre (coût annoncé) n’attend pas', async () => {
+    const seatDb = join(mkdtempSync(join(tmpdir(), 'tour-bob-')), 'bob.db')
+    // Le participant ne dépense rien : sa relecture dure jusqu'à la relecture de 5 s.
+    const env = await roundtableEnv({
+      previousCostWaitMs: 60_000,
+      profiles: bobSeat(seatDb, ['--cout-bob-gratuit', '1'])
+    })
+    envs.push(env)
+    const mother = await motherWithExchange(env)
+    const seen = timeline(env, mother)
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, choice('bob')] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue', 20_000)
+    await env.waitFor(
+      () => seen.includes('relecture finie (participant)'),
+      'relecture du participant finie',
+      20_000
+    )
+    expect(seen.indexOf('synthesis partie (mère)')).toBeLessThan(
+      seen.indexOf('relecture finie (participant)')
+    )
+    expect(env.rt(mother).synthesis?.attempts?.[0]?.startUnknown).toBeUndefined()
+  }, 40_000)
+
   it('relecture trop tardive (attente bornée dépassée) : un total bas, jamais gonflé', async () => {
     const { env, mother } = await lateBob({ previousCostWaitMs: 200 })
     await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })

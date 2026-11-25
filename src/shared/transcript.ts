@@ -521,6 +521,7 @@ export function reduceTranscript(state: TranscriptState, event: AgentEvent): Tra
     }
     case 'panel-open':
     case 'waiting-user':
+    case 'cost-reading':
       return state
     case 'permission-request': {
       const { toolCall, requestId, options, risks } = event

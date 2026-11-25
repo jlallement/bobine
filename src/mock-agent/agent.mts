@@ -139,6 +139,8 @@ export interface MockAgentOptions {
   bobCost?: boolean
   /** `--cout-bob-delai` : délai avant d'écrire le coût d'un tour (300 ms par défaut). */
   bobCostDelayMs?: number
+  /** `--cout-bob-gratuit 2,3` : tours de la session (à partir de 1) qui ne dépensent rien. */
+  bobFreeTurns?: number[]
   /** Nom annoncé à `initialize` (`--nom`) ; « Agent factice » par défaut. */
   title?: string
   /**
@@ -368,6 +370,8 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
   const withHistory = options.withHistory !== false
   const store = new SessionStore(options.storeDir ?? DEFAULT_STORE_DIR)
   const stepCounters = new StepCounters()
+  /** Tours joués par session, pour `--cout-bob-gratuit`. */
+  const bobTurns = new Map<string, number>()
 
   const persist = (session: SessionState) => {
     if (!withHistory) return
@@ -780,6 +784,10 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
         // ensuite (veille, fin de tour + 1,5 s).
         const chargeBob = () => {
           if (!options.bobCost || !options.bobDb) return
+          // Tour sans dépense : le coût de la tâche reste le même, rien n'est écrit.
+          const played = (bobTurns.get(session.sessionId) ?? 0) + 1
+          bobTurns.set(session.sessionId, played)
+          if (options.bobFreeTurns?.includes(played)) return
           session.cost = Math.round(((session.cost ?? 0) + MOCK_TURN_COST) * 1e6) / 1e6
           const [file, cost, id] = [options.bobDb, session.cost, session.sessionId]
           setTimeout(() => writeBobTaskCostLogged(file, id, cost), options.bobCostDelayMs ?? 300)

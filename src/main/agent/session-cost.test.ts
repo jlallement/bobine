@@ -10,6 +10,10 @@ const toolEnd = {
   status: 'completed'
 } as SessionUpdate
 
+/** Relevés de coût seuls (la relecture, `cost-reading`, est vérifiée à part). */
+const reports = (events: AgentEvent[]) => events.filter((e) => e.type === 'usage-report')
+const readings = (events: AgentEvent[]) => events.filter((e) => e.type === 'cost-reading')
+
 function setup(amounts: (number | undefined)[], sessionId: string | undefined = 's1') {
   const events: AgentEvent[] = []
   let i = 0
@@ -61,9 +65,9 @@ describe('SessionCost', () => {
     vi.useFakeTimers()
     const { cost, events } = setup([1, 4])
     cost.turnEnded()
-    expect(events).toHaveLength(1)
+    expect(reports(events)).toHaveLength(1)
     vi.advanceTimersByTime(1500)
-    expect(events.at(-1)).toEqual({
+    expect(reports(events).at(-1)).toEqual({
       type: 'usage-report',
       cost: { amount: 4, currency: 'bobcoins' }
     })
@@ -74,15 +78,15 @@ describe('SessionCost', () => {
     const { cost, events } = setup([1, 1, 4, 9])
     cost.turnEnded()
     vi.advanceTimersByTime(1500)
-    expect(events).toHaveLength(1)
+    expect(reports(events)).toHaveLength(1)
     vi.advanceTimersByTime(3500)
-    expect(events.at(-1)).toEqual({
+    expect(reports(events).at(-1)).toEqual({
       type: 'usage-report',
       cost: { amount: 4, currency: 'bobcoins' }
     })
     // Trouvé : plus de relecture pour ce tour.
     vi.advanceTimersByTime(60_000)
-    expect(events).toHaveLength(2)
+    expect(reports(events)).toHaveLength(2)
   })
 
   it('no extra read once the cost has changed at 1.5 s', () => {
@@ -90,7 +94,9 @@ describe('SessionCost', () => {
     const { cost, events } = setup([1, 4, 9])
     cost.turnEnded()
     vi.advanceTimersByTime(60_000)
-    expect(events.map((e) => (e.type === 'usage-report' ? e.cost.amount : 0))).toEqual([1, 4])
+    expect(reports(events).map((e) => (e.type === 'usage-report' ? e.cost.amount : 0))).toEqual([
+      1, 4
+    ])
   })
 
   it('reads at the end of a tool, at most every 2 s', () => {
@@ -145,12 +151,12 @@ describe('SessionCost', () => {
     )
     cost.turnEnded()
     vi.advanceTimersByTime(6000)
-    expect(events).toEqual([])
+    expect(reports(events)).toEqual([])
     written.amount = 0.0125
     changed?.()
     changed?.()
     vi.advanceTimersByTime(100)
-    expect(events).toEqual([
+    expect(reports(events)).toEqual([
       { type: 'usage-report', cost: { amount: 0.0125, currency: 'bobcoins' } }
     ])
     // Coût lu : la source n'est plus guettée.
@@ -177,5 +183,67 @@ describe('SessionCost', () => {
     cost.turnEnded()
     cost.stopWatching()
     expect(stopped).toHaveBeenCalledTimes(2)
+  })
+
+  describe('relecture d’après un tour (`cost-reading`, fiche 285)', () => {
+    it('finie dès qu’un coût est relevé (ici, tout de suite)', () => {
+      vi.useFakeTimers()
+      const { cost, events } = setup([1, 4])
+      cost.turnEnded()
+      // Coût lu tout de suite (1) : celui du tour d'avant est connu, relecture finie.
+      expect(readings(events)).toEqual([
+        { type: 'cost-reading', active: true },
+        { type: 'cost-reading', active: false }
+      ])
+      vi.advanceTimersByTime(60_000)
+      expect(readings(events)).toHaveLength(2)
+    })
+
+    it('sans changement : finie après la dernière relecture à heure fixe (5 s), coût connu', () => {
+      vi.useFakeTimers()
+      const { cost, events } = setup([1])
+      cost.report()
+      cost.turnEnded()
+      expect(readings(events)).toEqual([{ type: 'cost-reading', active: true }])
+      vi.advanceTimersByTime(4999)
+      expect(readings(events)).toHaveLength(1)
+      vi.advanceTimersByTime(1)
+      expect(readings(events).at(-1)).toEqual({ type: 'cost-reading', active: false })
+    })
+
+    it('source illisible : finie à 5 s, coût inconnu', () => {
+      vi.useFakeTimers()
+      const { cost, events } = setup([undefined])
+      cost.turnEnded()
+      vi.advanceTimersByTime(5000)
+      expect(readings(events)).toEqual([
+        { type: 'cost-reading', active: true },
+        { type: 'cost-reading', active: false, unknown: true }
+      ])
+    })
+
+    it('un tour plus récent : la fin de la relecture d’avant ne compte pas pour lui', () => {
+      vi.useFakeTimers()
+      const { cost, events } = setup([1])
+      cost.report()
+      cost.turnEnded()
+      vi.advanceTimersByTime(3000)
+      cost.turnEnded()
+      // 5 s après le premier tour : sa relecture se tait, celle du second continue.
+      vi.advanceTimersByTime(2000)
+      expect(readings(events).filter((e) => !e.active)).toHaveLength(0)
+      vi.advanceTimersByTime(3000)
+      expect(readings(events).filter((e) => !e.active)).toHaveLength(1)
+    })
+
+    it('rien sans source de coût', () => {
+      const events: AgentEvent[] = []
+      new SessionCost(
+        undefined,
+        () => 's1',
+        (e) => events.push(e)
+      ).turnEnded()
+      expect(events).toEqual([])
+    })
   })
 })

@@ -1427,19 +1427,34 @@ le main n'a pas livré l'étape 1) :
   - Cause : une étape qui part avant la relecture tardive du coût de l'échange précédent (agent au
     coût lu après coup, Bob) prend pour départ le coût d'avant cette relecture ; le relevé arrivé
     pendant l'étape lui comptait aussi l'échange précédent.
-  - Correction : avant le départ d'une étape, attente bornée (6 s, `PREVIOUS_COST_WAIT_MS`, après
-    les relectures de 1,5 et 5 s) du relevé du dernier tour de la conversation quand son profil a
-    un `costSource` et qu'aucun relevé n'a suivi ce tour (`observeCost`, tous les évènements de
-    toutes les conversations). L'attente court en même temps que l'empreinte du dossier. Attente
-    dépassée : la tentative part, marquée `startUnknown`, et son coût n'est pas compté (total bas,
+  - Correction : avant le départ d'une étape, attente bornée (6 s, `PREVIOUS_COST_WAIT_MS`) de la
+    **fin de la relecture du coût** du dernier tour de la conversation. Le lecteur de coût
+    (`session-cost.ts`) l'annonce lui-même : `cost-reading` actif à la fin d'un tour (agent à
+    `costSource`), fini dès qu'un coût est relevé ou après la dernière relecture à heure fixe (5 s)
+    sans changement ; `unknown` si la dernière lecture n'a rien rendu (source illisible). Une
+    relecture remplacée par celle d'un tour plus récent ne finit pas pour lui. La marque est
+    tenue par conversation (`observeCost(id, …)`, identifiant de l'évènement). L'attente court en
+    même temps que l'empreinte du dossier ; ce qu'elle a duré va au journal Détaillé
+    (`agents.log` : « relecture du coût du tour d'avant attendue N ms »). Fin de relecture : le
+    coût connu est le coût de départ. Borne dépassée ou source illisible (le seul vrai cas
+    d'ignorance) : la tentative part marquée `startUnknown`, son coût n'est pas compté (total bas,
     coût de l'étape « non communiqué » s'il n'y a qu'elle ; son relevé borne quand même les
     tentatives suivantes). Choisi plutôt que « le premier relevé après le départ est celui
     d'avant » : Bob écrit sa dépense au fil du tour (S-B1), ce relevé pourrait déjà compter une
     part de l'étape, et l'attente donne le compte exact dans le cas ordinaire.
-  - Limite connue : un tour d'avant qui n'a rien coûté (relevé inchangé, donc jamais annoncé) fait
-    attendre l'étape suivante 6 s, puis son coût n'est pas compté.
+  - Première version refusée à la relecture : l'attente ne se levait que sur un relevé ; un tour
+    d'avant sans dépense (arrêté, en erreur, coût inchangé) faisait attendre 6 s, puis l'étape
+    était comptée pour rien. Levée désormais à la fin de la relecture, avec ou sans changement.
+  - Reste : une écriture du coût plus tardive que la relecture de 5 s (vue ensuite par la veille
+    de la source) n'est pas attendue ; elle serait comptée à l'étape partie entre-temps.
   - Essais : agent factice `--cout-bob-delai <ms>` (coût écrit 3 s après la réponse) ; tour lancé
     avant la relecture (synthèse et pied du tour à 0,0125 au lieu de 0,025, rouge avant la
     correction) et attente dépassée (borne de 200 ms : départ inconnu, rien de compté, rouge
-    avant). L'attente du coût du premier échange ajoutée aux essais de coût à fix15 est retirée ;
-    les essais où le coût tardif appartient bien à l'étape restent verts.
+    avant) ; tour d'avant sans dépense (`--cout-bob-gratuit 2`, borne d'essai de 60 s) : la
+    synthèse part à la fin de la relecture de la conversation (≈ 5 s), après la fin de celle du
+    participant façon Bob qui ne l'a pas levée, et son coût est compté (rouge sur la première
+    version : partie à la borne) ; arbitre au coût annoncé et participant façon Bob en relecture :
+    l'arbitre n'attend pas. `session-cost.test.ts` : fin sur un relevé, à 5 s sans changement,
+    `unknown` sur une source illisible, relecture remplacée. L'attente du coût du premier échange
+    ajoutée aux essais de coût à fix15 est retirée ; les essais où le coût tardif appartient bien à
+    l'étape restent verts.

@@ -37,6 +37,11 @@ export class SessionCost {
   private toolReadAt = 0
   /** Arrêt de la veille de la source après un tour, s'il y en a une. */
   private unwatch: (() => void) | undefined
+  /** Relecture d'après un tour en cours (`cost-reading`), et son numéro (la dernière compte). */
+  private reading = false
+  private cycle = 0
+  /** La dernière lecture a rendu un coût. */
+  private readable = false
 
   private readonly source: AgentProfile['costSource']
   /** Session ouverte de l'hôte, lue à chaque relecture. */
@@ -69,23 +74,46 @@ export class SessionCost {
   report(): void {
     const source = this.source
     const sessionId = this.sessionId()
-    if (!source || !sessionId) return
+    if (!source || !sessionId) {
+      this.readable = false
+      return
+    }
     const amount = source.session(sessionId)
+    this.readable = amount !== undefined
     // Une conversation qui commence n'a rien coûté : inutile d'afficher un coût nul.
     if (amount === undefined || amount === this.last || (amount === 0 && this.last === undefined)) {
       return
     }
     this.last = amount
     this.emit({ type: 'usage-report', cost: { amount, currency: source.currency } })
+    // Coût relevé : celui du tour d'avant est connu, la relecture en cours est finie.
+    this.endReading()
+  }
+
+  /** Fin de la relecture d'après un tour : le coût connu est celui de départ du tour suivant. */
+  private endReading(): void {
+    if (!this.reading) return
+    this.reading = false
+    this.emit({ type: 'cost-reading', active: false, ...(this.readable ? {} : { unknown: true }) })
   }
 
   /** Fin d'un tour : relu tout de suite, puis plus tard jusqu'à ce que le coût change. */
   turnEnded(): void {
+    const cycle = ++this.cycle
+    if (this.source) {
+      this.reading = true
+      this.emit({ type: 'cost-reading', active: true })
+    }
     this.report()
     const atTurnEnd = this.last
     this.watchUntilChange(atTurnEnd)
     const readLater = ([delay, ...rest]: readonly number[], since: number): void => {
-      if (delay === undefined) return
+      // Dernière relecture à heure fixe sans changement : fini quand même (rien de plus à
+      // attendre), sauf si un tour plus récent a lancé la sienne.
+      if (delay === undefined) {
+        if (cycle === this.cycle) this.endReading()
+        return
+      }
       setTimeout(() => {
         this.report()
         if (this.last === atTurnEnd) readLater(rest, delay)

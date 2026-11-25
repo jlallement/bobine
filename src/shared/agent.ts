@@ -554,6 +554,12 @@ export type AgentEvent =
   /** Coût cumulé de la session, obtenu hors protocole (ex. base locale de Bob). */
   | { type: 'usage-report'; cost: { amount: number; currency: string } }
   /**
+   * Relecture du coût après un tour (agent au coût lu après coup, `session-cost.ts`) : commencée
+   * (`active`), puis finie, sur un changement relevé ou après la dernière relecture à heure fixe.
+   * `unknown` : la dernière lecture n'a rien rendu (source illisible) ; le coût connu n'est pas sûr.
+   */
+  | { type: 'cost-reading'; active: boolean; unknown?: true }
+  /**
    * L'agent travaille encore après la fin du tour (fiche 255) : sous-agent en arrière-plan en
    * cours, ou réponse donnée hors tour à son rapport, jusqu'à quelques secondes de silence. À la
    * fin (`active: false`), `at` : heure de la dernière réponse hors tour ; celles du dernier tour la
