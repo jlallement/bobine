@@ -207,17 +207,28 @@ export async function searchStill(ui, label) {
   const top = (sel) =>
     ui.ev(`Math.round(document.querySelector('${sel}').getBoundingClientRect().top)`)
   await ui.waitFor(`!!${ui.$('roundtable-others')}`)
+  // Le menu s'ouvre avec une petite mise à l'échelle (animation d'ouverture) : mesuré pendant,
+  // tout est réduit de 1 à 3 % et, ancré par le bas, le bouton paraissait plus bas que le champ.
+  await ui.waitFor(
+    `document.querySelector('.roundtable-popover').getAnimations({ subtree: true }).every((a) => a.playState !== 'running')`
+  )
   const button = await top('[data-testid=roundtable-others]')
+  const height = () =>
+    ui.ev(
+      `Math.round(document.querySelector('.roundtable-popover').getBoundingClientRect().height)`
+    )
+  const menuBefore = await height()
   await ui.click(ui.$('roundtable-others'))
   await ui.waitFor(`document.activeElement === ${ui.$('roundtable-search')}`)
   const field = await top('.roundtable-search')
   await ui.type('zzz')
   await ui.waitFor(`!!${ui.$('roundtable-none')}`)
   const typed = await top('.roundtable-search')
+  const menuAfter = await height()
   check(
-    // Au pixel près (le placement du menu arrondit les demi-pixels).
-    Math.abs(button - field) <= 1 && field === typed,
-    `${label} : le champ prend la place du bouton et ne bouge pas à la frappe (${button} → ${field} → ${typed})`
+    // Au pixel près (le placement du menu arrondit les demi-pixels) ; menu de même hauteur.
+    Math.abs(button - field) <= 1 && field === typed && menuBefore === menuAfter,
+    `${label} : le champ prend la place du bouton et ne bouge pas à la frappe (${button} → ${field} → ${typed} ; menu ${menuBefore} → ${menuAfter})`
   )
 }
 
