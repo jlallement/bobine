@@ -6299,9 +6299,9 @@
       "agentTo": "{{agent}} · to {{destination}}"
     },
     "cost": {
-      "full": "≈ {{n}}× the tokens of a plain question",
-      "short": "≈ {{n}}× more tokens",
-      "tiny": "≈ {{n}}× tokens"
+      "full": "at least {{n}}× the tokens of a plain question",
+      "short": "at least {{n}}× more tokens",
+      "tiny": "≥ {{n}}× tokens"
     },
     "menu": {
       "title": "Participants · 2 to 5",

@@ -6579,9 +6579,9 @@
       "agentTo": "{{agent}} · vers {{destination}}"
     },
     "cost": {
-      "full": "≈ {{n}} fois les jetons d’une question simple",
-      "short": "≈ {{n}} fois plus de jetons",
-      "tiny": "≈ {{n}}× jetons"
+      "full": "au moins {{n}} fois les jetons d’une question simple",
+      "short": "au moins {{n}} fois plus de jetons",
+      "tiny": "≥ {{n}}× jetons"
     },
     "menu": {
       "title": "Participants · 2 à 5",

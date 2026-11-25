@@ -19,7 +19,7 @@ Here you can:
 
 Type `/roundtable` followed by your question, or click the roundtable button in the composer bar,
 then write the question. The question gets the “Roundtable” tag, and a grey line shows below it:
-“3 participants ▾ + synthesis · ≈ 4× the tokens of a plain question”. ↩ sends.
+“3 participants ▾ + synthesis · at least 4× the tokens of a plain question”. ↩ sends.
 
 Escape, the cross of the line, or ⌫ at the start of the question take you back to a plain question.
 
@@ -80,7 +80,7 @@ again). Hovering or focusing “Participant C” shows the real name.
 **Ask … to apply it** sends the conversation an ordinary message: the only time files may change.
 
 After Bobine restarts, nothing starts again on its own: the card offers **Synthesize with N
-opinions** or **Resume**.
+opinions** or **Run the stopped participant again** (**Run the N stopped participants again**).
 
 <a id="replique"></a>
 
@@ -95,7 +95,9 @@ roundtable.
 ## What a roundtable costs
 
 Much more than a plain question: each participant, then the synthesis. The line says so before
-sending, with no estimate in money. At the foot of the card, **Used** gives what the agents
+sending, with no estimate in money, and it is a minimum: a participant that explores the repository
+with its tools costs more than a question, and the synthesis rereads the whole arbitrating
+conversation (in a long conversation, hundreds of thousands of tokens). At the foot of the card, **Used** gives what the agents
 reported, per unit, without conversion.
 
 The per-conversation cost cap, when on, applies to each participant like to any conversation. A

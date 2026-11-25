@@ -2,7 +2,7 @@
  * Ligne du tour de table dans la saisie (fiche 285, maquettes `lancement-2-pret`, `premier-usage`,
  * `surcout`, `fenetre-etroite`) : sous la question, au-dessus de la barre, sur une seule ligne.
  *
- *   ⁘ 3 participants ▾  + synthèse · ≈ 4 fois les jetons d'une question simple            ✕
+ *   ⁘ 3 participants ▾  + synthèse · au moins 4 fois les jetons d'une question simple            ✕
  *
  * « N participants ▾ » ouvre le menu à cases ; son infobulle dit qui reçoit quoi et chez qui. Le
  * surcoût a une forme courte en saisie étroite (`roundtable.css`, requête de conteneur), qui garde

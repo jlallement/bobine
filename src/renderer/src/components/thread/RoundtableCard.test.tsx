@@ -523,10 +523,10 @@ describe('synthèse', () => {
       within(actions).getByTestId('roundtable-rebut').parentElement
     )
     expect(cost.querySelector('.roundtable-hint-full')?.textContent).toBe(
-      '≈ 4 fois les jetons d’une question simple'
+      'au moins 4 fois les jetons d’une question simple'
     )
     expect(cost.querySelector('.roundtable-hint-short')?.textContent).toBe(
-      '≈ 4 fois plus de jetons'
+      'au moins 4 fois plus de jetons'
     )
     fireEvent.click(within(actions).getByTestId('roundtable-rebut'))
     expect(api.rebuttal).toHaveBeenCalledWith('mother', 'rt1')

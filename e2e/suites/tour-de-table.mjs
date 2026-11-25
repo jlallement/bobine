@@ -346,7 +346,7 @@ async function nominal(scheme) {
         ])
         await ui.viewport(520)
         await affirm(ui, '285-fenetre-520', [
-          lineFits(L('roundtable.cost.tiny', { n: 5 }), '520 px : « ≈ 5× jetons », la plus courte'),
+          lineFits(L('roundtable.cost.tiny', { n: 5 }), '520 px : « ≥ 5× jetons », la plus courte'),
           probes.custom(
             '« 5 ▾ » : le compte seul à l’écran, le nom entier pour le lecteur d’écran',
             `const p = document.querySelector('[data-testid=roundtable-participants]')

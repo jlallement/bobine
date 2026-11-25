@@ -20,7 +20,7 @@ Ici, vous pouvez :
 Tapez `/roundtable` suivi de votre question, ou cliquez sur le bouton du tour de table dans la
 barre de la zone de saisie, puis écrivez la question. La question porte alors l'étiquette « Tour
 de table », et une ligne grise s'affiche dessous :
-« 3 participants ▾ + synthèse · ≈ 4 fois les jetons d'une question simple ». ↩ envoie.
+« 3 participants ▾ + synthèse · au moins 4 fois les jetons d'une question simple ». ↩ envoie.
 
 Échap, la croix de la ligne, ou ⌫ en tête de la question ramènent à une question simple.
 
@@ -84,7 +84,7 @@ rouvre). Au survol ou au focus de « Participant C », le vrai nom s'affiche.
 moment où des fichiers peuvent changer.
 
 Après un redémarrage de Bobine, rien ne repart seul : la carte propose **Synthétiser avec N avis**
-ou **Reprendre**.
+ou **Relancer le participant arrêté** (**Relancer les N participants arrêtés**).
 
 <a id="replique"></a>
 
@@ -99,7 +99,9 @@ décision. Une seule réplique par tour.
 ## Ce que coûte un tour de table
 
 Nettement plus qu'une question simple : chaque participant, puis la synthèse. La ligne le dit
-avant l'envoi, sans estimation en argent. Au pied de la carte, **Consommé** donne ce que les
+avant l'envoi, sans estimation en argent, et c'est un minimum : un participant qui explore le dépôt
+avec ses outils coûte plus qu'une question, et la synthèse relit toute la conversation qui arbitre
+(dans une longue conversation, des centaines de milliers de jetons). Au pied de la carte, **Consommé** donne ce que les
 agents ont communiqué, par unité, sans conversion.
 
 Le plafond par conversation, s'il est activé, s'applique à chaque participant comme à toute

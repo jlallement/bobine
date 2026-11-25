@@ -167,8 +167,8 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | décision (du tour de table) | decision | « Décision du tour de table » → « Roundtable decision ». |
 | réponse courte ; confiance haute / moyenne / basse | short answer ; high / medium / low confidence | Lues dans les rubriques de l'avis. |
 | format non suivi | format not followed | |
-| + synthèse · ≈ N fois les jetons d'une question simple | + synthesis · ≈ N× the tokens of a plain question | Surcoût : ce qui est multiplié, c'est la consommation de **jetons**. |
-| ≈ N fois plus de jetons | ≈ N× more tokens | Forme courte, saisie étroite : « jetons » ne disparaît jamais. |
+| + synthèse · au moins N fois les jetons d'une question simple | + synthesis · at least N× the tokens of a plain question | Surcoût : ce qui est multiplié, c'est la consommation de **jetons** ; « au moins » : participants qui explorent et synthèse qui relit toute la conversation coûtent plus (recette, G5). |
+| au moins N fois plus de jetons ; ≥ N× jetons | at least N× more tokens ; ≥ N× tokens | Formes courtes, saisie étroite : « jetons » ne disparaît jamais. |
 | Consommé ; Consommé en tout | Used ; Used in all | Pied de la carte. |
 | participant sans chiffre | participant without figures | Agent qui ne communique ni jetons ni coût. |
 | place de travaux | task slot | « Il manque 2 places de travaux » → « 2 task slots missing ». |

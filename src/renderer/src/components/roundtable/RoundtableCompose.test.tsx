@@ -120,7 +120,7 @@ describe('lancement en deux gestes', () => {
       '3 participants'
     )
     expect(screen.getByTestId('roundtable-cost-full').textContent).toBe(
-      '≈ 4 fois les jetons d’une question simple'
+      'au moins 4 fois les jetons d’une question simple'
     )
     expect(line().textContent).toContain('+ synthèse')
     expect((screen.getByTestId('send') as HTMLButtonElement).disabled).toBe(false)
@@ -206,7 +206,7 @@ describe('lancement en deux gestes', () => {
     t.type('/roundtable q')
     await waitFor(() => expect(api.options).toHaveBeenCalled())
     expect(screen.getByTestId('roundtable-cost-full').textContent).toContain('3 fois les jetons')
-    expect(screen.getByTestId('roundtable-cost-short').textContent).toBe('≈ 3 fois plus de jetons')
+    expect(screen.getByTestId('roundtable-cost-short').textContent).toBe('au moins 3 fois plus de jetons')
     // La feuille de style : sous 560 px de saisie, la forme courte remplace la longue, sans coupe.
     expect(css).toMatch(
       /@container \(max-width: 560px\) \{\s*\.roundtable-cost-full \{\s*display: none;\s*\}\s*\.roundtable-cost-short \{\s*display: inline;/

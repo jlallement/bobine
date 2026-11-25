@@ -6362,9 +6362,9 @@ export type FrResources = {
       readonly agentTo: '{{agent}} · vers {{destination}}'
     }
     readonly cost: {
-      readonly full: '≈ {{n}} fois les jetons d’une question simple'
-      readonly short: '≈ {{n}} fois plus de jetons'
-      readonly tiny: '≈ {{n}}× jetons'
+      readonly full: 'au moins {{n}} fois les jetons d’une question simple'
+      readonly short: 'au moins {{n}} fois plus de jetons'
+      readonly tiny: '≥ {{n}}× jetons'
     }
     readonly menu: {
       readonly title: 'Participants · 2 à 5'
