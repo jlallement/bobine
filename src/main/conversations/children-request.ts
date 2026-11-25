@@ -51,6 +51,8 @@ export interface ChildRequest {
   attachments?: PromptAttachment[]
   /** Modèle strict (fiche 285, décision C4) : sans repli, le lancement échoue avant l'envoi. */
   strictModel?: true
+  /** Attente des mises à jour après le réglage du modèle strict (`STRICT_SETTLE_MS` sinon ; essais). */
+  strictSettleMs?: number
   /** Place réservée d'avance avec ses sœurs (`reserve`) : le plafond n'est pas revérifié. */
   reserved?: true
   /** Juste avant l'envoi du premier message : `false` l'abandonne, sans erreur (tour arrêté). */
@@ -66,8 +68,23 @@ export interface ChildRequest {
 /** Ce qu'un lancement reprend de la demande (`launch`). */
 export type LaunchExtras = Pick<
   ChildRequest,
-  'attachments' | 'strictModel' | 'proceed' | 'launchFailed' | 'roundtableQuestion'
+  | 'attachments'
+  | 'strictModel'
+  | 'strictSettleMs'
+  | 'proceed'
+  | 'launchFailed'
+  | 'roundtableQuestion'
 >
+
+/** Ce qu'un lancement reprend de la demande, champ par champ. */
+export const launchExtras = (request: ChildRequest): LaunchExtras => ({
+  attachments: request.attachments,
+  strictModel: request.strictModel,
+  strictSettleMs: request.strictSettleMs,
+  proceed: request.proceed,
+  launchFailed: request.launchFailed,
+  roundtableQuestion: request.roundtableQuestion
+})
 
 /**
  * Avis demandé devant un dossier modifié (`readOnly`, fiche 240) : le rôle part en lecture seule

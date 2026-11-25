@@ -67,8 +67,10 @@ export async function applyModelStrict(
   host: Pick<ConversationManager, 'view' | 'setControl'>,
   conversationId: string,
   model: { controlId: string; value: string },
-  settleMs = STRICT_SETTLE_MS
+  /** Attente des `config_option_update` après le réglage ; `STRICT_SETTLE_MS` par défaut. */
+  settle?: number
 ): Promise<void> {
+  const settleMs = settle ?? STRICT_SETTLE_MS
   const control = modelSetting(host.view(conversationId).snapshot?.controls, model.controlId)
   if (control?.type !== 'select') throw new StrictModelError('model-not-applied')
   if (!control.options.some((o) => o.value === model.value)) {

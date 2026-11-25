@@ -121,6 +121,8 @@ export interface RoundtablesDeps {
   timeouts?: { stopMs?: number; relaunchMs?: number }
   /** Attente de la relecture du coût avant de libérer un agent au coût lu après coup (essais). */
   lateCostMs?: number
+  /** Attente après un réglage de modèle strict (essais ; `STRICT_SETTLE_MS` sinon). */
+  strictSettleMs?: number
   /** Aléa du tirage des lettres (`Math.random` en vrai). */
   random?: () => number
   now?: () => number
@@ -699,7 +701,10 @@ export class Roundtables implements RoundtableService {
       ...(seat.model
         ? {
             model: { controlId: seat.model.controlId, value: seat.model.value },
-            strictModel: true as const
+            strictModel: true as const,
+            ...(this.deps.strictSettleMs !== undefined
+              ? { strictSettleMs: this.deps.strictSettleMs }
+              : {})
           }
         : {}),
       ...(attachments.length ? { attachments } : {}),

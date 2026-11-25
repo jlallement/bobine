@@ -66,7 +66,8 @@ import {
   launchRole,
   type ChildRequest,
   type LaunchExtras,
-  type ParticipantWatch
+  type ParticipantWatch,
+  launchExtras
 } from './children-request'
 import { roundtableChildIds } from '../roundtable/participants'
 import { applyModelStrict } from '../roundtable/strict-model'
@@ -258,8 +259,7 @@ export class ChildConversations {
     }
     let launched = () => {}
     this.launching.set(child.id, new Promise<void>((resolve) => (launched = resolve)))
-    const { attachments, strictModel, proceed, launchFailed, roundtableQuestion } = request
-    const extras = { attachments, strictModel, proceed, launchFailed, roundtableQuestion }
+    const extras = launchExtras(request)
     void this.launch(child, text, { model: request.model, role, inPlace, ...extras }, () => {
       launched()
       this.launching.delete(child.id)
@@ -981,7 +981,8 @@ export class ChildConversations {
     try {
       if (model || role) await this.conversations.ready(childId)
       // Modèle strict (tour de table, fiche 285) : jamais de repli, le lancement échoue avant l'envoi.
-      if (model && extras.strictModel) await applyModelStrict(this.conversations, childId, model)
+      if (model && extras.strictModel)
+        await applyModelStrict(this.conversations, childId, model, extras.strictSettleMs)
       else if (model) await applyModel(this.conversations, childId, model)
       // Rôle (fiche 223) : mode natif si l'agent l'a, sinon sa consigne en tête du message.
       const found = role && this.nativeRoleMode?.(child.profileId, role, childId)

@@ -6,6 +6,7 @@
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { STRICT_SETTLE_MS } from './strict-model'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   FAST,
@@ -48,7 +49,10 @@ describe('modèle strict (décision C4)', () => {
       panel: ['--refuser-modele', 'factice-precis'],
       profiles: (mock) => [
         mock('retombe', 'avis-participant', ['--modele-retombe', 'factice-precis'])
-      ]
+      ],
+      // Le modèle qui retombe se voit au `config_option_update` qui suit le réglage : l'attente
+      // réelle du produit, ici seulement.
+      strictSettleMs: STRICT_SETTLE_MS
     })
     const result = await env.roundtables.start(mother, {
       question: QUESTION,
@@ -89,6 +93,23 @@ describe('modèle strict (décision C4)', () => {
     expect(received).toContain('answered="2" absent="3"')
     expect(received).toContain('no opinion (error, its model was not found)')
     expect(received).toContain('no opinion (error, its model could not be set)')
+  })
+})
+
+describe('modèle strict sans attente (essais)', () => {
+  it('attente du modèle strict à 0 : la branche stricte reste prise, un modèle refusé est « non appliqué »', async () => {
+    // L'environnement d'essai règle l'attente à 0 : le modèle strict doit rester strict.
+    const { env, mother } = await setup({ panel: ['--refuser-modele', 'factice-precis'] })
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'insufficient', 'un seul avis')
+    const refused = env.rt(mother).seats.find((s) => s.model?.value === 'factice-precis')
+    expect(refused).toMatchObject({
+      state: 'error',
+      error: 'model-not-applied',
+      detail: expect.stringMatching(/model not found/)
+    })
+    // Jamais de question partie avec un autre modèle que celui affiché.
+    expect(env.users(refused?.childId ?? '')).toEqual([])
   })
 })
 
