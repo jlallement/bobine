@@ -12,7 +12,7 @@ import type { RoundtableChoice } from '@shared/roundtable'
 import type { RoundtableOptions, RoundtableStartResult } from '@shared/roundtable-ipc'
 import css from '../../roundtable.css?raw'
 import { Composer } from '../composer/Composer'
-import { saveDraft } from '../../drafts'
+import { loadDraft, saveDraft } from '../../drafts'
 import { requestRoundtableMenu } from './roundtable-menu-request'
 import { options } from './test-fixtures'
 
@@ -101,7 +101,7 @@ function setup(
   const input = screen.getByTestId('composer-input') as HTMLTextAreaElement
   const type = (value: string) => fireEvent.change(input, { target: { value } })
   const enter = () => fireEvent.keyDown(input, { key: 'Enter' })
-  return { ...props, setParticipants, input, type, enter, view }
+  return { ...props, props, setParticipants, input, type, enter, view }
 }
 
 const line = () => screen.getByTestId('roundtable-line')
@@ -410,6 +410,44 @@ describe('relecture : clavier, focus, envoi lent, brouillon, Discussion', () => 
     const again = setup()
     expect(again.input.value).toBe('À reprendre')
     expect(screen.getByTestId('roundtable-tag')).toBeTruthy()
+  })
+
+  it('N3 : brouillon `/roundtable …` en Discussion : le préfixe reste dans le texte', () => {
+    saveDraft('conv-1', { text: '/roundtable Garder', attachments: [] })
+    const t = setup([deep, b], { discussion: true })
+    expect(t.input.value).toBe('/roundtable Garder')
+    expect(screen.queryByTestId('roundtable-tag')).toBeNull()
+    expect(loadDraft('conv-1').text).toBe('/roundtable Garder')
+  })
+
+  it('N3 : l’agent a sa commande `/roundtable` : son brouillon reste à lui, préfixe compris', () => {
+    saveDraft('conv-1', { text: '/roundtable Garder', attachments: [] })
+    const t = setup([deep, b], {
+      snapshot: { ...snapshot, commands: [{ name: 'roundtable', description: 'de l’agent' }] }
+    })
+    expect(t.input.value).toBe('/roundtable Garder')
+    expect(screen.queryByTestId('roundtable-tag')).toBeNull()
+    expect(loadDraft('conv-1').text).toBe('/roundtable Garder')
+  })
+
+  it('N3 : réglages du tour pas encore lus au montage : le brouillon est repris dès qu’ils le sont', () => {
+    saveDraft('conv-1', { text: '/roundtable Reprendre', attachments: [] })
+    const t = setup([deep, b], { roundtable: undefined })
+    expect(t.input.value).toBe('/roundtable Reprendre')
+    t.view.rerender(
+      <Tooltip.Provider>
+        <Composer
+          snapshot={snapshot}
+          settings={null}
+          draftKey="conv-1"
+          roundtable={{ participants: [deep, b], setParticipants: vi.fn() }}
+          {...t.props}
+        />
+      </Tooltip.Provider>
+    )
+    expect(t.input.value).toBe('Reprendre')
+    expect(screen.getByTestId('roundtable-tag')).toBeTruthy()
+    expect(loadDraft('conv-1').text).toBe('/roundtable Reprendre')
   })
 
   it('lectures d’options concurrentes : seule la dernière réponse compte', async () => {

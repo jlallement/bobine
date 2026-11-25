@@ -57,7 +57,6 @@ export function useRoundtableCompose({
   config,
   enabled,
   focus,
-  startActive = false,
   questionChars = 0
 }: {
   conversationId: string | undefined
@@ -65,13 +64,11 @@ export function useRoundtableCompose({
   /** La commande est à l'app (ni l'agent ni l'utilisateur n'ont de `/roundtable`), hors Discussion. */
   enabled: boolean
   focus: () => void
-  /** Le brouillon de la conversation était un tour de table (`/roundtable …`) : il le reste. */
-  startActive?: boolean
   /** Longueur de la question tapée : au-delà de la borne, la ligne le dit avant l'envoi. */
   questionChars?: number
 }) {
   const usable = enabled && !!config && !!conversationId
-  const [active, setActive] = useState(startActive && usable)
+  const [active, setActive] = useState(false)
   const [menuOpen, setMenuOpenState] = useState(false)
   // Fermeture du menu : un second Échap tout de suite après ne retire pas le mode (B10).
   const closedAt = useRef(0)
@@ -260,7 +257,7 @@ export function useComposerRoundtable(
     /** Le texte de la saisie, pour ne vider que la question partie (revue QA). */
     text: string
     /** Brouillon : repris en tour de table, et gardé sous la forme `/roundtable …`. */
-    draft: { startActive: boolean; setPrefix: (prefix: string) => void }
+    draft: { startActive: boolean; setPrefix: (prefix: string) => void; adopt: () => void }
   }
 ) {
   const rt = useRoundtableCompose({
@@ -268,15 +265,26 @@ export function useComposerRoundtable(
     config: props.roundtable,
     enabled: !props.discussion && !!appCommandOf('/roundtable', c.agentCommands, c.ownCommands),
     focus: c.focusInput,
-    startActive: c.draft.startActive,
     questionChars: c.text.trim().length
   })
   const text = useRef(c.text)
   useLayoutEffect(() => {
     text.current = c.text
   })
-  const { setPrefix } = c.draft
-  useEffect(() => setPrefix(rt.active ? '/roundtable ' : ''), [rt.active, setPrefix])
+  const { setPrefix, adopt, startActive } = c.draft
+  // Brouillon `/roundtable …` : repris en tour de table dès que celui-ci est utilisable ici (options
+  // et commandes connues) ; sinon le texte garde son préfixe (N3).
+  const pending = useRef(startActive)
+  const { usable, enter } = rt
+  useLayoutEffect(() => {
+    if (!pending.current || !usable) return
+    pending.current = false
+    adopt()
+    enter()
+  }, [usable, adopt, enter])
+  useEffect(() => {
+    if (!pending.current) setPrefix(rt.active ? '/roundtable ' : '')
+  }, [rt.active, setPrefix])
   return {
     ...rt,
     /** Texte tapé : `/roundtable ` passe en tour de table, la suite reste comme question. */
