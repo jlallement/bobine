@@ -27,6 +27,7 @@ export async function lifecycle(scheme) {
   await stopAndSidebar(scheme)
   await heldSynthesis(scheme)
   await twoTours(scheme)
+  await arbiterWrites(scheme)
 }
 
 /** Participants du tour dans la barre latérale (icône du tour). */
@@ -285,6 +286,58 @@ async function twoTours(scheme) {
       'synthese-tour-de-table',
       env(workspace, {
         MOCK_AGENT_SCENARIO_BY_MODEL: `${BY_MODEL()},factice-precis=synthese-lettres-seules`
+      })
+    )
+  } finally {
+    rmSync(workspace, { recursive: true, force: true })
+  }
+}
+
+/**
+ * Recette du 2026-11-25, S1 : la synthèse se fait en lecture seule ; un agent qui écrit quand même
+ * (`arbitre-ecrit`, comme OpenCode par défaut) est signalé sous l'étiquette, fichiers compris. Le
+ * menu désactive le modèle de la conversation, qui arbitre.
+ */
+async function arbiterWrites(scheme) {
+  const workspace = repo()
+  try {
+    await withApp(
+      scheme,
+      async (ui) => {
+        await ui.ready()
+        await ui.closePanel()
+        await arbiterModel(ui)
+        await ui.ev(`${ui.$('composer-input')}.focus()`)
+        await ui.type('/roundtable Qui écrit ?')
+        await ui.waitFor(`!!${ui.$('roundtable-line')}`)
+        await ui.click(ui.$('roundtable-participants'))
+        await ui.waitFor(`document.querySelectorAll('[data-testid=roundtable-option]').length > 0`)
+        const arbiterRow = `[...document.querySelectorAll('[data-testid=roundtable-option]')].find((o) => o.title === ${JSON.stringify(L('roundtable.menu.arbiter'))})`
+        await affirm(ui, '285-menu-arbitre', [
+          probes.custom(
+            'le modèle de la conversation : désactivé, avec sa raison',
+            `const o = ${arbiterRow}
+            return { ok: !!o && o.getAttribute('aria-disabled') === 'true' && o.textContent.includes(${JSON.stringify(await ui.ev(`${ui.$('model-chip')}.textContent.trim()`))}), detail: o?.textContent }`
+          )
+        ])
+        await ui.key('Escape')
+        await choose(ui, ['Alpha', 'Beta'])
+        await ui.ev(`${ui.$('composer-input')}.focus()`)
+        await ui.enter()
+        await ui.waitFor(`!!${ui.$('roundtable-step-changed')}`, 60_000)
+        const warning = await ui.ev(`${ui.$('roundtable-step-changed')}.textContent`)
+        check(
+          warning.includes('notes-arbitre.md'),
+          `synthèse qui écrit : l’avertissement nomme le fichier (${warning})`
+        )
+        await ui.ev(`${ui.$('roundtable-answer-label')}.scrollIntoView({ block: 'start' }), true`)
+        await affirm(ui, '285-synthese-a-ecrit', [probes.threadFits()])
+      },
+      undefined,
+      'synthese-tour-de-table',
+      env(workspace, {
+        MOCK_AGENT_SCENARIO_BY_MODEL: `${BY_MODEL()},factice-precis=arbitre-ecrit`,
+        MOCK_AGENT_WRITES: 'silent'
       })
     )
   } finally {
