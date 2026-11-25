@@ -446,11 +446,11 @@ describe('synthèse', () => {
 
   it('la demande de l’app devient une ligne ; la réponse porte l’étiquette et les vrais noms', () => {
     show(synthesized(done(), SYNTHESIS))
-    const request = screen.getByTestId('roundtable-request')
-    expect(request.textContent).toContain('Synthèse demandée · 3 avis')
+    // Une seule ligne d'étiquette une fois la synthèse là (simplification 4).
+    expect(screen.queryByTestId('roundtable-request')).toBeNull()
     expect(document.body.textContent).not.toContain('Synthesize the roundtable')
     expect(screen.getByTestId('roundtable-answer-label').textContent).toBe(
-      'Synthèse du tour de table · GPT-6.1 Sol'
+      'Synthèse du tour de table · GPT-6.1 Sol · 3 avis'
     )
     const letters = screen.getAllByTestId('roundtable-letter')
     expect(letters).toHaveLength(1)
@@ -834,12 +834,11 @@ describe('réplique et décision', () => {
     expect(rows[0]?.textContent).toContain('D’accord pour pg-boss à ce volume.')
     // Plus de « Faire réagir » : une seule réplique.
     expect(screen.queryByTestId('roundtable-rebut')).toBeNull()
-    const requests = screen.getAllByTestId('roundtable-request')
-    expect(requests[1]?.textContent).toContain('Décision demandée · 3 répliques')
+    expect(screen.queryByTestId('roundtable-request')).toBeNull()
     const labels = screen.getAllByTestId('roundtable-answer-label').map((l) => l.textContent)
     expect(labels).toEqual([
-      'Synthèse du tour de table · GPT-6.1 Sol',
-      'Décision du tour de table · GPT-6.1 Sol'
+      'Synthèse du tour de table · GPT-6.1 Sol · 3 avis',
+      'Décision du tour de table · GPT-6.1 Sol · 3 répliques'
     ])
     expect(screen.getAllByTestId('roundtable-apply')).toHaveLength(1)
     // Lettre de la décision : C (Agent B), sa propre table.
@@ -1065,7 +1064,7 @@ describe('contrat du moteur (fix2)', () => {
     ])
     show(synthesized(rt, SYNTHESIS))
     expect(screen.getByTestId('roundtable-answer-label').textContent).toBe(
-      'Synthèse du tour de table · Tidepool Alpha Free'
+      'Synthèse du tour de table · Tidepool Alpha Free · 3 avis'
     )
   })
 
@@ -1102,7 +1101,7 @@ describe('contrat du moteur (fix2)', () => {
     ])
     show(synthesized(rt, SYNTHESIS))
     expect(screen.getByTestId('roundtable-answer-label').textContent).toBe(
-      'Synthèse du tour de table · Kimi K3'
+      'Synthèse du tour de table · Kimi K3 · 3 avis'
     )
   })
 })

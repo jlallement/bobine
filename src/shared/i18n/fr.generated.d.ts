@@ -6497,6 +6497,9 @@ export type FrResources = {
       readonly applyDraft: 'Applique ta recommandation du tour de table.'
       readonly changed: '{{agent}} a modifié des fichiers pendant la synthèse.'
       readonly changedFiles: '{{agent}} a modifié des fichiers pendant la synthèse : {{files}}'
+      readonly labelWith_one: 'Synthèse du tour de table · {{model}} · {{count}} avis'
+      readonly labelWith_many: 'Synthèse du tour de table · {{model}} · {{count}} avis'
+      readonly labelWith_other: 'Synthèse du tour de table · {{model}} · {{count}} avis'
     }
     readonly rebuttal: {
       readonly action: 'Faire réagir les participants'
@@ -6521,6 +6524,9 @@ export type FrResources = {
       readonly again: 'Demander la décision'
       readonly changed: '{{agent}} a modifié des fichiers pendant la décision.'
       readonly changedFiles: '{{agent}} a modifié des fichiers pendant la décision : {{files}}'
+      readonly labelWith_one: 'Décision du tour de table · {{model}} · {{count}} réplique'
+      readonly labelWith_many: 'Décision du tour de table · {{model}} · {{count}} répliques'
+      readonly labelWith_other: 'Décision du tour de table · {{model}} · {{count}} répliques'
     }
     readonly error: {
       readonly running: 'Un tour de table est déjà en cours dans cette conversation : attendez sa synthèse.'

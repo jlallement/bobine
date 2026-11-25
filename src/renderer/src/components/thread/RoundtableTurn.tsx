@@ -59,6 +59,9 @@ function RoundtableRequestLine({
   const { t } = useTranslation()
   const step = turn.step === 'synthesis' ? group?.item.synthesis : group?.item.verdict
   const count = step?.count ?? 0
+  // La réponse est là : une seule ligne, son étiquette, dit aussi le nombre d'avis
+  // (simplification 4). Avant elle, « Synthèse demandée · N avis » dit que c'est parti.
+  if (turn.step !== 'rebuttal' && turn.answers.length > 0) return null
   return (
     <div
       className="subtask-launch roundtable-request"
@@ -268,8 +271,8 @@ function RoundtableAnswerFrame({
         <div className="roundtable-answer-label" data-testid="roundtable-answer-label">
           <RoundtableIcon size={14} />
           {turn.step === 'synthesis'
-            ? t('roundtable.synthesis.label', { model })
-            : t('roundtable.decision.label', { model })}
+            ? t('roundtable.synthesis.labelWith', { model, count: step?.count ?? 0 })
+            : t('roundtable.decision.labelWith', { model, count: step?.count ?? 0 })}
         </div>
       )}
       {first && step?.changedFolder && (

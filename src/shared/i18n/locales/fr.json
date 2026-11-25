@@ -6713,7 +6713,10 @@
       "apply": "Demander à {{agent}} de l’appliquer",
       "applyDraft": "Applique ta recommandation du tour de table.",
       "changed": "{{agent}} a modifié des fichiers pendant la synthèse.",
-      "changedFiles": "{{agent}} a modifié des fichiers pendant la synthèse : {{files}}"
+      "changedFiles": "{{agent}} a modifié des fichiers pendant la synthèse : {{files}}",
+      "labelWith_one": "Synthèse du tour de table · {{model}} · {{count}} avis",
+      "labelWith_many": "Synthèse du tour de table · {{model}} · {{count}} avis",
+      "labelWith_other": "Synthèse du tour de table · {{model}} · {{count}} avis"
     },
     "rebuttal": {
       "action": "Faire réagir les participants",
@@ -6737,7 +6740,10 @@
       "requested_other": "Décision demandée · {{count}} répliques",
       "again": "Demander la décision",
       "changed": "{{agent}} a modifié des fichiers pendant la décision.",
-      "changedFiles": "{{agent}} a modifié des fichiers pendant la décision : {{files}}"
+      "changedFiles": "{{agent}} a modifié des fichiers pendant la décision : {{files}}",
+      "labelWith_one": "Décision du tour de table · {{model}} · {{count}} réplique",
+      "labelWith_many": "Décision du tour de table · {{model}} · {{count}} répliques",
+      "labelWith_other": "Décision du tour de table · {{model}} · {{count}} répliques"
     },
     "error": {
       "running": "Un tour de table est déjà en cours dans cette conversation : attendez sa synthèse.",
