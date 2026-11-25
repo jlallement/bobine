@@ -216,19 +216,28 @@ export class MotherSteps {
     this.answering.delete(motherId)
     this.compareFolder(motherId, ref)
     const { roundtableId, step } = ref
+    // Ce que la tentative a consommé, même en échec ou arrêtée (contre-recette N3) ; un coût
+    // communiqué après coup lui revient aussi (`costWatch`).
+    const spent = lastTurnDigest(this.host.conversations.view(motherId).transcript.usage)
+    const usage = spent ? { usage: spent } : {}
     if (event.type === 'turn-error') {
-      this.host.apply(motherId, roundtableId, { type: 'step-failed', step, detail: event.message })
+      this.host.apply(motherId, roundtableId, {
+        type: 'step-failed',
+        step,
+        detail: event.message,
+        ...usage
+      })
+      this.costWatch.set(motherId, ref)
     } else if (event.stopReason === 'cancelled') {
       // Arrêtée par l'utilisateur ou par le plafond : à reprendre d'un geste (« Synthétiser… »).
-      this.host.apply(motherId, roundtableId, { type: 'step-failed', step })
+      this.host.apply(motherId, roundtableId, { type: 'step-failed', step, ...usage })
+      this.costWatch.set(motherId, ref)
     } else {
-      const usage = lastTurnDigest(this.host.conversations.view(motherId).transcript.usage)
-      const at = this.host.now()
       this.host.apply(motherId, roundtableId, {
         type: 'step-answered',
         step,
-        at,
-        ...(usage ? { usage } : {})
+        at: this.host.now(),
+        ...usage
       })
       this.costWatch.set(motherId, ref)
     }

@@ -110,6 +110,27 @@ const letters = (text: string, outcome: 'answered' | 'absent') =>
 const isStep = (text: string) =>
   /<bobine_roundtable_[0-9a-f]+ step="(?:synthesis|verdict)"/.test(text)
 
+/**
+ * Erreur serveur de Bob 2.1.0 à une demande de synthèse (contre-recette du 2026-11-25, N3) :
+ * `-32603` « Internal error », cause `ProviderError` « Request Failed », « The system encountered
+ * an unexpected error during processing. Try your request again. ». Une seule fois par session.
+ * Forme de `data.details` reprise des refus de Bob relevés (`ApiKeyError: {…}`, fiche 200).
+ */
+const SERVER_ERROR_ONCE: Step = {
+  kind: 'flaky',
+  failures: 1,
+  fail: {
+    kind: 'fail',
+    code: -32603,
+    message: 'Internal error',
+    data: {
+      details:
+        'ProviderError: {"title":"Request Failed","description":"The system encountered an unexpected error during processing. Try your request again."}'
+    }
+  },
+  then: []
+}
+
 function arbiter(text: string, loose = false): Step[] {
   const step = /<bobine_roundtable_[0-9a-f]+ step="(synthesis|verdict)"/.exec(text)?.[1]
   if (!step) return [{ kind: 'text', text: 'Réponse ordinaire, hors tour de table.' }]
@@ -309,6 +330,16 @@ export const roundtableScenarios: Record<string, Scenario> = {
     description:
       'Comme `synthese-tour-de-table`, mais la synthèse cite la première lettre seule (« A ») et les autres groupées (« Participants B et C »), comme les vrais modèles (recette du 2026-11-25)',
     steps: [{ kind: 'computed', build: ({ text }) => arbiter(text, true) }]
+  },
+  'synthese-erreur-serveur': {
+    description:
+      'Conversation qui arbitre, comme Bob 2.1.0 (contre-recette du 2026-11-25) : la première demande de synthèse ou de décision de la session échoue en `-32603` « Internal error » (`ProviderError` « Request Failed ») ; la suivante répond comme `synthese-tour-de-table`. Avec `--cout-bob`, la demande en échec est comptée aussi',
+    steps: [
+      {
+        kind: 'computed',
+        build: ({ text }) => (isStep(text) ? [SERVER_ERROR_ONCE, ...arbiter(text)] : arbiter(text))
+      }
+    ]
   },
   'arbitre-ecrit': {
     description:

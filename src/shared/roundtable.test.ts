@@ -985,3 +985,51 @@ describe('tour de table : l’arbitre n’est jamais participant (décision du t
     ).toBeUndefined()
   })
 })
+
+describe('tour de table : consommation de toutes les tentatives d’une étape (contre-recette N3)', () => {
+  it('échec, arrêt puis réponse : tout compte ; un coût tardif ne va pas à la tentative en route', () => {
+    const answered = (rt: Roundtable) =>
+      apply(
+        rt,
+        ...rt.seats.map((s, i): RoundtableEvent => ({
+          type: 'seat-launched',
+          letter: s.letter,
+          childId: `c${i}`,
+          readOnly: 'enforced',
+          at: 1
+        })),
+        ...rt.seats.map((s): RoundtableEvent => ({
+          type: 'seat-working',
+          letter: s.letter,
+          at: 2
+        })),
+        ...rt.seats.map((s): RoundtableEvent => ({
+          type: 'seat-answered',
+          letter: s.letter,
+          at: 3
+        }))
+      )
+    const cost = (amount: number) => ({ cost: { amount, currency: 'bobcoins' }, turns: 1 })
+    let rt = answered(roundtable())
+    expect(rt.phase).toBe('synthesizing')
+    rt = apply(
+      rt,
+      { type: 'step-sent', step: 'synthesis', at: 4 },
+      { type: 'step-failed', step: 'synthesis', detail: 'Internal error', usage: { turns: 1 } },
+      // Coût écrit par l'agent après son échec.
+      { type: 'step-usage', step: 'synthesis', usage: cost(0.0441) },
+      { type: 'synthesize', at: 5 },
+      // Coût tardif arrivé pendant la nouvelle tentative : ignoré (déjà compté).
+      { type: 'step-usage', step: 'synthesis', usage: cost(1) },
+      { type: 'step-sent', step: 'synthesis', at: 6 },
+      { type: 'step-answered', step: 'synthesis', at: 7, usage: { total: 10, turns: 1 } },
+      { type: 'step-usage', step: 'synthesis', usage: { ...cost(0.1574), total: 10 } }
+    )
+    expect(rt.phase).toBe('synthesized')
+    expect(rt.synthesis?.usage).toEqual({
+      turns: 2,
+      total: 10,
+      cost: { amount: 0.2015, currency: 'bobcoins' }
+    })
+  })
+})

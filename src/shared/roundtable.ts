@@ -189,8 +189,13 @@ export interface RoundtableStep {
   answeredAt?: number
   /** Agent et modèle de la conversation au moment où la demande est partie (étiquette). */
   by?: { profileId: string; label: string; model?: string }
-  /** Ce qu'a consommé ce tour de l'agent, tel qu'il l'a communiqué. */
+  /**
+   * Ce qu'a consommé l'étape, tel que l'agent l'a communiqué : **toutes** ses tentatives, celles
+   * en erreur ou arrêtées comprises (contre-recette N3).
+   */
   usage?: UsageDigest
+  /** Consommation des tentatives d'avant la tentative en cours (interne au réducteur). */
+  spent?: UsageDigest
   detail?: string
   /**
    * Le dossier a changé pendant le tour de l'étape (agent qui écrit sans demander, fiche 285, S1) :
@@ -276,7 +281,7 @@ export type RoundtableEvent =
     }
   | { type: 'step-held'; step: RoundtableStepKind }
   | { type: 'step-answered'; step: RoundtableStepKind; usage?: UsageDigest; at: number }
-  | { type: 'step-failed'; step: RoundtableStepKind; detail?: string }
+  | { type: 'step-failed'; step: RoundtableStepKind; detail?: string; usage?: UsageDigest }
   /** Coût communiqué après coup (Bob) : remplace la consommation du tour de l'agent. */
   | { type: 'step-usage'; step: RoundtableStepKind; usage: UsageDigest }
   /** Le dossier a changé pendant le tour de l'étape (constaté après sa réponse). */
@@ -438,6 +443,36 @@ const stepStopped = (step: RoundtableStep | undefined): RoundtableStep | undefin
 const withStep = (rt: Roundtable, kind: RoundtableStepKind, step: RoundtableStep): Roundtable =>
   kind === 'synthesis' ? { ...rt, synthesis: step } : { ...rt, verdict: step }
 
+const round6 = (n: number) => Math.round(n * 1e6) / 1e6
+
+const plus = (a: number | undefined, b: number | undefined) =>
+  a === undefined && b === undefined ? undefined : (a ?? 0) + (b ?? 0)
+
+/** Somme de deux consommations (jetons ; coût s'il est dans la même unité, sinon le premier). */
+export function addDigests(a: UsageDigest | undefined, b: UsageDigest | undefined) {
+  if (!a || !b) return a ?? b
+  const sum: UsageDigest = {}
+  for (const key of ['input', 'output', 'total', 'turns'] as const) {
+    const value = plus(a[key], b[key])
+    if (value !== undefined) sum[key] = value
+  }
+  const cost =
+    a.cost && b.cost && a.cost.currency === b.cost.currency
+      ? { amount: round6(a.cost.amount + b.cost.amount), currency: a.cost.currency }
+      : (a.cost ?? b.cost)
+  return { ...sum, ...(cost ? { cost } : {}) }
+}
+
+/** Consommation de la tentative en cours : ajoutée à celles d'avant. */
+const withAttempt = (step: RoundtableStep, usage: UsageDigest | undefined): RoundtableStep => {
+  const total = addDigests(step.spent, usage)
+  return total ? { ...step, usage: total } : step
+}
+
+/** Nouvelle tentative d'une étape : ce que les précédentes ont consommé reste au total. */
+const carried = (step: RoundtableStep | undefined) =>
+  step?.usage ? { usage: step.usage, spent: step.usage } : {}
+
 /** Synthèse demandée avec les avis présents (les participants encore au travail sont arrêtés). */
 function requestSynthesis(rt: Roundtable, at: number, early: boolean): Roundtable {
   const seats = early ? rt.seats.map(stopIfRunning('early-synthesis', at)) : rt.seats
@@ -448,6 +483,7 @@ function requestSynthesis(rt: Roundtable, at: number, early: boolean): Roundtabl
     seats,
     phase: 'synthesizing',
     synthesis: {
+      ...carried(rt.synthesis),
       state: 'waiting',
       count,
       requestedAt: at,
@@ -465,6 +501,7 @@ function requestVerdict(rt: Roundtable, at: number, early: boolean): Roundtable 
     seats,
     phase: 'deciding',
     verdict: {
+      ...carried(rt.verdict),
       state: 'waiting',
       count,
       requestedAt: at,
@@ -527,7 +564,8 @@ function reduceStep(
     case 'step-held':
       return running ? withStep(rt, key, { ...step, state: 'held' }) : rt
     case 'step-usage':
-      return withStep(rt, key, { ...step, usage: event.usage })
+      // Coût communiqué après coup pour la tentative finie (pas pour une nouvelle en route).
+      return running ? rt : withStep(rt, key, withAttempt(step, event.usage))
     case 'step-changed-folder': {
       // Constaté à la fin du tour : l'étape a répondu (ou échoué) entre-temps.
       if (step.state === 'waiting') return rt
@@ -541,19 +579,23 @@ function reduceStep(
       })
     }
     case 'step-failed':
-      if (!running) return rt
+      // Tour arrêté entre-temps : sa consommation compte encore.
+      if (!running) return event.usage ? withStep(rt, key, withAttempt(step, event.usage)) : rt
       return {
-        ...withStep(rt, key, { ...step, state: 'failed', ...bounded(event.detail) }),
+        ...withStep(rt, key, {
+          ...withAttempt(step, event.usage),
+          state: 'failed',
+          ...bounded(event.detail)
+        }),
         phase: 'interrupted',
         interruptedFrom: key === 'synthesis' ? 'synthesizing' : 'deciding'
       }
     case 'step-answered': {
       if (!running) return rt
       const answered: RoundtableStep = {
-        ...step,
+        ...withAttempt(step, event.usage),
         state: 'answered',
-        answeredAt: event.at,
-        ...(event.usage ? { usage: event.usage } : {})
+        answeredAt: event.at
       }
       return {
         ...withStep(rt, key, answered),
@@ -886,8 +928,6 @@ export interface RoundtableTotal {
   /** Participants qui n'ont rien communiqué (« 1 participant sans chiffre »). */
   silent: number
 }
-
-const round6 = (n: number) => Math.round(n * 1e6) / 1e6
 
 const digestTokens = (d: UsageDigest): number | undefined =>
   d.total ??

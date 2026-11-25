@@ -761,6 +761,14 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
               verbose: session.verbose
             })
         }
+        // Coût comme Bob (`--cout-bob`) : cumulé par tâche, écrit après la réponse ; l'app le relit
+        // ensuite (veille, fin de tour + 1,5 s).
+        const chargeBob = () => {
+          if (!options.bobCost || !options.bobDb) return
+          session.cost = Math.round(((session.cost ?? 0) + MOCK_TURN_COST) * 1e6) / 1e6
+          const [file, cost, id] = [options.bobDb, session.cost, session.sessionId]
+          setTimeout(() => writeBobTaskCostLogged(file, id, cost), 300)
+        }
         // Limite d'étapes de la session (fiche 209) : refus sans rien envoyer, comme Bob 2.0.9.
         let stopReason = chosen.stopReason ?? 'end_turn'
         if (stepLimit) {
@@ -770,15 +778,16 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
           stepCounters.set(stepLimit, session, played.used)
           if (played.turn === 'refused') return { stopReason: 'max_turn_requests' }
           if (played.turn === 'stopped') stopReason = 'max_turn_requests'
-        } else await playSteps(chosen.steps, ctx)
+        } else {
+          await playSteps(chosen.steps, ctx).catch((error: unknown) => {
+            // Bob compte aussi une demande en échec (contre-recette du 2026-11-25, N3).
+            chargeBob()
+            throw error
+          })
+        }
         if (options.turnLock)
           await waitWhileLocked(options.turnLock, session.sessionId, turn.signal)
-        if (options.bobCost && options.bobDb) {
-          session.cost = Math.round(((session.cost ?? 0) + MOCK_TURN_COST) * 1e6) / 1e6
-          const [file, cost, id] = [options.bobDb, session.cost, session.sessionId]
-          // Bob écrit son coût après sa réponse : l'app le relit ensuite (veille, fin de tour + 1,5 s).
-          setTimeout(() => writeBobTaskCostLogged(file, id, cost), 300)
-        }
+        chargeBob()
         if (options.withUsage === false || options.bobCost) return { stopReason }
         // Tour qui ne chiffre rien (OpenCode 2.3.0 après `/compact`, fiche 257) : ni `usage_update`
         // ni `usage`.
