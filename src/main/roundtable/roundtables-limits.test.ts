@@ -262,9 +262,12 @@ describe('quorum, arrêts et relance (lots 2 et 4)', () => {
 describe('courses (revue de code)', () => {
   it('« Arrêter » puis « Relancer » pendant le lancement : la question ne part qu’une fois', async () => {
     const lock = lockFile()
+    // L'agent de la place reste « démarre » tant que ce verrou existe : arrêt et relance ont lieu
+    // pendant son lancement par construction, pas parce qu'il est lent.
+    const startLock = lockFile()
     const { env, mother } = await setup({
       profiles: (mock) => [
-        mock('demarre', 'avis-participant', ['--demarrage-lent', '600']),
+        mock('demarre', 'avis-participant', ['--verrou-demarrage', startLock]),
         mock('lent', 'avis-participant', ['--verrou-fin-de-tour', lock])
       ]
     })
@@ -280,7 +283,10 @@ describe('courses (revue de code)', () => {
     const seat = () => env.rt(mother).seats.find((s) => s.profileId === 'demarre')
     expect(seat()?.state).toBe('waiting')
     await env.roundtables.stop(mother, id, seat()?.letter)
-    await env.roundtables.relaunch(mother, id, seat()?.letter ?? 'A')
+    // « Relancer » attend la fin du premier lancement, tenu par le verrou.
+    const relaunched = env.roundtables.relaunch(mother, id, seat()?.letter ?? 'A')
+    rmSync(startLock)
+    await relaunched
     await env.waitFor(() => seat()?.state === 'answered', 'participant relancé, a répondu')
     rmSync(lock)
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue', 20_000)
@@ -388,7 +394,7 @@ describe('lecture seule (décision C3)', () => {
     expect(env.rt(mother).folderChanged?.collecting).toEqual(['note-participant.md'])
   })
 
-  it('deux participants qui lisent par le shell, l’un écrit : chacun dont le tour couvre l’écriture la voit', async () => {
+  it('deux participants qui lancent une commande, le dossier change pendant leurs deux tours : chacun est désigné', async () => {
     const lock = lockFile()
     const { env, mother } = await setup({
       profiles: (mock) => [
@@ -397,7 +403,7 @@ describe('lecture seule (décision C3)', () => {
           'avis-participant',
           [
             '--scenario-par-modele',
-            'factice-rapide=participant-lit-shell,factice-precis=participant-lit-ecrit',
+            'factice-rapide=participant-lit-shell,factice-precis=participant-lit-shell',
             '--verrou-fin-de-tour',
             lock
           ],
@@ -421,6 +427,8 @@ describe('lecture seule (décision C3)', () => {
           ),
       'deux participants au travail, après leur lecture'
     )
+    // L'écriture tombe pendant les deux tours, par construction (pas selon qui démarre le premier).
+    writeFileSync(join(env.repo, 'note-participant.md'), 'écrit pendant les deux tours\n')
     rmSync(lock)
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
     expect(env.rt(mother).seats.map((s) => s.changedFolder)).toEqual([true, true])

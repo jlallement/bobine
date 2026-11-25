@@ -47,6 +47,7 @@ pnpm mock-agent --scenario permission     # parle ACP sur stdin/stdout
 | `--demarrage-lent <ms>` | `MOCK_AGENT_SLOW_START_MS` | aucun | `initialize` répond après ce délai : démarrage lent (8000 pour la fiche 142, 1500 dans les essais ; fiche 139) |
 | — | `MOCK_AGENT_SLOW_CANCEL_MS` | aucun | un tour annulé répond après ce délai : arrêt lent, « arrêt en cours » du tour de table visible (fiche 285) |
 | `--verrou-fin-de-tour <fichier>` | `MOCK_AGENT_TURN_LOCK` (app) | aucun | Tant que ce fichier existe, aucun tour ne se termine : le scénario est joué, puis l'agent attend que le fichier disparaisse (relu toutes les 25 ms) ou un `session/cancel` avant de répondre. Chaque tour retenu s'inscrit d'une ligne (son `sessionId`) dans `<fichier>.retenus` : l'essai sait que le tour a commencé, pas seulement que l'agent a démarré. Pour montrer un état « au travail » sans le prendre au vol : l'essai pose le fichier, envoie, attend les tours retenus, regarde, puis l'enlève (e2e `roles-travail`, fiche 223) |
+| `--verrou-demarrage <fichier>` | — | aucun | `initialize` ne répond pas tant que ce fichier existe : l'agent reste « démarre » aussi longtemps que l'essai le veut, sans durée (fiche 285, essais déterministes) |
 | `--sans-plan` | — | non | N'envoie aucun `plan` (agent sans liste de tâches, comme OpenCode 2 ou un agent ACP minimal ; fiche 139) |
 | `--arriere-plan-ms <ms>` | — | celui du scénario | Délai de fin des sous-agents en arrière-plan (`sous-agent-arriere-plan`, 4 s ; `…-lent`, 12 s), raccourci pour la grille de conformité (fiche 139) |
 | `--devise <code>` | `MOCK_AGENT_CURRENCY` (app) | `USD` | Devise du coût rapporté à chaque tour (ex. `bobcoins`) |
@@ -314,7 +315,6 @@ profil factice déclare alors `roleExport` comme Bob ou OpenCode et passe ces op
 | `avis-change-modele` | Tour de table : en plein tour, annonce un autre modèle (`config_option_update`), puis son avis : l'app le met en « modèle non appliqué » |
 | `avis-en-deux` | Tour de table : avis en deux morceaux de texte séparés par une lecture : l'app garde la réponse entière du tour |
 | `participant-lit-shell` | Tour de table : lit par le shell (`tool_call` `kind: execute`), puis son avis |
-| `participant-lit-ecrit` | Tour de table : lit par le shell, écrit `note-participant.md` sans demander, puis son avis (deux participants qui exécutent, l'un écrit) |
 | `participant-outils` | Tour de table : liste les outils de l'app reçus (`tools/list`), puis demande une commande (`kind: execute`) : aucun outil, commande refusée d'office |
 | `avis-hors-format` | Tour de table : avis libre, sans les rubriques (« format non suivi ») |
 | `avis-lent` | Tour de table : 100 pas de `--delay` (4 s par défaut, annulable), puis l'avis. Dans les essais, préférer `--verrou-fin-de-tour` |

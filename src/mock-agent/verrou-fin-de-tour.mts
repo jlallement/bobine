@@ -22,6 +22,18 @@ export function heldTurnsFile(lockFile: string): string {
 }
 
 /**
+ * Verrou de démarrage (`--verrou-demarrage <fichier>`) : `initialize` ne répond pas tant que le
+ * fichier existe. Un essai tient ainsi un agent « démarre » aussi longtemps qu'il le veut, sans
+ * dépendre d'une durée (le lancement d'une place pendant qu'on l'arrête, fiche 285).
+ */
+export function waitForStartLock(lockFile: string, pollMs = TURN_LOCK_POLL_MS): Promise<void> {
+  return new Promise((resolve) => {
+    const check = () => (existsSync(lockFile) ? setTimeout(check, pollMs) : resolve())
+    check()
+  })
+}
+
+/**
  * Attend que `lockFile` n'existe plus ; `TurnCancelled` si le tour est annulé avant. Un tour
  * effectivement retenu (verrou présent) s'inscrit d'abord dans `heldTurnsFile`.
  */
