@@ -137,6 +137,8 @@ export interface MockAgentOptions {
    * écrit dans `bobDb` juste après chaque réponse.
    */
   bobCost?: boolean
+  /** `--cout-bob-delai` : délai avant d'écrire le coût d'un tour (300 ms par défaut). */
+  bobCostDelayMs?: number
   /** Nom annoncé à `initialize` (`--nom`) ; « Agent factice » par défaut. */
   title?: string
   /**
@@ -780,7 +782,7 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
           if (!options.bobCost || !options.bobDb) return
           session.cost = Math.round(((session.cost ?? 0) + MOCK_TURN_COST) * 1e6) / 1e6
           const [file, cost, id] = [options.bobDb, session.cost, session.sessionId]
-          setTimeout(() => writeBobTaskCostLogged(file, id, cost), 300)
+          setTimeout(() => writeBobTaskCostLogged(file, id, cost), options.bobCostDelayMs ?? 300)
         }
         // Limite d'étapes de la session (fiche 209) : refus sans rien envoyer, comme Bob 2.0.9.
         let stopReason = chosen.stopReason ?? 'end_turn'
