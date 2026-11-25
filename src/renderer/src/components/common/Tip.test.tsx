@@ -41,4 +41,18 @@ describe('infobulle au focus', () => {
     fireEvent.pointerLeave(letter)
     expect(letter.getAttribute('data-state')).toBe('closed')
   })
+  it('ouverte au survol d’un élément qui a déjà le focus : un défilement la ferme (N11)', () => {
+    vi.useFakeTimers()
+    const letter = show()
+    act(() => letter.focus())
+    fireEvent.keyDown(letter, { key: 'Escape' })
+    expect(letter.getAttribute('data-state')).toBe('closed')
+    act(() => vi.advanceTimersByTime(1000))
+    fireEvent.pointerMove(letter, { pointerType: 'mouse' })
+    // Ouverte au bout du délai du survol (400 ms), le défilement arrive 100 ms après.
+    act(() => vi.advanceTimersByTime(500))
+    expect(letter.getAttribute('data-state')).not.toBe('closed')
+    fireEvent.scroll(document)
+    expect(letter.getAttribute('data-state')).toBe('closed')
+  })
 })

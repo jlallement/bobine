@@ -51,17 +51,17 @@ if (typeof window !== 'undefined') {
   window.addEventListener('pointerdown', () => (lastPointerDown = Date.now()), true)
 }
 
+/** Délai pendant lequel le défilement dû au focus ne ferme pas l'infobulle qu'il vient d'ouvrir. */
+const FOCUS_SCROLL_MS = 300
+
+/** Évènement en cours de traitement : Radix ouvre et ferme pendant `focus`, `scroll`, `pointer…`. */
+const handling = (): string | undefined => (globalThis as { event?: Event }).event?.type
+
 /**
  * Focus rendu à un bouton juste après un clic (un menu qui se ferme rend le focus à son bouton),
  * sans clavier ni souris dessus : pas d'infobulle. Sans prise en charge de `:focus-visible` (jsdom
  * des essais), rien n'est filtré.
  */
-/** Délai pendant lequel le défilement dû au focus ne ferme pas l'infobulle qu'il vient d'ouvrir. */
-const FOCUS_SCROLL_MS = 300
-
-/** Fermeture demandée par Radix pendant un évènement de défilement (et non au départ du pointeur). */
-const closedByScroll = (): boolean => (globalThis as { event?: Event }).event?.type === 'scroll'
-
 export function focusWithoutIntent(element: HTMLElement): boolean {
   if (document.activeElement !== element || Date.now() - lastPointerDown > 800) return false
   if (typeof CSS === 'undefined' || !CSS.supports?.('selector(:focus-visible)')) return false
@@ -97,16 +97,11 @@ export function Tip({
   const onOpenChange = (next: boolean) => {
     const element = trigger.current
     if (next && element && focusWithoutIntent(element)) return
-    const focused = !!element && document.activeElement === element
-    if (next && focused) focusOpenedAt.current = Date.now()
-    // Le défilement qui amène l'élément focalisé en vue ferme l'infobulle (Radix ferme au
-    // défilement) : juste après un focus, elle reste ouverte (fiche 285, lettres au clavier).
-    if (
-      !next &&
-      focused &&
-      closedByScroll() &&
-      Date.now() - focusOpenedAt.current < FOCUS_SCROLL_MS
-    )
+    // Ouverte par le focus lui-même (pas par le survol d'un bouton qui l'a déjà) : le défilement qui
+    // amène l'élément en vue juste après ne la ferme pas (Radix ferme au défilement ; fiche 285,
+    // lettres atteintes au clavier).
+    if (next) focusOpenedAt.current = /^focus(in)?$/.test(handling() ?? '') ? Date.now() : 0
+    if (!next && handling() === 'scroll' && Date.now() - focusOpenedAt.current < FOCUS_SCROLL_MS)
       return
     setOpen(next)
   }
