@@ -158,11 +158,13 @@
   /* Bornée à la place qu'il y a au-dessus de la saisie : la liste défile, le pied reste. */
   max-height: min(420px, calc(var(--radix-popover-content-available-height, 420px) - 16px));
 }
-.roundtable-menu-list {
+.roundtable-menu-body {
   flex: 1 1 auto;
   min-height: 0;
   max-height: 320px;
   overflow-y: auto;
+}
+.roundtable-menu-list {
   outline: none;
 }
 .roundtable-search,
@@ -241,8 +243,19 @@
   text-align: left;
   cursor: pointer;
 }
-.roundtable-search {
+/* Le champ de recherche prend la place exacte de « Autres modèles… » (M2) : même boîte. */
+.model-search.roundtable-search {
+  margin: 0;
+  padding: 8px 10px;
+  gap: 9px;
+  border: 0;
   border-top: 1px solid var(--border);
+  border-radius: 0;
+  line-height: inherit;
+}
+.model-search.roundtable-search input {
+  padding: 0;
+  line-height: inherit;
 }
 .roundtable-menu-foot {
   padding: 6px 10px;
@@ -639,7 +652,8 @@
  * (la coche le dit) se masquent, et l'en-tête replié dit « N avis » seul.
  */
 .roundtable-row .roundtable-row-side {
-  min-height: 26px;
+  height: 28px;
+  min-height: 28px;
 }
 .roundtable-row .roundtable-row-side .btn.small {
   height: 26px;
@@ -652,4 +666,16 @@
   .roundtable-progress-extra {
     display: none;
   }
+}
+
+/* Ligne d'état du menu (M6) : deux lignes, toujours, que ce soit le pied ou une raison ; le menu
+   ne change pas de hauteur quand le pointeur passe sur une case désactivée. */
+.roundtable-menu-foot {
+  line-height: 1.4;
+  height: calc(2 * 1.4em);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  box-sizing: content-box;
 }

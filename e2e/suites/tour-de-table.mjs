@@ -381,7 +381,7 @@ async function nominal(scheme) {
           )
         ])
         // Rien ne glisse sous le pointeur (A2) : une ligne reste à sa place quand on la décoche.
-        const slide = `(() => { const o = ${optionByName('Delta')}; const m = document.querySelector('[data-testid=roundtable-menu]'); const l = document.querySelector('[data-testid=roundtable-menu-list]'); return { top: o.getBoundingClientRect().top, menu: Math.round(m.getBoundingClientRect().top), h: Math.round(m.getBoundingClientRect().height), scroll: l.scrollTop, n: l.children.length, search: !!document.querySelector('[data-testid=roundtable-search]') } })()`
+        const slide = `(() => { const o = ${optionByName('Delta')}; const m = document.querySelector('[data-testid=roundtable-menu]'); const l = document.querySelector('.roundtable-menu-body'); return { top: o.getBoundingClientRect().top, menu: Math.round(m.getBoundingClientRect().top), h: Math.round(m.getBoundingClientRect().height), scroll: l.scrollTop, n: l.children.length, search: !!document.querySelector('[data-testid=roundtable-search]') } })()`
         await ui.ev(
           `(() => { ${optionByName('Delta')}.scrollIntoView({ block: 'center' }); return true })()`
         )
@@ -615,11 +615,10 @@ async function degraded(scheme) {
         await ui.ev(`${ui.$('composer-input')}.focus()`)
         await ui.enter()
         await ui.waitFor(`!!${ui.$('roundtable-card')}`, 20_000)
-        // Forme large mesurée à part, fenêtre et panneau fixés : le panneau « Session » s'ouvre de
-        // lui-même au premier message (fiche 166) et, dans une fenêtre plus petite (GitHub), la
-        // colonne passait sous 600 px pendant la mesure (forme empilée, mesurée à 760 et 520 px).
+        // Forme large mesurée à part, panneau fermé : le panneau « Session » s'ouvre de lui-même
+        // au premier message (fiche 166) et, dans la fenêtre des machines GitHub, la colonne
+        // passait alors sous 600 px pendant la mesure (forme empilée, mesurée à 760 et 520 px).
         await ui.closePanel()
-        await ui.viewport(1280)
         await watchLayout(ui)
 
         // Modèle refusé : dit sur sa ligne, sans substitution ; plus de « Choisir un autre
@@ -633,7 +632,7 @@ async function degraded(scheme) {
         )
         check(
           !(await ui.ev(`!!${ui.$('roundtable-other-model')}`)) &&
-            !(await ui.ev(`!!${ui.$('roundtable-tag')}`)),
+            !(await ui.ev(`!!document.querySelector('.composer [data-testid=roundtable-tag]')`)),
           'modèle refusé : aucun bouton qui fasse basculer la saisie'
         )
         await affirm(ui, '285-modele-refuse', [probes.threadFits()])

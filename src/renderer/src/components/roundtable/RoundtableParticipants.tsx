@@ -71,6 +71,7 @@ export function RoundtableParticipants({
   )
   const [active, setActive] = useState(0)
   const list = useRef<HTMLDivElement>(null)
+  const body = useRef<HTMLDivElement>(null)
   const input = useRef<HTMLInputElement>(null)
   const opened = useRef(false)
   const byPointer = useRef(false)
@@ -126,7 +127,7 @@ export function RoundtableParticipants({
   // change pas de taille pendant la frappe (S3).
   const [listHeight, setListHeight] = useState<number | undefined>()
   const openSearch = () => {
-    setListHeight(list.current?.offsetHeight)
+    setListHeight(body.current?.offsetHeight)
     setSearching(true)
     setActive(main.length)
     // Le champ apparaît au rendu suivant.
@@ -139,74 +140,82 @@ export function RoundtableParticipants({
       <div className="menu-label" id={`${id}-title`}>
         {t('roundtable.menu.title')}
       </div>
+      {/* Boîte de la liste : sa hauteur est gardée pendant la recherche (S3, M2) ; « aucun
+          résultat » s'y affiche, hors de la liste (qui ne contient que des options). */}
       <div
-        ref={list}
-        id={`${id}-list`}
-        className="roundtable-menu-list"
+        ref={body}
+        className="roundtable-menu-body"
         style={searching && listHeight ? { height: listHeight, maxHeight: listHeight } : undefined}
-        role="listbox"
-        aria-multiselectable
-        aria-labelledby={`${id}-title`}
-        aria-activedescendant={visible[active] ? optionId(active) : undefined}
-        tabIndex={0}
-        data-testid="roundtable-menu-list"
       >
-        {visible.map((entry, index) => (
-          <Fragment key={entry.key}>
-            <div
-              id={optionId(index)}
-              role="option"
-              aria-selected={entry.checked}
-              aria-disabled={entry.disabled ? true : undefined}
-              aria-description={entry.reason}
-              // Premier des autres modèles : un filet au-dessus (aucun séparateur dans la liste).
-              className={`menu-item roundtable-option${searching && !query.trim() && index === main.length ? ' roundtable-first-other' : ''}`}
-              data-index={index}
-              data-highlighted={index === active ? '' : undefined}
-              data-disabled={entry.disabled ? '' : undefined}
-              title={entry.reason}
-              onMouseMove={() => {
-                if (index === active) return
-                byPointer.current = true
-                setActive(index)
-              }}
-              onClick={() => {
-                if (index !== active) byPointer.current = true
-                setActive(index)
-                pick(entry)
-              }}
-              data-testid="roundtable-option"
-              data-checked={entry.checked}
-            >
-              <span className="roundtable-box" aria-hidden data-checked={entry.checked}>
-                {entry.checked && <Check size={12} strokeWidth={3} />}
-              </span>
-              <span className="menu-text roundtable-option-name">{entry.label}</span>
-              {entry.disabled === 'arbiter' || (entry.checked && entry.reason === arbiterReason) ? (
-                // L'arbitre : la raison en clair, courte, à la place de l'agent (même hauteur).
-                <span
-                  className="roundtable-option-agent roundtable-option-reason"
-                  data-testid="roundtable-option-reason"
-                >
-                  {t('roundtable.menu.arbiterShort')}
+        <div
+          ref={list}
+          id={`${id}-list`}
+          className="roundtable-menu-list"
+          role="listbox"
+          aria-multiselectable
+          aria-labelledby={`${id}-title`}
+          aria-activedescendant={visible[active] ? optionId(active) : undefined}
+          tabIndex={0}
+          data-testid="roundtable-menu-list"
+        >
+          {visible.map((entry, index) => (
+            <Fragment key={entry.key}>
+              <div
+                id={optionId(index)}
+                role="option"
+                aria-selected={entry.checked}
+                aria-disabled={entry.disabled ? true : undefined}
+                aria-description={entry.reason}
+                // Premier des autres modèles : un filet au-dessus (aucun séparateur dans la liste).
+                className={`menu-item roundtable-option${searching && !query.trim() && index === main.length ? ' roundtable-first-other' : ''}`}
+                data-index={index}
+                data-highlighted={index === active ? '' : undefined}
+                data-disabled={entry.disabled ? '' : undefined}
+                title={entry.reason}
+                onMouseMove={() => {
+                  if (index === active) return
+                  byPointer.current = true
+                  setActive(index)
+                }}
+                onClick={() => {
+                  if (index !== active) byPointer.current = true
+                  setActive(index)
+                  pick(entry)
+                }}
+                data-testid="roundtable-option"
+                data-checked={entry.checked}
+              >
+                <span className="roundtable-box" aria-hidden data-checked={entry.checked}>
+                  {entry.checked && <Check size={12} strokeWidth={3} />}
                 </span>
-              ) : (
-                // Un agent sans choix de modèle tient sur une ligne : son nom n'est pas répété.
-                // « <agent> · modèle par défaut » ou « chargement » : l'agent est déjà dans le libellé.
-                entry.label !== entry.agentLabel &&
-                !!entry.choice.model && (
-                  <span className="roundtable-option-agent">{entry.agentLabel}</span>
-                )
-              )}
-            </div>
-          </Fragment>
-        ))}
-      </div>
-      {searching && visible.length === 0 && (
-        <div className="menu-item model-none" role="status" data-testid="roundtable-none">
-          {t('modelMenu.none')}
+                <span className="menu-text roundtable-option-name">{entry.label}</span>
+                {entry.disabled === 'arbiter' ||
+                (entry.checked && entry.reason === arbiterReason) ? (
+                  // L'arbitre : la raison en clair, courte, à la place de l'agent (même hauteur).
+                  <span
+                    className="roundtable-option-agent roundtable-option-reason"
+                    data-testid="roundtable-option-reason"
+                  >
+                    {t('roundtable.menu.arbiterShort')}
+                  </span>
+                ) : (
+                  // Un agent sans choix de modèle tient sur une ligne : son nom n'est pas répété.
+                  // « <agent> · modèle par défaut » ou « chargement » : l'agent est déjà dans le libellé.
+                  entry.label !== entry.agentLabel &&
+                  !!entry.choice.model && (
+                    <span className="roundtable-option-agent">{entry.agentLabel}</span>
+                  )
+                )}
+              </div>
+            </Fragment>
+          ))}
         </div>
-      )}
+        {searching && visible.length === 0 && (
+          <div className="menu-item model-none" role="status" data-testid="roundtable-none">
+            {t('modelMenu.none')}
+          </div>
+        )}
+      </div>
       {others.length > 0 &&
         (searching ? (
           <label className="model-search roundtable-search">

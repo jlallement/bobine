@@ -233,7 +233,7 @@ async function heldSynthesis(scheme) {
         // Le modèle de la conversation (inchangé depuis la demande), lu une fois la synthèse rendue.
         const model = await ui.ev(`${ui.$('model-chip')}.textContent.trim()`)
         check(
-          label === L('roundtable.synthesis.label', { model }),
+          label === L('roundtable.synthesis.labelWith', { model, count: 2 }),
           `étiquette de la synthèse : le modèle qui l’a écrite (${label})`
         )
         // L'étiquette en vue : le fil a défilé jusqu'à la carte du plafond suivante.
@@ -431,7 +431,13 @@ async function failedSynthesisCost(scheme) {
         // et le fil ne défile pas jusqu'à la fin de la synthèse.
         await ui.viewport(1280, 560)
         const scroller = `document.querySelector('.main > .scroll')`
-        await ui.ev(`(${scroller}.scrollTop = 0, true)`)
+        // Remonté à la molette, comme un utilisateur : le fil ne suit plus le bas.
+        await ui.ev(`(${scroller}.scrollTop = ${scroller}.scrollHeight, true)`)
+        const box = await ui.ev(
+          `(() => { const r = ${scroller}.getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) } })()`
+        )
+        await ui.wheel(box, 0, -3000)
+        await ui.waitFor(`${scroller}.scrollTop === 0`, 5000)
         const cardTop = `Math.round(document.querySelector('[data-testid=roundtable-card]').getBoundingClientRect().top)`
         const before = await ui.ev(cardTop)
         // Un clic sans défilement (le bouton peut être sous le bord de la fenêtre).
