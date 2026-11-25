@@ -2,7 +2,7 @@
 
 Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › À propos.
 
-## 1.2.0-beta.2 — 25 novembre 2026
+## 1.2.0-beta.2 — 26 novembre 2026
 
 ### Corrigé
 
