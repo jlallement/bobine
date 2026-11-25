@@ -81,7 +81,14 @@ export function useRoundtableCompose({
   const [options, setOptions] = useState<RoundtableOptions | undefined>()
   // Choix fait ici, en attendant que la préférence revienne du main.
   const [local, setLocal] = useState<RoundtableChoice[] | undefined>()
-  const [refusal, setRefusal] = useState<string | undefined>()
+  // Un refus vaut pour la phase où il a été dit : un tour qui commence ou finit le périme (S2).
+  const running = !!config?.running
+  const [refusalAt, setRefusalAt] = useState<{ text: string; running: boolean } | undefined>()
+  const refusal = refusalAt && refusalAt.running === running ? refusalAt.text : undefined
+  const setRefusal = useCallback(
+    (text: string | undefined) => setRefusalAt(text === undefined ? undefined : { text, running }),
+    [running]
+  )
   const [sending, setSending] = useState(false)
   const choices = useMemo(() => local ?? config?.participants ?? [], [local, config?.participants])
 
@@ -109,18 +116,24 @@ export function useRoundtableCompose({
   }, [menuOpen, reload])
   const shownOptions = useModelsLoading(options, menuOpen, openings, reload)
 
+  // Un tour en cours : la saisie ne passe jamais en tour de table (S2, revue finale).
   const enter = useCallback(() => {
-    if (!usable) return
+    if (!usable || running) return
     setActive(true)
     setRefusal(undefined)
     // Déjà en tour de table (menu rouvert, commande retapée) : les options sont relues quand même.
     reload()
-  }, [usable, reload])
+  }, [usable, running, reload, setRefusal])
+  // Changement de phase (un tour commence ou finit) : la ligne relit ce qui l'empêche.
+  useEffect(() => {
+    if (active) reload()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- relu au changement de phase seulement
+  }, [running])
   const exit = useCallback(() => {
     setActive(false)
     setMenuOpen(false)
     setRefusal(undefined)
-  }, [setMenuOpen])
+  }, [setMenuOpen, setRefusal])
 
   const state: LineState = useMemo(
     () => lineState(choices, options, questionChars),
@@ -262,13 +275,13 @@ export function useComposerRoundtable(
   // Brouillon `/roundtable …` : repris en tour de table dès que celui-ci est utilisable ici (options
   // et commandes connues) ; sinon le texte garde son préfixe (N3).
   const pending = useRef(startActive)
-  const { usable, enter } = rt
+  const { usable, enter, blocked } = rt
   useLayoutEffect(() => {
-    if (!pending.current || !usable) return
+    if (!pending.current || !usable || blocked) return
     pending.current = false
     adopt()
     enter()
-  }, [usable, adopt, enter])
+  }, [usable, blocked, adopt, enter])
   useEffect(() => {
     if (!pending.current) setPrefix(rt.active ? '/roundtable ' : '')
   }, [rt.active, setPrefix])

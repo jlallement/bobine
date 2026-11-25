@@ -4215,6 +4215,11 @@ a.btn {
   font-size: 13.5px;
   cursor: pointer;
 }
+/* Commande pas possible pour le moment (tour de table en cours) : grisée, sa raison à la place. */
+.command-item.unavailable {
+  opacity: 0.55;
+  cursor: default;
+}
 
 .command-item.active {
   background: var(--surface-2);

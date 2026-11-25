@@ -48,12 +48,14 @@ export function CommandMenu({ items, active, agentLabel, onHover, onPick }: Prop
               type="button"
               role="option"
               aria-selected={i === active}
+              aria-disabled={command.unavailable ? true : undefined}
               data-index={i}
-              className={`command-item${i === active ? ' active' : ''}`}
+              className={`command-item${i === active ? ' active' : ''}${command.unavailable ? ' unavailable' : ''}`}
               // mousedown : garde le focus dans la zone de saisie.
               onMouseDown={(e) => {
                 e.preventDefault()
-                onPick(command)
+                // Grisée (pas possible pour le moment) : rien ne part, la raison est dite.
+                if (!command.unavailable) onPick(command)
               }}
               onMouseMove={() => onHover(i)}
               data-testid="command-item"
@@ -62,7 +64,9 @@ export function CommandMenu({ items, active, agentLabel, onHover, onPick }: Prop
                 /{command.name}
                 {command.hint && <span className="command-hint"> {command.hint}</span>}
               </span>
-              <span className="command-description">{command.description}</span>
+              <span className="command-description">
+                {command.unavailable ?? command.description}
+              </span>
               {/* Hors de la description (coupée si elle est longue) : toujours visibles. Commande
                   de l'app : valable avec chaque agent ; seul celui de la conversation est nommé
                   (fiche 272, recette : « IBM Bob » dans une conversation OpenCode). */}

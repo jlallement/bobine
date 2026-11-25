@@ -211,8 +211,11 @@ const fileMenuName = (workspace: string | undefined, discussion: boolean | undef
     : ((workspace === undefined ? undefined : lastSegment(workspace)) ?? '')
 
 const NO_USER_COMMANDS: UserCommand[] = []
-/** `/roundtable` hors du menu « / » : en Discussion, ou pendant un tour (fiche 285, B11). */
-const hideRoundtable = (props: Props) => !!props.discussion || !!props.roundtable?.running
+/** `/roundtable` hors du menu « / » en Discussion ; grisé pendant un tour (fiche 285, M4). */
+const commandFlags = (props: Props) => ({
+  discussion: !!props.discussion,
+  roundtableRunning: !!props.roundtable?.running
+})
 const NO_ROLES: readonly { name: string; label: string }[] = []
 const NO_AGENT_COMMANDS: AgentCommand[] = []
 
@@ -224,8 +227,11 @@ function useCommands(
   snapshot: AgentSnapshot | null,
   userCommands: UserCommand[],
   agent: string,
-  /** Espace Discussion (fiche 224) : pas de tour de table, sa commande n'est pas proposée. */
-  discussion: boolean
+  /**
+   * Espace Discussion (fiche 224) : pas de tour de table, sa commande n'est pas proposée ; un tour
+   * en cours : `/roundtable` reste dans la liste, grisé, avec sa raison (M4).
+   */
+  { discussion, roundtableRunning }: { discussion: boolean; roundtableRunning: boolean }
 ) {
   const announced = snapshot?.commands ?? NO_AGENT_COMMANDS
   const compactCommand = snapshot?.compactCommand
@@ -236,10 +242,14 @@ function useCommands(
   const ownCommands = useMemo(() => toAgentCommands(userCommands), [userCommands])
   const commands = useMemo(
     () =>
-      mergeCommands(agentCommands, ownCommands, compactCommand).filter(
-        (c) => !(discussion && c.source === 'app' && c.name === ROUNDTABLE_COMMAND)
-      ),
-    [agentCommands, ownCommands, compactCommand, discussion]
+      mergeCommands(agentCommands, ownCommands, compactCommand)
+        .filter((c) => !(discussion && c.source === 'app' && c.name === ROUNDTABLE_COMMAND))
+        .map((c) =>
+          roundtableRunning && c.source === 'app' && c.name === ROUNDTABLE_COMMAND
+            ? { ...c, unavailable: i18next.t('roundtable.command.running') }
+            : c
+        ),
+    [agentCommands, ownCommands, compactCommand, discussion, roundtableRunning]
   )
   return { agentCommands, ownCommands, commands }
 }
@@ -339,7 +349,7 @@ export function Composer(props: Props) {
   const canSend = view.canSendNow && hasContent
 
   const userCommands = props.userCommands ?? NO_USER_COMMANDS
-  const listed = useCommands(snapshot, userCommands, agentLabel, hideRoundtable(props))
+  const listed = useCommands(snapshot, userCommands, agentLabel, commandFlags(props))
   const { agentCommands, ownCommands, commands } = listed
   const commandMenu = useCommandMenu(text, commands)
 
@@ -663,6 +673,8 @@ function runPickedCommand(
     focus: () => void
   }
 ) {
+  // Grisée dans le menu (tour de table en cours) : ni lancée ni complétée.
+  if (command.unavailable) return
   if (complete || command.hint || (command.source !== 'app' && c.status !== 'ready')) {
     c.changeText(`/${command.name} `)
     c.focus()

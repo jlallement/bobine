@@ -229,6 +229,11 @@ export interface SessionControl {
 export interface AgentCommand {
   name: string
   description: string
+  /**
+   * Commande de l'app pas possible pour le moment (tour de table en cours, fiche 285) : grisée
+   * dans le menu « / », avec cette raison courte ; rien ne part. Côté interface seulement.
+   */
+  unavailable?: string
   /** Indication de l'argument attendu, s'il y en a un. */
   hint?: string
   /**

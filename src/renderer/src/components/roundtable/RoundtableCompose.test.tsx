@@ -536,9 +536,47 @@ describe('revue UX : saisie et menu', () => {
     expect(screen.queryByTestId('roundtable-line')).toBeNull()
     t.type('/roundtable Q')
     expect(screen.queryByTestId('roundtable-line')).toBeNull()
+    // M4 : la commande reste dans la liste, grisée, avec sa raison courte ; rien ne part.
     t.type('/round')
-    const items = screen.queryAllByTestId('command-item').map((el) => el.textContent ?? '')
-    expect(items.some((n) => n.includes('/roundtable'))).toBe(false)
+    const item = screen
+      .queryAllByTestId('command-item')
+      .find((el) => el.textContent?.includes('/roundtable')) as HTMLElement
+    expect(item.getAttribute('aria-disabled')).toBe('true')
+    expect(item.textContent).toContain('Un tour de table est déjà en cours')
+    fireEvent.mouseDown(item)
+    fireEvent.keyDown(t.input, { key: 'Enter' })
+    expect(screen.queryByTestId('roundtable-line')).toBeNull()
+    expect(t.onAppCommand).not.toHaveBeenCalled()
+  })
+
+  it('S2 : un brouillon `/roundtable …` pendant un tour reste du texte ; jamais le mode tour', () => {
+    saveDraft('conv-1', { text: '/roundtable Plus tard', attachments: [] })
+    const t = setup([deep, b], {
+      roundtable: { participants: [deep, b], setParticipants: vi.fn(), running: true }
+    })
+    expect(t.input.value).toBe('/roundtable Plus tard')
+    expect(screen.queryByTestId('roundtable-tag')).toBeNull()
+  })
+
+  it('S2 : un refus dit avant un tour ne reste pas après (recalculé au changement de phase)', async () => {
+    api.start.mockResolvedValue({ ok: false, error: 'running' })
+    const t = setup([deep, b])
+    t.type('/roundtable Q')
+    await waitFor(() => expect(api.options).toHaveBeenCalled())
+    await act(async () => t.enter())
+    await screen.findByTestId('roundtable-refusal')
+    t.view.rerender(
+      <Tooltip.Provider>
+        <Composer
+          snapshot={snapshot}
+          settings={null}
+          draftKey="conv-1"
+          roundtable={{ participants: [deep, b], setParticipants: vi.fn(), running: true }}
+          {...t.props}
+        />
+      </Tooltip.Provider>
+    )
+    expect(screen.queryByTestId('roundtable-refusal')).toBeNull()
   })
 
   it('A1 : « 4 ▾ » en saisie très étroite, le nom entier pour le lecteur d’écran', () => {
