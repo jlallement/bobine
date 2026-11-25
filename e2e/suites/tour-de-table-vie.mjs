@@ -26,6 +26,7 @@ import {
 export async function lifecycle(scheme) {
   await stopAndSidebar(scheme)
   await heldSynthesis(scheme)
+  await twoTours(scheme)
 }
 
 /** Participants du tour dans la barre latérale (icône du tour). */
@@ -226,6 +227,65 @@ async function heldSynthesis(scheme) {
       undefined,
       'synthese-tour-de-table',
       env(workspace)
+    )
+  } finally {
+    rmSync(workspace, { recursive: true, force: true })
+  }
+}
+
+/**
+ * Recette du 2026-11-25 : la synthèse écrit la lettre seule (« A ») et groupée (« Participants B et
+ * C ») ; chaque ligne montre sa lettre (S3). Puis un second tour : plus aucune action du premier,
+ * « Faire réagir » compris (G2).
+ */
+async function twoTours(scheme) {
+  const workspace = repo()
+  try {
+    await withApp(
+      scheme,
+      async (ui) => {
+        await ui.ready()
+        await ui.closePanel()
+        await arbiterModel(ui)
+        await ui.ev(`${ui.$('composer-input')}.focus()`)
+        await ui.type('/roundtable Premier tour ?')
+        await ui.waitFor(`!!${ui.$('roundtable-line')}`)
+        await choose(ui, ['Alpha', 'Beta', 'Omega'])
+        await ui.ev(`${ui.$('composer-input')}.focus()`)
+        await ui.enter()
+        await ui.waitFor(`!!${ui.$('roundtable-actions')}`, 60_000)
+        await ui.click(ui.$('roundtable-head-toggle'))
+        await ui.waitFor(
+          `document.querySelectorAll('[data-testid=roundtable-seat-letter]').length === 3`
+        )
+        await affirm(ui, '285-lettres-seules', [
+          probes.custom(
+            'lettres groupées reconnues, lettre seule laissée telle quelle, une pastille par ligne',
+            `const marked = [...document.querySelectorAll('[data-testid=roundtable-answer] [data-testid=roundtable-letter]')].map((a) => a.textContent.trim().slice(-1))
+            const badges = [...document.querySelectorAll('[data-testid=roundtable-seat-letter]')].map((b) => b.textContent + '=' + b.getAttribute('aria-label'))
+            const ok = marked.includes('B') && marked.includes('C') && !marked.includes('A') && badges.length === 3 && badges.every((b) => /^([A-C])=Participant \\1$/.test(b))
+            return { ok, detail: JSON.stringify({ marked, badges }) }`
+          )
+        ])
+        check(!!(await ui.ev(`!!${ui.$('roundtable-rebut')}`)), 'premier tour : « Faire réagir »')
+
+        // Second tour : celui d'avant ne propose plus rien.
+        await ui.ev(`${ui.$('composer-input')}.focus()`)
+        await ui.type('/roundtable Second tour ?')
+        await ui.waitFor(`!!${ui.$('roundtable-cost-full')}`)
+        await ui.enter()
+        await ui.waitFor(
+          `document.querySelectorAll('[data-testid=roundtable-card]').length === 2`,
+          20_000
+        )
+        await ui.waitFor(`!${ui.$('roundtable-rebut')} && !${ui.$('roundtable-apply')}`, 10_000)
+        await affirm(ui, '285-deux-tours', [probes.threadFits()])
+      },
+      undefined,
+      'synthese-tour-de-table',
+      env(workspace, {
+        MOCK_AGENT_SCENARIO_BY_MODEL: `${BY_MODEL()},factice-precis=synthese-lettres-seules`
+      })
     )
   } finally {
     rmSync(workspace, { recursive: true, force: true })

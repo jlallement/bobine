@@ -106,12 +106,17 @@ const letters = (text: string, outcome: 'answered' | 'absent') =>
   [...text.matchAll(new RegExp(`participant="([A-E])" outcome="${outcome}"`, 'g'))].map((m) => m[1])
 
 /** Synthèse (six rubriques) ou décision (sept), d'après le bloc reçu ; sinon une réponse simple. */
-function arbiter(text: string): Step[] {
+function arbiter(text: string, loose = false): Step[] {
   const step = /<bobine_roundtable_[0-9a-f]+ step="(synthesis|verdict)"/.exec(text)?.[1]
   if (!step) return [{ kind: 'text', text: 'Réponse ordinaire, hors tour de table.' }]
   const answered = letters(text, 'answered')
   const absent = letters(text, 'absent')
-  const cites = answered.map((l) => `Participant ${l}`).join(', ') || 'aucun'
+  // `loose` : comme les vrais modèles de la recette du 2026-11-25 (S3), la lettre seule (« A ») puis
+  // une forme groupée (« Participants B et C »).
+  const [first, ...rest] = answered
+  const cites = loose
+    ? `${first ?? 'aucun'}${rest.length ? ` ; Participants ${rest.join(' et ')}` : ''}`
+    : answered.map((l) => `Participant ${l}`).join(', ') || 'aucun'
   const warned = (text.match(/warning="the folder changed during this turn"/g) ?? []).length
   const sections = [
     '## Accords',
@@ -295,6 +300,11 @@ export const roundtableScenarios: Record<string, Scenario> = {
     description:
       'Conversation qui arbitre un tour de table : à la demande de synthèse, les six rubriques en citant les lettres reçues, puis les lettres présentes et absentes et le nombre d’avertissements « dossier changé » ; à la demande de décision, sept rubriques ; sinon une réponse simple',
     steps: [{ kind: 'computed', build: ({ text }) => arbiter(text) }]
+  },
+  'synthese-lettres-seules': {
+    description:
+      'Comme `synthese-tour-de-table`, mais la synthèse cite la première lettre seule (« A ») et les autres groupées (« Participants B et C »), comme les vrais modèles (recette du 2026-11-25)',
+    steps: [{ kind: 'computed', build: ({ text }) => arbiter(text, true) }]
   },
   replique: {
     description:
