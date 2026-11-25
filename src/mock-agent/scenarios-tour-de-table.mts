@@ -438,6 +438,47 @@ export const roundtableScenarios: Record<string, Scenario> = {
       }
     ]
   },
+  'arbitre-commande': {
+    description:
+      'Conversation qui arbitre et lance une commande sans demander pendant la synthèse ou la décision, comme OpenCode à la recette de la 1.2.0-beta.1 (`node -e …`, outil `execute`), puis répond comme `synthese-tour-de-table` : la carte le dit (G-B2)',
+    steps: [
+      {
+        kind: 'computed',
+        build: ({ text }) =>
+          isStep(text)
+            ? [
+                {
+                  kind: 'update',
+                  update: {
+                    sessionUpdate: 'tool_call',
+                    toolCallId: 'arbiter_cmd',
+                    title: 'node -e "console.log(process.version)"',
+                    kind: 'execute',
+                    status: 'pending'
+                  }
+                },
+                {
+                  kind: 'update',
+                  update: {
+                    sessionUpdate: 'tool_call_update',
+                    toolCallId: 'arbiter_cmd',
+                    status: 'in_progress'
+                  }
+                },
+                {
+                  kind: 'update',
+                  update: {
+                    sessionUpdate: 'tool_call_update',
+                    toolCallId: 'arbiter_cmd',
+                    status: 'completed'
+                  }
+                },
+                ...arbiter(text)
+              ]
+            : arbiter(text)
+      }
+    ]
+  },
   'arbitre-ecrit': {
     description:
       'Conversation qui arbitre et écrit sans demander (comme OpenCode par défaut) : à la demande de synthèse ou de décision, écrit `notes-arbitre.md`, puis répond comme `synthese-tour-de-table` ; le garde-fou de l’étape voit le dossier changé (fiche 285, S1)',

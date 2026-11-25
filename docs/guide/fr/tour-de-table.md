@@ -90,10 +90,14 @@ rangées par lettre). Au survol ou au focus de « Participant C » (ou « Partic
 s'affiche ; sur la carte, chaque ligne porte sa lettre, pour faire le lien quand la synthèse écrit
 la lettre seule.
 
-La synthèse et la décision se font en lecture seule : la conversation ne peut ni écrire ni lancer
-de commande pendant ces tours. Si son agent passe outre, un avertissement s'affiche sous
-l'étiquette, avec les fichiers modifiés. **Demander à … de l'appliquer** envoie à la conversation
-un message ordinaire : c'est le seul moment où des fichiers changent.
+La synthèse et la décision se font en lecture seule. Ce qui est **garanti** : un agent qui demande
+une autorisation avant d'écrire ou de lancer une commande (IBM Bob, par exemple) se la voit refuser
+d'office pendant ces tours. Ce qui est seulement **demandé** : un agent qui agit sans demander
+(OpenCode réglé par défaut) reçoit la consigne de ne rien écrire et de ne lancer aucune commande,
+mais Bobine ne peut pas l'en empêcher. Elle le vérifie après coup : si le dossier a changé, un
+avertissement s'affiche sous l'étiquette, avec les fichiers modifiés ; si l'agent a lancé une
+commande, une ligne le dit. **Demander à … de l'appliquer** envoie à la conversation un message
+ordinaire : c'est le moment prévu pour que des fichiers changent.
 
 Le modèle de la conversation fait la synthèse : il ne peut pas être participant (il jugerait son
 propre avis). Dans le menu, sa case est désactivée et dit pourquoi ; si vous changez le modèle de

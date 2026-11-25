@@ -837,3 +837,20 @@ describe('recette de la 1.2.0-beta.1 : avis long sans réponse courte (G-B4)', (
     expect(digest.excerpt?.startsWith('Let me first explore')).toBe(true)
   })
 })
+
+describe('recette de la 1.2.0-beta.1 : commande lancée par l’arbitre pendant la synthèse (G-B2)', () => {
+  it('lancée sans demander : l’étape le dit ; refusée ou absente : rien', async () => {
+    const { env, mother } = await setup({ lead: 'arbitre-commande' })
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    expect(env.rt(mother).synthesis?.ranCommand).toBe(true)
+    // Une commande hors de l'étape n'est pas l'affaire du tour.
+    const quiet = await setup()
+    await quiet.env.roundtables.start(quiet.mother, {
+      question: QUESTION,
+      participants: [FAST, PRECISE]
+    })
+    await quiet.env.waitFor(() => quiet.env.rt(quiet.mother).phase === 'synthesized', 'synthèse')
+    expect(quiet.env.rt(quiet.mother).synthesis?.ranCommand).toBeUndefined()
+  })
+})

@@ -209,6 +209,11 @@ export interface RoundtableStep {
   changedFolder?: true
   /** Quelques fichiers touchés, lus dans `git status` (au plus `STEP_CHANGED_FILES`). */
   changedFiles?: string[]
+  /**
+   * L'agent a lancé une commande pendant le tour de l'étape (outil `execute` parti, pas refusé) :
+   * la lecture seule n'était que demandée (recette de la 1.2.0-beta.1, G-B2).
+   */
+  ranCommand?: true
 }
 
 /** Une tentative d'une étape : ses jetons, et son coût en relevés cumulés de la conversation. */
@@ -336,6 +341,8 @@ export type RoundtableEvent =
     }
   /** Le dossier a changé pendant le tour de l'étape (constaté après sa réponse). */
   | { type: 'step-changed-folder'; step: RoundtableStepKind; files: string[] }
+  /** L'agent a lancé une commande pendant le tour de l'étape. */
+  | { type: 'step-ran-command'; step: RoundtableStepKind }
   /** « Faire réagir les participants » : une seule fois par tour. */
   | { type: 'rebuttal'; at: number }
   | {
@@ -696,6 +703,10 @@ function reduceStep(
     case 'step-usage':
       // Coût communiqué après coup : à la tentative qu'il vise, même si une autre est en route.
       return withStep(rt, key, withAttempt(step, event, event.attempt))
+    case 'step-ran-command':
+      return step.state === 'waiting' || step.ranCommand
+        ? rt
+        : withStep(rt, key, { ...step, ranCommand: true })
     case 'step-changed-folder': {
       // Constaté à la fin du tour : l'étape a répondu (ou échoué) entre-temps.
       if (step.state === 'waiting') return rt
@@ -847,6 +858,7 @@ export function reduceRoundtable(rt: Roundtable, event: RoundtableEvent): Roundt
     case 'step-failed':
     case 'step-usage':
     case 'step-changed-folder':
+    case 'step-ran-command':
       return recount(reduceStep(rt, event))
     default: {
       const next = reduceSeat(rt, event)

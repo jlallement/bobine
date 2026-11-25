@@ -6428,6 +6428,7 @@
       "applyDraft": "Apply your roundtable recommendation.",
       "changed": "{{agent}} changed files during the synthesis.",
       "changedFiles": "{{agent}} changed files during the synthesis: {{files}}",
+      "ranCommand": "{{agent}} ran a command during the synthesis: read-only was only requested.",
       "labelWith_one": "Roundtable synthesis · {{model}} · {{count}} opinion",
       "labelWith_other": "Roundtable synthesis · {{model}} · {{count}} opinions"
     },
@@ -6454,6 +6455,7 @@
       "again": "Ask for the decision",
       "changed": "{{agent}} changed files during the decision.",
       "changedFiles": "{{agent}} changed files during the decision: {{files}}",
+      "ranCommand": "{{agent}} ran a command during the decision: read-only was only requested.",
       "labelWith_one": "Roundtable decision · {{model}} · {{count}} rebuttal",
       "labelWith_other": "Roundtable decision · {{model}} · {{count}} rebuttals"
     },

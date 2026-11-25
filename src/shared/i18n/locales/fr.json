@@ -6716,6 +6716,7 @@
       "applyDraft": "Applique ta recommandation du tour de table.",
       "changed": "{{agent}} a modifié des fichiers pendant la synthèse.",
       "changedFiles": "{{agent}} a modifié des fichiers pendant la synthèse : {{files}}",
+      "ranCommand": "{{agent}} a lancé une commande pendant la synthèse : la lecture seule n’était que demandée.",
       "labelWith_one": "Synthèse du tour de table · {{model}} · {{count}} avis",
       "labelWith_many": "Synthèse du tour de table · {{model}} · {{count}} avis",
       "labelWith_other": "Synthèse du tour de table · {{model}} · {{count}} avis"
@@ -6745,6 +6746,7 @@
       "again": "Demander la décision",
       "changed": "{{agent}} a modifié des fichiers pendant la décision.",
       "changedFiles": "{{agent}} a modifié des fichiers pendant la décision : {{files}}",
+      "ranCommand": "{{agent}} a lancé une commande pendant la décision : la lecture seule n’était que demandée.",
       "labelWith_one": "Décision du tour de table · {{model}} · {{count}} réplique",
       "labelWith_many": "Décision du tour de table · {{model}} · {{count}} répliques",
       "labelWith_other": "Décision du tour de table · {{model}} · {{count}} répliques"

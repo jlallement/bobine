@@ -91,6 +91,8 @@ export class MotherSteps {
    * la 1.2.0-beta.1, S-B1). Seule une nouvelle tentative de la même étape la garde ouverte.
    */
   private readonly costWatch = new Map<string, StepRef & { attempt?: number }>()
+  /** Outils `execute` annoncés pendant le tour de l'étape en cours, par conversation (G-B2). */
+  private readonly commands = new Map<string, Set<string>>()
   private readonly scheduled = new Set<string>()
   /** Envois refusés d'affilée parce que l'agent préparait une réponse : réessai espacé. */
   private readonly retries = new Map<string, number>()
@@ -182,6 +184,8 @@ export class MotherSteps {
       case 'status':
         if (event.snapshot.status !== 'busy') this.schedule(motherId)
         return
+      case 'update':
+        return this.noteCommand(motherId, event.update)
     }
   }
 
@@ -229,10 +233,39 @@ export class MotherSteps {
     })
   }
 
+  /**
+   * Commande lancée par l'agent pendant le tour d'une étape en lecture seule (G-B2) : un agent qui
+   * ne demande pas d'autorisation (OpenCode par défaut) n'est pas arrêté ; la carte le dit. Une
+   * commande refusée (demande d'autorisation) finit en échec sans jamais partir : pas comptée.
+   */
+  private noteCommand(
+    motherId: string,
+    update: {
+      sessionUpdate: string
+      toolCallId?: string
+      kind?: string | null
+      status?: string | null
+    }
+  ): void {
+    const ref = this.answering.get(motherId)
+    if (!ref) return
+    if (update.sessionUpdate !== 'tool_call' && update.sessionUpdate !== 'tool_call_update') return
+    // Le genre n'est pas toujours redit dans les mises à jour d'un outil : retenu à son annonce.
+    const ids = this.commands.get(motherId) ?? new Set<string>()
+    this.commands.set(motherId, ids)
+    if (update.kind === 'execute' && update.toolCallId) ids.add(update.toolCallId)
+    const command = update.kind === 'execute' || (!!update.toolCallId && ids.has(update.toolCallId))
+    if (!command || (update.status !== 'in_progress' && update.status !== 'completed')) return
+    if (this.host.read(motherId, ref.roundtableId)?.[ref.step]?.ranCommand) return
+    log.warn(`Tour de table ${ref.roundtableId.slice(0, 8)} : commande lancée pendant ${ref.step}`)
+    this.host.apply(motherId, ref.roundtableId, { type: 'step-ran-command', step: ref.step })
+  }
+
   private ended(motherId: string, event: Extract<AgentEvent, { type: 'turn-end' | 'turn-error' }>) {
     const ref = this.answering.get(motherId)
     if (!ref) return
     this.answering.delete(motherId)
+    this.commands.delete(motherId)
     this.compareFolder(motherId, ref)
     const { roundtableId, step } = ref
     // Ce que la tentative a consommé, même en échec ou arrêtée (contre-recette N3) ; un coût

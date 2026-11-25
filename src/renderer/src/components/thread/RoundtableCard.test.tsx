@@ -778,6 +778,19 @@ describe('gestes : un à la fois, refus dits', () => {
 })
 
 describe('réplique et décision', () => {
+  it('G-B2 (recette de la 1.2.0-beta.1) : une commande lancée pendant la synthèse est dite en une ligne', () => {
+    show(
+      synthesized(done(), SYNTHESIS).map((i) =>
+        i.kind === 'roundtable' && i.synthesis
+          ? { ...i, synthesis: { ...i.synthesis, ranCommand: true as const } }
+          : i
+      )
+    )
+    const notes = screen.getAllByTestId('roundtable-step-command')
+    expect(notes).toHaveLength(1)
+    expect(notes[0]?.textContent).toContain('a lancé une commande pendant la synthèse')
+  })
+
   it('C3 (recette) : un avis sans réponse courte lue dit « format non suivi », même avec sa confiance', () => {
     show(
       synthesized(done(), SYNTHESIS).map((i) =>
