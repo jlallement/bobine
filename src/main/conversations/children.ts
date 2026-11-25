@@ -181,9 +181,9 @@ export class ChildConversations {
       conversations,
       summary: (id) => this.summary(id),
       run: options.run ?? gitRun,
-      changed: (id) => {
+      changed: (id, facts) => {
         this.reviews.changed(id)
-        this.participantWatch.changed?.(id)
+        this.participantWatch.changed?.(id, facts)
       },
       group: (id) => this.participantWatch.group?.(id),
       inRepo: (workspace) => inGitRepo(workspace),

@@ -383,8 +383,9 @@ describe('lecture seule (décision C3)', () => {
     const writer = env.rt(mother).seats.find((s) => s.profileId === 'ecrit')
     expect(writer).toMatchObject({ state: 'answered', readOnly: 'requested', changedFolder: true })
     expect(env.replies(mother).at(-1)).toContain(
-      `participant="${writer?.letter}" outcome="answered" warning="the folder changed during this turn"`
+      `The folder changed during the roundtable: note-participant.md. Attributable to Participant ${writer?.letter}.`
     )
+    expect(env.rt(mother).folderChanged?.collecting).toEqual(['note-participant.md'])
   })
 
   it('deux participants qui lisent par le shell, l’un écrit : chacun dont le tour couvre l’écriture la voit', async () => {

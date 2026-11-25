@@ -2,6 +2,7 @@
  * Demande de lancement d'une fille (sortie de `children.ts`, taille bornée, fiche 089) : ce que
  * demandent « Lancer en parallèle… », `start_child`, les bulles « @Rôle » et le tour de table.
  */
+import type { ChangeFacts } from '../roles/read-only-watch'
 import type { PromptAttachment } from '@shared/attachments'
 import type { Message } from '@shared/i18n/message'
 import type { UncommittedChoice } from '@shared/launch-folder'
@@ -82,8 +83,8 @@ export function launchRole<R extends RoleSnapshot>(request: ChildRequest, role: 
 export interface ParticipantWatch {
   /** Groupe d'une conversation : les participants d'un même tour (pas « partagés » entre eux). */
   group?: (id: string) => string | undefined
-  /** Le dossier a changé pendant son tour. */
-  changed?: (id: string) => void
+  /** Le dossier a changé pendant son tour : attribuable ou non, tour arrêté ou non. */
+  changed?: (id: string, facts: ChangeFacts) => void
   /** Son tour n'a pas pu être jugé. */
   unjudged?: (id: string) => void
 }

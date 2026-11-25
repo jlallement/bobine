@@ -1261,3 +1261,17 @@ le main n'a pas livré l'étape 1) :
   « <agent> · modèle par défaut » dans le menu, la carte et l'infobulle. N1/N3 : e2e d'une synthèse
   en échec (`synthese-erreur-serveur`, coût comme Bob) puis relancée, « Consommé » à 0,05.
 
+
+- 2026-11-25 : passe de contrôle, S1 côté main (branche `1.2-fix5-engine`). Un seul participant
+  écrivait, tous ceux qui travaillaient en même temps étaient accusés, avec un bandeau chacun.
+  - Le fait appartient au tour : `Roundtable.folderChanged` (`collecting`, `rebuttal`), quelques
+    fichiers lus dans `git status` (empreinte avant les questions ou les répliques, comparée à la
+    fin de l'étape, `tour-folder.ts`).
+  - Une place n'est marquée `changedFolder` que si l'écart lui est attribuable : elle a lancé un
+    outil `edit`, `delete`, `move` ou `execute` pendant son tour, ou aucun autre participant du
+    tour ne travaillait pendant son tour. Jamais un tour arrêté ou en échec.
+  - Plus de bandeau par participant dans la conversation d'origine (celui du participant reste ;
+    rôles de conseil inchangés).
+  - Demande de synthèse ou de décision : une seule mention, « The folder changed during the
+    roundtable: <fichiers>. », avec les participants attribuables, plus d'avertissement par avis.
+  - Agent factice : `participant-ecrit` annonce son outil `write` ; `participant-ecrit-cache`.

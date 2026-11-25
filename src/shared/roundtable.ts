@@ -210,6 +210,12 @@ export interface RoundtableStep {
 export const STEP_CHANGED_FILES = 8
 const STEP_FILE_CHARS = 200
 
+/** Quelques fichiers touchés, bornés en nombre et en longueur. */
+export const boundedFiles = (files: readonly string[]): string[] =>
+  files
+    .slice(0, STEP_CHANGED_FILES)
+    .map((f) => (f.length > STEP_FILE_CHARS ? `${f.slice(0, STEP_FILE_CHARS - 1)}…` : f))
+
 /** L'élément `roundtable` du fil de la conversation en cours, remplacé sur place. */
 export interface Roundtable {
   roundtableId: string
@@ -227,6 +233,13 @@ export interface Roundtable {
   interruptedFrom?: RoundtablePhase
   /** « Arrêter le tour de table » demandé : les participants s'arrêtent, puis `stopped`. */
   stopping?: true
+  /**
+   * Le dossier a changé pendant le recueil, ou pendant la réplique (fiche 285, S1 de la passe de
+   * contrôle) : un fait du tour, avec quelques fichiers lus dans `git status` (au plus
+   * `STEP_CHANGED_FILES`, liste vide si `git status` ne les montre pas). Seule une place à qui
+   * l'écart est attribuable porte `changedFolder`.
+   */
+  folderChanged?: { collecting?: string[]; rebuttal?: string[] }
   synthesis?: RoundtableStep
   verdict?: RoundtableStep
   at: number
@@ -303,6 +316,8 @@ export type RoundtableEvent =
     }
   /** « Arrêter le tour de table » : tout s'arrête, sans synthèse. */
   | { type: 'stop'; at: number }
+  /** Le dossier a changé pendant le recueil ou la réplique (constaté à sa fin). */
+  | { type: 'folder-changed'; stage: 'collecting' | 'rebuttal'; files: string[] }
   /** Arrêt demandé, en cours (les participants s'arrêtent d'abord). */
   | { type: 'stopping'; at: number }
 
@@ -569,9 +584,7 @@ function reduceStep(
     case 'step-changed-folder': {
       // Constaté à la fin du tour : l'étape a répondu (ou échoué) entre-temps.
       if (step.state === 'waiting') return rt
-      const files = event.files
-        .slice(0, STEP_CHANGED_FILES)
-        .map((f) => (f.length > STEP_FILE_CHARS ? `${f.slice(0, STEP_FILE_CHARS - 1)}…` : f))
+      const files = boundedFiles(event.files)
       return withStep(rt, key, {
         ...step,
         changedFolder: true,
@@ -690,6 +703,11 @@ export function reduceRoundtable(rt: Roundtable, event: RoundtableEvent): Roundt
     }
     case 'rebuttal':
       return canRebut(rt) ? startRebuttal(rt) : rt
+    case 'folder-changed':
+      return {
+        ...rt,
+        folderChanged: { ...rt.folderChanged, [event.stage]: boundedFiles(event.files) }
+      }
     case 'stopping':
       if (!RUNNING_PHASES.has(rt.phase) && rt.phase !== 'interrupted') return rt
       return rt.stopping ? rt : { ...rt, stopping: true }

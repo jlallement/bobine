@@ -209,7 +209,7 @@ export interface OpinionInput {
   text?: string
   error?: RoundtableSeatError
   stopped?: RoundtableStopReason
-  /** Le dossier a changé pendant son tour (lecture seule seulement demandée). */
+  /** L'écart du dossier pendant le tour lui est attribuable (ses outils, ou seul au travail). */
   changedFolder?: boolean
 }
 
@@ -231,11 +231,34 @@ const ABSENT: Record<RoundtableSeatError | RoundtableStopReason, string> = {
 export const absentReason = (input: Pick<OpinionInput, 'error' | 'stopped'>): string =>
   ABSENT[input.error ?? input.stopped ?? 'agent-error']
 
+/**
+ * Une seule mention du dossier changé pendant le recueil ou la réplique (passe de contrôle, S1) :
+ * les fichiers (données) et les lettres à qui l'écart est attribuable, s'il y en a.
+ */
+function folderNote(inputs: readonly OpinionInput[], files: readonly string[], nonce: string) {
+  const letters = inputs.filter((i) => i.changedFolder).map((i) => `Participant ${i.letter}`)
+  const list = files.length ? `: ${files.join(', ')}` : ''
+  const who = letters.length
+    ? ` Attributable to ${letters.join(', ')}.`
+    : ' No participant can be identified as the author.'
+  return framed(
+    'bobine_roundtable_folder',
+    nonce,
+    '',
+    `The folder changed during the roundtable${list}.${who}`,
+    FOLDER_NOTE_CHARS
+  )
+}
+
+/** Mention du dossier changé, au plus. */
+const FOLDER_NOTE_CHARS = 2_000
+
 function opinionsBlock(
   step: 'synthesis' | 'verdict',
   inputs: readonly OpinionInput[],
   max: number,
-  nonce: string
+  nonce: string,
+  folderFiles?: readonly string[]
 ): string {
   const sorted = [...inputs].sort((a, b) => a.letter.localeCompare(b.letter))
   const present = sorted.filter((i) => i.text?.trim())
@@ -246,17 +269,11 @@ function opinionsBlock(
     if (!text) {
       return `<${tag} participant="${input.letter}" outcome="absent">Participant ${input.letter}: no ${step === 'synthesis' ? 'opinion' : 'rebuttal'} (${absentReason(input)}).</${tag}>`
     }
-    const warning = input.changedFolder ? ' warning="the folder changed during this turn"' : ''
-    return framed(
-      base,
-      nonce,
-      ` participant="${input.letter}" outcome="answered"${warning}`,
-      text,
-      max
-    )
+    return framed(base, nonce, ` participant="${input.letter}" outcome="answered"`, text, max)
   })
   return [
     `${ROUNDTABLE_OPENING}_${nonce} step="${step}" answered="${present.length}" absent="${sorted.length - present.length}">`,
+    ...(folderFiles ? [folderNote(sorted, folderFiles, nonce)] : []),
     ...body,
     `</bobine_roundtable_${nonce}>`
   ].join('\n')
@@ -305,7 +322,9 @@ const questionBlock = (question: string, nonce: string) =>
 export function synthesisRequest(
   question: string,
   opinions: readonly OpinionInput[],
-  nonce = newNonce()
+  nonce = newNonce(),
+  /** Le dossier a changé pendant le recueil : ces fichiers. */
+  folderFiles?: readonly string[]
 ): RoundtableRequest {
   const answered = opinions.filter((o) => o.text?.trim()).length
   return {
@@ -323,7 +342,7 @@ export function synthesisRequest(
       '',
       ...synthesisRules(nonce)
     ].join('\n'),
-    context: opinionsBlock('synthesis', opinions, OPINION_CHARS, nonce)
+    context: opinionsBlock('synthesis', opinions, OPINION_CHARS, nonce, folderFiles)
   }
 }
 
@@ -334,7 +353,9 @@ export function synthesisRequest(
 export function verdictRequest(
   question: string,
   rebuttals: readonly OpinionInput[],
-  nonce = newNonce()
+  nonce = newNonce(),
+  /** Le dossier a changé pendant la réplique : ces fichiers. */
+  folderFiles?: readonly string[]
 ): RoundtableRequest {
   return {
     prompt: [
@@ -349,7 +370,7 @@ export function verdictRequest(
       '',
       ...synthesisRules(nonce)
     ].join('\n'),
-    context: opinionsBlock('verdict', rebuttals, REBUTTAL_CHARS, nonce)
+    context: opinionsBlock('verdict', rebuttals, REBUTTAL_CHARS, nonce, folderFiles)
   }
 }
 

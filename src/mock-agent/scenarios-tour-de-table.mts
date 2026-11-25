@@ -142,7 +142,8 @@ function arbiter(text: string, loose = false): Step[] {
   const cites = loose
     ? `${first ?? 'aucun'}${rest.length ? ` ; Participants ${rest.join(' et ')}` : ''}`
     : answered.map((l) => `Participant ${l}`).join(', ') || 'aucun'
-  const warned = (text.match(/warning="the folder changed during this turn"/g) ?? []).length
+  // Une seule mention du dossier changé, au niveau du tour : « oui » ou « non ».
+  const warned = /The folder changed during the roundtable/.test(text) ? 'oui' : 'non'
   const sections = [
     '## Accords',
     `Les avis de ${cites} se rejoignent.`,
@@ -189,13 +190,40 @@ export const roundtableScenarios: Record<string, Scenario> = {
   },
   'participant-ecrit': {
     description:
-      'Tour de table : participant qui écrit `note-participant.md` sans rien demander (comme OpenCode par défaut), puis donne son avis : le garde-fou de lecture seule le voit à la fin du tour',
+      'Tour de table : participant qui écrit `note-participant.md` sans rien demander, par son outil `write` (`tool_call` `kind: edit`, comme OpenCode par défaut), puis donne son avis : le garde-fou de lecture seule le voit à la fin du tour et l’écart lui est attribuable',
     steps: participant((text, model, attachments) => [
+      {
+        kind: 'update',
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'participant_write',
+          title: 'write',
+          kind: 'edit',
+          status: 'in_progress',
+          locations: [{ path: 'note-participant.md' }]
+        }
+      },
       {
         kind: 'write-file',
         path: 'note-participant.md',
         content: 'écrit malgré la lecture seule\n'
       },
+      {
+        kind: 'update',
+        update: {
+          sessionUpdate: 'tool_call_update',
+          toolCallId: 'participant_write',
+          status: 'completed'
+        }
+      },
+      ...opinion(text, model, attachments)
+    ])
+  },
+  'participant-ecrit-cache': {
+    description:
+      'Tour de table : participant qui écrit `note-cachee.md` hors de tout outil annoncé, puis donne son avis : le dossier a changé, l’écart n’est attribuable à personne s’il ne travaillait pas seul (passe de contrôle, S1)',
+    steps: participant((text, model, attachments) => [
+      { kind: 'write-file', path: 'note-cachee.md', content: 'écrit sans outil annoncé\n' },
       ...opinion(text, model, attachments)
     ])
   },
@@ -323,7 +351,7 @@ export const roundtableScenarios: Record<string, Scenario> = {
   },
   'synthese-tour-de-table': {
     description:
-      'Conversation qui arbitre un tour de table : à la demande de synthèse, les six rubriques en citant les lettres reçues, puis les lettres présentes et absentes et le nombre d’avertissements « dossier changé » ; à la demande de décision, sept rubriques ; sinon une réponse simple',
+      'Conversation qui arbitre un tour de table : à la demande de synthèse, les six rubriques en citant les lettres reçues, puis les lettres présentes et absentes et « dossier changé : oui » ou « non » (mention unique du tour) ; à la demande de décision, sept rubriques ; sinon une réponse simple',
     steps: [{ kind: 'computed', build: ({ text }) => arbiter(text) }]
   },
   'synthese-lettres-seules': {
