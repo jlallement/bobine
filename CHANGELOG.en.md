@@ -2,7 +2,7 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
-## Next version
+## 1.2.0-beta.2 — November 25, 2026
 
 ### Fixed
 
@@ -10,12 +10,15 @@ What changes for you, version by version. Shown in Settings › About.
   answered; no longer another model the agent lists but your account doesn’t have. You can still
   pick another model in the dialog.
 - **Annotate the page**: the bubbles of placed notes stay closed; a pin’s bubble opens when you
-  hover it. They no longer hide the page, and a click for a new note no longer reopens a note
-  already placed (whose text could be replaced without you noticing).
+  hover it or it has keyboard focus. They no longer hide the page, and a click for a new note no
+  longer reopens a note already placed (whose text could be replaced without you noticing).
 - **Roundtable**: the cost of “Ask to apply it” (and of any message that follows) is no longer
   added to the roundtable’s total; a zero cost from free models reads “free”, no longer “cost
   unknown”; an opinion without a readable short answer shows its start on its row; if the
   conversation’s agent runs a command during the synthesis or the decision, the card says so.
+- **Roundtable**: with an agent that reports its cost afterwards, the previous exchange’s cost is
+  no longer counted in a roundtable step, and the step’s own cost is read when it ends, no longer
+  at the next message; at worst the total is a little low, never inflated.
 - **Roundtable**: after “Ask participants to respond”, the roundtable card keeps its “Total used”
   line (tokens, and “cost unknown” when the agent gives no cost), folded or not.
 - **Merging a child task**: the merge commit reads “Merge branch '<task branch>' into <working
@@ -24,12 +27,12 @@ What changes for you, version by version. Shown in Settings › About.
 - **OpenCode with a ChatGPT account**: a model the account doesn’t allow (“… is not supported when
   using Codex with a ChatGPT account”) shows the “The … model didn’t answer” card with “Choose
   another model”, no longer the raw error.
-- **Cleaning up an open child task** brings you back to its original conversation, instead of
-  opening an empty one.
+- **Cleaning up or archiving an open child task** brings you back to its original conversation,
+  instead of opening an empty one.
 - **Recent models**: a model no longer enters them just by being picked or when it was refused,
   only after it answered (roundtable participants menu, “Continue with another agent”).
 - **First launch with `bobine <folder>`**: the welcome’s “Where to work?” step offers that folder
-  first (“Use this folder”).
+  first, under “The folder you asked for” (“Use this folder”).
 
 ## 1.2.0-beta.1 — November 25, 2026
 

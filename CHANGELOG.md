@@ -2,7 +2,7 @@
 
 Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › À propos.
 
-## Prochaine version
+## 1.2.0-beta.2 — 25 novembre 2026
 
 ### Corrigé
 
@@ -10,13 +10,17 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   plus un autre modèle annoncé par l’agent mais pas ouvert à votre compte. Un autre modèle se
   choisit toujours dans le dialogue.
 - **Annoter la page** : les bulles des remarques posées restent fermées ; celle d’une épingle
-  s’ouvre à son survol. Elles ne cachent plus la page, et un clic pour une nouvelle remarque ne
-  rouvre plus une remarque déjà posée (dont le texte pouvait être remplacé sans qu’on le voie).
+  s’ouvre à son survol, ou quand l’épingle a le focus du clavier. Elles ne cachent plus la page, et
+  un clic pour une nouvelle remarque ne rouvre plus une remarque déjà posée (dont le texte pouvait
+  être remplacé sans qu’on le voie).
 - **Tour de table** : le coût de « Demander de l’appliquer » (et de tout message qui suit) n’est
   plus ajouté au total du tour ; un coût nul de modèles gratuits s’affiche « gratuit », plus
   « coût inconnu » ; un avis sans réponse courte lisible montre son début sur sa ligne ; si
   l’agent de la conversation lance une commande pendant la synthèse ou la décision, la carte le
   dit.
+- **Tour de table** : avec un agent qui dit son coût après coup, le coût de l’échange précédent
+  n’est plus compté dans une étape du tour, et celui de l’étape est lu à sa fin, plus au message
+  suivant ; au pire, le total est un peu bas, jamais gonflé.
 - **Tour de table** : après « Faire réagir les participants », la carte du tour garde sa ligne
   « Consommé en tout » (jetons, et « coût inconnu » quand l’agent ne dit pas de coût), repliée
   comme dépliée.
@@ -26,12 +30,12 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 - **OpenCode avec un compte ChatGPT** : un modèle que le compte ne permet pas (« … is not supported
   when using Codex with a ChatGPT account ») montre la carte « Le modèle … n’a pas répondu » avec
   « Choisir un autre modèle », plus l’erreur brute.
-- **Nettoyer une tâche fille** ouverte ramène à sa conversation d’origine, au lieu d’ouvrir une
-  conversation vide.
+- **Nettoyer ou archiver une tâche fille** ouverte ramène à sa conversation d’origine, au lieu
+  d’ouvrir une conversation vide.
 - **Modèles récents** : un modèle n’y entre plus au seul choix ou s’il a été refusé, seulement après
   avoir répondu (menu des participants du tour de table, « Continuer avec un autre agent »).
 - **Premier lancement avec `bobine <dossier>`** : l’étape « Où travailler ? » de l’accueil propose
-  d’abord ce dossier (« Utiliser ce dossier »).
+  d’abord ce dossier, sous « Le dossier demandé » (« Utiliser ce dossier »).
 
 ## 1.2.0-beta.1 — 25 novembre 2026
 
