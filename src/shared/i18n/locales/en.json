@@ -6364,7 +6364,9 @@
       "letter": "Participant {{letter}}",
       "synthesisFailed": "synthesis failed",
       "decisionFailed": "decision failed",
-      "stepFailed": "The request did not go through: run it again."
+      "stepFailed": "The request did not go through: run it again.",
+      "folderChanged": "The folder changed during the roundtable. Check before applying.",
+      "folderChangedFiles": "The folder changed during the roundtable: {{files}}. Check before applying."
     },
     "state": {
       "waiting": "waiting",
@@ -6441,7 +6443,9 @@
         "rallies": "comes round"
       },
       "requested": "Rebuttal requested by the roundtable",
-      "waiting": "waiting: finishing its current work"
+      "waiting": "waiting: finishing its current work",
+      "folderChanged": "The folder changed during the rebuttal. Check before applying.",
+      "folderChangedFiles": "The folder changed during the rebuttal: {{files}}. Check before applying."
     },
     "decision": {
       "label": "Roundtable decision · {{model}}",

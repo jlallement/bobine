@@ -1105,3 +1105,45 @@ describe('contrat du moteur (fix2)', () => {
     )
   })
 })
+
+describe('dossier modifié : un seul avis par tour (S1 de la passe de contrôle)', () => {
+  it('fichiers connus : l’avis dans la carte, la ligne attribuable seule marquée', () => {
+    show(
+      thread(
+        roundtable([
+          answered('A'),
+          { type: 'seat-changed-folder', letter: 'B', at: T0 },
+          answered('B'),
+          answered('C'),
+          { type: 'folder-changed', stage: 'collecting', files: ['NOTES.md'] }
+        ]),
+        OPINIONS
+      )
+    )
+    const notice = within(card()).getByTestId('roundtable-folder-changed')
+    expect(plain(notice.textContent)).toBe(
+      'Le dossier a changé pendant le tour de table : NOTES.md. Vérifiez avant d’appliquer.'
+    )
+    expect(screen.getAllByTestId('roundtable-folder-changed')).toHaveLength(1)
+    expect(within(card()).getAllByTestId('roundtable-changed')).toHaveLength(1)
+    expect(within(row('B')).getByTestId('roundtable-changed')).toBeTruthy()
+  })
+
+  it('liste vide (fichier ignoré par git) : l’avis sans fichiers, aucune ligne marquée', () => {
+    show(
+      thread(
+        roundtable([
+          answered('A'),
+          answered('B'),
+          answered('C'),
+          { type: 'folder-changed', stage: 'collecting', files: [] }
+        ]),
+        OPINIONS
+      )
+    )
+    expect(plain(screen.getByTestId('roundtable-folder-changed').textContent)).toBe(
+      'Le dossier a changé pendant le tour de table. Vérifiez avant d’appliquer.'
+    )
+    expect(screen.queryByTestId('roundtable-changed')).toBeNull()
+  })
+})

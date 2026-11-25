@@ -6435,6 +6435,8 @@ export type FrResources = {
       readonly synthesisFailed: 'la synthèse a échoué'
       readonly decisionFailed: 'la décision a échoué'
       readonly stepFailed: 'La demande n’a pas abouti : relancez-la.'
+      readonly folderChanged: 'Le dossier a changé pendant le tour de table. Vérifiez avant d’appliquer.'
+      readonly folderChangedFiles: 'Le dossier a changé pendant le tour de table : {{files}}. Vérifiez avant d’appliquer.'
     }
     readonly state: {
       readonly waiting: 'en attente'
@@ -6515,6 +6517,8 @@ export type FrResources = {
       }
       readonly requested: 'Réplique demandée par le tour de table'
       readonly waiting: 'en attente : il finit son travail en cours'
+      readonly folderChanged: 'Le dossier a changé pendant la réplique. Vérifiez avant d’appliquer.'
+      readonly folderChangedFiles: 'Le dossier a changé pendant la réplique : {{files}}. Vérifiez avant d’appliquer.'
     }
     readonly decision: {
       readonly label: 'Décision du tour de table · {{model}}'

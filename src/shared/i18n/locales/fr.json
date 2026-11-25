@@ -6651,7 +6651,9 @@
       "letter": "Participant {{letter}}",
       "synthesisFailed": "la synthèse a échoué",
       "decisionFailed": "la décision a échoué",
-      "stepFailed": "La demande n’a pas abouti : relancez-la."
+      "stepFailed": "La demande n’a pas abouti : relancez-la.",
+      "folderChanged": "Le dossier a changé pendant le tour de table. Vérifiez avant d’appliquer.",
+      "folderChangedFiles": "Le dossier a changé pendant le tour de table : {{files}}. Vérifiez avant d’appliquer."
     },
     "state": {
       "waiting": "en attente",
@@ -6731,7 +6733,9 @@
         "rallies": "se rallie"
       },
       "requested": "Réplique demandée par le tour de table",
-      "waiting": "en attente : il finit son travail en cours"
+      "waiting": "en attente : il finit son travail en cours",
+      "folderChanged": "Le dossier a changé pendant la réplique. Vérifiez avant d’appliquer.",
+      "folderChangedFiles": "Le dossier a changé pendant la réplique : {{files}}. Vérifiez avant d’appliquer."
     },
     "decision": {
       "label": "Décision du tour de table · {{model}}",

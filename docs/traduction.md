@@ -180,6 +180,7 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | synthèse non rendue ; décision non rendue | synthesis not given ; decision not given | Étape qui n’a pas pu partir (arbitre devenu participant…). |
 | <agent> · modèle par défaut ; <agent> · chargement des modèles… | <agent> · default model ; <agent> · loading models… | Agent qui se choisit un modèle, aucun connu : l'agent seul, explicitement ; pendant que Bobine les demande, une ligne non cochable. |
 | fait la synthèse de ce tour | writes the synthesis | Raison courte de l'arbitre dans le menu. |
+| Le dossier a changé pendant le tour de table : … Vérifiez avant d’appliquer. | The folder changed during the roundtable: … Check before applying. | Un seul avis par tour, dans la carte ; la ligne d'un participant attribuable porte « fichiers modifiés ». |
 | arrêt en cours | stopping | Arrêt du tour demandé, les participants s'arrêtent d'abord. |
 | retenu par le plafond de sa conversation | held by its conversation cost cap | Question d'un participant retenue ; « Continuer » se donne dans sa conversation. |
 | conversation à la corbeille ; conversation supprimée | conversation in the trash ; conversation deleted | Ligne d'un participant, lue de l'existence de sa conversation. |

@@ -34,6 +34,7 @@ import {
 } from '../roundtable/roundtable-view'
 import { MessageTime } from './MessageTime'
 import {
+  FolderChanged,
   GestureRefusal,
   RoundtableEntry,
   UsedLine,
@@ -138,6 +139,7 @@ function RebuttalCard({
           </div>
         </SeatLetters.Provider>
       </ModelChoiceAgents.Provider>
+      <FolderChanged files={item.folderChanged?.rebuttal} stage="rebuttal" />
       {used?.text && (
         <UsedLine
           label={t('roundtable.card.usedAll', { total: used.text })}

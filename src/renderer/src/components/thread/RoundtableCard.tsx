@@ -8,7 +8,7 @@
  * L'état se lit de l'élément du tour, posé par le main (`reduceRoundtable`) ; un geste passe par
  * `window.api.roundtable`, et le main le refuse hors de sa phase.
  */
-import { ChevronDown, ChevronRight, Square } from 'lucide-react'
+import { ChevronDown, ChevronRight, Square, TriangleAlert } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import i18next from 'i18next'
@@ -377,7 +377,7 @@ export function RoundtableCard({
                   gestures={gestures}
                   pending={pending}
                   // Le pied dit le niveau ; un bouclier seulement sur une ligne qui en diffère.
-              shield={mixed && seat.readOnly !== weakestReadOnly(item)}
+                  shield={mixed && seat.readOnly !== weakestReadOnly(item)}
                   presence={presence(seat)}
                 />
               ))}
@@ -385,6 +385,9 @@ export function RoundtableCard({
           </SeatLetters.Provider>
         </ModelChoiceAgents.Provider>
       )}
+      {/* Un seul avis par tour (S1 de la passe de contrôle) : sous les lignes, au-dessus du pied,
+          gardé carte repliée (« Vérifiez avant d'appliquer »). */}
+      <FolderChanged files={item.folderChanged?.collecting} stage="collecting" />
       {!collapsed && <RoundtableFoot group={group} gestures={gestures} pending={pending} />}
       <GestureRefusal text={refusal} />
       {used?.text && !rebutted && (
@@ -594,6 +597,41 @@ function RoundtableFoot({
       <span className="roundtable-foot-note" data-testid="roundtable-note">
         {note}
       </span>
+    </div>
+  )
+}
+
+/**
+ * Le dossier a changé pendant le recueil ou la réplique : un avis sobre, comme celui de la
+ * synthèse, avec quelques fichiers s'ils sont connus. Le participant à qui l'écart est
+ * attribuable porte déjà sa marque sur sa ligne : l'avis ne le nomme pas.
+ */
+export function FolderChanged({
+  files,
+  stage
+}: {
+  files: readonly string[] | undefined
+  stage: 'collecting' | 'rebuttal'
+}) {
+  const { t } = useTranslation()
+  if (!files) return null
+  const key =
+    stage === 'collecting'
+      ? files.length
+        ? 'roundtable.card.folderChangedFiles'
+        : 'roundtable.card.folderChanged'
+      : files.length
+        ? 'roundtable.rebuttal.folderChangedFiles'
+        : 'roundtable.rebuttal.folderChanged'
+  return (
+    <div
+      className="roundtable-step-changed roundtable-folder-changed"
+      role="note"
+      data-testid="roundtable-folder-changed"
+      data-stage={stage}
+    >
+      <TriangleAlert size={13} aria-hidden />
+      {t(key, { files: listText(files) })}
     </div>
   )
 }
