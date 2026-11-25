@@ -966,3 +966,22 @@ describe('tour de table : recette réelle (S1, S2, S3, G6, C3)', () => {
     expect(opinionDigest(text)).toEqual({ confidence: 'high', followed: false })
   })
 })
+
+describe('tour de table : l’arbitre n’est jamais participant (décision du tech lead)', () => {
+  it('même agent et même modèle, ou agent sans choix de modèle : problème `arbiter`', () => {
+    const lead = { profileId: 'opencode', model: 'glm' }
+    expect(selectionProblem([opencode('deepseek'), opencode('glm')], AGENTS, lead)).toEqual({
+      problem: 'arbiter',
+      index: 1
+    })
+    expect(selectionProblem([opencode('deepseek'), opencode('qwen')], AGENTS, lead)).toBeUndefined()
+    expect(selectionProblem([opencode('deepseek'), bob], AGENTS, { profileId: 'bob' })).toEqual({
+      problem: 'arbiter',
+      index: 1
+    })
+    // Modèle de la conversation inconnu : rien n'est deviné.
+    expect(
+      selectionProblem([opencode('deepseek'), opencode('glm')], AGENTS, { profileId: 'opencode' })
+    ).toBeUndefined()
+  })
+})

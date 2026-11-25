@@ -6,6 +6,7 @@
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { t } from 'i18next'
 import { afterEach, describe, expect, it } from 'vitest'
 import { bobDbCosts } from '../agent/bob-costs'
 import { deleteConversation } from '../conversations/family-delete'
@@ -441,5 +442,50 @@ describe('recette réelle : arbitre en lecture seule pendant l’étape (S1)', (
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
     await env.roundtables.stepFolderChecked(mother)
     expect(env.rt(mother).synthesis?.changedFolder).toBeUndefined()
+  })
+})
+
+describe('recette réelle : l’arbitre n’est jamais participant', () => {
+  it('lancement refusé, options qui le disent, et contrôle au départ de la synthèse', async () => {
+    const { env, mother } = await setup()
+    const handlers = roundtableHandlers(env.roundtables)
+    const options = await handlers['roundtable:options'](mother)
+    expect(options.arbiter).toEqual({ profileId: 'lead', model: 'factice-rapide' })
+    expect(
+      await env.roundtables.start(mother, {
+        question: QUESTION,
+        participants: [FAST, choice('lead', 'factice-rapide')]
+      })
+    ).toEqual({ ok: false, error: 'selection', problem: 'arbiter' })
+    // Un autre modèle du même agent participe ; puis la conversation passe à ce modèle.
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [FAST, choice('lead', 'factice-precis')]
+    })
+    await env.manager.setControl(mother, 'model', 'factice-precis')
+    await env.waitFor(() => env.rt(mother).phase === 'interrupted', 'synthèse refusée')
+    expect(env.rt(mother).synthesis).toMatchObject({
+      state: 'failed',
+      detail: t('roundtable.error.arbiter')
+    })
+    expect(env.users(mother).some((u) => u.from?.kind === 'roundtable')).toBe(false)
+  })
+})
+
+describe('recette réelle : arbitre sans choix de modèle', () => {
+  it('l’agent est indisponible dans le menu, avec sa raison, et refusé au lancement', async () => {
+    const { env, mother } = await setup({ leadProfile: { childModelChoice: undefined } })
+    const options = await roundtableHandlers(env.roundtables)['roundtable:options'](mother)
+    expect(options.agents.find((a) => a.profileId === 'lead')).toMatchObject({
+      available: false,
+      reason: t('roundtable.error.selection.arbiter')
+    })
+    expect(options.agents.find((a) => a.profileId === 'panel')?.available).toBe(true)
+    expect(
+      await env.roundtables.start(mother, {
+        question: QUESTION,
+        participants: [FAST, choice('lead')]
+      })
+    ).toEqual({ ok: false, error: 'selection', problem: 'arbiter' })
   })
 })

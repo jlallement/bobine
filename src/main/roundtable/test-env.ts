@@ -32,6 +32,8 @@ export interface EnvOptions {
   lead?: string
   /** Options de plus pour la conversation qui arbitre. */
   leadArgs?: string[]
+  /** Champs de plus du profil de la conversation qui arbitre. */
+  leadProfile?: Partial<AgentProfile>
   /** Options de plus pour les participants `panel`. */
   panel?: string[]
   /** Autres profils (participants d'un autre agent). */
@@ -105,7 +107,12 @@ export async function roundtableEnv(options: EnvOptions = {}) {
   await toolServer.start()
   const manager = new ConversationManager({
     profiles: [
-      mock('lead', options.lead ?? 'synthese-tour-de-table', options.leadArgs ?? []),
+      mock(
+        'lead',
+        options.lead ?? 'synthese-tour-de-table',
+        options.leadArgs ?? [],
+        options.leadProfile
+      ),
       mock('panel', 'avis-participant', options.panel ?? []),
       ...(options.profiles?.(mock) ?? [])
     ],

@@ -31,6 +31,7 @@ import {
   reduceRoundtable,
   roundtableRunning,
   seatFinished,
+  isArbiter,
   selectionProblem,
   settleRoundtable,
   usableSeats,
@@ -59,7 +60,7 @@ import type { ProvidersList } from '../conversations/handover'
 import type { ConversationManager } from '../conversations/manager'
 import { log } from '../log'
 import type { RoundtableService } from './ipc'
-import { refusalOf, roundtableOptions, type ParticipantMode } from './options'
+import { arbiterOf, refusalOf, roundtableOptions, type ParticipantMode } from './options'
 import { participantRole } from './participant-role'
 import { reportReply, stepReply, turnReply } from './readings'
 import { SeatEvents, type SeatRef } from './seat-events'
@@ -186,6 +187,7 @@ export class Roundtables implements RoundtableService {
       textOf: (rt, kind, letter) => this.textOf(rt, kind, letter as RoundtableLetter),
       watchesSettled: (rt) => this.watchesSettled(rt),
       ...(deps.folder ? { folder: deps.folder } : {}),
+      arbiterClash: (motherId, rt) => this.arbiterClash(motherId, rt),
       gone: (childId) => !!childId && !this.exists(childId),
       now: () => this.now()
     })
@@ -223,6 +225,19 @@ export class Roundtables implements RoundtableService {
   /** Synthèse ou décision en cours dans cette conversation (son tour est en lecture seule). */
   stepActive(motherId: string): boolean {
     return this.steps.stepActive(motherId)
+  }
+
+  /** L'agent et le modèle de la conversation sont ceux d'un participant du tour. */
+  private arbiterClash(motherId: string, rt: Roundtable): boolean {
+    const profiles = this.deps.conversations.settingsView().profiles
+    const arbiter = arbiterOf(
+      this.summary(motherId).profileId,
+      this.deps.conversations.view(motherId).snapshot?.controls ?? [],
+      profiles
+    )
+    return rt.seats.some((seat) =>
+      isArbiter(seat, arbiter, !!profiles.find((p) => p.id === seat.profileId)?.childModel)
+    )
   }
 
   /** Comparaison du dossier de la dernière étape finie (essais). */
@@ -593,7 +608,12 @@ export class Roundtables implements RoundtableService {
       available: p.available,
       modelChoice: !!p.childModel
     }))
-    const problem = selectionProblem(request.participants, facts)
+    const controls = this.deps.conversations.view(motherId).snapshot?.controls ?? []
+    const problem = selectionProblem(
+      request.participants,
+      facts,
+      arbiterOf(summary.profileId, controls, profiles)
+    )
     if (problem) return { ok: false, error: 'selection', problem: problem.problem }
     const reservation = this.deps.children.reserve(motherId, request.participants.length)
     if ('missing' in reservation) return { ok: false, error: 'slots', missing: reservation.missing }

@@ -6741,13 +6741,15 @@
         "single-seat": "Cet agent ne participe qu’une fois, sans choix de modèle.",
         "model-not-allowed": "Cet agent ne permet pas de choisir son modèle.",
         "unknown-agent": "Cet agent n’existe plus.",
-        "unavailable": "Cet agent est indisponible."
+        "unavailable": "Cet agent est indisponible.",
+        "arbiter": "L’agent et le modèle de cette conversation arbitrent le tour : ils ne peuvent pas aussi participer."
       },
       "unavailable": "Le tour de table n’est pas encore disponible dans cette version.",
       "unknown": "Ce tour de table n’existe pas dans cette conversation.",
       "attachmentsLost": "Les pièces jointes de ce tour ne sont plus disponibles depuis le redémarrage de l’app : lancez un nouveau tour de table.",
       "question": "La question dépasse 8 000 caractères : raccourcissez-la, ou joignez le détail en fichier.",
-      "archivedGesture": "Cette conversation est archivée : désarchivez-la pour continuer son tour de table."
+      "archivedGesture": "Cette conversation est archivée : désarchivez-la pour continuer son tour de table.",
+      "arbiter": "L’agent et le modèle de cette conversation sont aussi ceux d’un participant : changez de modèle, puis relancez la synthèse."
     },
     "export_one": "Tour de table à {{count}} participant",
     "export_many": "Tour de table à {{count}} participants",

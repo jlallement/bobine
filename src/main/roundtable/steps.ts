@@ -53,6 +53,8 @@ export interface StepsHost {
   gone: (childId: string | undefined) => boolean
   /** Vérifications de lecture seule des participants finies (l'avertissement part avec l'avis). */
   watchesSettled: (rt: Roundtable) => Promise<void>
+  /** L'arbitre est devenu l'un des participants (modèle changé depuis le lancement). */
+  arbiterClash?: (motherId: string, rt: Roundtable) => boolean
   /** Empreinte du dossier autour du tour de l'étape (S1) ; absent : rien n'est surveillé. */
   folder?: StepFolder
   now: () => number
@@ -266,6 +268,19 @@ export class MotherSteps {
   }
 
   private send(motherId: string, rt: Roundtable, step: RoundtableStepKind): void {
+    if (this.host.arbiterClash?.(motherId, rt)) {
+      // L'arbitre jugerait son propre avis : rien ne part, la carte le dit et propose de reprendre
+      // (« Synthétiser… » une fois le modèle de la conversation changé).
+      log.info(
+        `Tour de table ${rt.roundtableId.slice(0, 8)} : ${step} refusée (arbitre participant)`
+      )
+      this.host.apply(motherId, rt.roundtableId, {
+        type: 'step-failed',
+        step,
+        detail: t('roundtable.error.arbiter')
+      })
+      return
+    }
     const request =
       step === 'synthesis'
         ? synthesisRequest(

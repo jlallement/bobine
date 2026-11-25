@@ -8,7 +8,13 @@
  */
 import type { ConversationSummary, ProfileSummary, SessionControl } from '@shared/agent'
 import type { HandoverModel } from '@shared/handover'
-import { lastRoundtable, roundtableRunning, type RoundtableReadOnly } from '@shared/roundtable'
+import { t } from 'i18next'
+import {
+  lastRoundtable,
+  roundtableRunning,
+  type RoundtableArbiter,
+  type RoundtableReadOnly
+} from '@shared/roundtable'
 import type {
   RoundtableAgentOption,
   RoundtableOptions,
@@ -44,6 +50,21 @@ export function refusalOf(
   if (summary.space === 'discussion' || !hasFolder(summary.workspace)) return 'discussion'
   const last = lastRoundtable(items)
   return last && roundtableRunning(last) ? 'running' : undefined
+}
+
+/**
+ * Arbitre de la conversation : son agent, et le modèle de sa session si l'agent se choisit un
+ * modèle (`childModel`) ; un modèle inconnu reste absent (rien n'est deviné).
+ */
+export function arbiterOf(
+  profileId: string,
+  controls: readonly SessionControl[],
+  profiles: readonly Pick<ProfileSummary, 'id' | 'childModel'>[]
+): RoundtableArbiter {
+  const modelChoice = !!profiles.find((p) => p.id === profileId)?.childModel
+  const current = modelChoice ? modelControl(controls)?.currentValue : undefined
+  const model = typeof current === 'string' ? current : undefined
+  return { profileId, ...(model ? { model } : {}) }
 }
 
 /** Le dossier de la conversation est dans un dépôt git (empreinte de la lecture seule possible). */
@@ -141,11 +162,22 @@ export function roundtableOptions(deps: OptionsDeps, conversationId: string): Ro
   const memory = deps.conversations.settings.current.models ?? {}
   const providers = deps.providers()
   const ownSession = modelControl(view.snapshot?.controls ?? [])
-  const agents = deps.conversations.settingsView().profiles.map((profile) => {
+  const profiles = deps.conversations.settingsView().profiles
+  const arbiter = arbiterOf(summary.profileId, view.snapshot?.controls ?? [], profiles)
+  const agents = profiles.map((profile) => {
     const session = profile.id === summary.profileId ? ownSession : undefined
     const installed = deps.participantMode?.(profile.id, conversationId)
     const readOnly = expectedReadOnly(profile, inGit, installed)
-    return agentOption(profile, modelSource(memory[profile.id], session), providers, readOnly)
+    const option = agentOption(
+      profile,
+      modelSource(memory[profile.id], session),
+      providers,
+      readOnly
+    )
+    // Agent sans choix de modèle qui arbitre : il ne peut pas participer.
+    return !option.modelChoice && profile.id === arbiter.profileId
+      ? { ...option, available: false, reason: t('roundtable.error.selection.arbiter') }
+      : option
   })
   const refused = refusalOf(summary, items)
   return {
@@ -153,6 +185,7 @@ export function roundtableOptions(deps: OptionsDeps, conversationId: string): Ro
     freeSlots: Math.max(0, max - active),
     inGit,
     lastExchange: lastExchangeText(items) !== undefined,
+    arbiter,
     ...(refused ? { refused } : {})
   }
 }

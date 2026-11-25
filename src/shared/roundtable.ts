@@ -766,6 +766,30 @@ export type RoundtableSelectionProblem =
   | 'model-not-allowed'
   | 'unknown-agent'
   | 'unavailable'
+  /** L'arbitre (agent et modèle de la conversation) ne peut pas être aussi participant. */
+  | 'arbiter'
+
+/**
+ * Arbitre d'un tour (décision du tech lead, recette du 2026-11-25) : l'agent de la conversation et
+ * son modèle ; pour un agent sans choix de modèle, l'agent seul. Il ne peut pas être participant :
+ * il jugerait son propre avis.
+ */
+export interface RoundtableArbiter {
+  profileId: string
+  /** Valeur du modèle de la session ; absente : inconnue, ou agent sans choix de modèle. */
+  model?: string
+}
+
+/** Ce participant est l'arbitre (même agent ; même modèle si l'agent se choisit un modèle). */
+export function isArbiter(
+  choice: RoundtableChoice,
+  arbiter: RoundtableArbiter | undefined,
+  modelChoice: boolean
+): boolean {
+  if (!arbiter || choice.profileId !== arbiter.profileId) return false
+  if (!modelChoice) return true
+  return arbiter.model !== undefined && choice.model?.value === arbiter.model
+}
 
 /**
  * Vérifie une sélection : 2 à 5 participants, aucun doublon d'agent et de modèle, une seule place
@@ -774,7 +798,8 @@ export type RoundtableSelectionProblem =
  */
 export function selectionProblem(
   choices: readonly RoundtableChoice[],
-  agents: readonly RoundtableAgentFacts[]
+  agents: readonly RoundtableAgentFacts[],
+  arbiter?: RoundtableArbiter
 ): { problem: RoundtableSelectionProblem; index?: number } | undefined {
   const seen = new Set<string>()
   const single = new Set<string>()
@@ -787,6 +812,7 @@ export function selectionProblem(
       if (single.has(agent.id)) return { problem: 'single-seat', index }
       single.add(agent.id)
     }
+    if (isArbiter(choice, arbiter, agent.modelChoice)) return { problem: 'arbiter', index }
     const key = choiceKey(choice)
     if (seen.has(key)) return { problem: 'duplicate', index }
     seen.add(key)
