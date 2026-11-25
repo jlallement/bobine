@@ -76,7 +76,10 @@ export function trackRunning(
   for (const entry of previous.finished) finished.set(entry.key, entry)
   for (const { ended, ...obs } of observed) {
     const before = known.get(obs.key)
-    const startedAt = obs.startedAt ?? before?.startedAt ?? now
+    // Une entrée déjà finie qui repart (participant d'un tour à la réplique, recette G3) : son
+    // chronomètre repart, il ne reprend pas le début de son travail précédent.
+    const restarted = !obs.ended && !previous.running.some((entry) => entry.key === obs.key)
+    const startedAt = obs.startedAt ?? (restarted ? undefined : before?.startedAt) ?? now
     if (!ended) {
       finished.delete(obs.key)
       const { endedAt: _endedAt, ...rest } = obs
@@ -179,6 +182,8 @@ export function childObservations(
         label: child.title,
         childId: child.id,
         ...(child.roundtable ? { roundtable: true as const } : {}),
+        // Participant d'un tour : début du travail en cours (l'avis, puis la réplique), du main.
+        ...(child.roundtable?.since !== undefined ? { startedAt: child.roundtable.since } : {}),
         ...(blocked ? { blocked: true as const } : { stop: { kind: 'child', childId: child.id } })
       }
     ]

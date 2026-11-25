@@ -166,4 +166,35 @@ describe('participants d’un tour de table (fiche 285, B2)', () => {
     )
     expect(entry?.roundtable).toBe(true)
   })
+
+  it('G3 (recette) : la réplique repart de son propre début, pas de celui de l’avis', () => {
+    const seat = (since: number, status: 'busy' | 'ready') =>
+      childObservations(
+        [
+          {
+            id: 'p',
+            title: 'Alpha',
+            status,
+            roundtable: { id: 'rt', active: true, state: 'working', since }
+          }
+        ],
+        {}
+      )
+    let state = trackRunning(EMPTY_RUNNING, seat(2_000, 'busy'), 3_000, SINCE)
+    expect(state.running[0]?.startedAt).toBe(2_000)
+    state = trackRunning(state, seat(2_000, 'ready'), 60_000, SINCE)
+    expect(state.running).toEqual([])
+    // La réplique part bien plus tard : le chronomètre part de là.
+    state = trackRunning(state, seat(170_000, 'busy'), 171_000, SINCE)
+    expect(state.running[0]?.startedAt).toBe(170_000)
+  })
+
+  it('une entrée finie qui repart, sans début connu : son chronomètre repart de maintenant', () => {
+    const child = (status: 'busy' | 'ready') =>
+      childObservations([{ id: 'f', title: 'Import', status }], {})
+    let state = trackRunning(EMPTY_RUNNING, child('busy'), 2_000, SINCE)
+    state = trackRunning(state, child('ready'), 5_000, SINCE)
+    state = trackRunning(state, child('busy'), 9_000, SINCE)
+    expect(state.running[0]?.startedAt).toBe(9_000)
+  })
 })
