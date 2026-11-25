@@ -545,7 +545,11 @@ export function attemptsTotal(
     })?.cost
     covered = Math.max(covered ?? -Infinity, end.amount)
   }
-  return cost ? { ...total, cost } : total
+  // Modèles gratuits (fiche 266) : un coût nul y est « gratuit », pas « coût inconnu » (G-B1).
+  const used = sorted.flatMap((a) => (a.usage ? [a.usage] : []))
+  const free = used.length > 0 && used.every((u) => u.free === true)
+  const result = cost ? { ...total, cost } : total
+  return result && free ? { ...result, free: true } : result
 }
 
 /** Résultat de la tentative visée (la dernière par défaut) : le total est recalculé. */
@@ -1052,8 +1056,11 @@ export function newSeats(
 export interface RoundtableTotal {
   /** Jetons communiqués, tous tours confondus ; absent si aucun agent n'en donne. */
   tokens?: number
-  /** Un montant par unité (« USD », « bobcoin »…), dans l'ordre d'apparition. */
-  costs: { amount: number; currency: string }[]
+  /**
+   * Un montant par unité (« USD », « bobcoin »…), dans l'ordre d'apparition. `free` : tout ce qui
+   * compte dans cette unité vient de modèles gratuits (un total nul s'y lit « gratuit »).
+   */
+  costs: { amount: number; currency: string; free?: true }[]
   /** Participants qui n'ont rien communiqué (« 1 participant sans chiffre »). */
   silent: number
 }
@@ -1073,7 +1080,8 @@ export function roundtableTotal(
   steps: readonly (UsageDigest | undefined)[] = []
 ): RoundtableTotal {
   let tokens: number | undefined
-  const costs: { amount: number; currency: string }[] = []
+  const costs: { amount: number; currency: string; free?: true }[] = []
+  const paid = new Set<string>()
   let silent = 0
   const add = (digest: UsageDigest | undefined, participant: boolean) => {
     const used = digest ? digestTokens(digest) : undefined
@@ -1081,11 +1089,13 @@ export function roundtableTotal(
     if (participant && used === undefined && !cost) silent++
     if (used !== undefined) tokens = (tokens ?? 0) + used
     if (!cost) return
+    if (digest?.free !== true) paid.add(cost.currency)
     const same = costs.find((c) => c.currency === cost.currency)
     if (same) same.amount = round6(same.amount + cost.amount)
     else costs.push({ amount: round6(cost.amount), currency: cost.currency })
   }
   for (const digest of participants) if (digest !== null) add(digest, true)
   for (const digest of steps) add(digest, false)
-  return { ...(tokens !== undefined ? { tokens } : {}), costs, silent }
+  const marked = costs.map((c) => (paid.has(c.currency) ? c : { ...c, free: true as const }))
+  return { ...(tokens !== undefined ? { tokens } : {}), costs: marked, silent }
 }

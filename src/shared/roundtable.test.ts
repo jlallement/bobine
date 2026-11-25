@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  attemptsTotal,
   ROUNDTABLE_LETTERS,
   canRebut,
   canRelaunch,
@@ -1095,5 +1096,21 @@ describe('tour de table : consommation de toutes les tentatives d’une étape (
     rt = apply(rt, ...race('verdict', { type: 'decide', at: 15 }))
     expect(rt.phase).toBe('decided')
     expect(rt.verdict?.usage).toEqual({ turns: 2, total: 10, cost: bob(0.2015) })
+  })
+})
+
+describe('tour de table : gratuité d’une étape (recette de la 1.2.0-beta.1, G-B1)', () => {
+  it('toutes les tentatives de modèles gratuits : le total le dit ; sinon non', () => {
+    const usd = { amount: 0, currency: 'USD' }
+    const free = attemptsTotal([
+      { at: 1, usage: { total: 10, free: true }, costStart: 0, costEnd: usd },
+      { at: 2, usage: { total: 5, free: true }, costStart: 0, costEnd: usd }
+    ])
+    expect(free).toEqual({ total: 15, cost: usd, free: true })
+    const mixed = attemptsTotal([
+      { at: 1, usage: { total: 10, free: true }, costEnd: usd },
+      { at: 2, usage: { total: 5 }, costEnd: usd }
+    ])
+    expect(mixed?.free).toBeUndefined()
   })
 })

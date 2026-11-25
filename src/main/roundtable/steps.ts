@@ -19,6 +19,7 @@ import type { AttentionState } from '@shared/attention'
 import type { MessageOrigin } from '@shared/children'
 import { messageOf } from '@shared/errors'
 import { shortModelName } from '@shared/models'
+import { freeModels } from '@shared/usage'
 import type { Roundtable, RoundtableEvent, RoundtableStepKind } from '@shared/roundtable'
 import { synthesisRequest, verdictRequest } from '@shared/roundtable-prompts'
 import type { ConversationManager } from '../conversations/manager'
@@ -237,7 +238,9 @@ export class MotherSteps {
     // Ce que la tentative a consommé, même en échec ou arrêtée (contre-recette N3) ; un coût
     // communiqué après coup lui revient aussi (`costWatch`).
     const transcriptUsage = this.host.conversations.view(motherId).transcript.usage
-    const spent = lastTurnDigest(transcriptUsage)
+    const turn = lastTurnDigest(transcriptUsage)
+    // Gratuité des modèles de la conversation (fiche 266), comme dans son résumé (G-B1).
+    const spent = turn && freeModels(transcriptUsage) ? { ...turn, free: true } : turn
     const costEnd = transcriptUsage?.cost
     const usage = { ...(spent ? { usage: spent } : {}), ...(costEnd ? { costEnd } : {}) }
     const watch = { ...ref, attempt: this.host.read(motherId, roundtableId)?.[step]?.sentAt }

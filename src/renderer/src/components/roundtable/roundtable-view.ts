@@ -433,7 +433,10 @@ export function totalText(total: RoundtableTotal): string | undefined {
     parts.push(i18next.t('roundtable.card.tokens', { tokens: formatTokens(total.tokens, true) }))
   // Le format de coût de l'app (`costText` : jamais « ≈ 0,00 », M12) ; les participants sans
   // chiffre ne sont plus comptés ici, le détail au survol dit « — » pour eux (simplification 5).
-  if (total.costs.length) parts.push(total.costs.map((c) => costText(c, false)).join(' + '))
+  // Un total nul de modèles gratuits se lit « gratuit » ; « coût inconnu » reste pour un coût nul
+  // d'un modèle payant (recette de la 1.2.0-beta.1, G-B1).
+  if (total.costs.length)
+    parts.push(total.costs.map((c) => costText(c, c.free === true)).join(' + '))
   // Seulement des participants muets : rien d'utile à dire en pied.
   if (total.tokens === undefined && total.costs.length === 0) return undefined
   return parts.join(' · ')
