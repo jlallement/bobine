@@ -47,8 +47,9 @@ export interface ReadOnlyWatchDeps {
 /** Ce qu'on sait d'un écart, pour l'attribuer (participants d'un tour de table, fiche 285). */
 export interface ChangeFacts {
   /**
-   * L'écart lui revient : il a lui-même lancé un outil qui peut écrire pendant ce tour, ou aucun
-   * autre membre de son groupe ne travaillait pendant ce tour.
+   * L'écart lui revient : il a lui-même lancé un outil qui peut écrire (`edit`, `delete`, `move`,
+   * `execute`) pendant ce tour. Rien d'autre, jamais le minutage (décision du tech lead du
+   * 2026-11-25 : « seul au travail » accusait à tort un participant sur une machine lente).
    */
   attributable: boolean
   /** Son tour s'est arrêté ou a échoué (jamais marqué). */
@@ -65,8 +66,6 @@ interface Turn {
   group?: string
   /** Elle a lancé elle-même un outil qui peut écrire pendant ce tour. */
   wrote: boolean
-  /** Un autre membre de son groupe a travaillé pendant une partie de ce tour. */
-  overlapped: boolean
 }
 
 /** Fille en lecture seule suivie ici : un rôle de conseil, ou le Code reviewer (fiche 265). */
@@ -186,21 +185,11 @@ export class ReadOnlyWatch {
    */
   private begin(id: string, workspace: string, baseline: Promise<string | undefined>): void {
     const group = this.deps.group?.(id)
-    // Tours du même groupe qui se chevauchent : aucun n'est seul pendant ce temps.
-    let overlapped = false
-    if (group !== undefined) {
-      for (const [other, turn] of this.turns) {
-        if (other === id || turn.group !== group) continue
-        turn.overlapped = true
-        overlapped = true
-      }
-    }
     this.turns.set(id, {
       workspace,
       baseline,
       shared: false,
       wrote: false,
-      overlapped,
       ...(group ? { group } : {})
     })
   }
@@ -247,7 +236,7 @@ export class ReadOnlyWatch {
     }
     if (after === before) return
     log.warn(`Rôle en lecture seule (${id.slice(0, 8)}) : le dossier a changé pendant son tour`)
-    this.deps.changed?.(id, { attributable: turn.wrote || !turn.overlapped, stopped })
+    this.deps.changed?.(id, { attributable: turn.wrote, stopped })
     this.deps.conversations.post(id, {
       type: 'notice',
       level: 'warning',

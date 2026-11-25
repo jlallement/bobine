@@ -247,7 +247,7 @@ describe('garde-fou des rôles en lecture seule (fiche 223)', () => {
     expect(posted).toEqual([])
   })
 
-  it('passe de contrôle S1 : écart attribuable à qui a écrit, ou à qui travaillait seul ; jamais à un tour arrêté ; mère jamais avertie', async () => {
+  it('passe de contrôle S1 : écart attribuable à qui a écrit, seulement ; jamais à un tour arrêté ; mère jamais avertie', async () => {
     let folder = 'propre'
     const run: Run = async (_file, args) => ({
       code: 0,
@@ -284,14 +284,21 @@ describe('garde-fou des rôles en lecture seule (fiche 223)', () => {
       b: { attributable: false, stopped: false },
       c: { attributable: false, stopped: true }
     })
-    // Un seul participant au travail : l'écart lui revient, même sans outil annoncé.
+    // Ordre vu sous Windows : l'écriture de `a` (par son outil) ne paraît dans le dossier qu'après
+    // la fin de son tour, pendant celui de `b`, seul au travail et sans outil d'écriture. `b`
+    // n'est pas accusé : seul compte l'outil qu'il a lui-même appelé, jamais le minutage.
     facts.length = 0
+    send('a', userMessage)
+    send('a', edit)
+    await tick()
+    send('a', turnEnd)
+    await watch.settled('a')
     send('b', userMessage)
     await tick()
     folder = `${folder}+`
     send('b', turnEnd)
     await watch.settled('b')
-    expect(facts).toEqual([['b', { attributable: true, stopped: false }]])
+    expect(facts).toEqual([['b', { attributable: false, stopped: false }]])
     // La conversation d'origine ne reçoit aucun bandeau par participant.
     expect(posted.filter(([id]) => id === 'm')).toEqual([])
   })

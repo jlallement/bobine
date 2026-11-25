@@ -62,8 +62,9 @@ participant en erreur dit pourquoi et propose **Relancer** ; un modèle refusé 
 (« modèle non appliqué ») et signalé dans le menu au tour suivant.
 
 Si le dossier change pendant le tour, un seul avis le dit dans la carte, sous les lignes : « Le
-dossier a changé pendant le tour de table : <fichiers>. Vérifiez avant d'appliquer. » La ligne du
-participant qui a écrit, quand on le sait, porte « fichiers modifiés ».
+dossier a changé pendant le tour de table : <fichiers>. Vérifiez avant d'appliquer. » La ligne d'un
+participant porte « fichiers modifiés » seulement s'il a lui-même appelé un outil qui écrit ou une
+commande pendant son tour ; sinon, personne n'est désigné.
 
 **Synthétiser sans attendre** apparaît dès deux avis : les participants encore au travail
 s'arrêtent. **Arrêter** arrête un participant, ou tout le tour.

@@ -1268,8 +1268,9 @@ le main n'a pas livré l'étape 1) :
     fichiers lus dans `git status` (empreinte avant les questions ou les répliques, comparée à la
     fin de l'étape, `tour-folder.ts`).
   - Une place n'est marquée `changedFolder` que si l'écart lui est attribuable : elle a lancé un
-    outil `edit`, `delete`, `move` ou `execute` pendant son tour, ou aucun autre participant du
-    tour ne travaillait pendant son tour. Jamais un tour arrêté ou en échec.
+    outil `edit`, `delete`, `move` ou `execute` pendant son tour. Jamais un tour arrêté ou en
+    échec. (La règle « ou seul au travail pendant son tour » a été retirée le même jour : elle
+    dépendait du minutage et accusait à tort sous Windows, voir plus bas.)
   - Plus de bandeau par participant dans la conversation d'origine (celui du participant reste ;
     rôles de conseil inchangés).
   - Demande de synthèse ou de décision : une seule mention, « The folder changed during the
@@ -1323,3 +1324,10 @@ le main n'a pas livré l'étape 1) :
     autre participant répliquait en même temps : le scénario annonce son outil `write`.
   - Bornes injectables : `RoundtablesDeps.timeouts` (`stopMs`, `relaunchMs`) ; les essais les
     règlent à 60 s, pour qu'une attente qui irait à sa borne échoue au lieu de passer lentement.
+
+- 2026-11-25 : CI Windows au commit 5bf5ac2c (branche `1.2-fix9-engine`). Un participant qui
+  n'avait rien écrit était désigné (« Attributable to Participant B, Participant C ») : seul au
+  travail pendant que l'écriture d'un autre paraissait dans le dossier. **Décision du tech lead** :
+  la règle « seul au travail » est retirée ; une place n'est attribuable que si elle a elle-même
+  appelé un outil `edit`, `delete`, `move` ou `execute` pendant son tour. Sinon, seule la marque
+  du tour reste, « No participant can be identified as the author. ». Page d'aide corrigée.
