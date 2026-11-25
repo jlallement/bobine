@@ -214,3 +214,7 @@ reçu, défilement de 300 px ; `capturePage({ stayHidden })` d'une page masquée
   DevTools (`Input.dispatchMouseEvent` sur la page) juste après l'apparition du bandeau arrive au
   bon point dans l'e2e, et la vue native suit bien la zone (bornes identiques). Piste ouverte :
   ordre bandeau / clic de l'outil de recette, ou mise en page du jeu dépendant de la hauteur.
+- **Complément** : la bulle s'ouvre aussi quand l'épingle a le focus clavier (les épingles sont des
+  boutons, atteints par Tab ; Entrée rouvre la remarque) et se referme au départ du focus. Survol
+  réel vérifié dans l'e2e (souris déplacée par `Input.dispatchMouseEvent`) : épingle 2 survolée, sa
+  bulle seule ; épingle 1, la sienne seule ; souris sur le titre, toutes fermées (capture `28o`).

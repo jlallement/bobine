@@ -174,6 +174,9 @@ export const LAYER_SCRIPT = `(() => {
         node.addEventListener('mouseenter', enter)
         node.addEventListener('mouseleave', leave)
       }
+      // Épingle atteinte au clavier (Tab ; Entrée la rouvre) : sa bulle s'ouvre comme au survol.
+      pin.addEventListener('focus', enter)
+      pin.addEventListener('blur', leave)
       box.append(pin)
       if (bubble) box.append(bubble)
       nodes.set(item.id, { pin, bubble, item })

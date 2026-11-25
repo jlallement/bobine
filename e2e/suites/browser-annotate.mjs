@@ -207,6 +207,53 @@ async function annotateChecks(ui, main) {
   await ui.waitFor(`!${ui.$('page-note-input')}`)
   await until(viewShown)
 
+  // Bulles fermées, ouvertes au survol réel (souris déplacée par le protocole DevTools) : une seule
+  // à la fois ; souris ailleurs, elle se referme. Zones des bulles dans le panneau de 319 px : sous
+  // l'épingle 1 (120, 144), y 155 à 190 ; sous l'épingle 2 (140, 230), y 241 à 276 ; x 61 à 311.
+  // « Ailleurs » : sur le titre, dont le contour de survol ne touche pas ces zones.
+  const hoverAt = (x, y) =>
+    main.evaluate(
+      `${VIEW}.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', x: ${x}, y: ${y} })`
+    )
+  const band = (top, bottom) =>
+    main.evaluate(`(async () => {
+      const view = ${VIEW}
+      const img = await view.webContents.capturePage()
+      const size = img.getSize()
+      const s = size.width / view.getBounds().width
+      const b = img.toBitmap()
+      let sum = 0
+      for (let y = Math.round(${top} * s); y < Math.round(${bottom} * s); y += 2)
+        for (let x = Math.round(70 * s); x < Math.round(300 * s); x += 2) {
+          const i = (y * size.width + x) * 4
+          sum += b[i] + b[i + 1] * 3 + b[i + 2] * 7
+        }
+      return sum
+    })()`)
+  const bands = async () => [await band(158, 188), await band(244, 274)]
+  await hoverAt(250, 30)
+  await sleep(500)
+  const closed = await bands()
+  await hoverAt(153, 217)
+  const onlySecond = await until(async () => {
+    const [one, two] = await bands()
+    return one === closed[0] && two !== closed[1]
+  })
+  await ui.shot('28o-annoter-survol')
+  check(onlySecond, 'survol de l’épingle 2 : sa bulle s’ouvre, seule')
+  await hoverAt(133, 131)
+  const first = await until(async () => {
+    const [one, two] = await bands()
+    return one !== closed[0] && two === closed[1]
+  })
+  check(first, 'survol de l’épingle 1 : sa bulle s’ouvre, celle de la 2 se referme')
+  await hoverAt(250, 30)
+  const none = await until(async () => {
+    const [one, two] = await bands()
+    return one === closed[0] && two === closed[1]
+  })
+  check(none, 'souris ailleurs : les bulles se referment')
+
   // Plus bas : la page défile, troisième remarque sur `#bas`, bouton « Ajouter ».
   await scrollTo(1300)
   const low = await inPage(

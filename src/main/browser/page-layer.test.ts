@@ -141,6 +141,23 @@ describe('script de la page en mode Annoter (fiche 146)', () => {
     vi.useRealTimers()
   })
 
+  it('épingle atteinte au clavier : sa bulle s’ouvre au focus, se referme au départ', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    layer.pins([
+      { id: 'na1', n: 1, text: 'Trop petit', doc: { x: 300, y: 40 } },
+      { id: 'na2', n: 2, text: 'Trop serré', doc: { x: 320, y: 60 } }
+    ])
+    const root = shadows[0] as ShadowRoot
+    const [, pin2] = [...root.querySelectorAll<HTMLElement>('.pin')]
+    const [bubble1, bubble2] = [...root.querySelectorAll<HTMLElement>('.bubble')]
+    pin2?.focus()
+    expect([bubble1?.style.display, bubble2?.style.display]).toEqual(['none', 'block'])
+    pin2?.blur()
+    vi.advanceTimersByTime(400)
+    expect(bubble2?.style.display).toBe('none')
+    vi.useRealTimers()
+  })
+
   it('curseur en croix sur toute la page, même contre un style de la page ; parti à l’arrêt', () => {
     const page = document.createElement('style')
     page.textContent = 'button { cursor: pointer } #cible { cursor: grab }'
