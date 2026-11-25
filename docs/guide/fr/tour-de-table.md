@@ -18,15 +18,17 @@ Ici, vous pouvez :
 ## Lancer un tour de table
 
 Tapez `/roundtable` suivi de votre question, ou cliquez sur le bouton du tour de table dans la
-barre de la zone de saisie, puis écrivez la question. La question porte alors l'étiquette « Tour
+barre de la zone de saisie, puis écrivez la question. Quand la fenêtre est étroite, le bouton passe
+dans le menu de 📎 (« Tour de table ») ; là où 📎 n'a pas de menu (sans capture d'écran), il reste
+la commande `/roundtable`. La question porte alors l'étiquette « Tour
 de table », et une ligne grise s'affiche dessous :
 « 3 participants ▾ + synthèse · au moins 4 fois les jetons d'une question simple ». ↩ envoie.
 
 Échap, la croix de la ligne, ou ⌫ en tête de la question ramènent à une question simple.
 
 Un tour de table ne se lance pas depuis un travail délégué, ni dans l'espace Discussion. Un seul
-tour à la fois par conversation : un second est refusé tant que le premier n'a pas rendu sa
-synthèse. Une question de plus de 8 000 caractères est refusée aussi : joignez le détail en
+tour à la fois par conversation : tant que le premier n'a pas rendu sa synthèse, le bouton est
+grisé et `/roundtable` aussi, dans la liste des commandes, avec sa raison. Une question de plus de 8 000 caractères est refusée aussi : joignez le détail en
 fichier.
 
 <a id="participants"></a>
@@ -36,14 +38,14 @@ fichier.
 « 3 participants ▾ » ouvre un menu à cases : les modèles utilisés récemment d'abord, puis
 **Autres modèles…** pour chercher dans la liste complète. Un agent qui ne laisse pas choisir son
 modèle (IBM Bob) tient sur une ligne. Un agent absent de cet ordinateur n'est pas proposé. De deux
-à cinq participants ; au-delà, les autres cases se
-désactivent.
+à cinq participants ; au-delà, les autres cases se désactivent, et la ligne d'état en bas du menu
+dit pourquoi.
 
 Chaque case est retenue aussitôt, pour ce tour et les suivants : il n'y a rien à enregistrer. La
 première fois, la ligne dit « Choisir les participants », et ↩ ouvre le menu.
 
-Au survol de « 3 participants », une infobulle dit chez qui part chaque question et ce qui part
-avec : les fichiers joints, le dernier échange de la conversation.
+Au survol de « 3 participants », une infobulle dit, pour chaque agent, où part la question, et ce
+qui part avec : les fichiers joints, le dernier échange de la conversation.
 
 <a id="avis"></a>
 
@@ -51,14 +53,17 @@ avec : les fichiers joints, le dernier échange de la conversation.
 
 Une carte « Tour de table » s'affiche sous la question. Chaque participant y a sa ligne : son
 modèle et son agent, ce qu'il lit, depuis combien de temps. Les participants sont en lecture
-seule : un bouclier le rappelle, plein quand c'est garanti, marqué quand ce n'est que demandé (un
-agent qui écrit sans demander). « Demandée », la lecture seule n'est vérifiée que dans le dépôt
-git : Bobine compare le dépôt avant et après, et si un participant le modifie quand même, sa ligne
-le dit. Hors d'un dépôt git, elle n'est pas vérifiée du tout, et la ligne le dit aussi.
+seule ; le pied de la carte dit le niveau (garantie, ou seulement demandée et vérifiée sur les
+fichiers suivis par git) ; une ligne dont le niveau diffère porte un bouclier.
 
-Une fois rendu, l'avis montre sa réponse courte et sa confiance ; un clic le déplie en entier,
-avec **Ouvrir sa conversation**. Un participant en erreur dit pourquoi et propose **Relancer** ;
-un modèle refusé propose **Choisir un autre modèle**, pour les tours suivants.
+Une fois rendu, l'avis montre sa réponse courte et sa confiance. Un clic sur une ligne la déplie :
+l'avis entier, ou le détail d'une erreur ou d'un arrêt, et **Ouvrir sa conversation**. Un
+participant en erreur dit pourquoi et propose **Relancer** ; un modèle refusé est dit sur sa ligne
+(« modèle non appliqué ») et signalé dans le menu au tour suivant.
+
+Si le dossier change pendant le tour, un seul avis le dit dans la carte, sous les lignes : « Le
+dossier a changé pendant le tour de table : <fichiers>. Vérifiez avant d'appliquer. » La ligne du
+participant qui a écrit, quand on le sait, porte « fichiers modifiés ».
 
 **Synthétiser sans attendre** apparaît dès deux avis : les participants encore au travail
 s'arrêtent. **Arrêter** arrête un participant, ou tout le tour.
@@ -78,8 +83,9 @@ carte (« conversation à la corbeille ») ; restaurée, sa ligne redevient ce q
 
 Quand tous ont fini avec au moins deux avis, la conversation reçoit d'elle-même les avis, sans le
 nom des modèles (« Participant A, B, C ») : elle juge les arguments, pas les marques. Sa réponse
-porte l'étiquette « Synthèse du tour de table », et la carte se replie en une ligne (un clic la
-rouvre). Au survol ou au focus de « Participant C » (ou « Participants B et C »), le vrai nom
+porte une seule ligne d'étiquette, « Synthèse du tour de table · <modèle> · N avis », et la carte
+se replie en deux lignes : l'en-tête et **Consommé** (un clic la rouvre ; les lignes y sont alors
+rangées par lettre). Au survol ou au focus de « Participant C » (ou « Participants B et C »), le vrai nom
 s'affiche ; sur la carte, chaque ligne porte sa lettre, pour faire le lien quand la synthèse écrit
 la lettre seule.
 
