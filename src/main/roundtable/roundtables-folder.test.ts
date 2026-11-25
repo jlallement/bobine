@@ -110,3 +110,46 @@ describe('dossier changé pendant un tour de table (passe de contrôle, S1)', ()
     expect(folderNotices(env, mother)).toEqual([])
   }, 40_000)
 })
+
+describe('attribution et « Synthétiser sans attendre » (échec e2e macOS du 2026-11-25)', () => {
+  it('l’écrivain reste marqué après la synthèse sans attendre, et la demande le nomme', async () => {
+    const lock = lockFile()
+    const env = await roundtableEnv({
+      lead: 'echo',
+      profiles: (mock) => [
+        mock('ecrit', 'participant-ecrit', [], { writesWithoutAsking: true }),
+        mock('lent', 'avis-participant', ['--verrou-fin-de-tour', lock], {
+          writesWithoutAsking: true
+        })
+      ]
+    })
+    envs.push(env)
+    const mother = await motherWithExchange(env)
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [
+        choice('ecrit', 'factice-rapide'),
+        choice('panel', 'factice-rapide'),
+        choice('lent', 'factice-rapide')
+      ]
+    })
+    const writer = () => env.rt(mother).seats.find((s) => s.profileId === 'ecrit')
+    await env.waitFor(
+      () =>
+        !!writer()?.changedFolder &&
+        env.rt(mother).seats.filter((s) => s.state === 'answered').length === 2,
+      'écrivain marqué, deux avis'
+    )
+    // Le lent travaille encore : « Synthétiser sans attendre » l'arrête.
+    env.roundtables.synthesize(mother, env.rt(mother).roundtableId)
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue', 20_000)
+    rmSync(lock)
+    const slow = env.rt(mother).seats.find((s) => s.profileId === 'lent')
+    expect(slow).toMatchObject({ state: 'stopped', stopped: 'early-synthesis' })
+    expect(slow?.changedFolder).toBeUndefined()
+    expect(writer()?.changedFolder).toBe(true)
+    expect(env.replies(mother).at(-1)).toContain(
+      `The folder changed during the roundtable: note-participant.md. Attributable to Participant ${writer()?.letter}.`
+    )
+  }, 40_000)
+})
