@@ -346,13 +346,3 @@
     animation: none;
   }
 }
-
-/*
- * « ↓ » visible (fil remonté) : une marge basse sous le dernier élément du fil, pour que la
- * dernière carte (pied « Consommé », confiance des répliques) ne passe pas sous le bouton quand on
- * est près du bas (revue UX de la fiche 285, B18). Ajoutée au bout du fil : rien ne bouge à l'écran
- * quand elle apparaît.
- */
-.main:has([data-testid='scroll-to-bottom']) .scroll > .column > .thread {
-  padding-bottom: 64px;
-}

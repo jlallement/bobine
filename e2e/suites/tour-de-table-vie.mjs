@@ -89,6 +89,29 @@ async function stopAndSidebar(scheme) {
         check(true, 'après l’arrêt : plus de participant dans la barre latérale ni dans Session')
         await affirm(ui, '285-barre-apres', [probes.threadFits()])
 
+        // N9 : « ↓ » près du bas, la carte en bout de fil. Son pied n'est pas sous le bouton, et le
+        // bouton qui disparaît ne fait rien sauter (le fil ne se recale pas).
+        await ui.viewport(1280, 560)
+        const scroller = `document.querySelector('.main > .scroll')`
+        const goTo = (gap) =>
+          ui.ev(
+            `(async () => { const s = ${scroller}; s.scrollTop = s.scrollHeight - s.clientHeight - ${gap}; await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); await new Promise((r) => setTimeout(r, 150)); const card = document.querySelector('[data-testid=roundtable-card]').getBoundingClientRect(); return { gap: s.scrollHeight - s.clientHeight - s.scrollTop, anchor: Math.round(card.top + s.scrollTop), button: !!document.querySelector('[data-testid=scroll-to-bottom]') } })()`
+          )
+        const near = await goTo(70)
+        const foot = await ui.ev(
+          `(() => { const b = document.querySelector('[data-testid=scroll-to-bottom]')?.getBoundingClientRect(); const f = document.querySelector('[data-testid=roundtable-card] [data-testid=roundtable-used]')?.getBoundingClientRect(); return !!b && !!f && (f.bottom <= b.top || f.top >= b.bottom || f.right <= b.left || f.left >= b.right) })()`
+        )
+        const bottom = await goTo(30)
+        check(
+          near.button &&
+            !bottom.button &&
+            foot &&
+            near.anchor === bottom.anchor &&
+            bottom.gap === 30,
+          `« ↓ » près du bas : pied visible, aucun saut à sa disparition (${JSON.stringify({ near, bottom, foot })})`
+        )
+        await ui.viewport()
+
         // « Ouvrir sa conversation » depuis la carte : le participant ouvert reste dans la liste.
         await ui.click(`${rowOf('Alpha')}.querySelector('[data-testid=roundtable-open-row]')`)
         await ui.waitFor(`${activeId}.then((id) => id !== ${JSON.stringify(mother)})`, 10_000)

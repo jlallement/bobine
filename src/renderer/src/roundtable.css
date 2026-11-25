@@ -284,12 +284,19 @@
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
+/* Le titre ne se coupe jamais ; c'est le résumé à droite qui se réduit (points de suspension). */
+.roundtable-card .work-group-title {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 .roundtable-progress {
   margin-left: auto;
-  flex-shrink: 0;
+  min-width: 0;
   color: var(--muted);
   font-size: 13px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .roundtable-state-icon {
   flex-shrink: 0;
@@ -555,4 +562,14 @@
 .roundtable-used:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
+}
+
+/*
+ * Tour de table en bout de fil : un espace réservé sous son pied (« Consommé », confiance des
+ * répliques), pour que « ↓ » ne le couvre pas près du bas (revue UX, B18). Toujours là tant que la
+ * carte est le dernier élément : rien n'apparaît ni ne disparaît avec le bouton, aucun saut (N9).
+ */
+.thread > .roundtable-entry:last-child,
+.thread > :last-child .roundtable-answer > [data-testid='roundtable-rebuttal']:last-child {
+  margin-bottom: 48px;
 }
