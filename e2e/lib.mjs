@@ -1342,3 +1342,43 @@ export async function mainProcess() {
     )
   return { evaluate, close: () => ws.close() }
 }
+
+/**
+ * « ↓ N nouveaux » de façon déterministe (fiche 185, P8) : l'agent (`fil-long-relu`) écrit un long
+ * fil puis attend un fichier ; l'essai relit plus haut à la molette, comme un utilisateur, attend
+ * que l'app le sache (« ↓ » visible), et seulement alors retire le fichier : les réponses qui
+ * suivent arrivent forcément après la relecture. Avant, l'essai remontait le fil à chaque sondage
+ * pendant que l'agent écrivait : sur une machine lente, le fil entier était rendu d'un coup, après
+ * la dernière réponse, et rien de « nouveau » n'arrivait plus.
+ */
+export async function readUpWhileAgentWrites(ui) {
+  const workspace = await ui.ev(
+    `window.api.conversations.get().then((s) => s.conversations.find((c) => c.id === s.activeId)?.workspace ?? '')`
+  )
+  if (!workspace) throw new Error('readUpWhileAgentWrites : dossier de la conversation inconnu')
+  const marker = join(workspace, 'relecture.attente')
+  writeFileSync(marker, '')
+  // Les fils longs déjà là (un `fil-long` plus haut) : on attend celui de ce tour.
+  const step30 = `(document.querySelector('.thread').textContent.split(${JSON.stringify(M('Étape 30'))}).length - 1)`
+  const before = await ui.ev(step30)
+  try {
+    await ui.send('/scenario fil-long-relu')
+    const scroller = `document.querySelector('.thread').closest('.scroll')`
+    // Le long fil est rendu en entier (l'agent attend le fichier) et dépasse la fenêtre.
+    await ui.waitFor(
+      `${step30} > ${before} && ${scroller}.scrollHeight > ${scroller}.clientHeight + 120`,
+      60_000
+    )
+    const at = await ui.ev(
+      `(() => { const r = ${scroller}.getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 3) } })()`
+    )
+    await ui.wheel(at, 0, -4000)
+    await ui.waitFor(`!!document.querySelector('[data-testid="scroll-to-bottom"]')`, 10_000)
+  } finally {
+    rmSync(marker, { force: true })
+  }
+  await ui.waitFor(
+    `/\\d/.test(document.querySelector('[data-testid="scroll-to-bottom"]')?.innerText ?? '')`,
+    20_000
+  )
+}

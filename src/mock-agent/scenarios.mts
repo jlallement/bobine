@@ -465,6 +465,9 @@ const refIn = (text: string | undefined) => /ref_\d+/.exec(text ?? '')?.[0] ?? '
  * Long fil (fiche 047) : 30 étapes de 10 outils terminés (lectures, recherches, commandes), comme
  * une longue session de Bob, pour mesurer le rendu d'un fil chargé.
  */
+/** Fichier que `fil-long-relu` attend de voir disparaître (posé et retiré par l'essai). */
+export const RELECTURE_MARKER = 'relecture.attente'
+
 function longThread(): Step[] {
   const kinds = ['read', 'search', 'execute'] as const
   return Array.from({ length: 30 }, (_, step): Step[] => [
@@ -1349,6 +1352,33 @@ export const scenarios: Record<string, Scenario> = {
           '```'
         ].join('\n')
       }
+    ]
+  },
+  'fil-long-relu': {
+    description:
+      'Long fil (comme `fil-long`), puis l’agent attend tant que `relecture.attente` existe dans le dossier de la session, et écrit encore deux réponses : l’essai relit plus haut avant de retirer le fichier, « ↓ N nouveaux » compte ce qui arrive ensuite (fiche 185, P8)',
+    steps: [
+      ...longThread(),
+      // Attente sur condition (pas sur l'horloge) : au plus 1 500 pauses (60 s au délai par défaut).
+      ...Array.from({ length: 1500 }, (): Step => ({
+        kind: 'when-file',
+        path: RELECTURE_MARKER,
+        then: [{ kind: 'pause', ticks: 1 }],
+        else: []
+      })),
+      { kind: 'text', text: 'Une réponse arrive pendant la relecture.' },
+      {
+        kind: 'update',
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'call_relu_1',
+          title: 'read',
+          kind: 'read',
+          status: 'completed',
+          rawInput: { filePath: '{cwd}/README.md' }
+        }
+      },
+      { kind: 'text', text: 'Terminé.' }
     ]
   },
   'fil-long': {

@@ -10,7 +10,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { L, check, sleep, withApp } from '../lib.mjs'
+import { L, check, readUpWhileAgentWrites, sleep, withApp } from '../lib.mjs'
 
 /**
  * Repère en bas du fil (fiche 261, écran E), contre l'agent factice, dans un dépôt git jetable avec
@@ -199,20 +199,10 @@ async function run(ui, turnLock) {
 
   // Avec « ↓ N nouveaux » : l'agent écrit pendant qu'on relit, et un rôle répond.
   await delegate(ui, turnLock, '@security-expert vérifie encore', 1)
-  await ui.send('/scenario fil-long')
-  await ui.waitFor(
-    `(() => {
-      const s = ${scroller}
-      if (s.scrollHeight > s.clientHeight + 120) s.scrollTop = 0
-      return /\\d/.test(${ui.$('scroll-to-bottom')}?.innerText ?? '')
-    })()`,
-    20_000
-  )
+  await readUpWhileAgentWrites(ui)
   rmSync(turnLock, { force: true })
-  await ui.waitFor(
-    `(() => { ${scroller}.scrollTop = 0; return !!${cue} && /\\d/.test(${ui.$('scroll-to-bottom')}?.innerText ?? '') })()`,
-    30000
-  )
+  // Le rôle répond pendant qu'on relit : le repère paraît, le compte reste (sans défiler).
+  await ui.waitFor(`!!${cue} && /\\d/.test(${ui.$('scroll-to-bottom')}?.innerText ?? '')`, 30000)
   const both = await ui.ev(`(() => {
     const pill = ${ui.$('scroll-to-bottom')}.getBoundingClientRect()
     const dock = document.querySelector('.thread-dock').getBoundingClientRect()

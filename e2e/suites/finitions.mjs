@@ -1,4 +1,4 @@
-import { L, check, sleep, withApp } from '../lib.mjs'
+import { L, check, readUpWhileAgentWrites, sleep, withApp } from '../lib.mjs'
 
 /**
  * Finitions de la 0.9.1 (fiche 185) : le bilan sous la dernière réponse (P4), devenu son pied
@@ -49,17 +49,9 @@ export async function finitionsSuite(scheme) {
     await ui.shot('185-bilan-du-tour')
 
     // Relire plus haut pendant que l'agent écrit : le bouton dit combien de réponses sont arrivées.
-    await ui.send('/scenario fil-long')
-    // Relire en haut du fil pendant que l'agent écrit : chaque tentative le garde en haut, jusqu'à
-    // ce que le bouton dise combien de réponses sont arrivées (attente sur condition, sans pause).
-    await ui.waitFor(
-      `(() => {
-        const scroll = document.querySelector('.thread').closest('.scroll')
-        if (scroll.scrollHeight > scroll.clientHeight + 120) scroll.scrollTop = 0
-        return /\\d/.test(${ui.$('scroll-to-bottom')}?.innerText ?? '')
-      })()`,
-      20_000
-    )
+    // Relire plus haut pendant que l'agent écrit : le bouton dit combien de réponses sont arrivées
+    // depuis (relecture d'abord, puis les réponses : déterministe, sans sondage qui défile).
+    await readUpWhileAgentWrites(ui)
     await ui.ready()
     await ui.shot('185-nouveaux')
     await ui.click(ui.$('scroll-to-bottom'))
