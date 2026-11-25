@@ -98,6 +98,18 @@ jobs:
           skip=()
           [[ ${#suites[@]} -eq 0 ]] && skip=(--skip perf --skip simulator --skip android --skip browser --skip parcours-outils)
           pnpm e2e ${themes[@]+"${themes[@]}"} ${skip[@]+"${skip[@]}"} ${suites[@]+"${suites[@]}"}
+      # Diagnostic (2026-11-25) : le lot anglais est par moments bien plus lent que le français et
+      # des suites y attendent l'agent en vain. Relevé seulement, jamais bloquant : processus du
+      # dépôt ou des dossiers jetables encore vivants, charge, mémoire, plus gros consommateurs.
+      - name: Relevé entre le français et l'anglais
+        continue-on-error: true
+        run: |
+          node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-leftovers.mts || true
+          echo "hw.ncpu : $(sysctl -n hw.ncpu) · mémoire : $(( $(sysctl -n hw.memsize) / 1073741824 )) Gio"
+          memory_pressure -Q 2>/dev/null | tail -n 1 || true
+          uptime
+          echo "Plus gros consommateurs (pid, âge, %CPU, %MEM, commande) :"
+          ps -Ao pid=,etime=,%cpu=,%mem=,comm= -r | head -n 8 || true
       - name: Essais (anglais)
         run: |
           read -ra suites <<< "$SUITES"

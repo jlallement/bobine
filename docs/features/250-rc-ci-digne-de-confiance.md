@@ -182,6 +182,20 @@ Dependabot comme les autres.
   `settings` (`BOBINE_PLATFORM=linux`, 4 × 2 passages) : fermetures, sous-menus, Aurore nuit verts ;
   seules restent les vérifications de la barre d'Electron, propres au Mac. À relancer : `settings`
   sur GitHub Linux.
+- 2026-11-25 — Diagnostic du lot anglais lent sur le runner Mac (branche `1.2` : anglais 23 à
+  33 min contre 15 à 22 en français, échecs « agent pas prêt » ; Linux vert). Avant : seul
+  `withApp` vérifiait les survivants, et seulement ceux qui citent le dossier de données de l'app
+  (fiche 208 : attendus 3 à 10 s, puis tués et l'essai échoue en les nommant) ; rien pour un
+  processus d'une suite hors de ce dossier, ni au niveau du lot. Ajouté, sans rien faire échouer :
+  relevé de fin de lot dans `e2e/run.mjs` (`scripts/e2e-leftovers.mts`, testé) — processus du lot
+  encore vivants (marque `BOBINE_E2E_RUN` dans l'environnement, groupe du lanceur, dépôt, dossier
+  `bob-e2e-`, descendants), avec pid, âge, %CPU, commande, et charge, cœurs, mémoire libre ;
+  étape « Relevé entre le français et l'anglais » dans `e2e.yml` (même relevé sans marque,
+  `hw.ncpu`, mémoire, `memory_pressure`, plus gros consommateurs). Limite : macOS ne montre pas
+  l'environnement des binaires d'Apple (`sh`, `sleep`, `/usr/bin/git`) ; un tel orphelin
+  détaché, hors du groupe du lanceur et sans chemin du dépôt, échappe au relevé. En local
+  (`quick`, `browser-annotate`, `tour-de-table-vie`, `launch`, 5 jobs ; puis `launch`, `quick`
+  en anglais, un job) : aucun processus restant.
 
 ## Reste à vérifier sur GitHub (après la poussée)
 

@@ -41,6 +41,10 @@
  *
  * Avant de jouer, les avis de licence doivent correspondre au build essayé (fiche 217) : c'est ce
  * qui tourne avant chaque envoi.
+ *
+ * À la fin du lot, un relevé (jamais bloquant, `scripts/e2e-leftovers.mts`) : processus du lot
+ * encore vivants (pid, âge, %CPU, commande) et charge de la machine ; « aucun processus restant »
+ * sinon. Diagnostic du lot anglais lent sur le runner Mac de GitHub (fiche 250, 2026-11-25).
  */
 import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, rmSync } from 'node:fs'
@@ -63,6 +67,7 @@ import {
   supported,
   tasksFor
 } from '../scripts/e2e-select.mts'
+import { RUN_MARK, leftoverReport } from '../scripts/e2e-leftovers.mts'
 import { currentPlatformFeatures } from '../src/main/platform.ts'
 import { GLOBAL_SOURCES, SUITES, THEME_SOURCES } from './catalog.mjs'
 import { SUITE_TIMEOUT_MS, runPool } from './pool.mjs'
@@ -70,6 +75,7 @@ import {
   changedFiles,
   lastGreen,
   readDurations,
+  root,
   sourceFingerprint,
   writeDurations,
   writeGreen
@@ -97,6 +103,9 @@ if (unknown.length) {
 }
 /** Processus lancé par `pool.mjs` pour une seule tâche. */
 const isChild = process.env.BOBINE_E2E_JOB !== undefined
+// Marque du lot (relevé de fin, `scripts/e2e-leftovers.mts`) : posée avant tout lancement, héritée
+// par les tâches, les apps, les agents factices, les serveurs de test…
+if (!isChild) process.env[RUN_MARK] = `${process.pid}-${Date.now()}`
 
 if (options.ifNeeded) {
   const current = sourceFingerprint()
@@ -242,6 +251,13 @@ if (fullRun && fingerprint && result.failures === 0) {
 // changer au code de sortie (c'est l'étape du workflow qui ne bloque pas le job).
 if (options.indicative && !isChild && process.env.GITHUB_ACTIONS === 'true') {
   for (const line of indicativeWarnings(result.failed, process.platform)) console.log(line)
+}
+// Relevé (pas un garde-fou) : ce que le lot laisse vivre, et la charge de la machine.
+if (!isChild) {
+  console.log()
+  for (const line of await leftoverReport({ root, runId: process.env[RUN_MARK] })) {
+    console.log(line)
+  }
 }
 console.log(
   result.failures
