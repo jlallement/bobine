@@ -117,8 +117,11 @@ export interface RoundtablesDeps {
   folder?: StepFolder
   /** Modèles d'un agent qu'aucune session n'a annoncés (N2). */
   models?: Pick<AgentModels, 'ensure'>
-  /** Bornes des attentes (essais) : arrêt des participants, fin d'un lancement avant « Relancer ». */
-  timeouts?: { stopMs?: number; relaunchMs?: number }
+  /**
+   * Bornes des attentes (essais) : arrêt des participants, fin d'un lancement avant « Relancer »,
+   * relecture du coût du tour d'avant avant le départ d'une étape.
+   */
+  timeouts?: { stopMs?: number; relaunchMs?: number; previousCostMs?: number }
   /** Attente de la relecture du coût avant de libérer un agent au coût lu après coup (essais). */
   lateCostMs?: number
   /** Attente après un réglage de modèle strict (essais ; `STRICT_SETTLE_MS` sinon). */
@@ -219,6 +222,7 @@ export class Roundtables implements RoundtableService {
       arbiterClash: (motherId, rt) =>
         arbiterInSeats(this.deps.conversations, this.summary(motherId).profileId, motherId, rt),
       gone: (childId) => !!childId && !this.exists(childId),
+      previousCostWaitMs: deps.timeouts?.previousCostMs,
       now: () => this.now()
     })
     this.seats = new SeatEvents({
@@ -523,6 +527,7 @@ export class Roundtables implements RoundtableService {
 
   onEvent({ conversationId: id, event }: ConversationEvent): void {
     this.idle.onEvent(id, event)
+    this.steps.observeCost(id, event)
     const seat = this.seatsByChild.get(id)
     if (seat) this.seats.onEvent(id, seat, event)
     const fromTour = event.type === 'user-message' && event.from?.kind === 'roundtable'

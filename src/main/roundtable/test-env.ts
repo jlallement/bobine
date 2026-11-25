@@ -34,6 +34,8 @@ export interface EnvOptions {
   leadArgs?: string[]
   /** Attente de la relecture du coût avant de libérer un participant (`lateCostMs`). */
   lateCostMs?: number
+  /** Attente bornée de la relecture du coût de l'échange d'avant (essais) ; défaut du produit. */
+  previousCostWaitMs?: number
   /** Attente du modèle strict (`STRICT_SETTLE_MS` en vrai) ; 0 par défaut dans les essais. */
   strictSettleMs?: number
   /** Champs de plus du profil de la conversation qui arbitre. */
@@ -152,9 +154,16 @@ export async function roundtableEnv(options: EnvOptions = {}) {
     // Aucune attente réelle du modèle strict (la branche stricte est prise, sans attendre), sauf
     // l'essai qui la vérifie (modèle qui retombe en silence).
     strictSettleMs: options.strictSettleMs ?? 0,
+
     // Aucune attente ne doit aller à sa borne : un arrêt attend des évènements, jamais la montre
     // (un essai qui y arrive dépasse son délai au lieu de passer lentement).
-    timeouts: { stopMs: 60_000, relaunchMs: 60_000 },
+    timeouts: {
+      stopMs: 60_000,
+      relaunchMs: 60_000,
+      ...(options.previousCostWaitMs !== undefined
+        ? { previousCostMs: options.previousCostWaitMs }
+        : {})
+    },
     ...(options.lateCostMs !== undefined ? { lateCostMs: options.lateCostMs } : {}),
     dropHeld: (id, rt) =>
       costCap.dropHeld(

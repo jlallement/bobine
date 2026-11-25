@@ -29,6 +29,11 @@ import type { FolderBaseline, StepFolder } from './step-folder'
 
 /** Titre d'une demande du tour dans le fil (la question, coupée). */
 const TITLE_CHARS = 80
+/**
+ * Attente, avant le départ d'une étape, de la relecture du coût du tour d'avant (agent au coût lu
+ * après coup, Bob) : au-delà des relectures à heure fixe (1,5 s puis 5 s, `session-cost.ts`).
+ */
+export const PREVIOUS_COST_WAIT_MS = 6_000
 
 export interface StepRef {
   roundtableId: string
@@ -37,7 +42,7 @@ export interface StepRef {
 
 /** Ce que les demandes à la conversation demandent à l'orchestrateur. */
 export interface StepsHost {
-  conversations: Pick<ConversationManager, 'prompt'> & {
+  conversations: Pick<ConversationManager, 'prompt' | 'profileOf'> & {
     state: () => ConversationsState
     view: (id: string) => Pick<ConversationView, 'snapshot' | 'transcript'>
   }
@@ -59,6 +64,8 @@ export interface StepsHost {
   arbiterClash?: (motherId: string, rt: Roundtable) => boolean
   /** Empreinte du dossier autour du tour de l'étape (S1) ; absent : rien n'est surveillé. */
   folder?: StepFolder
+  /** Borne de l'attente du coût du tour d'avant (essais ; `PREVIOUS_COST_WAIT_MS` sinon). */
+  previousCostWaitMs?: number | undefined
   now: () => number
 }
 
@@ -101,6 +108,14 @@ export class MotherSteps {
   private readonly baselines = new Map<string, Promise<FolderBaseline | undefined>>()
   /** Comparaisons de fin d'étape en cours (essais). */
   private readonly comparing = new Map<string, Promise<void>>()
+  /**
+   * Conversations au coût lu après coup dont le coût du dernier tour n'est pas encore relu, avec
+   * les départs d'étape qui l'attendent. Sans cette attente, le relevé tardif du tour d'avant
+   * tomberait après le départ de l'étape et lui serait compté (fix16).
+   */
+  private readonly costPending = new Map<string, Set<() => void>>()
+  /** Départ d'étape dont le coût de départ est inconnu (attente du relevé d'avant dépassée). */
+  private readonly startUnknown = new Set<string>()
 
   constructor(host: StepsHost) {
     this.host = host
@@ -139,6 +154,42 @@ export class MotherSteps {
     this.sending.delete(motherId)
     this.answering.delete(motherId)
     this.costWatch.delete(motherId)
+    this.startUnknown.delete(motherId)
+  }
+
+  /**
+   * Tout évènement de toute conversation : fin de tour d'un agent au coût lu après coup, relecture
+   * attendue ; relevé arrivé, les départs d'étape qui l'attendaient repartent.
+   */
+  observeCost(id: string, event: AgentEvent): void {
+    if (event.type === 'turn-end' || event.type === 'turn-error') {
+      if (this.host.conversations.profileOf(id)?.costSource && !this.costPending.has(id)) {
+        this.costPending.set(id, new Set())
+      }
+    } else if (event.type === 'usage-report' && event.cost) {
+      const waiting = this.costPending.get(id)
+      this.costPending.delete(id)
+      for (const resume of waiting ?? []) resume()
+    }
+  }
+
+  /** Coût du tour d'avant relu (ou rien à attendre) : `true` ; attente dépassée : `false`. */
+  private previousCostRead(id: string): Promise<boolean> {
+    const waiting = this.costPending.get(id)
+    if (!waiting) return Promise.resolve(true)
+    return new Promise((resolve) => {
+      const done = (read: boolean) => {
+        clearTimeout(timer)
+        waiting.delete(onReport)
+        resolve(read)
+      }
+      const onReport = () => done(true)
+      const timer = setTimeout(
+        () => done(false),
+        this.host.previousCostWaitMs ?? PREVIOUS_COST_WAIT_MS
+      )
+      waiting.add(onReport)
+    })
   }
 
   /** À revoir après les évènements en cours : une demande peut-elle partir ? */
@@ -215,11 +266,13 @@ export class MotherSteps {
     // Qui rédige vraiment : l'agent et le modèle de la conversation au départ de la demande.
     const summary = this.host.conversations.state().conversations.find((c) => c.id === motherId)
     const costStart = this.host.conversations.view(motherId).transcript.usage?.pending?.costStart
+    const unknown = this.startUnknown.delete(motherId)
     this.host.apply(motherId, ref.roundtableId, {
       type: 'step-sent',
       step: ref.step,
       at: this.host.now(),
-      ...(costStart !== undefined ? { costStart } : {}),
+      ...(unknown ? { startUnknown: true as const } : {}),
+      ...(costStart !== undefined && !unknown ? { costStart } : {}),
       ...(summary
         ? {
             by: {
@@ -381,7 +434,8 @@ export class MotherSteps {
     // Posé avant l'empreinte et l'appel : le plafond retient le message pendant l'appel
     // (`step-held`), et rien d'autre ne part entre-temps.
     this.sending.set(motherId, ref)
-    void this.prepareFolder(motherId).then(() => {
+    const ready = Promise.all([this.prepareFolder(motherId), this.previousCostRead(motherId)])
+    void ready.then(([, costRead]) => {
       if (this.sending.get(motherId) !== ref) return
       // Tour arrêté pendant l'empreinte : la demande ne part pas.
       const now = this.host.tours(motherId).find((r) => r.roundtableId === ref.roundtableId)
@@ -389,6 +443,12 @@ export class MotherSteps {
         this.sending.delete(motherId)
         this.baselines.delete(motherId)
         return
+      }
+      if (costRead) this.startUnknown.delete(motherId)
+      else {
+        // Relevé d'avant pas arrivé : son départ est inconnu, son coût ne sera pas compté.
+        log.info(`Tour de table ${rt.roundtableId.slice(0, 8)} : coût du tour d'avant non relu`)
+        this.startUnknown.add(motherId)
       }
       log.info(`Tour de table ${rt.roundtableId.slice(0, 8)} : ${step} demandée`)
       this.host.conversations

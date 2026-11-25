@@ -10,6 +10,7 @@ import { t } from 'i18next'
 import { afterEach, describe, expect, it } from 'vitest'
 import { bobDbCosts } from '../agent/bob-costs'
 import { deleteConversation } from '../conversations/family-delete'
+import { roundtableTotal } from '@shared/roundtable'
 import { opinionDigest } from '@shared/roundtable-prompts'
 import { roundtableHandlers } from './ipc'
 import {
@@ -31,18 +32,6 @@ async function setup(options: EnvOptions = {}) {
   const env = await roundtableEnv(options)
   envs.push(env)
   const mother = await motherWithExchange(env)
-  // Arbitre au coût lu après coup (comme Bob) : le coût du premier échange est relu avant le tour.
-  // Sans quoi une étape qui part avant cette relecture compte aussi l'échange d'avant : une course
-  // du produit (fiche 285), que ces essais ne visent pas ; le délai d'un dépôt git la masquait.
-  if (options.leadArgs?.includes('--cout-bob')) {
-    await env.waitFor(
-      () =>
-        (env.manager.state().conversations.find((c) => c.id === mother)?.usage?.cost?.amount ?? 0) >
-        0,
-      'coût du premier échange relu',
-      15_000
-    )
-  }
   return { env, mother }
 }
 
@@ -878,4 +867,62 @@ describe('recette de la 1.2.0-beta.1 : commande lancée par l’arbitre pendant 
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
     expect(env.rt(mother).synthesis?.ranCommand).toBeUndefined()
   })
+})
+
+describe('coût tardif de l’échange d’avant : jamais compté dans le tour (fix16)', () => {
+  /** Arbitre façon Bob, hors dépôt git, coût de chaque tour écrit 3 s après sa réponse. */
+  async function lateBob(extra: EnvOptions = {}) {
+    const bobDb = join(mkdtempSync(join(tmpdir(), 'tour-bob-')), 'bob.db')
+    const env = await roundtableEnv({
+      lead: 'synthese-tour-de-table',
+      leadArgs: ['--bob-db', bobDb, '--cout-bob', '--cout-bob-delai', '3000'],
+      leadProfile: { costSource: bobDbCosts(bobDb) },
+      ...extra
+    })
+    envs.push(env)
+    // Pas d'attente du coût du premier échange : le tour part avant sa relecture.
+    const mother = await motherWithExchange(env)
+    return { env, mother }
+  }
+  const cost = (env: RoundtableEnv, id: string) =>
+    env.manager.state().conversations.find((c) => c.id === id)?.usage?.cost?.amount
+  /** Coût du tour en bobcoins, comme le pied de la carte l'additionne. */
+  const tourBobcoins = (env: RoundtableEnv, mother: string) => {
+    const rt = env.rt(mother)
+    return roundtableTotal(
+      rt.seats.map((s) => summaryOf(env, s.childId)?.usage),
+      [rt.synthesis?.usage, rt.verdict?.usage]
+    ).costs.find((c) => c.currency === 'bobcoins')?.amount
+  }
+
+  it('tour lancé avant la relecture du coût de l’échange : la synthèse ne compte que son tour', async () => {
+    const { env, mother } = await lateBob()
+    expect(cost(env, mother) ?? 0).toBe(0)
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue', 20_000)
+    await env.waitFor(() => cost(env, mother) === 0.025, 'coûts relus', 20_000)
+    await env.waitFor(
+      () => env.rt(mother).synthesis?.usage?.cost !== undefined,
+      'coût de la synthèse',
+      20_000
+    )
+    expect(env.rt(mother).synthesis?.usage?.cost?.amount).toBe(0.0125)
+    expect(tourBobcoins(env, mother)).toBe(0.0125)
+  }, 40_000)
+
+  it('relecture trop tardive (attente bornée dépassée) : un total bas, jamais gonflé', async () => {
+    const { env, mother } = await lateBob({ previousCostWaitMs: 200 })
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue', 20_000)
+    await env.waitFor(() => cost(env, mother) === 0.025, 'coûts relus', 20_000)
+    await env.waitFor(
+      () => env.rt(mother).synthesis?.attempts?.[0]?.costEnd?.amount === 0.025,
+      'relevé tardif de la synthèse',
+      20_000
+    )
+    // Le départ de la synthèse est inconnu : son coût n'est pas compté plutôt que gonflé.
+    expect(env.rt(mother).synthesis?.attempts?.[0]?.startUnknown).toBe(true)
+    expect(env.rt(mother).synthesis?.usage?.cost).toBeUndefined()
+    expect(tourBobcoins(env, mother)).toBeUndefined()
+  }, 40_000)
 })

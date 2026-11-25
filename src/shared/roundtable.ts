@@ -222,6 +222,11 @@ export interface StepAttempt {
   /** Jetons et tours communiqués (le coût est relevé à part, `costStart` / `costEnd`). */
   usage?: UsageDigest
   costStart?: number
+  /**
+   * Départ inconnu : le coût tardif du tour d'avant n'était pas relu à temps (fiche 285, fix16).
+   * Son coût n'est pas compté : un total peut être un peu bas, jamais gonflé.
+   */
+  startUnknown?: true
   costEnd?: { amount: number; currency: string }
 }
 
@@ -310,6 +315,8 @@ export type RoundtableEvent =
       at: number
       /** Coût cumulé de la conversation au départ de la tentative. */
       costStart?: number
+      /** Coût cumulé au départ inconnu (relecture du tour d'avant pas arrivée à temps). */
+      startUnknown?: true
       /** Agent et modèle réellement utilisés pour cette demande. */
       by?: RoundtableStep['by']
     }
@@ -541,6 +548,12 @@ export function attemptsTotal(
     const { cost: turnCost, ...tokens } = attempt.usage ?? {}
     if (Object.keys(tokens).length) total = addDigests(total, tokens)
     const end = attempt.costEnd
+    // Départ inconnu : l'écart pourrait comprendre le tour d'avant, il n'est pas compté (le
+    // relevé borne quand même les tentatives suivantes).
+    if (attempt.startUnknown) {
+      if (end) covered = Math.max(covered ?? -Infinity, end.amount)
+      continue
+    }
     if (!end) {
       if (turnCost) cost = addDigests(cost ? { cost } : undefined, { cost: turnCost })?.cost
       continue
@@ -693,7 +706,8 @@ function reduceStep(
               ...(step.attempts ?? (step.usage ? [{ at: -1, usage: step.usage }] : [])),
               {
                 at: event.at,
-                ...(event.costStart !== undefined ? { costStart: event.costStart } : {})
+                ...(event.costStart !== undefined ? { costStart: event.costStart } : {}),
+                ...(event.startUnknown ? { startUnknown: true as const } : {})
               }
             ]
           })

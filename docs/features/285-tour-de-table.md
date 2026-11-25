@@ -1421,3 +1421,25 @@ le main n'a pas livré l'étape 1) :
   - Retiré après relecture : l'absence d'empreinte par tour pour un participant `enforced`
     (déclaration du profil, pas une observation : Bob peut écrire sans demander si ses règles
     d'approbation le permettent).
+
+- 2026-11-25 : course du coût tardif corrigée dans le produit (relevée à fix15 ; branche
+  `1.2-fix16-engine`). Règle : un total peut être un peu bas, jamais gonflé.
+  - Cause : une étape qui part avant la relecture tardive du coût de l'échange précédent (agent au
+    coût lu après coup, Bob) prend pour départ le coût d'avant cette relecture ; le relevé arrivé
+    pendant l'étape lui comptait aussi l'échange précédent.
+  - Correction : avant le départ d'une étape, attente bornée (6 s, `PREVIOUS_COST_WAIT_MS`, après
+    les relectures de 1,5 et 5 s) du relevé du dernier tour de la conversation quand son profil a
+    un `costSource` et qu'aucun relevé n'a suivi ce tour (`observeCost`, tous les évènements de
+    toutes les conversations). L'attente court en même temps que l'empreinte du dossier. Attente
+    dépassée : la tentative part, marquée `startUnknown`, et son coût n'est pas compté (total bas,
+    coût de l'étape « non communiqué » s'il n'y a qu'elle ; son relevé borne quand même les
+    tentatives suivantes). Choisi plutôt que « le premier relevé après le départ est celui
+    d'avant » : Bob écrit sa dépense au fil du tour (S-B1), ce relevé pourrait déjà compter une
+    part de l'étape, et l'attente donne le compte exact dans le cas ordinaire.
+  - Limite connue : un tour d'avant qui n'a rien coûté (relevé inchangé, donc jamais annoncé) fait
+    attendre l'étape suivante 6 s, puis son coût n'est pas compté.
+  - Essais : agent factice `--cout-bob-delai <ms>` (coût écrit 3 s après la réponse) ; tour lancé
+    avant la relecture (synthèse et pied du tour à 0,0125 au lieu de 0,025, rouge avant la
+    correction) et attente dépassée (borne de 200 ms : départ inconnu, rien de compté, rouge
+    avant). L'attente du coût du premier échange ajoutée aux essais de coût à fix15 est retirée ;
+    les essais où le coût tardif appartient bien à l'étape restent verts.
