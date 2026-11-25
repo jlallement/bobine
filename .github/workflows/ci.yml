@@ -1,5 +1,5 @@
 # Vérification (fiches 105, 229) : `./scripts/verify` (lint, typecheck, tests unitaires) à chaque
-# pull request et à chaque poussée sur `main` (et sur `1.1`, ADR-0068), **sur les trois systèmes**
+# pull request et à chaque poussée sur `main` (et sur `1.1` et `1.2`, ADR-0068, ADR-0073), **sur les trois systèmes**
 # (macOS, Linux, Windows), chacun bloquant : décision de Jérôme (2026-11-15), « rends la CI bloquante sur les trois ». Une
 # version ne se construit que si ces trois jobs sont verts pour son commit (`release.yml`).
 # Les essais de bout en bout ne sont pas ici : `e2e.yml` (Linux à chaque poussée sur `main`, non
@@ -11,9 +11,9 @@ name: CI
 on:
   pull_request:
   push:
-    # `1.1` aussi : ses préversions se publient depuis elle, et `release.yml` exige `ci.yml` vert
-    # sur le commit tagué (ADR-0068). Aucune autre branche.
-    branches: [main, '1.1']
+    # `1.1` et `1.2` aussi : leurs préversions se publient depuis elles, et `release.yml` exige
+    # `ci.yml` vert sur le commit tagué (ADR-0068, ADR-0073). Aucune autre branche.
+    branches: [main, '1.1', '1.2']
   workflow_dispatch:
 
 permissions:

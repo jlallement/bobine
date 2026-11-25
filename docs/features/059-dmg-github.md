@@ -96,3 +96,5 @@ sur le quota gratuit (≈ 200 minutes de Mac par mois).
   `v1.1.*` (préversions de la 1.1) de la branche `1.1` ; toute autre ligne est refusée par le
   job `guard`. `ci.yml` tourne aussi sur les poussées de `1.1`. Procédure inchangée sinon :
   pousser la branche de la ligne, puis le tag.
+- 2026-11-25 — Troisième ligne (ADR-0073) : un tag `v1.2.*` (préversions de la 1.2) part de la
+  branche `1.2`, et `ci.yml` tourne aussi sur ses poussées. Procédure inchangée.
