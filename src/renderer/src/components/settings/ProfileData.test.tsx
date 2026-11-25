@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { BackupCheck, TrashEntry } from '@shared/profile'
+import { onTrashChanged } from '../../trash-events'
 import { RestoreRow, TrashList } from './ProfileData'
 
 const originalApi = window.api
@@ -32,6 +33,22 @@ describe('corbeille (fiche 196)', () => {
     expect(rows[0]?.textContent).toMatch(/^Titre dDiscussion · /)
     expect(rows[0]?.textContent).not.toContain('3973c57d')
     expect(rows[1]?.textContent).toContain('carnet · ')
+  })
+
+  it('restaurer prévient la fenêtre que la corbeille a changé (fiche 285, N10)', async () => {
+    window.api = {
+      ...originalApi,
+      profile: {
+        trash: async () => [entry('c', '/Users/ada/carnet')],
+        restoreFromTrash: async () => []
+      }
+    } as unknown as Window['api']
+    const changed = vi.fn()
+    const stop = onTrashChanged(changed)
+    render(<TrashList readOnly={false} />)
+    fireEvent.click(await screen.findByTestId('trash-restore'))
+    await vi.waitFor(() => expect(changed).toHaveBeenCalled())
+    stop()
   })
 
   it('la mère dit les travaux supprimés avec elle, qui reviendront avec elle (recette rc.4, T7)', async () => {

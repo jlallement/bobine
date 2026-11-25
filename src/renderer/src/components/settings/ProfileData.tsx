@@ -6,6 +6,7 @@ import { ipcErrorText } from '../../ipc-errors'
 import { ConfirmRow, useConfirm } from './ConfirmRow'
 import { Row, SettingsTitle } from './rows'
 import { lastSegment } from '@shared/windows-paths'
+import { notifyTrashChanged } from '../../trash-events'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -155,7 +156,9 @@ export function TrashList({ readOnly }: { readOnly: boolean }) {
             <button
               className="btn small"
               disabled={readOnly}
-              onClick={() => void load(window.api.profile.restoreFromTrash(entry.id))}
+              onClick={() =>
+                void load(window.api.profile.restoreFromTrash(entry.id)).then(notifyTrashChanged)
+              }
               data-testid="trash-restore"
             >
               <Undo2 size={13} />
@@ -178,7 +181,7 @@ export function TrashList({ readOnly }: { readOnly: boolean }) {
                 action={t('settings.data.trash.eraseAction')}
                 onConfirm={() => {
                   confirm.done()
-                  void load(window.api.profile.eraseFromTrash(entry.id))
+                  void load(window.api.profile.eraseFromTrash(entry.id)).then(notifyTrashChanged)
                 }}
                 onCancel={confirm.done}
               />

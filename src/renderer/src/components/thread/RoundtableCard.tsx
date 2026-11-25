@@ -152,13 +152,15 @@ export function useRoundtableTotal(group: RoundtableGroupData, info: SubtasksInf
  */
 export function useSeatPresence(
   item: Roundtable,
-  info: SubtasksInfo | undefined
+  info: SubtasksInfo | undefined,
+  /** Carte ouverte : la corbeille est relue à chaque réouverture (N10). */
+  opened = true
 ): (seat: RoundtableSeat) => SeatPresence {
   const exists = info?.exists
   const missing = item.seats.flatMap((s) =>
     s.childId && exists && !exists(s.childId) ? [s.childId] : []
   )
-  const trashed = useTrashedIds(missing)
+  const trashed = useTrashedIds(missing, opened)
   return (seat) => seatPresence(seat, exists, trashed)
 }
 
@@ -301,7 +303,7 @@ export function RoundtableCard({
   const names = listText(item.seats.map(seatLabel))
   // Une seule lecture seule pour tous : dite au pied ; sinon, le bouclier de chacun (A3).
   const mixed = new Set(item.seats.map((s) => s.readOnly).filter(Boolean)).size > 1
-  const presence = useSeatPresence(item, info)
+  const presence = useSeatPresence(item, info, !collapsed)
   return (
     <div
       className="work-group roundtable-card"

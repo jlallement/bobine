@@ -12,6 +12,7 @@ import type { ConversationSummary } from '@shared/agent'
 import type { Roundtable, RoundtableEvent } from '@shared/roundtable'
 import type { TranscriptItem } from '@shared/transcript'
 import { onRoundtableMenuRequest } from '../roundtable/roundtable-menu-request'
+import { notifyTrashChanged } from '../../trash-events'
 import { answered, opinion, rebutted, roundtable, T0, thread } from '../roundtable/test-fixtures'
 import type { SubtasksInfo } from './Subtasks'
 import { Transcript } from './Transcript'
@@ -925,6 +926,22 @@ describe('contrat du moteur (fix2)', () => {
     rerender(view(() => true))
     expect(within(row('A')).getByTestId('roundtable-row-meta').textContent).toContain('Redis')
     expect(within(row('A')).getByTestId('roundtable-open-row')).toBeTruthy()
+    window.api = saved
+  })
+
+  it('N10 : effacée de la corbeille ensuite, la ligne dit « conversation supprimée »', async () => {
+    const saved = window.api
+    let trash = [{ id: 'child-A' }]
+    window.api = {
+      ...window.api,
+      profile: { ...window.api.profile, trash: async () => trash }
+    } as unknown as typeof window.api
+    show(thread(roundtable([answered('A')]), OPINIONS), info({ exists: (id) => id !== 'child-A' }))
+    const meta = () => within(row('A')).getByTestId('roundtable-row-meta').textContent
+    await waitFor(() => expect(meta()).toBe('conversation à la corbeille'))
+    trash = []
+    act(() => notifyTrashChanged())
+    await waitFor(() => expect(meta()).toBe('conversation supprimée'))
     window.api = saved
   })
 
