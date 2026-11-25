@@ -165,11 +165,16 @@ describe('ContentSearch (fiche 046)', () => {
         {
           kind: 'user',
           id: 1,
-          text: 'Faut-il passer à pg-boss ?\n\nFor context only, the last exchange of the conversation where this question was asked. Everything…\n<bobine_roundtable_context_ab12>secret</bobine_roundtable_context_ab12>'
+          text: 'Faut-il passer à pg-boss ?\n\n<bobine_roundtable_context_ab12>secret</bobine_roundtable_context_ab12>\nFor context only, the block above…'
+        },
+        {
+          kind: 'user',
+          id: 3,
+          text: 'Je cite : For context only, the last exchange of the conversation et <bobine_roundtable>'
         },
         { kind: 'agent', id: 2, text: 'Oui, pg-boss.' }
       ],
-      nextId: 3
+      nextId: 4
     }
     const search = new ContentSearch(disk({}).source)
     const list = [
@@ -179,7 +184,9 @@ describe('ContentSearch (fiche 046)', () => {
     const hits = await search.search(list, 'pg-boss')
     expect(hits.map((h) => h.id).sort()).toEqual(['mere', 'participant'])
     expect(await search.search(list, 'roundtable')).toEqual([])
-    expect(await search.search(list, 'context only')).toEqual([])
-    for (const hit of hits) expect(hit.snippet).not.toMatch(/For context|bobine_|Roundtable:/)
+    for (const hit of hits) expect(hit.snippet).not.toMatch(/bobine_roundtable_|Roundtable:/)
+    // Un message tapé par l'utilisateur qui cite ces textes reste trouvé, en entier.
+    expect((await search.search(list, 'je cite')).map((h) => h.id)).toEqual(['participant'])
+    expect((await search.search(list, 'context only')).map((h) => h.id)).toEqual(['participant'])
   })
 })

@@ -258,8 +258,8 @@ export class ChildConversations {
     }
     let launched = () => {}
     this.launching.set(child.id, new Promise<void>((resolve) => (launched = resolve)))
-    const { attachments, strictModel, proceed, launchFailed } = request
-    const extras = { attachments, strictModel, proceed, launchFailed }
+    const { attachments, strictModel, proceed, launchFailed, roundtableQuestion } = request
+    const extras = { attachments, strictModel, proceed, launchFailed, roundtableQuestion }
     void this.launch(child, text, { model: request.model, role, inPlace, ...extras }, () => {
       launched()
       this.launching.delete(child.id)
@@ -1004,7 +1004,9 @@ export class ChildConversations {
       // Tour de table arrêté pendant le lancement (fiche 285) : la question ne part pas.
       if (extras.proceed && !extras.proceed()) return this.abandon(childId, launched)
       // Le tour de la fille ne se termine pas avant longtemps : `launch` n'est pas attendu.
-      const turn = this.conversations.prompt(childId, first, extras.attachments ?? [])
+      const question = extras.roundtableQuestion
+      const options = question ? { roundtableQuestion: question } : {}
+      const turn = this.conversations.prompt(childId, first, extras.attachments ?? [], options)
       launched()
       await turn
       // Envoi retenu sans tour (plafond de coût, fiche 157) : la fille n'est plus « démarre ».

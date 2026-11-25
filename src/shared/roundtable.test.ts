@@ -565,21 +565,30 @@ describe('tour de table : élément du fil', () => {
     expect(md).not.toMatch(/Roundtable:|bobine_role|You are a participant/)
     // Export de la conversation d'un participant : la question, sans la consigne de l'app.
     const own = exportConversation(
-      { ...summary, id: 'c-0' },
+      { ...summary, id: 'c-0', roundtable: { id: 'rt-1', active: false, state: 'answered' } },
       {
         items: [
           {
             kind: 'user',
             id: 1,
-            text: 'pg-boss ou BullMQ ?\n\nFor context only, the last exchange of the conversation where…\n<bobine_role name="participant">You are a participant'
+            text: 'pg-boss ou BullMQ ?\n\n<bobine_roundtable_context_ab12>x</bobine_roundtable_context_ab12>\nFor context only, the block above…\n<bobine_role name="participant">You are a participant'
+          },
+          {
+            kind: 'user',
+            id: 2,
+            text: 'Je cite <bobine_roundtable> et For context only, the last exchange of the conversation.'
           }
         ],
-        nextId: 2
+        nextId: 3
       },
       'markdown'
     )
-    expect(own).toContain('pg-boss ou BullMQ ?')
-    expect(own).not.toMatch(/For context only|bobine_role/)
+    expect(own).toContain('## Vous · Tour de table\n\npg-boss ou BullMQ ?')
+    expect(own).not.toMatch(/bobine_role|bobine_roundtable_context/)
+    // Un message tapé par l'utilisateur qui cite ces textes sort en entier (contre-revue, N5).
+    expect(own).toContain(
+      'Je cite <bobine_roundtable> et For context only, the last exchange of the conversation.'
+    )
   })
 
   it('provenance de la synthèse : aucun contexte d’origine, même file que son tour', () => {

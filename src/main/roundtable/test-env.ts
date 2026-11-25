@@ -132,7 +132,11 @@ export async function roundtableEnv(options: EnvOptions = {}) {
     providers: () => [],
     random: () => 0,
     dropHeld: (id, rt) =>
-      costCap.dropHeld(id, ({ from }) => from?.kind === 'roundtable' && from.id === rt)
+      costCap.dropHeld(
+        id,
+        ({ from, roundtableQuestion }) =>
+          (from?.kind === 'roundtable' && from.id === rt) || roundtableQuestion === rt
+      )
   })
   late.roundtables = roundtables
   const events: { conversationId: string; event: AgentEvent }[] = []

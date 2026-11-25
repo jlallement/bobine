@@ -236,6 +236,11 @@ export interface PromptOptions {
   askChildren?: boolean
   /** Travail visé par ce message (fiche 263) : marqué dans le contexte joint (`extraContext`). */
   about?: string
+  /**
+   * Question d'un participant de tour de table (fiche 285) : lue seulement par la garde du plafond,
+   * pour l'oublier si elle est retenue puis le tour arrêté, et la nommer sur la carte.
+   */
+  roundtableQuestion?: string
 }
 
 /** Session à rouvrir (option `reopen`). */

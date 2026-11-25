@@ -296,7 +296,12 @@ export class Roundtables implements RoundtableService {
         seat.rebuttal?.state === 'stopped' &&
         old?.rebuttal?.state !== 'stopped' &&
         STOPS_HERE.has(seat.rebuttal.stopped ?? '')
-      if (seatStopped) this.cancel(seat.childId)
+      if (seatStopped) {
+        this.cancel(seat.childId)
+        // Question retenue par le plafond de sa conversation : oubliée, « Continuer » ne la
+        // renverra plus (contre-revue, N1).
+        this.deps.dropHeld?.(seat.childId, after.roundtableId)
+      }
       if (rebuttalStopped) {
         // La réplique en cours s'arrête ; en file ou retenue, elle est retirée. Un tour que
         // l'utilisateur a lancé lui-même dans cette conversation continue.
@@ -667,6 +672,8 @@ export class Roundtables implements RoundtableService {
           }
         : {}),
       ...(attachments.length ? { attachments } : {}),
+      // La question de ce tour : oubliée si elle est retenue par le plafond puis le tour arrêté.
+      roundtableQuestion: roundtableId,
       proceed: () => {
         settle()
         return current() && this.seats.mayStart(ref)

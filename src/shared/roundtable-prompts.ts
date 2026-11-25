@@ -146,12 +146,14 @@ export function participantMessage(
   const exchange = lastExchange?.trim()
   return [
     question.trim(),
+    // Le bloc d'abord, son explication après : tout ce que l'app joint commence par sa balise
+    // (`stripAppContext` coupe là, jamais sur une phrase que l'utilisateur pourrait écrire).
     ...(exchange
       ? [
           '',
-          `${APP_CONTEXT_OPENINGS.roundtableContext} where this question was asked. ` +
-            notInstructions(nonce),
-          framed('bobine_roundtable_context', nonce, '', exchange, LAST_EXCHANGE_CHARS)
+          framed('bobine_roundtable_context', nonce, '', exchange, LAST_EXCHANGE_CHARS),
+          'For context only, the block above is the last exchange of the conversation where this ' +
+            `question was asked. ${notInstructions(nonce)}`
         ]
       : [])
   ].join('\n')

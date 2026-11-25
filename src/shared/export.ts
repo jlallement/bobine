@@ -89,10 +89,18 @@ export function exportConversation(
   ]
   // Participants d'un tour de table (fiche 285) : leurs avis sortent avec le tour, sous leur nom.
   const seats = participantChildren(transcript.items)
+  // Un seul passage : dernier message de l'utilisateur et tours vus jusque-là.
+  const tours = new Map<string, Extract<TranscriptItem, { kind: 'roundtable' }>>()
+  let asked: Extract<TranscriptItem, { kind: 'user' }> | undefined
   for (const item of transcript.items) {
+    if (item.kind === 'roundtable') tours.set(item.roundtableId, item)
+    // Conversation d'un participant : son premier message est la question, avec les blocs de l'app.
+    const question = item.kind === 'user' && !asked && !!summary.roundtable
+    if (item.kind === 'user') asked = item
     if ((item.kind === 'child-started' || item.kind === 'child-report') && seats.has(item.childId))
       continue
-    lines.push(...itemLines(item, transcript, agent), '')
+    const heading = item.kind === 'agent' ? stepHeading(asked, tours) : undefined
+    lines.push(...itemLines(item, transcript, agent, heading, question), '')
   }
   if (hasUsage(transcript.usage)) lines.push('---', '', usageSummary(transcript.usage, agent), '')
   return `${lines
@@ -129,7 +137,11 @@ function originHeading(from: MessageOrigin): string {
 }
 
 /** Message de l'utilisateur, ou d'une autre conversation (sortie d'`itemLines`, complexité bornée). */
-function userLines(item: Extract<TranscriptItem, { kind: 'user' }>): string[] {
+function userLines(
+  item: Extract<TranscriptItem, { kind: 'user' }>,
+  /** Question d'un participant de tour de table (premier message de sa conversation, fiche 285). */
+  question = false
+): string[] {
   // Demande interne d'un tour de table (fiche 285) : jamais son texte en anglais ; la réponse
   // qui suit est marquée (synthèse, décision), la réplique d'un participant aussi.
   if (item.from?.kind === 'roundtable') {
@@ -137,13 +149,14 @@ function userLines(item: Extract<TranscriptItem, { kind: 'user' }>): string[] {
   }
   const attached = (item.attachments ?? []).map((a) => a.name)
   return [
-    `## ${item.from ? originHeading(item.from) : t('export.you')}`,
+    `## ${question ? `${t('export.you')} · ${t('roundtable.name')}` : item.from ? originHeading(item.from) : t('export.you')}`,
     '',
     ...(attached.length
       ? [`*${t('export.attachments', { files: attached.join(', ') })}*`, '']
       : []),
-    // Sans les blocs que l'app joint (consigne d'un rôle, contexte d'un tour de table…).
-    stripAppContext(item.text) ?? '',
+    // Message venu de l'app (provenance) : sans les blocs qu'elle y joint. Un message tapé par
+    // l'utilisateur sort tel quel, même s'il cite ces textes.
+    item.from || question ? (stripAppContext(item.text) ?? '') : item.text,
     // Textes collés (fiche 155) : leur contenu, à la suite du message.
     ...(item.attachments ?? []).flatMap((a) =>
       a.kind === 'text' ? ['', `*${a.name}*`, '', ...longFenced(a.text)] : []
@@ -151,12 +164,19 @@ function userLines(item: Extract<TranscriptItem, { kind: 'user' }>): string[] {
   ]
 }
 
-function itemLines(item: TranscriptItem, transcript: TranscriptState, agent: string): string[] {
+function itemLines(
+  item: TranscriptItem,
+  transcript: TranscriptState,
+  agent: string,
+  /** Titre d'une réponse à une demande du tour de table (synthèse, décision). */
+  heading?: string,
+  question = false
+): string[] {
   switch (item.kind) {
     case 'user':
-      return userLines(item)
+      return userLines(item, question)
     case 'agent':
-      return [`## ${stepHeading(item, transcript) ?? agent}`, '', item.text]
+      return [`## ${heading ?? agent}`, '', item.text]
     case 'role-request':
       // Bulle « @Rôle … » (fiche 263) : la demande, à qui elle est allée.
       return [
@@ -297,16 +317,14 @@ function participantChildren(items: readonly TranscriptItem[]): Set<string> {
 
 /** Réponse à une demande d'un tour de table : « Synthèse du tour de table · <modèle> ». */
 function stepHeading(
-  item: Extract<TranscriptItem, { kind: 'agent' }>,
-  transcript: TranscriptState
+  asked: Extract<TranscriptItem, { kind: 'user' }> | undefined,
+  tours: ReadonlyMap<string, Extract<TranscriptItem, { kind: 'roundtable' }>>
 ): string | undefined {
-  const before = transcript.items.filter((i) => i.id < item.id)
-  const asked = before.findLast((i) => i.kind === 'user')
-  if (asked?.kind !== 'user' || asked.from?.kind !== 'roundtable') return undefined
+  if (asked?.from?.kind !== 'roundtable') return undefined
   const { id, step } = asked.from
-  if (step === 'rebuttal') return undefined
-  const rt = before.findLast((i) => i.kind === 'roundtable' && i.roundtableId === id)
-  const by = rt?.kind === 'roundtable' ? (rt[step]?.by ?? rt.synthesizer) : undefined
+  if (step !== 'synthesis' && step !== 'verdict') return undefined
+  const rt = tours.get(id)
+  const by = rt ? (rt[step]?.by ?? rt.synthesizer) : undefined
   const model = by?.model ?? by?.label ?? ''
   return t(step === 'synthesis' ? 'roundtable.synthesis.label' : 'roundtable.decision.label', {
     model

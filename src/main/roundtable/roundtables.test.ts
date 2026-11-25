@@ -266,7 +266,9 @@ describe('tour de table : réplique et décision (fiche 285, lot 3)', () => {
     expect(queued.map((q) => q.from?.kind ?? 'user')).toEqual(['user', 'roundtable'])
     rmSync(lock)
     await env.waitFor(() => env.rt(mother).phase === 'decided', 'décision rendue', 20_000)
-    const sent = env.users(a ?? '').find((u) => u.from?.kind === 'roundtable')
+    const sent = env
+      .users(a ?? '')
+      .find((u) => u.from?.kind === 'roundtable' && u.from.step === 'rebuttal')
     expect(sent?.from).toMatchObject({ kind: 'roundtable', id, step: 'rebuttal' })
     expect(sent?.text).toContain('You are participant')
     expect(env.users(b ?? '').at(-1)?.from).toMatchObject({ step: 'rebuttal' })
@@ -297,7 +299,9 @@ describe('tour de table : réplique et décision (fiche 285, lot 3)', () => {
       () => env.manager.view(a).snapshot?.status === 'ready',
       'participant A au repos'
     )
-    expect(env.users(a).some((u) => u.from?.kind === 'roundtable')).toBe(false)
+    expect(
+      env.users(a).some((u) => u.from?.kind === 'roundtable' && u.from.step === 'rebuttal')
+    ).toBe(false)
   })
 
   it('un tour d’une autre conversation, ou une place inexistante, ne se pilote pas', async () => {

@@ -155,6 +155,7 @@ export class MotherSteps {
   private sent(motherId: string, from: MessageOrigin | undefined, model?: string): void {
     this.costWatch.delete(motherId)
     // La réplique va aux participants, pas à cette conversation (`seat-events.ts`).
+    // La réplique va aux participants, pas à cette conversation.
     if (from?.kind !== 'roundtable' || from.step === 'rebuttal') return
     const ref = { roundtableId: from.id, step: from.step }
     this.retries.delete(motherId)

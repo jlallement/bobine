@@ -282,3 +282,44 @@ describe('plafond de la conversation d’un participant (S5)', () => {
     expect(card?.kind === 'cost-cap' && card.held).toBe('Demande de synthèse du tour de table')
   })
 })
+
+describe('contre-revue : question retenue puis arrêt (N1, N12)', () => {
+  it('question retenue, place arrêtée : « Continuer » ne l’envoie plus ; un message tapé garde son texte sur la carte', async () => {
+    const lock = lockFile()
+    const { env, mother } = await setup({
+      profiles: (mock) => [
+        mock('lent', 'avis-participant', ['--verrou-fin-de-tour', lock]),
+        mock('demarre', 'avis-participant', ['--demarrage-lent', '600'])
+      ]
+    })
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [choice('lent', 'factice-rapide'), choice('demarre', 'factice-rapide')]
+    })
+    const id = env.rt(mother).roundtableId
+    const seat = () => env.rt(mother).seats.find((s) => s.profileId === 'demarre')
+    await env.roundtables.stop(mother, id, seat()?.letter)
+    const childId = seat()?.childId ?? ''
+    env.manager.post(childId, { type: 'usage-report', cost: { amount: 1, currency: 'USD' } })
+    env.costCap.setCap(childId, { limit: 0.01, unit: 'USD' })
+    await env.roundtables.relaunch(mother, id, seat()?.letter ?? 'A')
+    await env.waitFor(() => seat()?.held === true, 'question retenue')
+    const card = env.items(childId).findLast((i) => i.kind === 'cost-cap')
+    // La place est arrêtée pendant que sa question attend « Continuer ».
+    await env.roundtables.stop(mother, id, seat()?.letter)
+    env.costCap.answer(childId, card?.id ?? 0, 'continue')
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(env.users(childId)).toEqual([])
+    expect(seat()?.state).toBe('stopped')
+    // Un message tapé par l'utilisateur dans cette conversation, retenu : son texte, pas un libellé.
+    env.costCap.setCap(childId, { limit: 0.01, unit: 'USD' })
+    void env.manager.prompt(childId, 'Ma propre question')
+    await env.waitFor(
+      () => env.items(childId).filter((i) => i.kind === 'cost-cap').length === 2,
+      'message tapé retenu'
+    )
+    const typed = env.items(childId).findLast((i) => i.kind === 'cost-cap')
+    expect(typed?.kind === 'cost-cap' && typed.held).toBe('Ma propre question')
+    rmSync(lock)
+  })
+})
