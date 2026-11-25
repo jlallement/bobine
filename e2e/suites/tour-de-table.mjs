@@ -529,6 +529,15 @@ async function degraded(scheme) {
           'modèle refusé par l’agent : « modèle non appliqué », sans substitution'
         )
         await affirm(ui, '285-modele-refuse', [probes.threadFits()])
+        // Les lignes d'au-dessus changent de hauteur en arrivant à leur état (Gamma en erreur, sa
+        // raison sur deux lignes ; Delta et sa marque « a modifié des fichiers ») : sur une machine
+        // lente, cela arrivait entre l'appui et le relâché du clic (GitHub, Mac, sombre : appui sur
+        // « Choisir un autre modèle », relâché sur la ligne de Gamma). On clique une fois la carte
+        // posée : les participants rapides ont fini, seul le lent travaille.
+        await ui.waitFor(
+          `!!${rowOf('Gamma')}?.querySelector('[data-testid=roundtable-relaunch]') && !!${rowOf('Delta')}?.querySelector('[data-testid=roundtable-changed]') && ${rowState('Alpha', 'answered')}`,
+          30_000
+        )
         await ui.click(ui.$('roundtable-other-model'))
         await ui.waitFor(`!!${ui.$('roundtable-menu')}`)
         await ui.key('Escape')
