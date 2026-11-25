@@ -493,6 +493,21 @@ describe('revue UX : saisie et menu', () => {
     expect(names(menu)).toEqual(before)
   })
 
+  it('arbitre (contre-recette) : sa raison en clair sur sa ligne, à la place de l’agent', async () => {
+    api.options.mockResolvedValue(options({ arbiter: { profileId: 'agent-a', model: 'glm' } }))
+    const t = setup([deep, b])
+    t.type('/roundtable Q')
+    const menu = await openMenu()
+    const glmRow = within(menu)
+      .getAllByRole('option')
+      .find((o) => o.textContent?.includes('GLM 5.3 Flash')) as HTMLElement
+    expect(glmRow.getAttribute('aria-disabled')).toBe('true')
+    expect(within(glmRow).getByTestId('roundtable-option-reason').textContent).toBe(
+      'fait la synthèse de ce tour'
+    )
+    expect(glmRow.textContent).not.toContain('Agent A')
+  })
+
   it('A2 : la recherche filtre toute la liste', async () => {
     const t = setup([deep, b])
     t.type('/roundtable Q')

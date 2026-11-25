@@ -6378,6 +6378,7 @@ export type FrResources = {
       readonly gone: 'N’existe plus : décochez-le'
       readonly modelGone: 'Modèle indisponible : décochez-le'
       readonly arbiter: 'C’est le modèle de cette conversation : il fait la synthèse'
+      readonly arbiterShort: 'fait la synthèse de ce tour'
     }
     readonly card: {
       readonly title: 'Tour de table'

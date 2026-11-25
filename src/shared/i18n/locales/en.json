@@ -6314,7 +6314,8 @@
       "once": "Once only, no model choice",
       "gone": "No longer exists: uncheck it",
       "modelGone": "Model unavailable: uncheck it",
-      "arbiter": "It is this conversation’s model: it writes the synthesis"
+      "arbiter": "It is this conversation’s model: it writes the synthesis",
+      "arbiterShort": "writes this roundtable’s synthesis"
     },
     "card": {
       "title": "Roundtable",

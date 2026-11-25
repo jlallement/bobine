@@ -34,6 +34,7 @@ export function RoundtableParticipants({
   onToggle: (entry: MenuEntry) => void
 }) {
   const { t } = useTranslation()
+  const arbiterReason = t('roundtable.menu.arbiter')
   const id = useId()
   // L'ordre des cases est figé à l'ouverture : rien ne glisse sous le pointeur pendant qu'on coche
   // (A2) ; « récents d'abord » ne joue qu'à la réouverture. Cochées et désactivées suivent, elles.
@@ -175,9 +176,19 @@ export function RoundtableParticipants({
                 {entry.checked && <Check size={12} strokeWidth={3} />}
               </span>
               <span className="menu-text roundtable-option-name">{entry.label}</span>
-              {/* Un agent sans choix de modèle tient sur une ligne : son nom n'est pas répété. */}
-              {entry.label !== entry.agentLabel && (
-                <span className="roundtable-option-agent">{entry.agentLabel}</span>
+              {entry.disabled === 'arbiter' || (entry.checked && entry.reason === arbiterReason) ? (
+                // L'arbitre : la raison en clair, courte, à la place de l'agent (même hauteur).
+                <span
+                  className="roundtable-option-agent roundtable-option-reason"
+                  data-testid="roundtable-option-reason"
+                >
+                  {t('roundtable.menu.arbiterShort')}
+                </span>
+              ) : (
+                // Un agent sans choix de modèle tient sur une ligne : son nom n'est pas répété.
+                entry.label !== entry.agentLabel && (
+                  <span className="roundtable-option-agent">{entry.agentLabel}</span>
+                )
               )}
             </div>
           </Fragment>

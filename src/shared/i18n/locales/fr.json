@@ -6594,7 +6594,8 @@
       "once": "Une seule fois, sans choix de modèle",
       "gone": "N’existe plus : décochez-le",
       "modelGone": "Modèle indisponible : décochez-le",
-      "arbiter": "C’est le modèle de cette conversation : il fait la synthèse"
+      "arbiter": "C’est le modèle de cette conversation : il fait la synthèse",
+      "arbiterShort": "fait la synthèse de ce tour"
     },
     "card": {
       "title": "Tour de table",
