@@ -255,7 +255,12 @@ if (options.indicative && !isChild && process.env.GITHUB_ACTIONS === 'true') {
 // Relevé (pas un garde-fou) : ce que le lot laisse vivre, et la charge de la machine.
 if (!isChild) {
   console.log()
-  for (const line of await leftoverReport({ root, runId: process.env[RUN_MARK] })) {
+  const report = await leftoverReport({
+    root,
+    runId: process.env[RUN_MARK],
+    jobs: parallel ? options.jobs : 1
+  })
+  for (const line of report) {
     console.log(line)
   }
 }
