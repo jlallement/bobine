@@ -31,6 +31,18 @@ async function setup(options: EnvOptions = {}) {
   const env = await roundtableEnv(options)
   envs.push(env)
   const mother = await motherWithExchange(env)
+  // Arbitre au coût lu après coup (comme Bob) : le coût du premier échange est relu avant le tour.
+  // Sans quoi une étape qui part avant cette relecture compte aussi l'échange d'avant : une course
+  // du produit (fiche 285), que ces essais ne visent pas ; le délai d'un dépôt git la masquait.
+  if (options.leadArgs?.includes('--cout-bob')) {
+    await env.waitFor(
+      () =>
+        (env.manager.state().conversations.find((c) => c.id === mother)?.usage?.cost?.amount ?? 0) >
+        0,
+      'coût du premier échange relu',
+      15_000
+    )
+  }
   return { env, mother }
 }
 
@@ -455,7 +467,10 @@ describe('recette réelle : arbitre en lecture seule pendant l’étape (S1)', (
   })
 
   it('écriture sans demander pendant la synthèse : l’étape dit le dossier changé et le fichier', async () => {
-    const { env, mother } = await setup({ lead: 'arbitre-ecrit' })
+    const { env, mother } = await setup({
+      git: true,
+      lead: 'arbitre-ecrit'
+    })
     await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
     await env.roundtables.stepFolderChecked(mother)
@@ -468,7 +483,7 @@ describe('recette réelle : arbitre en lecture seule pendant l’étape (S1)', (
   })
 
   it('synthèse sans écriture : rien n’est signalé', async () => {
-    const { env, mother } = await setup()
+    const { env, mother } = await setup({ git: true })
     await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
     await env.roundtables.stepFolderChecked(mother)
@@ -608,6 +623,7 @@ describe('contre-revue : réplique envoyée au repos (N7)', () => {
   it('participant occupé à la demande de réplique : empreinte avant l’envoi, l’écriture est vue', async () => {
     const lock = join(mkdtempSync(join(tmpdir(), 'tour-verrou-')), 'verrou')
     const { env, mother } = await setup({
+      git: true,
       profiles: (mock) => [
         mock('ecrit', 'participant-ecrit-replique', ['--verrou-fin-de-tour', lock], {
           writesWithoutAsking: true

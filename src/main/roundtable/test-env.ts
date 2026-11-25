@@ -43,7 +43,12 @@ export interface EnvOptions {
   /** Autres profils (participants d'un autre agent). */
   profiles?: (mock: MockProfile) => AgentProfile[]
   /** Dossier de travail hors git (défaut : un dépôt git). */
-  noGit?: boolean
+  /**
+   * Vrai dépôt git : seulement pour les essais qui vérifient la surveillance du dossier (empreintes,
+   * « dossier changé », lecture seule demandée, worktrees). Par défaut, un dossier qui n'en est pas
+   * un : aucun processus git (lents sous Windows) là où rien du dossier n'est vérifié.
+   */
+  git?: boolean
   /** Réutilise ce dossier de données (redémarrage de l'app). */
   root?: string
   repo?: string
@@ -69,10 +74,10 @@ export const PRECISE: RoundtableChoice = {
 export const choice = (profileId: string, value?: string): RoundtableChoice =>
   value ? { profileId, model: { controlId: 'model', value, name: value } } : { profileId }
 
-function folder(noGit: boolean): string {
+function folder(inGit: boolean): string {
   const repo = realpathSync(mkdtempSync(join(tmpdir(), 'tour-depot-')))
   writeFileSync(join(repo, 'calc.js'), 'export const mean = (xs) => xs.length\n')
-  if (noGit) return repo
+  if (!inGit) return repo
   const git = (...args: string[]) =>
     execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', ...args], {
       cwd: repo,
@@ -86,7 +91,7 @@ function folder(noGit: boolean): string {
 
 export async function roundtableEnv(options: EnvOptions = {}) {
   const root = options.root ?? mkdtempSync(join(tmpdir(), 'tour-'))
-  const repo = options.repo ?? folder(options.noGit === true)
+  const repo = options.repo ?? folder(options.git === true)
   const mock: MockProfile = (id, scenario, extra = [], profile = {}) => ({
     id,
     label: `Factice ${id}`,

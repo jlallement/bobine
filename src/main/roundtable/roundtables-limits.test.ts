@@ -181,7 +181,7 @@ describe('sélection et places (lot 1)', () => {
   })
 
   it('places de travaux manquantes : rien ne part, jamais un tour partiel', async () => {
-    const { env, mother } = await setup()
+    const { env, mother } = await setup({ git: true })
     env.manager.settings.setPreferences({ maxChildren: 2 })
     const result = await env.roundtables.start(mother, {
       question: QUESTION,
@@ -396,6 +396,7 @@ describe('lecture seule (décision C3)', () => {
 
   it('agent qui écrit sans demander : lecture seule demandée, dossier changé signalé et dit à la synthèse', async () => {
     const { env, mother } = await setup({
+      git: true,
       lead: 'echo',
       profiles: (mock) => [mock('ecrit', 'participant-ecrit', [], { writesWithoutAsking: true })]
     })
@@ -418,6 +419,7 @@ describe('lecture seule (décision C3)', () => {
   it('deux participants qui lancent une commande, le dossier change pendant leurs deux tours : chacun est désigné', async () => {
     const lock = lockFile()
     const { env, mother } = await setup({
+      git: true,
       profiles: (mock) => [
         mock(
           'shell',
@@ -458,6 +460,7 @@ describe('lecture seule (décision C3)', () => {
   it('tour qui ne peut pas être jugé (la conversation écrit dans le même dossier) : « non vérifiée »', async () => {
     const lock = lockFile()
     const { env, mother } = await setup({
+      git: true,
       profiles: (mock) => [
         mock('ecrit', 'avis-participant', ['--verrou-fin-de-tour', lock], {
           writesWithoutAsking: true
@@ -482,7 +485,7 @@ describe('lecture seule (décision C3)', () => {
 
   it('hors dépôt git : le tour marche, lecture seule « non vérifiée » pour un agent qui écrit sans demander', async () => {
     const { env, mother } = await setup({
-      noGit: true,
+      // Hors dépôt git : le défaut de l'environnement d'essai.
       profiles: (mock) => [mock('ecrit', 'avis-participant', [], { writesWithoutAsking: true })]
     })
     const options = env.roundtables.options(mother)

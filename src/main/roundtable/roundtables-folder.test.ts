@@ -26,6 +26,7 @@ function lockFile(): string {
 async function overlapping(scenario: string, others: number) {
   const lock = lockFile()
   const env = await roundtableEnv({
+    git: true,
     profiles: (mock) => [
       mock('ecrit', scenario, ['--verrou-fin-de-tour', lock], { writesWithoutAsking: true }),
       mock('autre', 'avis-participant', ['--verrou-fin-de-tour', lock], {
@@ -90,6 +91,7 @@ describe('dossier changé pendant un tour de table (passe de contrôle, S1)', ()
 
   it('réplique : le dossier changé pendant la réplique est une marque à part', async () => {
     const env = await roundtableEnv({
+      git: true,
       profiles: (mock) => [
         mock('ecrit', 'participant-ecrit-replique', [], { writesWithoutAsking: true }),
         mock('autre', 'avis-participant', [], { writesWithoutAsking: true })
@@ -115,6 +117,7 @@ describe('attribution et « Synthétiser sans attendre » (échec e2e macOS du 2
   it('l’écrivain reste marqué après la synthèse sans attendre, et la demande le nomme', async () => {
     const lock = lockFile()
     const env = await roundtableEnv({
+      git: true,
       lead: 'echo',
       profiles: (mock) => [
         mock('ecrit', 'participant-ecrit', [], { writesWithoutAsking: true }),

@@ -39,7 +39,11 @@ describe('tour de table : lancer et recueillir (fiche 285, lot 1)', () => {
   it('chaque participant est une fille en lecture seule, sans worktree, qui reçoit question, consigne et dernier échange, jamais un autre avis', async () => {
     // Recueil tenu par le verrou : « collecting » juste après le lancement, par construction.
     const lock = lockFile()
-    const { env, mother } = await setup({ lead: 'echo', panel: ['--verrou-fin-de-tour', lock] })
+    const { env, mother } = await setup({
+      git: true,
+      lead: 'echo',
+      panel: ['--verrou-fin-de-tour', lock]
+    })
     const result = await env.roundtables.start(mother, {
       question: QUESTION,
       participants: [FAST, PRECISE],
