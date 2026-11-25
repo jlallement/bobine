@@ -87,32 +87,6 @@ export function arbiterInSeats(
   )
 }
 
-/**
- * Agents des participants arrêtés une fois au repos (recette réelle, G1) : rien ne les garde
- * vivants après leur avis. `release` revérifie le tour (une réplique repartie ne lâche rien) ;
- * une conversation affichée garde son agent (`releaseIdle`).
- */
-export function releaseWhenIdle(
-  rt: Pick<Roundtable, 'seats'>,
-  idle: (childId: string) => Promise<void>,
-  release: (childId: string) => void,
-  lateCost: (childId: string) => boolean
-): void {
-  for (const seat of rt.seats) {
-    const childId = seat.childId
-    if (!childId || seat.removed) continue
-    void idle(childId).then(() => {
-      // Coût lu hors protocole après la réponse (`costSource`, Bob) : l'agent attend la fin de sa
-      // relecture, sinon le plafond de la réplique ne le verrait qu'après son envoi.
-      if (!lateCost(childId)) return release(childId)
-      setTimeout(() => release(childId), LATE_COST_MS).unref()
-    })
-  }
-}
-
-/** Fin de la relecture du coût après un tour (`session-cost.ts` : une minute au plus), et un peu. */
-const LATE_COST_MS = 65_000
-
 /** Le dossier de la conversation est dans un dépôt git (empreinte de la lecture seule possible). */
 export const folderInGit = (workspace: string): boolean =>
   hasFolder(workspace) && inGitRepo(workspace)

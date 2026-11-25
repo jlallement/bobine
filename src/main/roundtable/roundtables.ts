@@ -59,7 +59,6 @@ import {
   arbiterInSeats,
   arbiterOf,
   refusalOf,
-  releaseWhenIdle,
   roundtableOptions,
   type ParticipantMode
 } from './options'
@@ -113,6 +112,8 @@ export interface RoundtablesDeps {
   participantMode?: ParticipantMode
   /** Empreinte du dossier autour de la synthèse et de la décision (S1) ; absent : aucune. */
   folder?: StepFolder
+  /** Attente de la relecture du coût avant de libérer un agent au coût lu après coup (essais). */
+  lateCostMs?: number
   /** Aléa du tirage des lettres (`Math.random` en vrai). */
   random?: () => number
   now?: () => number
@@ -358,16 +359,12 @@ export class Roundtables implements RoundtableService {
     }
     if (after.phase === 'synthesizing' || after.phase === 'deciding') this.steps.schedule(motherId)
     if (AGENTS_RELEASED.has(after.phase) && before.phase !== after.phase) {
-      releaseWhenIdle(
-        after,
-        (childId) => this.idle.wait(childId, STOP_WAIT_MS),
-        (childId) => {
-          const now = this.read(motherId, after.roundtableId)
-          if (now && AGENTS_RELEASED.has(now.phase) && this.exists(childId))
-            this.deps.conversations.releaseIdle(childId)
-        },
-        (childId) => !!this.deps.conversations.profileOf(childId)?.costSource
-      )
+      const late = (id: string) => !!this.deps.conversations.profileOf(id)?.costSource
+      this.idle.releaseSeats(after.seats, late, this.deps.lateCostMs, (childId) => {
+        const now = this.read(motherId, after.roundtableId)
+        if (now && AGENTS_RELEASED.has(now.phase) && this.exists(childId))
+          this.deps.conversations.releaseIdle(childId)
+      })
     }
     if (FINISHED_PHASES.has(after.phase)) this.release(after.roundtableId)
   }

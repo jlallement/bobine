@@ -5,6 +5,9 @@
  */
 import type { AgentEvent } from '@shared/agent'
 
+/** Échéance de la relecture du coût après un tour (`session-cost.ts` : une minute au plus). */
+export const LATE_COST_MS = 65_000
+
 /** Attente d'un tour, au plus, avant de regarder de nouveau (un tour long se réattend). */
 const REST_WAIT_MS = 10_000
 
@@ -13,6 +16,12 @@ const BUSY: ReadonlySet<string> = new Set(['busy', 'starting', 'needs-action'])
 
 export class IdleWaiters {
   private readonly waiters = new Map<string, Set<() => void>>()
+  /**
+   * Coût lu hors protocole après la fin du dernier tour (`usage-report` qui suit `turn-end`) :
+   * l'agent d'un participant au coût lu après coup (Bob) peut alors être libéré (contre-recette N1).
+   */
+  private readonly costRead = new Set<string>()
+  private readonly costWaiters = new Map<string, Set<() => void>>()
   private readonly status: (id: string) => string | undefined
   /** Messages en file d'attente de la conversation (lève si elle n'existe plus). */
   private readonly queued: (id: string) => number
@@ -27,13 +36,67 @@ export class IdleWaiters {
 
   onEvent(id: string, event: AgentEvent): void {
     if (event.type === 'status' && !BUSY.has(event.snapshot.status)) this.release(id)
-    if (event.type === 'turn-end' || event.type === 'turn-error') this.release(id)
+    if (event.type === 'turn-end' || event.type === 'turn-error') {
+      this.costRead.delete(id)
+      this.release(id)
+    }
+    if (event.type === 'usage-report' && event.cost) {
+      this.costRead.add(id)
+      const waiting = this.costWaiters.get(id)
+      this.costWaiters.delete(id)
+      for (const resolve of waiting ?? []) resolve()
+    }
+  }
+
+  /**
+   * Agents des participants arrêtés une fois au repos (recette réelle, G1) ; au coût lu après
+   * coup (`lateCost`, Bob), une fois ce coût lu, au plus à l'échéance (contre-recette N1), sinon
+   * le plafond de la réplique ne le verrait qu'après son envoi. `release` revérifie le tour.
+   */
+  releaseSeats(
+    seats: readonly { childId?: string; removed?: true }[],
+    lateCost: (id: string) => boolean,
+    lateCostMs: number | undefined,
+    release: (id: string) => void
+  ): void {
+    for (const { childId: id, removed } of seats) {
+      if (!id || removed) continue
+      void this.wait(id, REST_WAIT_MS)
+        .then(() => (lateCost(id) ? this.costAfterTurn(id, lateCostMs ?? LATE_COST_MS) : undefined))
+        .then(() => release(id))
+    }
+  }
+
+  /** Résolue quand le coût du dernier tour est lu (tout de suite s'il l'est), ou à `timeoutMs`. */
+  costAfterTurn(id: string, timeoutMs: number): Promise<void> {
+    if (this.costRead.has(id)) return Promise.resolve()
+    return new Promise((resolve) => {
+      const done = () => {
+        clearTimeout(timer)
+        this.costWaiters.get(id)?.delete(done)
+        resolve()
+      }
+      const timer = setTimeout(done, timeoutMs)
+      timer.unref()
+      const set = this.costWaiters.get(id) ?? new Set<() => void>()
+      set.add(done)
+      this.costWaiters.set(id, set)
+    })
   }
 
   /** Conversation partie : plus rien à attendre. */
   release(id: string): void {
     const waiting = this.waiters.get(id)
+    if (!this.status(id)) this.forgetCost(id)
     this.waiters.delete(id)
+    for (const resolve of waiting ?? []) resolve()
+  }
+
+  /** Conversation partie : son coût n'est plus attendu. */
+  private forgetCost(id: string): void {
+    this.costRead.delete(id)
+    const waiting = this.costWaiters.get(id)
+    this.costWaiters.delete(id)
     for (const resolve of waiting ?? []) resolve()
   }
 

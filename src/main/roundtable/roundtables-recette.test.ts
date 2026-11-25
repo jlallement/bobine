@@ -607,3 +607,30 @@ describe('contre-revue : réplique envoyée au repos (N7)', () => {
     expect(seat?.rebuttal).toMatchObject({ state: 'answered', changedFolder: true })
   })
 })
+
+describe('contre-recette : participant au coût lu après coup libéré (N1)', () => {
+  it('agent arrêté dès son coût lu, sans attendre l’échéance', async () => {
+    const bobDb = join(mkdtempSync(join(tmpdir(), 'tour-bob-')), 'bob.db')
+    const { env, mother } = await setup({
+      // Échéance hors de portée de l'essai : seule la lecture du coût peut libérer l'agent.
+      lateCostMs: 120_000,
+      profiles: (mock) => [
+        {
+          ...mock('bob', 'avis-participant', ['--bob-db', bobDb, '--cout-bob'], {
+            childModelChoice: undefined
+          }),
+          costSource: bobDbCosts(bobDb)
+        }
+      ]
+    })
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, choice('bob')] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    const bob = env.rt(mother).seats.find((s) => s.profileId === 'bob')?.childId ?? ''
+    await env.waitFor(
+      () => (summaryOf(env, bob)?.usage?.cost?.amount ?? 0) > 0,
+      'coût de Bob relu',
+      15_000
+    )
+    await env.waitFor(() => env.manager.view(bob).snapshot === null, 'agent de Bob libéré', 8_000)
+  }, 30_000)
+})
