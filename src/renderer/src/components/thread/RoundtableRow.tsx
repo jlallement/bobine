@@ -141,7 +141,7 @@ export const SeatLetters = createContext(false)
 function SeatName({ seat }: { seat: Pick<RoundtableSeat, 'label' | 'agentLabel' | 'letter'> }) {
   const lettered = useContext(SeatLetters)
   return (
-    <span className="work-group-name" data-testid="roundtable-row-name">
+    <span className="roundtable-row-title">
       {lettered && (
         <span
           className="roundtable-seat-letter"
@@ -152,10 +152,12 @@ function SeatName({ seat }: { seat: Pick<RoundtableSeat, 'label' | 'agentLabel' 
           {seat.letter}
         </span>
       )}
-      {seatLabel(seat)}
-      {seat.agentLabel !== seat.label && (
-        <span className="work-group-sub"> · {seat.agentLabel}</span>
-      )}
+      <span className="work-group-name" data-testid="roundtable-row-name">
+        {seatLabel(seat)}
+        {seat.agentLabel !== seat.label && (
+          <span className="work-group-sub"> · {seat.agentLabel}</span>
+        )}
+      </span>
     </span>
   )
 }

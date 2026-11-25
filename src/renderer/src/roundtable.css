@@ -575,12 +575,22 @@
   margin-bottom: 76px;
 }
 
+/* Nom de la ligne, et sa lettre devant une fois la synthèse partie. */
+.roundtable-row-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.roundtable-row-title > .work-group-name {
+  min-width: 0;
+}
 /* Lettre du participant, devant son nom, dès que la synthèse existe (recette, S3). */
 .roundtable-seat-letter {
   display: inline-grid;
   place-items: center;
   min-width: 18px;
   height: 18px;
+  flex-shrink: 0;
   margin-right: 6px;
   padding: 0 4px;
   border: 1px solid var(--border);
