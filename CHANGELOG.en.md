@@ -18,6 +18,9 @@ What changes for you, version by version. Shown in Settings › About.
   conversation’s agent runs a command during the synthesis or the decision, the card says so.
 - **Roundtable**: after “Ask participants to respond”, the roundtable card keeps its “Total used”
   line (tokens, and “cost unknown” when the agent gives no cost), folded or not.
+- **Merging a child task**: the merge commit reads “Merge branch '<task branch>' into <working
+  branch>” and follows the working branch’s history, like a merge made by hand (before: “Merge
+  branch 'master' into bobine/…”, the wrong way round).
 
 ## 1.2.0-beta.1 — November 25, 2026
 

@@ -8,7 +8,6 @@
  * sale, elle ne part pas (`main-dirty`), sauf à le mettre de côté (`git stash -u`) le temps de la
  * fusion. Le commit sert aussi au dossier principal et aux conversations hors worktree.
  */
-import { lstatSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { isAbsolute, join, posix, relative, resolve, sep } from 'node:path'
 import { t } from 'i18next'
@@ -35,7 +34,7 @@ import {
   type RemoteInfo,
   type ResolvedForge
 } from './forge-resolver'
-import { insideWorkspace, parseStatus, statusOf } from './git'
+import { insideWorkspace, mergeIntoBase, onDisk, parseStatus, statusOf } from './git'
 import { gitError, gitErrorLine } from './git-errors'
 import { nativeGitPath, samePathIn } from '../git/git-platform'
 import { lostRevisions, WORKTREES_DIR, type WorktreeInfo } from './worktrees'
@@ -578,7 +577,7 @@ export class WorktreeCycle {
           throw new Error(gitError(merged.stderr) || t('worktrees.gitFailed', { command: 'merge' }))
         }
       }
-      await this.advanceBase(target, base)
+      await this.advanceBase(target, base, behind > 0)
       return { status: 'merged', kind: behind > 0 ? 'merge' : 'fast-forward', base }
     })
   }
@@ -610,7 +609,7 @@ export class WorktreeCycle {
         }
         await this.exec(cwd, ['commit', '-q', '--no-edit'], target.id, 60_000)
       }
-      await this.advanceBase(target, base)
+      await this.advanceBase(target, base, merging)
       return { status: 'merged', kind: 'merge', base }
     })
   }
@@ -625,8 +624,10 @@ export class WorktreeCycle {
    * de l'utilisateur reçoit le travail ; git refuse si ses modifications chevauchent), sinon la
    * référence seule ; refusé si la base est extraite dans un autre worktree.
    */
-  private async advanceBase(target: CycleTarget, base: string): Promise<void> {
+  private async advanceBase(target: CycleTarget, base: string, merged = false): Promise<void> {
     const { worktree } = target
+    if (merged)
+      await mergeIntoBase((a) => this.exec(worktree.path, a, target.id), worktree.branch, base)
     if (await this.baseInRoot(target, base)) {
       const result = await this.gitRun(
         worktree.root,
@@ -983,16 +984,6 @@ export class WorktreeCycle {
     const removed = await this.gitRun(orphan.root, ['worktree', 'remove', '--force', orphan.path])
     if (removed.code !== 0) await this.exec(orphan.root, ['worktree', 'prune'])
     if (orphan.branch) await this.gitRun(orphan.root, ['branch', '-D', orphan.branch])
-  }
-}
-
-/** Le chemin existe sur le disque (un lien vers rien compte). */
-function onDisk(path: string): boolean {
-  try {
-    lstatSync(path)
-    return true
-  } catch {
-    return false
   }
 }
 

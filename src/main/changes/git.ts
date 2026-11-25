@@ -2,6 +2,7 @@
  * Vue « Git » du récapitulatif des modifications (fiche 021) : l'état du dossier de la conversation
  * par rapport au dernier commit. `git` n'est appelé que si le dossier est dans un dépôt.
  */
+import { lstatSync } from 'node:fs'
 import { readFile, stat } from 'node:fs/promises'
 import { join, relative, resolve, sep } from 'node:path'
 import type { GitChanges, GitFileChange, GitFileDiff, GitFileStatus } from '@shared/changes'
@@ -274,4 +275,37 @@ export function insideWorkspace(workspace: string, path: string): string {
   const target = resolve(root, path)
   if (target.startsWith(root + sep)) return target
   throw new Error(t('fileLink.pathOutside', { path }))
+}
+
+/**
+ * Fusion faite dans le worktree d'une fille (la base y entre, ses conflits s'y résolvent) : le commit
+ * de fusion est récrit comme celui de la branche **dans** la base (évaluation du 2026-11-25, E3) —
+ * même arbre, la base en premier parent, « Merge branch '<branche>' into <base> » — avant que la
+ * base n'avance jusqu'à lui. L'historique `--first-parent` de la base reste le sien.
+ */
+export async function mergeIntoBase(
+  git: (args: string[]) => Promise<string>,
+  branch: string,
+  base: string
+): Promise<void> {
+  const [head, tree, branchTip, baseTip] = (
+    await git(['rev-parse', 'HEAD', 'HEAD^{tree}', 'HEAD^1', 'HEAD^2'])
+  ).split('\n')
+  if (!head || !tree || !branchTip || !baseTip) throw new Error('mergeIntoBase: no merge commit')
+  const message = `Merge branch '${branch}' into ${base}`
+  const commit = (
+    await git(['commit-tree', tree, '-p', baseTip, '-p', branchTip, '-m', message])
+  ).trim()
+  // Même arbre : ni l'index ni les fichiers du worktree ne changent, seule la branche avance.
+  await git(['update-ref', '-m', `merge: ${branch} into ${base}`, 'HEAD', commit, head])
+}
+
+/** Le chemin existe sur le disque (un lien vers rien compte). */
+export function onDisk(path: string): boolean {
+  try {
+    lstatSync(path)
+    return true
+  } catch {
+    return false
+  }
 }

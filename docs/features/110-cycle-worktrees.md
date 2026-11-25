@@ -175,3 +175,16 @@ dossier de l'utilisateur.
   src/panel », `honestSubject` / `filesSubject`). Apparence inchangée. Essais :
   `worktree-cycle.test.ts`, `CommitBars.test.tsx`, e2e `git` (cocher puis décocher pendant que le
   formulaire est ouvert, curseur).
+
+- 2026-11-25 (évaluation réelle de la 1.2.0-beta.1, E3, fix17) : le commit de fusion d'une fille
+  s'intitulait « Merge branch 'master' into bobine/… » et avait la branche de la fille pour premier
+  parent (la base entre dans le worktree, où les conflits se résolvent, puis avance jusqu'à lui) :
+  l'historique `--first-parent` de la base passait par la fille. Le commit fait dans le worktree
+  est désormais récrit avant que la base n'avance (`mergeIntoBase`, `changes/git.ts`) : même
+  arbre, la base en premier parent, « Merge branch '<branche>' into <base> ». Chemin inchangé
+  (conflits résolus dans le worktree par la fille, avance rapide de la base). « Relire les
+  commits » suit le premier parent : il voit la fusion comme un commit, comme une fusion faite à la
+  main ; l'essai `relecture-commits` garde la forme d'avant (historiques existants). Le commit récrit
+  ne repasse pas par les crochets git de commit (`commit-tree`) ; la signature suit
+  `commit.gpgSign`. Essais : `worktree-cycle.test.ts` (titre et parents, sans conflit et après
+  conflit résolu ; rouges avant).

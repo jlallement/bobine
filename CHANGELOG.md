@@ -20,6 +20,9 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 - **Tour de table** : après « Faire réagir les participants », la carte du tour garde sa ligne
   « Consommé en tout » (jetons, et « coût inconnu » quand l’agent ne dit pas de coût), repliée
   comme dépliée.
+- **Fusion d’une tâche fille** : le commit de fusion dit « Merge branch '<branche de la tâche>'
+  into <branche de travail> » et suit l’historique de la branche de travail, comme une fusion faite
+  à la main (avant : « Merge branch 'master' into bobine/… », dans le mauvais sens).
 
 ## 1.2.0-beta.1 — 25 novembre 2026
 

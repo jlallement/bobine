@@ -142,9 +142,19 @@ describe('cycle d’un worktree (fiche 110)', () => {
     git(root, 'add', '.')
     git(root, 'commit', '-q', '-m', 'b')
     expect(await cycle.info(target)).toMatchObject({ ahead: 1, behind: 1 })
+    const [base, branch] = [
+      git(root, 'rev-parse', 'main'),
+      git(root, 'rev-parse', target.worktree.branch)
+    ]
     expect(await cycle.merge(target)).toEqual({ status: 'merged', kind: 'merge', base: 'main' })
     expect(existsSync(join(root, 'a.txt')) && existsSync(join(root, 'b.txt'))).toBe(true)
-    expect(git(root, 'log', '--format=%s', '-1')).toMatch(/^Merge branch 'main'/)
+    // La fille entre dans la branche de travail (évaluation du 2026-11-25, E3) : titre et premier
+    // parent de la base, comme une fusion faite à la main sur `main`.
+    expect(git(root, 'log', '--format=%s', '-1')).toBe(
+      `Merge branch '${target.worktree.branch}' into main`
+    )
+    expect(git(root, 'log', '--format=%P', '-1').split(' ')).toEqual([base, branch])
+    expect(git(root, 'rev-parse', target.worktree.branch)).toBe(git(root, 'rev-parse', 'main'))
   })
 
   it('conflit : listé, abandon, puis résolution et reprise', async () => {
@@ -167,9 +177,19 @@ describe('cycle d’un worktree (fiche 110)', () => {
     // Pendant une fusion arrêtée, « Fusionner » reprend plutôt que de recommencer.
     expect(await cycle.merge(target)).toEqual({ status: 'conflicts', files: ['README.md'] })
     write(target, 'README.md', '# Démo\n\nVersion 2 et 3\n')
+    const [base, branch] = [
+      git(root, 'rev-parse', 'main'),
+      git(root, 'rev-parse', target.worktree.branch)
+    ]
     expect(await cycle.merge(target)).toEqual({ status: 'merged', kind: 'merge', base: 'main' })
     expect(readFileSync(join(root, 'README.md'), 'utf8')).toBe('# Démo\n\nVersion 2 et 3\n')
     expect(git(root, 'status', '--porcelain')).toBe('')
+    // Résolue dans le worktree, la fusion reste celle de la fille dans `main` (E3).
+    expect(git(root, 'log', '--format=%s', '-1')).toBe(
+      `Merge branch '${target.worktree.branch}' into main`
+    )
+    expect(git(root, 'log', '--format=%P', '-1').split(' ')).toEqual([base, branch])
+    expect(git(target.worktree.path, 'status', '--porcelain')).toBe('')
   })
 
   it('base non extraite : la référence avance ; extraite dans un autre worktree : refus', async () => {
