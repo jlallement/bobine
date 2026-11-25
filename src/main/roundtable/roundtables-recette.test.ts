@@ -405,9 +405,13 @@ describe('contre-revue : tests qui prouvent', () => {
   })
 
   it('participant mis à la corbeille pendant le recueil puis restauré : la synthèse ne le dit pas supprimé', async () => {
+    // Recueil tenu par le verrou (tous les participants) : la synthèse ne peut partir qu'après la
+    // restauration, par construction. Sans lui, sous charge, elle partait pendant la mise à la
+    // corbeille (`trashed.put` attendu), avant la restauration : l'essai dépendait de la vitesse.
     const lock = lockFile()
     const { env, mother } = await setup({
       lead: 'echo',
+      panel: ['--verrou-fin-de-tour', lock],
       profiles: (mock) => [mock('lent', 'avis-participant', ['--verrou-fin-de-tour', lock])]
     })
     await env.roundtables.start(mother, {
@@ -419,11 +423,12 @@ describe('contre-revue : tests qui prouvent', () => {
     const childId = slow()?.childId ?? ''
     await env.manager.delete(childId, { fromAgent: false })
     env.manager.restoreFromTrash(childId)
+    expect(env.rt(mother).phase).toBe('collecting')
+    rmSync(lock)
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
     const received = env.replies(mother).at(-1) ?? ''
     expect(received).not.toContain('its conversation was deleted')
     expect(received).toContain('stopped by the user')
-    rmSync(lock)
   })
 })
 

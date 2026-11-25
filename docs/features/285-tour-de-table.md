@@ -1458,3 +1458,24 @@ le main n'a pas livré l'étape 1) :
     `unknown` sur une source illisible, relecture remplacée. L'attente du coût du premier échange
     ajoutée aux essais de coût à fix15 est retirée ; les essais où le coût tardif appartient bien à
     l'étape restent verts.
+
+- 2026-11-25 : essai « participant mis à la corbeille pendant le recueil puis restauré » rouge
+  sous forte charge (charge 37, vérification avant push ; branche `1.2-fix16-engine`).
+  - Défaut de l'essai, pas du produit. La mise à la corbeille arrête la place tout de suite
+    (`deleted` → `seat-stopped`), puis `manager.delete` attend le déplacement du fil
+    (`trashed.put`). Si les deux autres avis sont déjà là, la synthèse part pendant ce temps, et
+    l'absence se lit à ce moment (`gone` : `exists`, lu en direct, rien de mis en cache) : elle dit
+    « supprimé », ce qui est juste à cet instant. L'essai restaurait après `delete`, donc trop tard.
+    Reproduit à coup sûr en ralentissant `trashed.put` de 300 ms.
+  - Masqué jusqu'à fix15 : avec un dépôt git, les empreintes (lecture seule des participants, fin
+    du recueil) retardaient le départ de la synthèse. Avec 50 ms de plus sur `trashed.put` :
+    rouge 3 fois sur 3 sans dépôt, vert 3 fois sur 3 avec. fix16 n'y est pour rien (aucun agent
+    au coût lu après coup dans cet essai).
+  - Corrigé : recueil tenu par le verrou de fin de tour pour tous les participants ; la phase est
+    encore « recueil » après la restauration (vérifié), puis le verrou est levé. Vert aussi avec
+    `trashed.put` ralenti de 300 ms. Mêmes assertions.
+  - Revue des autres essais du dossier qui agissent pendant le recueil (corbeille, arrêt,
+    relance, « Synthétiser sans attendre », plafond, modèle changé, redémarrage) : tous tiennent
+    déjà le recueil (verrou de fin de tour ou de démarrage, ou porte sur `children.start`), ou
+    n'agissent qu'après la synthèse ; « participant supprimé pendant le recueil » attend que la
+    synthèse dise « supprimé », ce qui est l'état au départ par construction.
