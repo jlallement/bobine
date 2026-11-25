@@ -125,6 +125,28 @@ describe('barre du worktree et PR suivie (fiche 176)', () => {
     await waitFor(() => expect(window.api.worktree.cleanup).toHaveBeenCalledWith('c1'))
   })
 
+  it('modification non commitée : la question le dit, « Garder » est le bouton par défaut (N1)', async () => {
+    trackPr({ status: 'none', checkedAt: 0 })
+    bar(view({ merged: true, ahead: 0, commits: [], dirty: 1 }))
+    fireEvent.click(screen.getByTestId('worktree-cleanup'))
+    const ask = screen.getByTestId('worktree-cleanup-ask')
+    expect(ask.textContent?.replace(/[\u00a0\u202f]/g, ' ')).toContain(
+      '1 fichier non commité serait perdu'
+    )
+    const keep = screen.getByTestId('worktree-cleanup-keep')
+    expect(keep.className).toContain('primary')
+    expect(document.activeElement).toBe(keep)
+    fireEvent.click(keep)
+    expect(window.api.worktree.cleanup).not.toHaveBeenCalled()
+  })
+
+  it('rien à perdre : pas d’avertissement', async () => {
+    trackPr({ status: 'none', checkedAt: 0 })
+    bar(view({ merged: true, ahead: 0, commits: [], dirty: 0 }))
+    fireEvent.click(screen.getByTestId('worktree-cleanup'))
+    expect(screen.queryByTestId('worktree-cleanup-loss')).toBeNull()
+  })
+
   it('fusionnée en local, sans PR : la question ne parle pas de GitHub', async () => {
     trackPr({ status: 'none', checkedAt: 0 })
     bar(view({ merged: true, ahead: 0, commits: [] }))

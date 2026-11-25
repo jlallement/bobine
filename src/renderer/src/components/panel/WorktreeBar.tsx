@@ -354,6 +354,7 @@ export function WorktreeBar({
           busy={busy}
           branch={info.branch}
           remoteToo={prMerged}
+          dirty={info.dirty}
           actions={actions}
         />
       )}
@@ -446,6 +447,7 @@ function WorktreeForm({
   busy,
   branch,
   remoteToo,
+  dirty,
   actions
 }: {
   mode: Mode
@@ -456,10 +458,19 @@ function WorktreeForm({
   branch: string
   /** PR fusionnée : la branche part aussi sur GitHub (0.9.1, D19). */
   remoteToo: boolean
+  /** Fichiers non commités du worktree : « Nettoyer » les supprimerait (N1). */
+  dirty: number
   actions: Actions
 }) {
   const { t } = useTranslation()
   const [draft, setDraft] = useState(mode)
+  // « Nettoyer » qui perdrait des fichiers : « Garder » prend le focus, même si le compte arrive
+  // après l'ouverture de la question (relecture du dépôt en cours, N1).
+  const keepRef = useRef<HTMLButtonElement>(null)
+  const losing = mode.kind === 'cleanup' && dirty > 0
+  useEffect(() => {
+    if (losing) keepRef.current?.focus()
+  }, [losing])
   const current = draft.kind === mode.kind ? draft : mode
   const cancel = (
     <button className="btn small ghost" onClick={actions.close}>
@@ -569,8 +580,23 @@ function WorktreeForm({
               components={{ code: <code /> }}
             />
           </span>
+          {/* Travail qui serait perdu (recette du 2026-11-25, N1) : dit, et « Garder » par défaut. */}
+          {dirty > 0 && (
+            <span
+              className="worktree-cleanup-loss"
+              role="alert"
+              data-testid="worktree-cleanup-loss"
+            >
+              {t('worktreeCycle.cleanup.loss', { count: dirty })}
+            </span>
+          )}
           <div className="worktree-form-actions">
-            <button className="btn small ghost" onClick={actions.close}>
+            <button
+              className={`btn small ${dirty > 0 ? 'primary' : 'ghost'}`}
+              onClick={actions.close}
+              ref={keepRef}
+              data-testid="worktree-cleanup-keep"
+            >
               {t('worktreeCycle.cleanup.keep')}
             </button>
             <button

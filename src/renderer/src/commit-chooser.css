@@ -101,3 +101,9 @@
   text-align: right;
   color: var(--warn);
 }
+
+/* « Nettoyer » qui perdrait des fichiers non commités (N1) : dit en clair, avant les boutons. */
+.worktree-cleanup-loss {
+  color: var(--warn);
+  font-weight: 500;
+}

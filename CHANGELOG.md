@@ -6,6 +6,8 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ### Corrigé
 
+- **Nettoyer une tâche fille** qui a des fichiers non commités : la question le dit (« 1 fichier non
+  commité serait perdu ») et « Garder » est le bouton par défaut.
 - **Faire relire…** : le modèle proposé est celui de la conversation relue, qui vient de répondre ;
   plus un autre modèle annoncé par l’agent mais pas ouvert à votre compte. Un autre modèle se
   choisit toujours dans le dialogue.

@@ -3941,6 +3941,8 @@
       "action": "Clean up",
       "ask": "Archive the conversation, then delete the worktree and the branch <code>{{branch}}</code>? If brought back, the conversation continues in the main folder.",
       "confirm": "Clean up",
+      "loss_one": "{{count}} uncommitted file would be lost: commit it first to keep it.",
+      "loss_other": "{{count}} uncommitted files would be lost: commit them first to keep them.",
       "keep": "Keep",
       "askRemote": "Archive the conversation, then delete the worktree and the branch <code>{{branch}}</code>, here and on GitHub (the PR is merged)? If brought back, the conversation continues in the main folder.",
       "done": "Worktree cleaned up.",

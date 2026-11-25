@@ -203,3 +203,11 @@ dossier de l'utilisateur.
   nettoyée, supprimée) est une fille, sa mère est montrée si elle est là, ni brouillon ni archivée
   (`shownMother`, `helpers.ts`) ; sinon, comme avant, une nouvelle conversation dans le dépôt
   principal. Essai `manager.test.ts` (rouge avant).
+- 2026-11-25 (recette, N1) : « Nettoyer » d'une fille avec une modification non commitée (un test de
+  17 lignes, absent de la branche de travail) posait la même question qu'un worktree propre, et le
+  clic l'aurait supprimé (`worktrees.remove(..., { force: true })`). Désormais la question dit le
+  nombre de fichiers non commités qui seraient perdus, et « Garder » devient le bouton principal, qui
+  prend le focus (même si le compte arrive après l'ouverture). Commits non fusionnés : « Nettoyer »
+  n'est proposé qu'une fois la branche fusionnée (en local ou par une PR), cas sans objet. Rien à
+  perdre : question inchangée. Essais `WorktreeBar.test.tsx` (rouge avant), e2e `worktree-cycle`
+  (capture `115b-worktree-nettoyer-non-commite`, rouge avant).

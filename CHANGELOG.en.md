@@ -6,6 +6,8 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixed
 
+- **Cleaning up a child task** with uncommitted files: the question says so (“1 uncommitted file
+  would be lost”) and “Keep” is the default button.
 - **Request a review…**: the suggested model is the reviewed conversation’s, which has just
   answered; no longer another model the agent lists but your account doesn’t have. You can still
   pick another model in the dialog.

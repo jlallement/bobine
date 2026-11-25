@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { L, Lpart, check, sleep, withApp } from '../lib.mjs'
@@ -157,6 +157,32 @@ export async function worktreeCycleSuite(scheme) {
           `l’agent a résolu le conflit, la fusion a repris : main a le README fusionné (${JSON.stringify(merged)})`
         )
         await ui.shot('114-worktree-fusionne')
+
+        // « Nettoyer » qui perdrait un fichier non commité (recette du 2026-11-25, N1) : la question
+        // le dit et « Garder » est le bouton par défaut ; rien n'est supprimé.
+        const refresh = `document.querySelector('.changes-bar [aria-label="${L('changes.refresh')}"]')`
+        const worktreePath = git('worktree', 'list', '--porcelain')
+          .split('\n')
+          .filter((line) => line.startsWith('worktree ') && line.includes('.worktrees'))
+          .map((line) => line.slice('worktree '.length))[0]
+        writeFileSync(join(worktreePath, 'brouillon.txt'), 'à garder\n')
+        await ui.click(refresh)
+        await ui.click(ui.$('worktree-cleanup'))
+        await ui.waitFor(`!!${ui.$('worktree-cleanup-ask')}`)
+        const lossSaid = await ui.waitFor(`!!${ui.$('worktree-cleanup-loss')}`, 10000).then(
+          () => true,
+          () => false
+        )
+        await ui.shot('115b-worktree-nettoyer-non-commite')
+        check(lossSaid, '« Nettoyer » avec un fichier non commité : la perte est dite')
+        check(
+          await ui.ev(`document.activeElement === ${ui.$('worktree-cleanup-keep')}`),
+          '« Nettoyer » avec un fichier non commité : « Garder » par défaut'
+        )
+        await ui.click(ui.$('worktree-cleanup-keep'))
+        check(existsSync(join(worktreePath, 'brouillon.txt')), 'Garder : le fichier est là')
+        rmSync(join(worktreePath, 'brouillon.txt'))
+        await ui.click(refresh)
 
         // Nettoyage : conversation archivée, worktree et branche supprimés.
         await ui.click(ui.$('worktree-cleanup'))
