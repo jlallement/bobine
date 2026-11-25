@@ -4,6 +4,7 @@
  * copies dans `<données>/role-exports/`) et ce que demandent leurs canaux IPC.
  */
 import { join } from 'node:path'
+import { ROUNDTABLE_PARTICIPANT_ROLE } from '@shared/roundtable'
 import type { ChildConversations, ChildOptions } from '../conversations/children'
 import type { ConversationManager } from '../conversations/manager'
 import { log } from '../log'
@@ -73,13 +74,29 @@ export function appRoles(
     forChildren: {
       roles: library,
       nativeRoleMode: (profileId, role, conversationId) =>
-        exports.nativeMode(profileId, role.name, folderOf(conversationId), {
-          id: role.name,
-          label: role.label,
-          description: role.description,
-          prompt: role.prompt,
-          readOnly: role.readOnly
-        })
+        exports.nativeMode(
+          profileId,
+          role.name,
+          folderOf(conversationId),
+          {
+            id: role.name,
+            label: role.label,
+            description: role.description,
+            prompt: role.prompt,
+            readOnly: role.readOnly
+          },
+          // Participant d'un tour de table (rôle fourni, fiche 285) : vérifié sur le disque, sa
+          // lecture seule « garantie par l'agent » en dépend. Les autres rôles : inchangés.
+          { strict: verifiedOnDisk(role) }
+        )
     }
   }
+}
+
+/**
+ * Mode installé vérifié sur le disque (fiche 285) : seulement pour le rôle fourni « Participant »
+ * d'un tour de table, dont la lecture seule « garantie par l'agent » en dépend.
+ */
+export function verifiedOnDisk(role: { name: string; scope?: string }): boolean {
+  return role.name === ROUNDTABLE_PARTICIPANT_ROLE && role.scope === 'builtin'
 }

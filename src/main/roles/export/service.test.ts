@@ -332,13 +332,46 @@ describe('mode natif pour Bobine (useInBobine)', () => {
   })
 })
 
+describe('régression e2e roles-export (fiche 223) : « lancer dans ce mode » reste reconnu', () => {
+  it('installation personnelle à jour, mode du même nom dans le projet : le mode installé est posé', () => {
+    const exports = service()
+    exports.install(role(), userTarget(), undefined, { useInBobine: true })
+    mkdirSync(join(project, '.bob'), { recursive: true })
+    writeFileSync(
+      bobProjectFile(),
+      'customModes:\n  - slug: code-reviewer\n    name: Le nôtre\n    roleDefinition: x\n    groups: [read]\n'
+    )
+    expect(exports.nativeMode('bob', 'code-reviewer', project)).toEqual({
+      id: 'code-reviewer',
+      readOnly: true
+    })
+    // Installation du projet par Bobine : reconnue aussi, après une mise à jour.
+    rmSync(bobProjectFile())
+    exports.install(role(), { profileId: 'bob', scope: 'project' }, project, { useInBobine: true })
+    exports.install(
+      role({ description: 'Autre.' }),
+      { profileId: 'bob', scope: 'project' },
+      project,
+      {
+        useInBobine: true
+      }
+    )
+    expect(exports.nativeMode('bob', 'code-reviewer', project)).toEqual({
+      id: 'code-reviewer',
+      readOnly: true
+    })
+  })
+})
+
 describe('mode natif vérifié sur le disque (revue sécurité, fiche 285)', () => {
   it('fichier modifié à la main, ou mode du même nom fourni par le projet : jamais un mode natif sûr', () => {
     const exports = service()
     exports.install(role(), { profileId: 'opencode', scope: 'user' }, undefined, {
       useInBobine: true
     })
-    expect(exports.nativeMode('opencode', 'code-reviewer', project)).toEqual({
+    expect(
+      exports.nativeMode('opencode', 'code-reviewer', project, undefined, { strict: true })
+    ).toEqual({
       id: 'code-reviewer',
       readOnly: true
     })
@@ -346,17 +379,23 @@ describe('mode natif vérifié sur le disque (revue sécurité, fiche 285)', () 
     const projectAgent = join(project, '.opencode', 'agents', 'code-reviewer.md')
     mkdirSync(join(project, '.opencode', 'agents'), { recursive: true })
     writeFileSync(projectAgent, '---\nmode: primary\npermission:\n  edit: allow\n---\nÉcris.\n')
-    expect(exports.nativeMode('opencode', 'code-reviewer', project)).toMatchObject({
+    expect(
+      exports.nativeMode('opencode', 'code-reviewer', project, undefined, { strict: true })
+    ).toMatchObject({
       stale: 'roleChanged'
     })
     rmSync(projectAgent)
     // Fichier de Bobine modifié depuis son installation : plus garanti.
     writeFileSync(openCodeFile(), `${readFileSync(openCodeFile(), 'utf8')}\nÉcris aussi.\n`)
-    expect(exports.nativeMode('opencode', 'code-reviewer', project)).toMatchObject({
+    expect(
+      exports.nativeMode('opencode', 'code-reviewer', project, undefined, { strict: true })
+    ).toMatchObject({
       stale: 'roleChanged'
     })
     rmSync(openCodeFile())
-    expect(exports.nativeMode('opencode', 'code-reviewer')).toMatchObject({ stale: 'roleChanged' })
+    expect(
+      exports.nativeMode('opencode', 'code-reviewer', undefined, undefined, { strict: true })
+    ).toMatchObject({ stale: 'roleChanged' })
   })
 })
 
@@ -413,10 +452,14 @@ describe('mode natif : tous les emplacements d’OpenCode (contre-revue, fiche 2
         backupDir: join(data, 'backups')
       })
       install(exports)
-      expect(exports.nativeMode('opencode', 'code-reviewer', project)).toEqual(intact)
+      expect(
+        exports.nativeMode('opencode', 'code-reviewer', project, undefined, { strict: true })
+      ).toEqual(intact)
       mkdirSync(join(file(), '..'), { recursive: true })
       writeFileSync(file(), text)
-      expect(exports.nativeMode('opencode', 'code-reviewer', project)).toMatchObject({
+      expect(
+        exports.nativeMode('opencode', 'code-reviewer', project, undefined, { strict: true })
+      ).toMatchObject({
         stale: 'roleChanged'
       })
       rmSync(file())

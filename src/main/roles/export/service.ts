@@ -248,7 +248,13 @@ export class RoleExports {
      * n'est plus ce que Bobine écrirait aujourd'hui (`roleChanged`), est rendu `stale` et ne doit
      * pas être posé.
      */
-    role?: ExportedRole
+    role?: ExportedRole,
+    /**
+     * Vérifié sur le disque (participant d'un tour de table, fiche 285) : l'installation intacte,
+     * et aucun autre emplacement lu par l'agent ne définit cet identifiant. Sans : le mode tel que
+     * le registre le connaît (« lancer dans ce mode » d'un rôle, fiche 223, inchangé).
+     */
+    options: { strict?: boolean } = {}
   ): { id: string; readOnly: boolean; stale?: 'readOnly' | 'roleChanged' } | undefined {
     const mine = this.options.registry
       .all()
@@ -257,17 +263,19 @@ export class RoleExports {
       mine.find((r) => r.scope === 'project' && workspace && r.workspace === workspace) ??
       mine.find((r) => r.scope === 'user')
     if (!found) return undefined
-    // Sans adaptateur, le fichier ne peut pas être relu : rien n'est garanti, pas de mode natif.
     const adapter = this.adapterFor(found.format)
-    if (!adapter) return undefined
     const mode = { id: found.id, readOnly: found.readOnly }
-    // Ce que l'agent lira vraiment (revue sécurité, fiche 285) : le fichier relu sur le disque doit
-    // porter l'entrée telle que Bobine l'a écrite, et aucun fichier du projet du même identifiant
-    // ne doit la masquer (un dépôt peut fournir son propre mode, écriture permise).
-    if (!this.onDisk(found, adapter, workspace)) return { ...mode, stale: 'roleChanged' }
+    if (options.strict) {
+      // Sans adaptateur, le fichier ne peut pas être relu : rien n'est garanti.
+      if (!adapter) return undefined
+      // Ce que l'agent lira vraiment (revue sécurité, fiche 285) : l'entrée telle que Bobine l'a
+      // écrite, et aucun autre fichier lu par l'agent du même identifiant (un dépôt peut fournir
+      // son propre mode, écriture permise).
+      if (!this.onDisk(found, adapter, workspace)) return { ...mode, stale: 'roleChanged' }
+    }
     if (!role) return mode
     if (role.readOnly !== found.readOnly) return { ...mode, stale: 'readOnly' }
-    if (adapter.fingerprintOf({ ...role, id: found.id }) !== found.written) {
+    if (adapter && adapter.fingerprintOf({ ...role, id: found.id }) !== found.written) {
       return { ...mode, stale: 'roleChanged' }
     }
     return mode
