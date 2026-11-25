@@ -693,6 +693,48 @@ describe('barre de saisie repliée (GitHub, Linux à 760 px)', () => {
     }
   })
 
+  it('sans capture d’écran, au niveau 4 : 📎 reste un bouton, le tour de table quitte la barre', async () => {
+    const callbacks: (() => void)[] = []
+    const notify = () => callbacks.forEach((c) => c())
+    const original = globalThis.ResizeObserver
+    globalThis.ResizeObserver = class {
+      constructor(callback: () => void) {
+        callbacks.push(callback)
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver
+    try {
+      setup([deep, b])
+      const bar = screen.getByTestId('composer-bar')
+      // Ne tient qu'au niveau 4 (le CSS y cache le bouton : sa largeur ne compte plus).
+      Object.defineProperty(bar, 'clientWidth', { configurable: true, get: () => 600 })
+      Object.defineProperty(bar, 'scrollWidth', {
+        configurable: true,
+        get: () => (bar.dataset.fold === '4' ? 580 : 700)
+      })
+      act(() => notify())
+      await waitFor(() => expect(bar.dataset.fold).toBe('4'))
+      expect(
+        screen.getByTestId('roundtable-toggle').closest('.roundtable-toggle-slot')
+      ).toBeTruthy()
+      // Pas de menu sous 📎 : le bouton reste dans sa place, que le CSS cache à ce niveau.
+      expect(bar.hasAttribute('data-no-capture')).toBe(true)
+      fireEvent.pointerDown(screen.getByTestId('attach'), { button: 0, ctrlKey: false })
+      expect(screen.queryByTestId('attach-roundtable')).toBeNull()
+    } finally {
+      globalThis.ResizeObserver = original
+    }
+  })
+  it('sans menu 📎 (pas de capture d’écran : Linux, Windows), le CSS le cache aussi au niveau 4', () => {
+    // La règle ne dépend pas de `data-no-capture` : sans menu où passer, le bouton quitte la
+    // barre (`/roundtable` reste), sinon le modèle est tronqué à 760 px (GitHub, Linux).
+    expect(styles).toMatch(
+      /(^|\n)\.composer-bar:is\(\[data-fold='4'\], \[data-fold='5'\]\) > \.roundtable-toggle-slot \{\s*display: none;/
+    )
+  })
+
   it('le CSS cache le bouton à sa place aux niveaux 4 et 5, comme les réglages de la session', () => {
     expect(styles).toMatch(
       /:is\(\[data-fold='4'\], \[data-fold='5'\]\)\s*>\s*\.roundtable-toggle-slot\s*\{\s*display: none;/

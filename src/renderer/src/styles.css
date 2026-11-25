@@ -2890,8 +2890,7 @@ a.btn {
 .composer-bar:is([data-fold='2'], [data-fold='3'], [data-fold='4'], [data-fold='5']) .usage-percent,
 .composer-bar:is([data-fold='3'], [data-fold='4'], [data-fold='5']) .mode-chip .chip-label,
 .composer-bar:not([data-no-capture]):is([data-fold='4'], [data-fold='5']) > .session-settings-slot,
-.composer-bar:not([data-no-capture]):is([data-fold='4'], [data-fold='5'])
-  > .roundtable-toggle-slot {
+.composer-bar:is([data-fold='4'], [data-fold='5']) > .roundtable-toggle-slot {
   display: none;
 }
 
@@ -2900,7 +2899,11 @@ a.btn {
   display: inline-flex;
 }
 
-/* Bouton du tour de table : à sa place, caché au niveau 4 comme les réglages (menu de 📎). */
+/*
+ * Bouton du tour de table : à sa place, caché au niveau 4 sur toutes les plateformes. Avec la
+ * capture d'écran, il passe dans le menu de 📎 ; sans elle (Linux, Windows : 📎 reste un bouton
+ * simple), il disparaît de la barre et `/roundtable` reste le chemin (GitHub, Linux à 760 px).
+ */
 .roundtable-toggle-slot {
   display: inline-flex;
 }
