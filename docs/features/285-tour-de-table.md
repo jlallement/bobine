@@ -1247,3 +1247,17 @@ le main n'a pas livré l'étape 1) :
     Cause trouvée en chemin : l'hôte ne relisait pas le coût hors protocole après un tour en échec
     (seulement après un tour répondu) ; il le relit désormais aussi (`agent-host.ts`), sinon il
     n'arrivait qu'au tour suivant.
+
+- 2026-11-25 : interface, contre-recette (branche `1.2`). Lignes immobiles : une ligne de la carte
+  garde sa hauteur quel que soit l'état du participant (nom et seconde ligne jamais à la ligne, texte
+  entier en infobulle ; marque « fichiers modifiés » et gestes dans la colonne de droite, sa hauteur
+  réservée, sous le nom sous 600 px ; pied toujours sur une rangée) ; mesuré en e2e pendant le
+  recueil à largeur normale, 760 et 520 px (position et hauteur de chaque ligne et du pied
+  inchangées malgré les changements d'état) ; clic direct sur « Choisir un autre modèle ». Arbitre :
+  raison en clair à la place de l'agent dans le menu (« fait la synthèse de ce tour »). Sans menu 📎
+  (pas de capture d'écran), le bouton du tour quitte la barre repliée. N2 : agent dont les modèles
+  se chargent, ligne « <agent> · chargement des modèles… » non cochable, relue chaque seconde menu
+  ouvert (15 s au plus, puis « modèle par défaut »), remplacée à sa place par les modèles ;
+  « <agent> · modèle par défaut » dans le menu, la carte et l'infobulle. N1/N3 : e2e d'une synthèse
+  en échec (`synthese-erreur-serveur`, coût comme Bob) puis relancée, « Consommé » à 0,05.
+
