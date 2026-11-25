@@ -762,3 +762,61 @@ describe('coût tardif d’une tentative en échec, relance immédiate', () => {
     expect(env.rt(mother).synthesis?.usage?.cost?.amount).toBe(0.0125)
   }, 60_000)
 })
+
+describe('recette de la 1.2.0-beta.1 : le coût d’« Appliquer » reste hors du tour (S-B1)', () => {
+  const bobOptions = (bobDb: string): EnvOptions => ({
+    lead: 'arbitre-applique-comme-bob',
+    leadArgs: ['--bob-db', bobDb, '--cout-bob'],
+    leadProfile: { costSource: bobDbCosts(bobDb) }
+  })
+  const newBobDb = () => join(mkdtempSync(join(tmpdir(), 'tour-bob-')), 'bob.db')
+  async function bobArbiter(bobDb = newBobDb()) {
+    return { ...(await setup(bobOptions(bobDb))), bobDb }
+  }
+  const cost = (env: RoundtableEnv, id: string) => summaryOf(env, id)?.usage?.cost?.amount
+
+  it('décision rendue, puis « Appliquer » qui dépense en plein tour : la décision garde son coût', async () => {
+    const { env, mother } = await bobArbiter()
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    await env.waitFor(() => cost(env, mother) === 0.025, 'coût de la synthèse relu', 15_000)
+    env.roundtables.rebuttal(mother, env.rt(mother).roundtableId)
+    await env.waitFor(() => env.rt(mother).phase === 'decided', 'décision rendue', 20_000)
+    await env.waitFor(() => cost(env, mother) === 0.0375, 'coût de la décision relu', 15_000)
+    expect(env.rt(mother).verdict?.usage?.cost?.amount).toBe(0.0125)
+    // « Demander à … de l'appliquer » : un message ordinaire, qui dépense en plein tour.
+    await env.manager.prompt(mother, 'Applique ta recommandation du tour de table.')
+    await env.waitFor(() => cost(env, mother) === 0.35, 'coût de l’application relu', 15_000)
+    expect(env.rt(mother).synthesis?.usage?.cost?.amount).toBe(0.0125)
+    expect(env.rt(mother).verdict?.usage?.cost?.amount).toBe(0.0125)
+  }, 45_000)
+
+  it('synthèse sans réplique, puis un message ordinaire : la synthèse garde son coût', async () => {
+    const { env, mother } = await bobArbiter()
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    await env.waitFor(() => cost(env, mother) === 0.025, 'coût de la synthèse relu', 15_000)
+    await env.manager.prompt(mother, 'Applique la recommandation.')
+    await env.waitFor(() => cost(env, mother) === 0.3375, 'coût du message relu', 15_000)
+    expect(env.rt(mother).synthesis?.usage?.cost?.amount).toBe(0.0125)
+  }, 45_000)
+
+  it('après un redémarrage de l’app, « Appliquer » n’ajoute rien au tour', async () => {
+    const first = await bobArbiter()
+    const { mother, bobDb } = first
+    await first.env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await first.env.waitFor(() => first.env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    await first.env.waitFor(() => cost(first.env, mother) === 0.025, 'coût relu', 15_000)
+    first.env.stop()
+    await first.env.manager.settled()
+    const env = await roundtableEnv({
+      ...bobOptions(bobDb),
+      root: first.env.root,
+      repo: first.env.repo
+    })
+    envs.push(env)
+    await env.manager.prompt(mother, 'Applique la recommandation.')
+    await env.waitFor(() => cost(env, mother) === 0.3375, 'coût du message relu', 15_000)
+    expect(env.rt(mother).synthesis?.usage?.cost?.amount).toBe(0.0125)
+  }, 45_000)
+})

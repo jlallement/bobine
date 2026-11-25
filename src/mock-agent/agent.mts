@@ -754,6 +754,14 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
           },
           afterTurnPlayed: () => persist(session),
           ...(options.bobDb ? { bobDb: options.bobDb } : {}),
+          ...(options.bobCost && options.bobDb
+            ? {
+                chargeBobNow: (amount: number) => {
+                  session.cost = Math.round(((session.cost ?? 0) + amount) * 1e6) / 1e6
+                  writeBobTaskCostLogged(options.bobDb ?? '', session.sessionId, session.cost)
+                }
+              }
+            : {}),
           ...(options.withoutPlan ? { withoutPlan: true } : {}),
           ...(options.backgroundMs !== undefined ? { backgroundMs: options.backgroundMs } : {}),
           language,

@@ -376,6 +376,40 @@ export const roundtableScenarios: Record<string, Scenario> = {
       }
     ]
   },
+  'arbitre-applique-comme-bob': {
+    description:
+      'Conversation qui arbitre comme `synthese-tour-de-table`, puis, à un message qui demande d’appliquer, applique comme Bob 2.1.0 (recette de la 1.2.0-beta.1, S-B1) : dépense écrite dans la base de Bob pendant le tour (`bob-cost` 0,3, avec `--cout-bob`), outil `execute` fini (l’app relit alors le coût, en plein tour), puis la réponse',
+    steps: [
+      {
+        kind: 'computed',
+        build: ({ text }) =>
+          isStep(text) || !/appliqu/i.test(text)
+            ? arbiter(text)
+            : [
+                {
+                  kind: 'update',
+                  update: {
+                    sessionUpdate: 'tool_call',
+                    toolCallId: 'apply_cmd',
+                    title: 'npm test',
+                    kind: 'execute',
+                    status: 'in_progress'
+                  }
+                },
+                { kind: 'bob-cost', amount: 0.3 },
+                {
+                  kind: 'update',
+                  update: {
+                    sessionUpdate: 'tool_call_update',
+                    toolCallId: 'apply_cmd',
+                    status: 'completed'
+                  }
+                },
+                { kind: 'text', text: 'Recommandation appliquée.' }
+              ]
+      }
+    ]
+  },
   'arbitre-ecrit': {
     description:
       'Conversation qui arbitre et écrit sans demander (comme OpenCode par défaut) : à la demande de synthèse ou de décision, écrit `notes-arbitre.md`, puis répond comme `synthese-tour-de-table` ; le garde-fou de l’étape voit le dossier changé (fiche 285, S1)',

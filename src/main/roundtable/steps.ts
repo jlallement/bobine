@@ -83,13 +83,13 @@ export class MotherSteps {
   private readonly sending = new Map<string, StepRef>()
   /** Demande partie, en attente de la fin du tour de l'agent. */
   private readonly answering = new Map<string, StepRef>()
-  /** Dernière demande répondue : un coût communiqué après coup lui revient (Bob, fiche 109). */
   /**
-   * Tentative finie dont un coût peut encore arriver (Bob l'écrit après sa réponse). `closing` :
-   * un autre message est parti depuis ; ce qui arrive pendant son tour revient encore à la
-   * tentative (l'agent n'écrit le coût d'un tour qu'après lui), plus rien après sa fin.
+   * Dernière tentative répondue : un coût communiqué après coup lui revient (Bob, fiche 109).
+   * Fermée dès qu'un autre message part (tapé, « Appliquer », autre étape) : Bob écrit sa dépense
+   * au fil du tour, un relevé pris pendant ce tour est le sien, jamais celui de l'étape (recette de
+   * la 1.2.0-beta.1, S-B1). Seule une nouvelle tentative de la même étape la garde ouverte.
    */
-  private readonly costWatch = new Map<string, StepRef & { attempt?: number; closing?: true }>()
+  private readonly costWatch = new Map<string, StepRef & { attempt?: number }>()
   private readonly scheduled = new Set<string>()
   /** Envois refusés d'affilée parce que l'agent préparait une réponse : réessai espacé. */
   private readonly retries = new Map<string, number>()
@@ -164,7 +164,6 @@ export class MotherSteps {
       }
       case 'turn-end':
       case 'turn-error':
-        if (this.costWatch.get(motherId)?.closing) this.costWatch.delete(motherId)
         return this.ended(motherId, event)
       case 'usage-report': {
         // Coût relevé après coup : à la tentative finie qu'il suit, même si une autre est partie
@@ -186,13 +185,12 @@ export class MotherSteps {
   }
 
   private sent(motherId: string, from: MessageOrigin | undefined, model?: string): void {
-    // Un autre message (tapé, ou d'un autre tour) : son coût à lui n'est pas celui de l'étape ;
-    // le relevé s'arrête à la fin de son tour. Une nouvelle tentative de la même étape garde le
-    // relevé de la précédente jusqu'à sa propre fin (coût tardif).
+    // Un autre message (tapé, « Appliquer », autre étape) : la comptabilité de l'étape est close.
+    // Une nouvelle tentative de la même étape garde le relevé de la précédente (coût tardif).
     const watched = this.costWatch.get(motherId)
     const sameStep =
       from?.kind === 'roundtable' && from.id === watched?.roundtableId && from.step === watched.step
-    if (watched && !sameStep) this.costWatch.set(motherId, { ...watched, closing: true })
+    if (watched && !sameStep) this.costWatch.delete(motherId)
     // La réplique va aux participants, pas à cette conversation (`seat-events.ts`).
     // La réplique va aux participants, pas à cette conversation.
     if (from?.kind !== 'roundtable' || from.step === 'rebuttal') return

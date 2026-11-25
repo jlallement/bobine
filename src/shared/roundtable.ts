@@ -539,7 +539,7 @@ export function attemptsTotal(
       continue
     }
     const start = Math.max(attempt.costStart ?? covered ?? 0, covered ?? -Infinity)
-    const amount = Math.max(0, end.amount - start)
+    const amount = round6(Math.max(0, end.amount - start))
     cost = addDigests(cost ? { cost } : undefined, {
       cost: { amount, currency: end.currency }
     })?.cost
