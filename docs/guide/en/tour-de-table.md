@@ -59,8 +59,9 @@ participant says why and offers **Run again**; a refused model is said on its ro
 applied”) and flagged in the menu at the next roundtable.
 
 If the folder changes during the roundtable, a single notice in the card says so, under the rows:
-“The folder changed during the roundtable: <files>. Check before applying.” The row of the
-participant that wrote, when known, carries “files changed”.
+“The folder changed during the roundtable: <files>. Check before applying.” A participant's
+row carries “files changed” only if it called a writing tool or a command itself during its turn;
+otherwise no one is named.
 
 **Synthesize now** appears from two opinions: the participants still working stop. **Stop** stops
 one participant, or the whole roundtable.
