@@ -350,6 +350,22 @@ export const roundtableScenarios: Record<string, Scenario> = {
       }
     ]
   },
+  'participant-ecrit-replique': {
+    description:
+      'Tour de table : avis ordinaire ; à la réplique, écrit `note-replique.md` sans rien demander dès le début du tour, puis répond « Position : maintenue » : l’empreinte prise avant l’envoi le voit (contre-revue, N7)',
+    steps: [
+      {
+        kind: 'computed',
+        build: ({ text, model, attachments }) =>
+          text.includes(REBUTTAL_LEAD)
+            ? [
+                { kind: 'write-file', path: 'note-replique.md', content: 'écrit à la réplique\n' },
+                ...rebuttal(text)
+              ]
+            : opinion(text, model, attachments)
+      }
+    ]
+  },
   replique: {
     description:
       'Tour de table : réplique d’un participant (« Position : maintenue », sa lettre, synthèse reçue, aucun autre avis)',

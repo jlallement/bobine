@@ -571,3 +571,39 @@ describe('recette réelle : chronomètre de la réplique (G3)', () => {
     await env.waitFor(() => env.rt(mother).phase === 'decided', 'décision rendue', 20_000)
   })
 })
+
+describe('contre-revue : réplique envoyée au repos (N7)', () => {
+  it('participant occupé à la demande de réplique : empreinte avant l’envoi, l’écriture est vue', async () => {
+    const lock = join(mkdtempSync(join(tmpdir(), 'tour-verrou-')), 'verrou')
+    const { env, mother } = await setup({
+      profiles: (mock) => [
+        mock('ecrit', 'participant-ecrit-replique', ['--verrou-fin-de-tour', lock], {
+          writesWithoutAsking: true
+        })
+      ]
+    })
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [choice('ecrit', 'factice-rapide'), FAST]
+    })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    const letter = env.rt(mother).seats.find((s) => s.profileId === 'ecrit')?.letter ?? 'A'
+    const childId = env.seatChild(mother, letter)
+    // Le participant qui écrit travaille (message tapé par l'utilisateur) quand la réplique est demandée.
+    writeFileSync(lock, '')
+    void env.manager.prompt(childId, 'Et une autre piste ?')
+    await env.waitFor(() => summaryOf(env, childId)?.status === 'busy', 'participant occupé')
+    env.roundtables.rebuttal(mother, env.rt(mother).roundtableId)
+    // Pas en file d'attente : la réplique attend son repos (l'empreinte se prendra avant l'envoi).
+    // Absence d'une file : aucun évènement à attendre, une courte pause laisse partir un envoi.
+    // eslint-disable-next-line no-restricted-syntax -- vérifier qu'aucun message n'est mis en file
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    expect(env.manager.view(childId).snapshot?.queued ?? []).toHaveLength(0)
+    expect(env.rt(mother).seats.find((s) => s.letter === letter)?.rebuttal?.state).toBe('waiting')
+    rmSync(lock)
+    await env.waitFor(() => env.rt(mother).phase === 'decided', 'décision rendue', 20_000)
+    await env.children.watchSettled(childId)
+    const seat = env.rt(mother).seats.find((s) => s.letter === letter)
+    expect(seat?.rebuttal).toMatchObject({ state: 'answered', changedFolder: true })
+  })
+})

@@ -43,4 +43,13 @@ describe('empreinte du dossier (revue sécurité, fiche 285)', () => {
     writeFileSync(join(dir, 'node_modules', 'x.js'), 'x\n')
     expect(await print()).toBe(before)
   })
+
+  it('voit un crochet ajouté dans le dossier de `core.hooksPath`, même ignoré (contre-revue, N7)', async () => {
+    const dir = repo()
+    mkdirSync(join(dir, 'node_modules', '.hooks'))
+    execFileSync('git', ['config', 'core.hooksPath', 'node_modules/.hooks'], { cwd: dir })
+    const before = await folderFingerprint(gitRun, dir)
+    writeFileSync(join(dir, 'node_modules', '.hooks', 'pre-commit'), '#!/bin/sh\necho pris\n')
+    expect(await folderFingerprint(gitRun, dir)).not.toBe(before)
+  })
 })

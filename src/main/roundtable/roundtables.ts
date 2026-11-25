@@ -189,7 +189,8 @@ export class Roundtables implements RoundtableService {
   constructor(deps: RoundtablesDeps) {
     this.deps = deps
     this.idle = new IdleWaiters(
-      (id) => deps.conversations.state().conversations.find((c) => c.id === id)?.status
+      (id) => deps.conversations.state().conversations.find((c) => c.id === id)?.status,
+      (id) => deps.conversations.view(id).snapshot?.queued.length ?? 0
     )
     const apply = (motherId: string, roundtableId: string, event: RoundtableEvent) =>
       this.apply(motherId, roundtableId, event)
@@ -844,14 +845,29 @@ export class Roundtables implements RoundtableService {
         })
         continue
       }
-      this.seats.sendRebuttal(
-        { motherId, roundtableId, letter: seat.letter },
-        seat.childId,
-        rebuttalMessage(seat.letter, synthesis),
-        titleOf(rt.question),
-        this.deps.children
-      )
+      const ref = { motherId, roundtableId, letter: seat.letter }
+      const childId = seat.childId
+      const send = () =>
+        this.seats.sendRebuttal(
+          ref,
+          childId,
+          rebuttalMessage(seat.letter, synthesis),
+          titleOf(rt.question),
+          this.deps.children
+        )
+      // Envoyée au repos du participant, jamais en file d'attente : l'empreinte de lecture seule
+      // se prend avant l'envoi, pas en même temps que l'agent commence (contre-revue, N7).
+      if (!this.idle.restless(childId)) send()
+      else
+        void this.idle
+          .atRest(childId, () => this.rebuttalWaiting(ref) && this.exists(childId))
+          .then((ok) => ok && send())
     }
+  }
+
+  private rebuttalWaiting(ref: { motherId: string; roundtableId: string; letter: string }) {
+    const rt = this.read(ref.motherId, ref.roundtableId)
+    return rt?.seats.find((s) => s.letter === ref.letter)?.rebuttal?.state === 'waiting'
   }
 
   private decideNow(motherId: string, roundtableId: string): void {

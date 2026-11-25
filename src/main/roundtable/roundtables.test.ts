@@ -241,7 +241,7 @@ describe('tour de table : réplique et décision (fiche 285, lot 3)', () => {
     expect(env.roundtables.tracked()).toEqual({ tours: 0, seats: 0 })
   })
 
-  it('réplique en file derrière des messages de l’utilisateur : jamais fusionnée, reconnue par sa provenance', async () => {
+  it('réplique demandée pendant des messages de l’utilisateur : envoyée après, reconnue par sa provenance', async () => {
     const lock = lockFile()
     rmSync(lock)
     const { env, mother } = await setup({ panel: ['--verrou-fin-de-tour', lock] })
@@ -257,13 +257,13 @@ describe('tour de table : réplique et décision (fiche 285, lot 3)', () => {
       'participant A occupé'
     )
     void env.manager.prompt(a ?? '', 'Et une autre')
-    env.roundtables.rebuttal(mother, id)
     await env.waitFor(
-      () => (env.manager.view(a ?? '').snapshot?.queued.length ?? 0) === 2,
-      'réplique en file, à part'
+      () => (env.manager.view(a ?? '').snapshot?.queued.length ?? 0) === 1,
+      'message de l’utilisateur en file'
     )
-    const queued = env.manager.view(a ?? '').snapshot?.queued ?? []
-    expect(queued.map((q) => q.from?.kind ?? 'user')).toEqual(['user', 'roundtable'])
+    env.roundtables.rebuttal(mother, id)
+    // La réplique attend le repos de A, hors de sa file (N7) : jamais derrière ses messages.
+    expect(env.rt(mother).seats.find((s) => s.childId === a)?.rebuttal?.state).toBe('waiting')
     rmSync(lock)
     await env.waitFor(() => env.rt(mother).phase === 'decided', 'décision rendue', 20_000)
     const sent = env
@@ -278,7 +278,7 @@ describe('tour de table : réplique et décision (fiche 285, lot 3)', () => {
     expect(env.users(b ?? '').at(-1)?.from).toMatchObject({ step: 'rebuttal' })
   })
 
-  it('tour arrêté pendant que la réplique attend en file : elle est retirée, elle ne part pas', async () => {
+  it('tour arrêté pendant que la réplique attend le repos du participant : elle ne part pas', async () => {
     const lock = lockFile()
     rmSync(lock)
     const { env, mother } = await setup({ panel: ['--verrou-fin-de-tour', lock] })
@@ -290,10 +290,7 @@ describe('tour de table : réplique et décision (fiche 285, lot 3)', () => {
     void env.manager.prompt(a, 'Une question à part')
     await env.waitFor(() => env.manager.view(a).snapshot?.status === 'busy', 'participant A occupé')
     env.roundtables.rebuttal(mother, id)
-    await env.waitFor(
-      () => (env.manager.view(a).snapshot?.queued.length ?? 0) === 1,
-      'réplique en file'
-    )
+    expect(env.rt(mother).seats.find((s) => s.childId === a)?.rebuttal?.state).toBe('waiting')
     await env.roundtables.stop(mother, id)
     expect(env.manager.view(a).snapshot?.queued ?? []).toEqual([])
     // Le tour de l'utilisateur dans cette conversation n'est pas arrêté par le tour de table.
