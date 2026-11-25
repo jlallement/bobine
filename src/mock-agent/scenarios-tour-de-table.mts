@@ -131,6 +131,9 @@ const SERVER_ERROR_ONCE: Step = {
   then: []
 }
 
+/** La même erreur, pour la première demande de décision de la session. */
+const VERDICT_ERROR_ONCE: Step = { ...SERVER_ERROR_ONCE }
+
 function arbiter(text: string, loose = false): Step[] {
   const step = /<bobine_roundtable_[0-9a-f]+ step="(synthesis|verdict)"/.exec(text)?.[1]
   if (!step) return [{ kind: 'text', text: 'Réponse ordinaire, hors tour de table.' }]
@@ -366,6 +369,19 @@ export const roundtableScenarios: Record<string, Scenario> = {
       {
         kind: 'computed',
         build: ({ text }) => (isStep(text) ? [SERVER_ERROR_ONCE, ...arbiter(text)] : arbiter(text))
+      }
+    ]
+  },
+  'decision-erreur-serveur': {
+    description:
+      'Conversation qui arbitre : la synthèse répond ; la première demande de décision de la session échoue comme `synthese-erreur-serveur` (`-32603` « Internal error »), la suivante répond. Avec `--cout-bob`, la demande en échec est comptée aussi',
+    steps: [
+      {
+        kind: 'computed',
+        build: ({ text }) =>
+          /<bobine_roundtable_[0-9a-f]+ step="verdict"/.test(text)
+            ? [VERDICT_ERROR_ONCE, ...arbiter(text)]
+            : arbiter(text)
       }
     ]
   },

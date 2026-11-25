@@ -194,8 +194,13 @@ export interface RoundtableStep {
    * en erreur ou arrêtées comprises (contre-recette N3).
    */
   usage?: UsageDigest
-  /** Consommation des tentatives d'avant la tentative en cours (interne au réducteur). */
-  spent?: UsageDigest
+  /**
+   * Tentatives de l'étape (interne au réducteur, `usage` en est la somme) : chacune désignée par
+   * l'heure de son départ (`at`), avec le coût cumulé de la conversation à son départ et le
+   * dernier relevé qui lui revient. Un coût communiqué en retard va à sa tentative, quel que soit
+   * l'ordre d'arrivée (passe sur la course du coût tardif).
+   */
+  attempts?: StepAttempt[]
   detail?: string
   /**
    * Le dossier a changé pendant le tour de l'étape (agent qui écrit sans demander, fiche 285, S1) :
@@ -204,6 +209,15 @@ export interface RoundtableStep {
   changedFolder?: true
   /** Quelques fichiers touchés, lus dans `git status` (au plus `STEP_CHANGED_FILES`). */
   changedFiles?: string[]
+}
+
+/** Une tentative d'une étape : ses jetons, et son coût en relevés cumulés de la conversation. */
+export interface StepAttempt {
+  at: number
+  /** Jetons et tours communiqués (le coût est relevé à part, `costStart` / `costEnd`). */
+  usage?: UsageDigest
+  costStart?: number
+  costEnd?: { amount: number; currency: string }
 }
 
 /** Fichiers touchés gardés sur une étape qui a changé le dossier, au plus. */
@@ -289,14 +303,37 @@ export type RoundtableEvent =
       type: 'step-sent'
       step: RoundtableStepKind
       at: number
+      /** Coût cumulé de la conversation au départ de la tentative. */
+      costStart?: number
       /** Agent et modèle réellement utilisés pour cette demande. */
       by?: RoundtableStep['by']
     }
   | { type: 'step-held'; step: RoundtableStepKind }
-  | { type: 'step-answered'; step: RoundtableStepKind; usage?: UsageDigest; at: number }
-  | { type: 'step-failed'; step: RoundtableStepKind; detail?: string; usage?: UsageDigest }
+  | {
+      type: 'step-answered'
+      step: RoundtableStepKind
+      usage?: UsageDigest
+      /** Coût cumulé de la conversation à la fin de la tentative. */
+      costEnd?: { amount: number; currency: string }
+      at: number
+    }
+  | {
+      type: 'step-failed'
+      step: RoundtableStepKind
+      detail?: string
+      usage?: UsageDigest
+      costEnd?: { amount: number; currency: string }
+    }
   /** Coût communiqué après coup (Bob) : remplace la consommation du tour de l'agent. */
-  | { type: 'step-usage'; step: RoundtableStepKind; usage: UsageDigest }
+  | {
+      type: 'step-usage'
+      step: RoundtableStepKind
+      /** Tentative visée (`at` de son départ) ; absente : la dernière. */
+      attempt?: number
+      /** Coût cumulé de la conversation relevé après coup. */
+      costEnd?: { amount: number; currency: string }
+      usage?: UsageDigest
+    }
   /** Le dossier a changé pendant le tour de l'étape (constaté après sa réponse). */
   | { type: 'step-changed-folder'; step: RoundtableStepKind; files: string[] }
   /** « Faire réagir les participants » : une seule fois par tour. */
@@ -478,15 +515,60 @@ export function addDigests(a: UsageDigest | undefined, b: UsageDigest | undefine
   return { ...sum, ...(cost ? { cost } : {}) }
 }
 
-/** Consommation de la tentative en cours : ajoutée à celles d'avant. */
-const withAttempt = (step: RoundtableStep, usage: UsageDigest | undefined): RoundtableStep => {
-  const total = addDigests(step.spent, usage)
-  return total ? { ...step, usage: total } : step
+/**
+ * Total des tentatives. Jetons : additionnés. Coût : chaque tentative compte l'écart entre son
+ * dernier relevé et son départ, sans jamais recouvrir l'intervalle d'une autre (un relevé tardif
+ * qui comprend déjà le coût d'une tentative suivante n'est pas compté deux fois). Sans relevé, le
+ * coût du tour tel que communiqué.
+ */
+export function attemptsTotal(attempts: readonly StepAttempt[]): UsageDigest | undefined {
+  const sorted = [...attempts].sort((a, b) => a.at - b.at)
+  let total: UsageDigest | undefined
+  let covered: number | undefined
+  let cost: { amount: number; currency: string } | undefined
+  for (const attempt of sorted) {
+    const { cost: turnCost, ...tokens } = attempt.usage ?? {}
+    if (Object.keys(tokens).length) total = addDigests(total, tokens)
+    const end = attempt.costEnd
+    if (!end) {
+      if (turnCost) cost = addDigests(cost ? { cost } : undefined, { cost: turnCost })?.cost
+      continue
+    }
+    const start = Math.max(attempt.costStart ?? covered ?? 0, covered ?? -Infinity)
+    const amount = Math.max(0, end.amount - start)
+    cost = addDigests(cost ? { cost } : undefined, {
+      cost: { amount, currency: end.currency }
+    })?.cost
+    covered = Math.max(covered ?? -Infinity, end.amount)
+  }
+  return cost ? { ...total, cost } : total
 }
 
-/** Nouvelle tentative d'une étape : ce que les précédentes ont consommé reste au total. */
-const carried = (step: RoundtableStep | undefined) =>
-  step?.usage ? { usage: step.usage, spent: step.usage } : {}
+/** Résultat de la tentative visée (la dernière par défaut) : le total est recalculé. */
+function withAttempt(
+  step: RoundtableStep,
+  change: { usage?: UsageDigest | undefined; costEnd?: StepAttempt['costEnd'] },
+  at = step.attempts?.at(-1)?.at
+): RoundtableStep {
+  const attempts = step.attempts ?? []
+  const index = attempts.findIndex((a) => a.at === at)
+  if (index === -1) return step
+  const current = attempts[index] as StepAttempt
+  const next: StepAttempt = {
+    ...current,
+    ...(change.usage ? { usage: change.usage } : {}),
+    ...(change.costEnd ? { costEnd: change.costEnd } : {})
+  }
+  const all = attempts.map((a, i) => (i === index ? next : a))
+  const usage = attemptsTotal(all)
+  return { ...step, attempts: all, ...(usage ? { usage } : {}) }
+}
+
+/** Nouvelle tentative d'une étape : ses tentatives passées et leur total restent. */
+const carried = (step: RoundtableStep | undefined) => ({
+  ...(step?.usage ? { usage: step.usage } : {}),
+  ...(step?.attempts ? { attempts: step.attempts } : {})
+})
 
 /** Synthèse demandée avec les avis présents (les participants encore au travail sont arrêtés). */
 function requestSynthesis(rt: Roundtable, at: number, early: boolean): Roundtable {
@@ -573,14 +655,22 @@ function reduceStep(
             ...step,
             state: 'sent',
             sentAt: event.at,
-            ...(event.by ? { by: event.by } : {})
+            ...(event.by ? { by: event.by } : {}),
+            attempts: [
+              // Étape d'une version d'avant le suivi par tentative : son total reste.
+              ...(step.attempts ?? (step.usage ? [{ at: -1, usage: step.usage }] : [])),
+              {
+                at: event.at,
+                ...(event.costStart !== undefined ? { costStart: event.costStart } : {})
+              }
+            ]
           })
         : rt
     case 'step-held':
       return running ? withStep(rt, key, { ...step, state: 'held' }) : rt
     case 'step-usage':
-      // Coût communiqué après coup pour la tentative finie (pas pour une nouvelle en route).
-      return running ? rt : withStep(rt, key, withAttempt(step, event.usage))
+      // Coût communiqué après coup : à la tentative qu'il vise, même si une autre est en route.
+      return withStep(rt, key, withAttempt(step, event, event.attempt))
     case 'step-changed-folder': {
       // Constaté à la fin du tour : l'étape a répondu (ou échoué) entre-temps.
       if (step.state === 'waiting') return rt
@@ -593,10 +683,10 @@ function reduceStep(
     }
     case 'step-failed':
       // Tour arrêté entre-temps : sa consommation compte encore.
-      if (!running) return event.usage ? withStep(rt, key, withAttempt(step, event.usage)) : rt
+      if (!running) return withStep(rt, key, withAttempt(step, event))
       return {
         ...withStep(rt, key, {
-          ...withAttempt(step, event.usage),
+          ...withAttempt(step, event),
           state: 'failed',
           ...bounded(event.detail)
         }),
@@ -606,7 +696,7 @@ function reduceStep(
     case 'step-answered': {
       if (!running) return rt
       const answered: RoundtableStep = {
-        ...withAttempt(step, event.usage),
+        ...withAttempt(step, event),
         state: 'answered',
         answeredAt: event.at
       }

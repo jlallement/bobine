@@ -84,7 +84,12 @@ export class MotherSteps {
   /** Demande partie, en attente de la fin du tour de l'agent. */
   private readonly answering = new Map<string, StepRef>()
   /** Dernière demande répondue : un coût communiqué après coup lui revient (Bob, fiche 109). */
-  private readonly costWatch = new Map<string, StepRef>()
+  /**
+   * Tentative finie dont un coût peut encore arriver (Bob l'écrit après sa réponse). `closing` :
+   * un autre message est parti depuis ; ce qui arrive pendant son tour revient encore à la
+   * tentative (l'agent n'écrit le coût d'un tour qu'après lui), plus rien après sa fin.
+   */
+  private readonly costWatch = new Map<string, StepRef & { attempt?: number; closing?: true }>()
   private readonly scheduled = new Set<string>()
   /** Envois refusés d'affilée parce que l'agent préparait une réponse : réessai espacé. */
   private readonly retries = new Map<string, number>()
@@ -159,12 +164,19 @@ export class MotherSteps {
       }
       case 'turn-end':
       case 'turn-error':
+        if (this.costWatch.get(motherId)?.closing) this.costWatch.delete(motherId)
         return this.ended(motherId, event)
       case 'usage-report': {
-        const ref = this.costWatch.get(motherId)
-        const usage = ref && lastTurnDigest(this.host.conversations.view(motherId).transcript.usage)
-        if (ref && usage)
-          this.host.apply(motherId, ref.roundtableId, { ...ref, type: 'step-usage', usage })
+        // Coût relevé après coup : à la tentative finie qu'il suit, même si une autre est partie
+        // depuis (course : « Synthétiser » cliqué avant la relecture du coût).
+        const watch = this.costWatch.get(motherId)
+        if (!watch || !event.cost) return
+        this.host.apply(motherId, watch.roundtableId, {
+          type: 'step-usage',
+          step: watch.step,
+          ...(watch.attempt !== undefined ? { attempt: watch.attempt } : {}),
+          costEnd: event.cost
+        })
         return
       }
       case 'status':
@@ -174,7 +186,13 @@ export class MotherSteps {
   }
 
   private sent(motherId: string, from: MessageOrigin | undefined, model?: string): void {
-    this.costWatch.delete(motherId)
+    // Un autre message (tapé, ou d'un autre tour) : son coût à lui n'est pas celui de l'étape ;
+    // le relevé s'arrête à la fin de son tour. Une nouvelle tentative de la même étape garde le
+    // relevé de la précédente jusqu'à sa propre fin (coût tardif).
+    const watched = this.costWatch.get(motherId)
+    const sameStep =
+      from?.kind === 'roundtable' && from.id === watched?.roundtableId && from.step === watched.step
+    if (watched && !sameStep) this.costWatch.set(motherId, { ...watched, closing: true })
     // La réplique va aux participants, pas à cette conversation (`seat-events.ts`).
     // La réplique va aux participants, pas à cette conversation.
     if (from?.kind !== 'roundtable' || from.step === 'rebuttal') return
@@ -193,10 +211,12 @@ export class MotherSteps {
     if (!this.baselines.has(motherId)) void this.prepareFolder(motherId)
     // Qui rédige vraiment : l'agent et le modèle de la conversation au départ de la demande.
     const summary = this.host.conversations.state().conversations.find((c) => c.id === motherId)
+    const costStart = this.host.conversations.view(motherId).transcript.usage?.pending?.costStart
     this.host.apply(motherId, ref.roundtableId, {
       type: 'step-sent',
       step: ref.step,
       at: this.host.now(),
+      ...(costStart !== undefined ? { costStart } : {}),
       ...(summary
         ? {
             by: {
@@ -218,8 +238,11 @@ export class MotherSteps {
     const { roundtableId, step } = ref
     // Ce que la tentative a consommé, même en échec ou arrêtée (contre-recette N3) ; un coût
     // communiqué après coup lui revient aussi (`costWatch`).
-    const spent = lastTurnDigest(this.host.conversations.view(motherId).transcript.usage)
-    const usage = spent ? { usage: spent } : {}
+    const transcriptUsage = this.host.conversations.view(motherId).transcript.usage
+    const spent = lastTurnDigest(transcriptUsage)
+    const costEnd = transcriptUsage?.cost
+    const usage = { ...(spent ? { usage: spent } : {}), ...(costEnd ? { costEnd } : {}) }
+    const watch = { ...ref, attempt: this.host.read(motherId, roundtableId)?.[step]?.sentAt }
     if (event.type === 'turn-error') {
       this.host.apply(motherId, roundtableId, {
         type: 'step-failed',
@@ -227,11 +250,11 @@ export class MotherSteps {
         detail: event.message,
         ...usage
       })
-      this.costWatch.set(motherId, ref)
+      this.costWatch.set(motherId, watch)
     } else if (event.stopReason === 'cancelled') {
       // Arrêtée par l'utilisateur ou par le plafond : à reprendre d'un geste (« Synthétiser… »).
       this.host.apply(motherId, roundtableId, { type: 'step-failed', step, ...usage })
-      this.costWatch.set(motherId, ref)
+      this.costWatch.set(motherId, watch)
     } else {
       this.host.apply(motherId, roundtableId, {
         type: 'step-answered',
@@ -239,7 +262,7 @@ export class MotherSteps {
         at: this.host.now(),
         ...usage
       })
-      this.costWatch.set(motherId, ref)
+      this.costWatch.set(motherId, watch)
     }
     log.info(`Tour de table ${roundtableId.slice(0, 8)} : ${step} terminée (${event.type})`)
   }

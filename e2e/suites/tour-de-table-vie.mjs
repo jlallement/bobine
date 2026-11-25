@@ -410,27 +410,12 @@ async function failedSynthesisCost(scheme) {
         await choose(ui, ['Alpha', 'Beta'])
         await ui.ev(`${ui.$('composer-input')}.focus()`)
         await ui.enter()
-        // Première demande de synthèse en échec : dite, et reprise par « Synthétiser ».
-        await ui.waitFor(`!!${ui.$('roundtable-step-failed')}`, 60_000)
-        check(
-          (await ui.ev(`${ui.$('roundtable-progress')}.textContent`)) ===
-            L('roundtable.card.synthesisFailed'),
-          'synthèse en échec : « synthèse non rendue »'
-        )
-        // Le coût de la tentative en échec arrive après coup (relu 1,5 s plus tard, comme Bob) :
-        // relancer avant lui le perdait (course du moteur, signalée ; l'interface affiche ce que
-        // l'élément du tour porte). On attend qu'il soit compté : 2 avis + 1 tentative, 0,0375.
-        const partial = (0.0375).toLocaleString(LANG === 'en' ? 'en-US' : 'fr-FR', {
-          maximumFractionDigits: 4
-        })
-        await ui.waitFor(
-          `${ui.$('roundtable-used')}?.textContent.includes(${JSON.stringify(partial)})`,
-          15_000
-        )
         // S4 : le fil ne suit pas le bas (remonté) ; au repli de la carte, son haut ne bouge pas
-        // et le fil ne défile pas jusqu'à la fin de la synthèse.
+        // et le fil ne défile pas jusqu'à la fin de la synthèse. Préparé pendant le recueil, pour
+        // relancer la synthèse dès son échec.
         await ui.viewport(1280, 420)
         const scroller = `document.querySelector('.main > .scroll')`
+        await ui.waitFor(`!!${ui.$('roundtable-card')}`, 30_000)
         // Remonté à la molette, comme un utilisateur : le fil ne suit plus le bas.
         await ui.ev(`(${scroller}.scrollTop = ${scroller}.scrollHeight, true)`)
         const box = await ui.ev(
@@ -440,6 +425,15 @@ async function failedSynthesisCost(scheme) {
         await ui.waitFor(`${scroller}.scrollTop === 0`, 5000)
         // L'app le sait : « ↓ » paraît (le fil ne suit plus le bas).
         await ui.waitFor(`!!${ui.$('scroll-to-bottom')}`, 5000)
+        // Première demande de synthèse en échec : dite, et reprise par « Synthétiser ».
+        await ui.waitFor(`!!${ui.$('roundtable-step-failed')}`, 60_000)
+        check(
+          (await ui.ev(`${ui.$('roundtable-progress')}.textContent`)) ===
+            L('roundtable.card.synthesisFailed'),
+          'synthèse en échec : « synthèse non rendue »'
+        )
+        // Relancée tout de suite, avant que le coût de la tentative en échec ne soit relu (1,5 s
+        // plus tard, comme Bob) : ce coût n'est pas perdu (course du moteur corrigée).
         const cardTop = `Math.round(document.querySelector('[data-testid=roundtable-card]').getBoundingClientRect().top)`
         const before = await ui.ev(cardTop)
         // Un clic sans défilement (le bouton peut être sous le bord de la fenêtre).
@@ -453,7 +447,8 @@ async function failedSynthesisCost(scheme) {
         )
         await ui.viewport()
         await ui.waitFor(`!!${ui.$('roundtable-answer-label')}`, 60_000)
-        // 2 avis et 2 tentatives de synthèse à 0,0125 : 0,05, relus après coup.
+        // 2 avis et 2 tentatives de synthèse à 0,0125 : 0,05, relus après coup ; la tentative en
+        // échec comprise, bien que relancée avant la relecture de son coût.
         const total = (0.05).toLocaleString(LANG === 'en' ? 'en-US' : 'fr-FR', {
           minimumFractionDigits: 2
         })

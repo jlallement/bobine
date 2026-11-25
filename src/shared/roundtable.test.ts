@@ -996,50 +996,74 @@ describe('tour de table : l’arbitre n’est jamais participant (décision du t
   })
 })
 
-describe('tour de table : consommation de toutes les tentatives d’une étape (contre-recette N3)', () => {
-  it('échec, arrêt puis réponse : tout compte ; un coût tardif ne va pas à la tentative en route', () => {
-    const answered = (rt: Roundtable) =>
-      apply(
-        rt,
-        ...rt.seats.map((s, i): RoundtableEvent => ({
-          type: 'seat-launched',
-          letter: s.letter,
-          childId: `c${i}`,
-          readOnly: 'enforced',
-          at: 1
-        })),
-        ...rt.seats.map((s): RoundtableEvent => ({
-          type: 'seat-working',
-          letter: s.letter,
-          at: 2
-        })),
-        ...rt.seats.map((s): RoundtableEvent => ({
-          type: 'seat-answered',
-          letter: s.letter,
-          at: 3
-        }))
-      )
-    const cost = (amount: number) => ({ cost: { amount, currency: 'bobcoins' }, turns: 1 })
-    let rt = answered(roundtable())
-    expect(rt.phase).toBe('synthesizing')
-    rt = apply(
+describe('tour de table : consommation de toutes les tentatives d’une étape (N3, coût tardif)', () => {
+  const bob = (amount: number) => ({ amount, currency: 'bobcoins' })
+  const answered = (rt: Roundtable) =>
+    apply(
       rt,
-      { type: 'step-sent', step: 'synthesis', at: 4 },
-      { type: 'step-failed', step: 'synthesis', detail: 'Internal error', usage: { turns: 1 } },
-      // Coût écrit par l'agent après son échec.
-      { type: 'step-usage', step: 'synthesis', usage: cost(0.0441) },
-      { type: 'synthesize', at: 5 },
-      // Coût tardif arrivé pendant la nouvelle tentative : ignoré (déjà compté).
-      { type: 'step-usage', step: 'synthesis', usage: cost(1) },
-      { type: 'step-sent', step: 'synthesis', at: 6 },
-      { type: 'step-answered', step: 'synthesis', at: 7, usage: { total: 10, turns: 1 } },
-      { type: 'step-usage', step: 'synthesis', usage: { ...cost(0.1574), total: 10 } }
+      ...rt.seats.map((s, i): RoundtableEvent => ({
+        type: 'seat-launched',
+        letter: s.letter,
+        childId: `c${i}`,
+        readOnly: 'enforced',
+        at: 1
+      })),
+      ...rt.seats.map((s): RoundtableEvent => ({ type: 'seat-working', letter: s.letter, at: 2 })),
+      ...rt.seats.map((s): RoundtableEvent => ({ type: 'seat-answered', letter: s.letter, at: 3 }))
     )
+  // Tentative 1 partie à 0,0125 (un échange avant), en échec ; relance immédiate : la tentative 2
+  // part avant la relecture du coût de la première (0,0441), qui arrive pendant la seconde.
+  const race = (step: 'synthesis' | 'verdict', relaunch: RoundtableEvent): RoundtableEvent[] => [
+    { type: 'step-sent', step, at: 10, costStart: 0.0125 },
+    {
+      type: 'step-failed',
+      step,
+      detail: 'Internal error',
+      usage: { turns: 1 },
+      costEnd: bob(0.0125)
+    },
+    relaunch,
+    { type: 'step-sent', step, at: 20, costStart: 0.0125 },
+    { type: 'step-usage', step, attempt: 10, costEnd: bob(0.0566) },
+    { type: 'step-answered', step, at: 30, usage: { turns: 1, total: 10 }, costEnd: bob(0.0566) },
+    { type: 'step-usage', step, attempt: 20, costEnd: bob(0.214) }
+  ]
+
+  it('synthèse : échec, relance immédiate, coût tardif de la première puis de la seconde : total juste', () => {
+    const rt = apply(answered(roundtable()), ...race('synthesis', { type: 'synthesize', at: 15 }))
     expect(rt.phase).toBe('synthesized')
-    expect(rt.synthesis?.usage).toEqual({
-      turns: 2,
-      total: 10,
-      cost: { amount: 0.2015, currency: 'bobcoins' }
-    })
+    expect(rt.synthesis?.usage).toEqual({ turns: 2, total: 10, cost: bob(0.2015) })
+  })
+
+  it('un relevé en double, ou arrivé dans le désordre, n’est pas recompté', () => {
+    const events = race('synthesis', { type: 'synthesize', at: 15 })
+    const rt = apply(
+      answered(roundtable()),
+      ...events,
+      { type: 'step-usage', step: 'synthesis', attempt: 10, costEnd: bob(0.0566) },
+      { type: 'step-usage', step: 'synthesis', attempt: 20, costEnd: bob(0.214) },
+      // Relevé tardif de la première qui comprend déjà le coût de la seconde.
+      { type: 'step-usage', step: 'synthesis', attempt: 10, costEnd: bob(0.214) }
+    )
+    expect(rt.synthesis?.usage?.cost).toEqual(bob(0.2015))
+  })
+
+  it('décision : même chose', () => {
+    let rt = apply(
+      answered(roundtable()),
+      { type: 'step-sent', step: 'synthesis', at: 4 },
+      { type: 'step-answered', step: 'synthesis', at: 5 },
+      { type: 'rebuttal', at: 6 },
+      ...roundtable().seats.map((s): RoundtableEvent => ({
+        type: 'rebuttal-seat',
+        letter: s.letter,
+        state: 'answered',
+        at: 7
+      }))
+    )
+    expect(rt.phase).toBe('deciding')
+    rt = apply(rt, ...race('verdict', { type: 'decide', at: 15 }))
+    expect(rt.phase).toBe('decided')
+    expect(rt.verdict?.usage).toEqual({ turns: 2, total: 10, cost: bob(0.2015) })
   })
 })

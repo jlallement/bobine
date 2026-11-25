@@ -1298,3 +1298,15 @@ le main n'a pas livré l'étape 1) :
   avant sa relecture (réducteur : `step-usage` ignoré pendant une nouvelle tentative) — défaut
   côté moteur signalé, l'essai attend ce coût avant de relancer.
 
+
+- 2026-11-25 : course du coût tardif d'une tentative (branche `1.2-fix6-engine`). Après une
+  synthèse (ou une décision) en échec, le coût façon Bob de la tentative est relu ≈ 1,5 s plus
+  tard ; « Synthétiser » cliqué avant le perdait (relevé écarté tant qu'une nouvelle tentative
+  était en route). Désormais chaque tentative est désignée par l'heure de son départ
+  (`RoundtableStep.attempts`, interne) avec le coût cumulé de la conversation à son départ et le
+  dernier relevé qui lui revient ; `step-usage` vise sa tentative (`attempt`). Le total compte
+  chaque tentative sans recouvrir l'intervalle d'une autre : rien de perdu, rien de compté deux
+  fois, quel que soit l'ordre d'arrivée. Un message tapé entre-temps arrête le relevé à la fin de
+  son tour. Siège relancé : pas concerné (le coût d'un participant est celui de toute sa
+  conversation, coût tardif compris). Agent factice : `decision-erreur-serveur`. E2e : le cas
+  « synthèse en échec » relance tout de suite, sans attendre le coût tardif.

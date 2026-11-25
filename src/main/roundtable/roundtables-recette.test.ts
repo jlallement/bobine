@@ -663,3 +663,66 @@ describe('contre-recette : coût d’une synthèse en échec (N3)', () => {
     expect(summaryOf(env, mother)?.usage?.cost?.amount).toBe(0.0375)
   }, 45_000)
 })
+
+describe('coût tardif d’une tentative en échec, relance immédiate', () => {
+  async function bobLead(lead: string) {
+    const bobDb = join(mkdtempSync(join(tmpdir(), 'tour-bob-')), 'bob.db')
+    return setup({
+      lead,
+      leadArgs: ['--bob-db', bobDb, '--cout-bob'],
+      leadProfile: { costSource: bobDbCosts(bobDb) }
+    })
+  }
+
+  it('synthèse relancée avant la relecture du coût de l’échec : rien n’est perdu ni compté deux fois', async () => {
+    const { env, mother } = await bobLead('synthese-erreur-serveur')
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).synthesis?.state === 'failed', 'synthèse en échec')
+    // Tout de suite, avant que le coût de la tentative en échec ne soit relu (≈ 1,5 s).
+    expect(env.rt(mother).synthesis?.usage?.cost?.amount ?? 0).toBe(0)
+    env.roundtables.synthesize(mother, env.rt(mother).roundtableId)
+    // Le relevé tardif tombe entre le geste et le départ de la nouvelle tentative (la course) ;
+    // l'agent le redira ensuite lui-même (relevé en double).
+    env.manager.post(mother, {
+      type: 'usage-report',
+      cost: { amount: 0.025, currency: 'bobcoins' }
+    })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse relancée rendue')
+    await env.waitFor(
+      () => summaryOf(env, mother)?.usage?.cost?.amount === 0.0375,
+      'coût de la conversation',
+      15_000
+    )
+    await env.waitFor(
+      () => env.rt(mother).synthesis?.usage?.cost?.amount === 0.025,
+      'coût des deux tentatives',
+      15_000
+    )
+  }, 45_000)
+
+  it('décision relancée avant la relecture du coût de l’échec : même chose', async () => {
+    const { env, mother } = await bobLead('decision-erreur-serveur')
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    env.roundtables.rebuttal(mother, env.rt(mother).roundtableId)
+    await env.waitFor(() => env.rt(mother).verdict?.state === 'failed', 'décision en échec', 20_000)
+    env.roundtables.decide(mother, env.rt(mother).roundtableId)
+    env.manager.post(mother, {
+      type: 'usage-report',
+      cost: { amount: 0.0375, currency: 'bobcoins' }
+    })
+    await env.waitFor(() => env.rt(mother).phase === 'decided', 'décision relancée rendue')
+    // Échange, synthèse, deux tentatives de décision : 4 × 0,0125.
+    await env.waitFor(
+      () => summaryOf(env, mother)?.usage?.cost?.amount === 0.05,
+      'coût de la conversation',
+      15_000
+    )
+    await env.waitFor(
+      () => env.rt(mother).verdict?.usage?.cost?.amount === 0.025,
+      'coût des deux tentatives de décision',
+      15_000
+    )
+    expect(env.rt(mother).synthesis?.usage?.cost?.amount).toBe(0.0125)
+  }, 60_000)
+})
