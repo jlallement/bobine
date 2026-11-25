@@ -28,7 +28,7 @@ import { QUESTION_CHARS } from '@shared/roundtable-prompts'
 import type { DataDestination, HandoverModel } from '@shared/handover'
 import type { WorkCardData } from '@shared/role-request'
 import type { TranscriptItem } from '@shared/transcript'
-import { formatEstimate, formatTokens } from '@shared/usage'
+import { costText, formatTokens } from '@shared/usage'
 
 type Report = Extract<TranscriptItem, { kind: 'child-report' }>
 
@@ -427,8 +427,9 @@ export function totalText(total: RoundtableTotal): string | undefined {
   const parts: string[] = []
   if (total.tokens !== undefined)
     parts.push(i18next.t('roundtable.card.tokens', { tokens: formatTokens(total.tokens, true) }))
-  if (total.costs.length) parts.push(total.costs.map((c) => formatEstimate(c)).join(' + '))
-  if (total.silent > 0) parts.push(i18next.t('roundtable.card.silent', { count: total.silent }))
+  // Le format de coût de l'app (`costText` : jamais « ≈ 0,00 », M12) ; les participants sans
+  // chiffre ne sont plus comptés ici, le détail au survol dit « — » pour eux (simplification 5).
+  if (total.costs.length) parts.push(total.costs.map((c) => costText(c, false)).join(' + '))
   // Seulement des participants muets : rien d'utile à dire en pied.
   if (total.tokens === undefined && total.costs.length === 0) return undefined
   return parts.join(' · ')

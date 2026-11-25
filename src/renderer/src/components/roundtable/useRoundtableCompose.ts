@@ -24,7 +24,6 @@ import {
   type LineState,
   type MenuEntry
 } from './roundtable-view'
-import { onRoundtableMenuRequest } from './roundtable-menu-request'
 
 /** Ce que l'app donne à la saisie pour le tour de table (absent : pas de tour de table ici). */
 export interface ComposerRoundtable {
@@ -122,22 +121,6 @@ export function useRoundtableCompose({
     setMenuOpen(false)
     setRefusal(undefined)
   }, [setMenuOpen])
-
-  // « Choisir un autre modèle » d'une carte du fil : la saisie passe en tour de table, menu ouvert.
-  // Sans tour possible ici (Discussion, commande prise par l'agent), le menu ne s'arme pas.
-  const latest = useRef({ enter, usable })
-  useLayoutEffect(() => {
-    latest.current = { enter, usable }
-  })
-  useEffect(
-    () =>
-      onRoundtableMenuRequest(() => {
-        if (!latest.current.usable) return
-        latest.current.enter()
-        setMenuOpen(true)
-      }),
-    [setMenuOpen]
-  )
 
   const state: LineState = useMemo(
     () => lineState(choices, options, questionChars),

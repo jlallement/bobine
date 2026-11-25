@@ -5630,7 +5630,7 @@
       "writeRefused": "Write refused by Bobine: this role is read-only ({{tool}}).",
       "readOnlyRequested": "Read-only is only requested: {{agent}} writes without asking for permission. Bobine checks the folder after each turn and reports any change.",
       "folderChanged": "The folder changed during this read-only role’s turn. Check the changes (git status).",
-      "childFolderChanged": "The folder changed during the turn of “{{title}}”, a read-only role working in this folder. Check the changes (git status).",
+      "childFolderChanged": "The folder changed during the turn of “{{title}}”, which was meant to stay read-only. Check the changes (git status).",
       "agentMissing": "The role’s agent “{{agent}}” isn’t available here: the task runs with this conversation’s agent.",
       "modelMissing": "The role’s model “{{model}}” can’t be chosen here: the agent takes its own model.",
       "modeMissing": "The agent has no “{{mode}}” mode for this role: the task runs in the current mode, with the role’s instructions.",
@@ -6285,8 +6285,8 @@
       "plusSynthesis": "+ synthesis",
       "choose": "Choose participants",
       "chooseHint": "2 to 5 models",
-      "slots_one": "{{count}} task slot missing",
-      "slots_other": "{{count}} task slots missing",
+      "slots_one": "Too many tasks at once: {{count}} more needed",
+      "slots_other": "Too many tasks at once: {{count}} more needed",
       "slotsSettings": "Settings",
       "unavailable": "{{agent}} is no longer available: choose another participant",
       "by": "{{models}} · via {{agent}}",
@@ -6321,8 +6321,8 @@
     },
     "card": {
       "title": "Roundtable",
-      "progress_one": "{{count}} opinion of {{total}}",
-      "progress_other": "{{count}} opinions of {{total}}",
+      "progress_one": "{{count}} of {{total}} opinions",
+      "progress_other": "{{count}} of {{total}} opinions",
       "opinions_one": "{{count}} opinion",
       "opinions_other": "{{count}} opinions",
       "synthesizing": "synthesis in progress",
@@ -6344,7 +6344,7 @@
       "otherModel": "Choose another model",
       "seeSynthesis": "See the synthesis",
       "used": "Used: {{total}}",
-      "usedAll": "Used in all: {{total}}",
+      "usedAll": "Total used: {{total}}",
       "tokens": "{{tokens}} tokens",
       "silent_one": "{{count}} participant without figures",
       "silent_other": "{{count}} participants without figures",
@@ -6362,8 +6362,8 @@
       "relaunchStopped_other": "Run the {{count}} stopped participants again",
       "stopping": "stopping",
       "letter": "Participant {{letter}}",
-      "synthesisFailed": "synthesis not given",
-      "decisionFailed": "decision not given",
+      "synthesisFailed": "synthesis failed",
+      "decisionFailed": "decision failed",
       "stepFailed": "The request did not go through: run it again."
     },
     "state": {
@@ -6374,15 +6374,15 @@
       "silent": "silent for {{duration}}",
       "removed": "conversation deleted",
       "changedFolder": "changed files in the folder",
-      "error": "Failed: {{reason}}",
-      "errorAfter": "Failed: {{reason}} after {{duration}}",
+      "error": "No opinion: {{reason}}",
+      "errorAfter": "No opinion: {{reason}} after {{duration}}",
       "modelNotOffered": "Model not offered by {{agent}} for now.",
       "stopped": {
         "user": "Stopped by you",
         "early-synthesis": "Stopped: synthesized without waiting",
         "roundtable-stopped": "Stopped with the roundtable",
         "cost-cap": "Stopped: conversation cost cap reached",
-        "restart": "Stopped (restart)",
+        "restart": "Stopped: app restart",
         "removed": "Stopped: conversation moved to the trash"
       },
       "reason": {
@@ -6394,8 +6394,8 @@
       },
       "readOnly": {
         "enforced": "Read-only",
-        "native": "Read-only, held by the installed Participant role",
-        "requested": "Read-only requested, checked in the repository only",
+        "native": "Read-only guaranteed (Participant role installed)",
+        "requested": "Read-only requested: checked on files tracked by git",
         "unverified": "Read-only requested, not verified (folder outside git)",
         "requestedShort": "Read-only requested"
       },
@@ -6436,7 +6436,7 @@
       "stance": {
         "maintains": "maintains",
         "nuances": "nuances",
-        "rallies": "rallies"
+        "rallies": "comes round"
       },
       "requested": "Rebuttal requested by the roundtable",
       "waiting": "waiting: finishing its current work"
@@ -6454,9 +6454,9 @@
       "task": "No roundtable from a task: start it from its source conversation.",
       "archived": "This conversation is archived: unarchive it to start a roundtable.",
       "discussion": "A roundtable starts in a project, not in a chat.",
-      "slots_one": "{{count}} task slot missing: nothing was sent.",
-      "slots_other": "{{count}} task slots missing: nothing was sent.",
-      "phase": "This is no longer possible at this step of the roundtable.",
+      "slots_one": "Too many tasks at once: {{count}} more needed (Settings)",
+      "slots_other": "Too many tasks at once: {{count}} more needed (Settings)",
+      "phase": "This is no longer possible at this stage of the roundtable.",
       "rebuttalOnce": "One rebuttal per roundtable.",
       "quorum": "A synthesis needs at least two opinions.",
       "selection": {

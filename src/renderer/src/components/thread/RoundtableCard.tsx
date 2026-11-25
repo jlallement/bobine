@@ -31,7 +31,6 @@ import { Tip } from '../common/Menus'
 import { useChildTools } from '../roles/RoleWork'
 import { RoundtableIcon } from '../roundtable/RoundtableIcon'
 import { RoundtableTag } from '../roundtable/RoundtableLine'
-import { requestRoundtableMenu } from '../roundtable/roundtable-menu-request'
 import {
   listText,
   type SeatPresence,
@@ -233,11 +232,14 @@ const attachmentsLost = (item: RoundtableGroupData['item']) =>
  * La lecture seule du tour, dite une fois au pied (A3) : celle de tous les participants, sinon la
  * plus faible garantie quand elles diffèrent (le bouclier de chaque ligne détaille).
  */
-function readOnlyLevel(item: RoundtableGroupData['item']): string {
+function weakestReadOnly(item: RoundtableGroupData['item']) {
   const levels = new Set(item.seats.map((s) => s.readOnly).filter(Boolean))
   const order = ['unverified', 'requested', 'native', 'enforced'] as const
-  const weakest = order.find((l) => levels.has(l)) ?? 'enforced'
-  return i18next.t(`roundtable.state.readOnlyShort.${weakest}`)
+  return order.find((l) => levels.has(l)) ?? 'enforced'
+}
+
+function readOnlyLevel(item: RoundtableGroupData['item']): string {
+  return i18next.t(`roundtable.state.readOnlyShort.${weakestReadOnly(item)}`)
 }
 
 /** La synthèse est rendue (ou la réplique a commencé) : la carte se replie en une ligne. */
@@ -363,7 +365,8 @@ export function RoundtableCard({
                   }
                   gestures={gestures}
                   pending={pending}
-                  shield={mixed}
+                  // Le pied dit le niveau ; un bouclier seulement sur une ligne qui en diffère.
+              shield={mixed && seat.readOnly !== weakestReadOnly(item)}
                   presence={presence(seat)}
                 />
               ))}
@@ -434,7 +437,6 @@ function SeatRow({
         ...(relaunch && !modelRefused && live
           ? { relaunch: () => live.relaunch(seat.letter) }
           : {}),
-        ...(modelRefused && live ? { otherModel: requestRoundtableMenu } : {}),
         // À la corbeille ou supprimée : l'avis se lit, sa conversation ne s'ouvre pas.
         ...(childId && presence === 'here' && info ? { open: () => info.onOpen(childId) } : {})
       }}
@@ -455,7 +457,6 @@ function RoundtableFoot({
   const { t } = useTranslation()
   const { item } = group
   const opinions = usableSeats(item).length
-  const absent = item.seats.length - opinions
   const synthesize = gestures && !item.stopping && canSynthesize(item)
   const lost = attachmentsLost(item) && item.seats.some((s) => canRelaunch(item, s.letter))
   const resumable = gestures && !lost && item.seats.some((s) => canRelaunch(item, s.letter))
@@ -463,8 +464,6 @@ function RoundtableFoot({
   let note: string | undefined
   if (item.phase === 'insufficient')
     note = t(opinions === 1 ? 'roundtable.card.single' : 'roundtable.card.none')
-  else if (item.phase === 'synthesizing' && absent > 0)
-    note = t('roundtable.card.partial', { count: absent, opinions })
   if (item.phase === 'collecting') {
     return (
       <div className="work-group-foot roundtable-foot" data-testid="roundtable-foot">

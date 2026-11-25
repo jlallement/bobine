@@ -159,8 +159,7 @@ function LineStatus({ roundtable }: { roundtable: RoundtableCompose }) {
     case 'slots':
       return (
         <span className="roundtable-line-alert" role="status" data-testid="roundtable-slots">
-          {t('roundtable.line.slots', { count: state.missing })}
-          <span aria-hidden> · </span>
+          {t('roundtable.line.slots', { count: state.missing })} (
           <button
             type="button"
             className="link-button"
@@ -169,6 +168,7 @@ function LineStatus({ roundtable }: { roundtable: RoundtableCompose }) {
           >
             {t('roundtable.line.slotsSettings')}
           </button>
+          )
         </span>
       )
     case 'ready':

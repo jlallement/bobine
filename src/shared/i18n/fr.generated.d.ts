@@ -5688,7 +5688,7 @@ export type FrResources = {
       readonly writeRefused: 'Écriture refusée par Bobine : ce rôle est en lecture seule ({{tool}}).'
       readonly readOnlyRequested: 'Lecture seule seulement demandée : {{agent}} écrit sans demander d’autorisation. Bobine vérifie le dossier après chaque tour et signale tout changement.'
       readonly folderChanged: 'Le dossier a changé pendant le tour de ce rôle en lecture seule. Vérifiez les modifications (git status).'
-      readonly childFolderChanged: 'Le dossier a changé pendant le tour de « {{title}} », un rôle en lecture seule qui travaille dans ce dossier. Vérifiez les modifications (git status).'
+      readonly childFolderChanged: 'Le dossier a changé pendant le tour de « {{title}} », qui devait rester en lecture seule. Vérifiez les modifications (git status).'
       readonly agentMissing: 'Agent du rôle « {{agent}} » indisponible ici : le travail se fait avec l’agent de cette conversation.'
       readonly modelMissing: 'Modèle du rôle « {{model}} » impossible à choisir ici : l’agent prend son propre modèle.'
       readonly modeMissing: 'L’agent n’a pas le mode « {{mode}} » du rôle : le travail se fait dans le mode courant, avec la consigne du rôle.'
@@ -6347,9 +6347,9 @@ export type FrResources = {
       readonly plusSynthesis: '+ synthèse'
       readonly choose: 'Choisir les participants'
       readonly chooseHint: '2 à 5 modèles'
-      readonly slots_one: 'Il manque {{count}} place de travaux'
-      readonly slots_many: 'Il manque {{count}} places de travaux'
-      readonly slots_other: 'Il manque {{count}} places de travaux'
+      readonly slots_one: 'Trop de travaux à la fois : il en faut {{count}} de plus'
+      readonly slots_many: 'Trop de travaux à la fois : il en faut {{count}} de plus'
+      readonly slots_other: 'Trop de travaux à la fois : il en faut {{count}} de plus'
       readonly slotsSettings: 'Réglages'
       readonly unavailable: '{{agent}} n’est plus disponible : choisissez un autre participant'
       readonly by: '{{models}} · par {{agent}}'
@@ -6432,8 +6432,8 @@ export type FrResources = {
       readonly relaunchStopped_other: 'Relancer les {{count}} participants arrêtés'
       readonly stopping: 'arrêt en cours'
       readonly letter: 'Participant {{letter}}'
-      readonly synthesisFailed: 'synthèse non rendue'
-      readonly decisionFailed: 'décision non rendue'
+      readonly synthesisFailed: 'la synthèse a échoué'
+      readonly decisionFailed: 'la décision a échoué'
       readonly stepFailed: 'La demande n’a pas abouti : relancez-la.'
     }
     readonly state: {
@@ -6444,15 +6444,15 @@ export type FrResources = {
       readonly silent: 'silencieux depuis {{duration}}'
       readonly removed: 'conversation supprimée'
       readonly changedFolder: 'a modifié des fichiers du dossier'
-      readonly error: 'En erreur : {{reason}}'
-      readonly errorAfter: 'En erreur : {{reason}} au bout de {{duration}}'
+      readonly error: 'Sans avis : {{reason}}'
+      readonly errorAfter: 'Sans avis : {{reason}} au bout de {{duration}}'
       readonly modelNotOffered: 'Modèle non proposé par {{agent}} pour le moment.'
       readonly stopped: {
         readonly user: 'Arrêté par vous'
         readonly 'early-synthesis': 'Arrêté : synthèse sans attendre'
         readonly 'roundtable-stopped': 'Arrêté avec le tour de table'
         readonly 'cost-cap': 'Arrêté : plafond de la conversation atteint'
-        readonly restart: 'Arrêté (redémarrage)'
+        readonly restart: 'Arrêté : redémarrage de l’app'
         readonly removed: 'Arrêté : conversation mise à la corbeille'
       }
       readonly reason: {
@@ -6464,8 +6464,8 @@ export type FrResources = {
       }
       readonly readOnly: {
         readonly enforced: 'Lecture seule'
-        readonly native: 'Lecture seule, tenue par le rôle Participant installé'
-        readonly requested: 'Lecture seule demandée, vérifiée dans le dépôt seulement'
+        readonly native: 'Lecture seule garantie (rôle Participant installé)'
+        readonly requested: 'Lecture seule demandée : vérifiée sur les fichiers suivis par git'
         readonly unverified: 'Lecture seule demandée, non vérifiée (dossier hors git)'
         readonly requestedShort: 'Lecture seule demandée'
       }
@@ -6527,10 +6527,10 @@ export type FrResources = {
       readonly task: 'Pas de tour de table depuis un travail : lancez-le depuis sa conversation d’origine.'
       readonly archived: 'Cette conversation est archivée : désarchivez-la pour lancer un tour de table.'
       readonly discussion: 'Le tour de table se lance dans un projet, pas dans une discussion.'
-      readonly slots_one: 'Il manque {{count}} place de travaux : rien n’est parti.'
-      readonly slots_many: 'Il manque {{count}} places de travaux : rien n’est parti.'
-      readonly slots_other: 'Il manque {{count}} places de travaux : rien n’est parti.'
-      readonly phase: 'Ce geste n’est plus possible à cette étape du tour de table.'
+      readonly slots_one: 'Trop de travaux à la fois : il en faut {{count}} de plus (Réglages)'
+      readonly slots_many: 'Trop de travaux à la fois : il en faut {{count}} de plus (Réglages)'
+      readonly slots_other: 'Trop de travaux à la fois : il en faut {{count}} de plus (Réglages)'
+      readonly phase: 'Ce n’est plus possible à cette étape du tour de table.'
       readonly rebuttalOnce: 'Une seule réplique par tour de table.'
       readonly quorum: 'Il faut au moins deux avis pour une synthèse.'
       readonly selection: {

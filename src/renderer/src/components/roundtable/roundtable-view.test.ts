@@ -197,7 +197,7 @@ describe('menu des participants', () => {
 })
 
 describe('pied « Consommé »', () => {
-  it('jetons et coûts par unité, sans conversion ; participants muets comptés', () => {
+  it('jetons et coûts par unité, sans conversion ; participants muets non comptés (simplification 5)', () => {
     const total = roundtableTotal(
       [{ total: 20_000, cost: { amount: 0.02, currency: 'USD' } }, undefined, { total: 27_500 }],
       [{ cost: { amount: 0.42, currency: 'bobcoins' } }]
@@ -205,7 +205,7 @@ describe('pied « Consommé »', () => {
     const text = totalText(total) ?? ''
     expect(text).toMatch(/^47,5k jetons · /)
     expect(text).toContain('0,42 Bobcoins')
-    expect(text).toContain('1 participant sans chiffre')
+    expect(text).not.toContain('sans chiffre')
   })
 
   it('rien de communiqué : pas de pied', () => {

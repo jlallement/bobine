@@ -13,7 +13,6 @@ import {
   CircleX,
   LoaderCircle,
   ShieldAlert,
-  SquareArrowOutUpRight,
   ShieldCheck,
   Square,
   TriangleAlert
@@ -45,7 +44,7 @@ import {
   type SeatPresence
 } from '../roundtable/roundtable-view'
 import { Tip } from '../common/Menus'
-import { FoldedAnswer } from './WorkAnswer'
+import { Markdown } from './Markdown'
 import { RowActivity } from './WorkGroupRow'
 import { elapsedText, useNow } from './WorkCard'
 
@@ -98,8 +97,6 @@ export interface RowActions {
   stop?: () => void
   /** « Relancer » (sans avis, pendant le recueil ou faute d'avis). */
   relaunch?: () => void
-  /** « Choisir un autre modèle » (modèle refusé) : le menu des participants. */
-  otherModel?: () => void
   /** « Ouvrir sa conversation » (sous l'avis déplié). */
   open?: () => void
   /** Un geste de cette ligne est parti : ses boutons attendent la réponse du main. */
@@ -255,7 +252,12 @@ function seatSide(
   const duration = c.elapsed !== undefined ? elapsedText(c.elapsed) : undefined
   if (seat.state === 'answered') {
     if (c.collecting)
-      side.push(`${t('roundtable.state.answered')}${duration ? ` · ${duration}` : ''}`)
+      side.push(
+        <span>
+          {t('roundtable.state.answered')}
+          {duration && <span className="roundtable-duration"> · {duration}</span>}
+        </span>
+      )
     // Format non suivi (sans réponse courte lue, recette C3) : dit d'abord, la confiance seule
     // ne suffit pas à résumer l'avis.
     else if (c.digest && !c.digest.followed)
@@ -266,9 +268,9 @@ function seatSide(
       )
     else if (c.digest?.confidence) side.push(t(CONFIDENCE_KEYS[c.digest.confidence]))
   }
-  if (c.running && duration) side.push(duration)
-  if (!c.running && seat.state !== 'answered' && !c.collecting && !c.actions.relaunch)
-    side.push(t('roundtable.state.noOpinion'))
+  // La durée en cours ; masquée en carte étroite (rien n'est coupé au milieu d'un mot, M1).
+  if (c.running && duration) side.push(<span className="roundtable-duration">{duration}</span>)
+  // « sans avis » n'est pas répété à droite : la sous-ligne le dit déjà (simplification 3).
   return side
 }
 
@@ -320,7 +322,9 @@ export function RoundtableRow({
   const text = report ? reportText(report) : undefined
   const digest = seat.state === 'answered' && text ? opinionDigest(text) : undefined
   const elapsed = seatElapsed(seat, now)
-  const expandable = !!text && seat.state === 'answered'
+  // Toute ligne se déplie (simplification 2) : l'avis entier, ou le détail d'une erreur ou d'un
+  // arrêt, et « Ouvrir sa conversation », seul accès à la conversation du participant.
+  const expandable = (!!text && seat.state === 'answered') || !!actions.open || !!trouble
   const meta = seatMeta(seat, { running, activity, child, trouble, digest })
   const side = seatSide(seat, { running, collecting, digest, elapsed, actions })
   return (
@@ -333,7 +337,9 @@ export function RoundtableRow({
       expandable={expandable}
       onToggle={onToggle}
       // Pendant le recueil, un avis rendu garde sa coche ; ensuite, le chevron du dépliage.
-      lead={collecting || !expandable ? <StateIcon state={iconOf(seat)} /> : undefined}
+      lead={
+        collecting || seat.state !== 'answered' ? <StateIcon state={iconOf(seat)} /> : undefined
+      }
       meta={meta.length > 0 ? <Dotted parts={meta} /> : undefined}
       wrap={!!trouble}
       fullText={trouble}
@@ -348,23 +354,49 @@ export function RoundtableRow({
       }
       // La réponse courte a servi au résumé de la ligne : pas répétée dans l'avis déplié (B9).
       body={
-        text && (
-          <OpenAnswer
-            text={digest?.short ? withoutShortAnswer(text) : text}
-            onOpen={actions.open}
-          />
-        )
+        <OpenAnswer
+          text={
+            seat.state === 'answered' && text
+              ? digest?.short
+                ? withoutShortAnswer(text)
+                : text
+              : undefined
+          }
+          detail={
+            seat.state === 'answered'
+              ? undefined
+              : [trouble, seat.detail].filter(Boolean).join('\n')
+          }
+          onOpen={actions.open}
+        />
       }
     />
   )
 }
 
-/** L'avis (la réplique) déplié : en Markdown, replié après dix lignes, et sa conversation. */
-function OpenAnswer({ text, onOpen }: { text: string; onOpen: (() => void) | undefined }) {
+/** L'avis (la réplique) déplié : en entier (simplification 6), ou le détail, et sa conversation. */
+function OpenAnswer({
+  text,
+  detail,
+  onOpen
+}: {
+  text: string | undefined
+  detail?: string | undefined
+  onOpen: (() => void) | undefined
+}) {
   const { t } = useTranslation()
   return (
     <>
-      <FoldedAnswer text={text} relayed={false} />
+      {text && (
+        <div className="work-body" data-testid="work-body">
+          <Markdown text={text} />
+        </div>
+      )}
+      {!text && detail && (
+        <p className="roundtable-row-detail" data-testid="roundtable-row-detail">
+          {detail}
+        </p>
+      )}
       {onOpen && (
         <div className="roundtable-open-links">
           <button
@@ -412,19 +444,6 @@ function RowButtons({ seat, actions }: { seat: RoundtableSeat; actions: RowActio
   const { t } = useTranslation()
   return (
     <>
-      {/* Sa conversation, quel que soit son état (au travail, en erreur, retenue…). */}
-      {actions.open && (
-        <button
-          type="button"
-          className="icon-button small"
-          aria-label={t('roundtable.card.open')}
-          title={t('roundtable.card.open')}
-          onClick={actions.open}
-          data-testid="roundtable-open-row"
-        >
-          <SquareArrowOutUpRight size={12} aria-hidden />
-        </button>
-      )}
       {actions.stop && (
         <Tip label={t('roundtable.card.stopSeat', { name: seatLabel(seat) })}>
           <button
@@ -439,27 +458,16 @@ function RowButtons({ seat, actions }: { seat: RoundtableSeat; actions: RowActio
           </button>
         </Tip>
       )}
-      {actions.otherModel ? (
+      {actions.relaunch && (
         <button
           type="button"
           className="btn small ghost"
-          onClick={actions.otherModel}
-          data-testid="roundtable-other-model"
+          onClick={actions.relaunch}
+          disabled={actions.busy}
+          data-testid="roundtable-relaunch"
         >
-          {t('roundtable.card.otherModel')}
+          {t('roundtable.card.relaunch')}
         </button>
-      ) : (
-        actions.relaunch && (
-          <button
-            type="button"
-            className="btn small ghost"
-            onClick={actions.relaunch}
-            disabled={actions.busy}
-            data-testid="roundtable-relaunch"
-          >
-            {t('roundtable.card.relaunch')}
-          </button>
-        )
       )}
     </>
   )

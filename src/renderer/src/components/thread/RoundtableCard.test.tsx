@@ -12,7 +12,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ConversationSummary } from '@shared/agent'
 import type { Roundtable, RoundtableEvent } from '@shared/roundtable'
 import type { TranscriptItem } from '@shared/transcript'
-import { onRoundtableMenuRequest } from '../roundtable/roundtable-menu-request'
 import { notifyTrashChanged } from '../../trash-events'
 import { answered, opinion, rebutted, roundtable, T0, thread } from '../roundtable/test-fixtures'
 import type { SubtasksInfo } from './Subtasks'
@@ -76,6 +75,11 @@ function show(items: TranscriptItem[], subtasks: SubtasksInfo | null = info()) {
 }
 
 const card = () => screen.getByTestId('roundtable-card')
+/** « Ouvrir sa conversation » : dans la ligne dépliée, seul accès (simplification 2). */
+const openLink = (letter: string) => {
+  fireEvent.click(within(row(letter)).getByTestId('roundtable-row-toggle'))
+  return within(row(letter)).queryByTestId('roundtable-open')
+}
 /** « attend votre réponse » des lignes de travaux (jamais sur un participant). */
 const L_WAITING = 'attend votre réponse'
 const row = (letter: string) =>
@@ -165,9 +169,7 @@ describe('recueil des avis', () => {
     expect(row('B').getAttribute('data-state')).toBe('error')
   })
 
-  it('modèle refusé : sans substitution, « Choisir un autre modèle » ouvre le menu', () => {
-    const requested = vi.fn()
-    const off = onRoundtableMenuRequest(requested)
+  it('S2 : modèle refusé, la ligne le dit ; aucun bouton ne fait basculer la saisie', () => {
     show(
       thread(
         roundtable([
@@ -176,9 +178,10 @@ describe('recueil des avis', () => {
       )
     )
     expect(within(row('B')).queryByTestId('roundtable-relaunch')).toBeNull()
-    fireEvent.click(within(row('B')).getByTestId('roundtable-other-model'))
-    expect(requested).toHaveBeenCalled()
-    off()
+    expect(within(row('B')).queryByTestId('roundtable-other-model')).toBeNull()
+    expect(plain(within(row('B')).getByTestId('roundtable-row-meta').textContent)).toContain(
+      'modèle non appliqué'
+    )
   })
 
   it('jamais « attend votre réponse » sur la ligne d’un participant', () => {
@@ -206,9 +209,11 @@ describe('recueil des avis', () => {
     expect(mark.textContent).toContain('fichiers modifiés')
     expect(mark.getAttribute('aria-label')).toBe('a modifié des fichiers du dossier')
     expect(mark.closest('[data-testid=roundtable-row-side]')).toBeTruthy()
-    // Le détail « vérifiée dans le dépôt seulement » dans l'infobulle du bouclier.
-    expect(within(row('B')).getByTestId('roundtable-readonly').getAttribute('aria-label')).toBe(
-      'Lecture seule demandée, vérifiée dans le dépôt seulement'
+    // Le pied dit le niveau le plus faible (B) ; un bouclier seulement sur les lignes qui en
+    // diffèrent (simplification 1).
+    expect(within(row('B')).queryByTestId('roundtable-readonly')).toBeNull()
+    expect(within(row('A')).getByTestId('roundtable-readonly').getAttribute('aria-label')).toBe(
+      'Lecture seule'
     )
     expect(row('B').textContent).not.toContain('Lecture seule')
   })
@@ -234,10 +239,10 @@ it('les quatre niveaux de lecture seule, discrètement, avec leur nom en clair',
   show(thread({ ...rt, seats }))
   // Niveaux différents : un bouclier par ligne, focalisable, le niveau en clair (A3).
   const marks = screen.getAllByTestId('roundtable-readonly')
+  // Le pied dit le plus faible (non vérifiée) : pas de bouclier sur cette ligne-là.
   expect(marks.map((m) => [m.dataset.level, m.getAttribute('aria-label')])).toEqual([
     ['enforced', 'Lecture seule'],
-    ['native', 'Lecture seule, tenue par le rôle Participant installé'],
-    ['unverified', 'Lecture seule demandée, non vérifiée (dossier hors git)']
+    ['native', 'Lecture seule garantie (rôle Participant installé)']
   ])
   expect(marks.every((m) => m.getAttribute('tabindex') === '0')).toBe(true)
   // Pas répété en texte sur la ligne ; le pied dit la plus faible garantie, une fois.
@@ -272,10 +277,9 @@ describe('avis rendus et synthèse en cours', () => {
       'confiance moyenne'
     )
     expect(within(row('B')).getByTestId('roundtable-row-side').textContent).toBe('confiance haute')
-    expect(within(row('C')).getByTestId('roundtable-row-side').textContent).toBe('sans avis')
-    expect(plain(screen.getByTestId('roundtable-note').textContent)).toBe(
-      'Synthèse avec 2 avis : un participant n’a pas répondu.'
-    )
+    // « sans avis » n'est plus répété à droite, ni la note de la carte (simplifications 3 et 4).
+    expect(within(row('C')).getByTestId('roundtable-row-side').textContent).toBe('')
+    expect(screen.queryByTestId('roundtable-note')).toBeNull()
   })
 
   it('déplié : l’avis entier en Markdown et « Ouvrir sa conversation », un seul à la fois', () => {
@@ -346,7 +350,7 @@ describe('pas assez d’avis, arrêt, reprise', () => {
     expect(screen.getByTestId('roundtable-progress').textContent).toBe(
       'interrompu par le redémarrage de l’app'
     )
-    expect(row('C').textContent).toContain('Arrêté (redémarrage)')
+    expect(plain(row('C').textContent)).toContain('Arrêté : redémarrage de l’app')
     expect(api.synthesize).not.toHaveBeenCalled()
     fireEvent.click(screen.getByTestId('roundtable-synthesize'))
     expect(screen.getByTestId('roundtable-synthesize').textContent).toBe('Synthétiser avec 2 avis')
@@ -434,7 +438,7 @@ describe('synthèse', () => {
     expect(head.textContent).toContain('3 avis')
     expect(head.getAttribute('aria-expanded')).toBe('false')
     expect(plain(screen.getByTestId('roundtable-used').textContent)).toMatch(
-      /^Consommé : 47,5k jetons · ≈ 0,06 \$US \+ 0,42 Bobcoins · 1 participant sans chiffre$/
+      /^Consommé : 47,5k jetons · ≈ 0,06 \$US \+ 0,42 Bobcoins$/
     )
     fireEvent.click(head)
     expect(screen.getAllByTestId('roundtable-row')).toHaveLength(3)
@@ -678,10 +682,15 @@ describe('relecture fonctionnelle', () => {
 
   it('« Ouvrir sa conversation » sur toute ligne dont la conversation existe', () => {
     const subtasks = show(thread(roundtable([answered('A'), failed('C')]), OPINIONS))
-    for (const letter of ['A', 'B', 'C'])
-      expect(within(row(letter)).getByTestId('roundtable-open-row')).toBeTruthy()
-    fireEvent.click(within(row('B')).getByTestId('roundtable-open-row'))
+    // Toute ligne se déplie, y compris au travail ou en erreur, sur « Ouvrir sa conversation ».
+    for (const letter of ['A', 'C']) {
+      expect(openLink(letter)).toBeTruthy()
+      fireEvent.click(within(row(letter)).getByTestId('roundtable-row-toggle'))
+    }
+    const link = openLink('B')
+    if (link) fireEvent.click(link)
     expect(subtasks?.onOpen).toHaveBeenCalledWith('child-B')
+    expect(within(row('B')).queryByTestId('roundtable-open-row')).toBeNull()
   })
 })
 
@@ -736,7 +745,7 @@ describe('gestes : un à la fois, refus dits', () => {
     expect(screen.getByTestId('probe').textContent).toBe('Une seule réplique par tour de table.')
     act(() => out?.gestures?.synthesize())
     expect(plain(screen.getByTestId('probe').textContent)).toBe(
-      'Ce geste n’est plus possible à cette étape du tour de table.'
+      'Ce n’est plus possible à cette étape du tour de table.'
     )
   })
 
@@ -923,7 +932,7 @@ describe('contrat du moteur (fix2)', () => {
     expect(within(row('B')).getByTestId('roundtable-row-meta').textContent).toBe(
       'retenu par le plafond de sa conversation'
     )
-    expect(within(row('B')).getByTestId('roundtable-open-row')).toBeTruthy()
+    expect(openLink('B')).toBeTruthy()
   })
 
   it('S1 : à la corbeille, l’avis se lit sans « Ouvrir » ; restaurée, la ligne revient', async () => {
@@ -947,10 +956,10 @@ describe('contrat du moteur (fix2)', () => {
         'conversation à la corbeille'
       )
     )
-    expect(within(row('A')).queryByTestId('roundtable-open-row')).toBeNull()
+    expect(openLink('A')).toBeNull()
     rerender(view(() => true))
     expect(within(row('A')).getByTestId('roundtable-row-meta').textContent).toContain('Redis')
-    expect(within(row('A')).getByTestId('roundtable-open-row')).toBeTruthy()
+    expect(within(row('A')).getByTestId('roundtable-open')).toBeTruthy()
     window.api = saved
   })
 
@@ -1013,7 +1022,7 @@ describe('contrat du moteur (fix2)', () => {
         OPINIONS
       )
     )
-    expect(screen.getByTestId('roundtable-progress').textContent).toBe('synthèse non rendue')
+    expect(screen.getByTestId('roundtable-progress').textContent).toBe('la synthèse a échoué')
     expect(screen.getByTestId('roundtable-step-failed').textContent).toBe(detail)
     fireEvent.click(screen.getByTestId('roundtable-synthesize'))
     expect(api.synthesize).toHaveBeenCalledWith('mother', 'rt1')

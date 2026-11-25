@@ -18,7 +18,6 @@ import css from '../../roundtable.css?raw'
 import styles from '../../styles.css?raw'
 import { Composer } from '../composer/Composer'
 import { loadDraft, saveDraft } from '../../drafts'
-import { requestRoundtableMenu } from './roundtable-menu-request'
 import { options } from './test-fixtures'
 
 vi.mock('../panel/TerminalTab', () => ({ INSERT_TEXT_EVENT: 'bob:insert-text' }))
@@ -331,13 +330,6 @@ describe('premier usage et menu des participants', () => {
     ).toContain('Nemotron 3.5 SuperAgent A')
     expect(within(menu).queryByText('MiMo v2.6 Flash')).toBeNull()
   })
-
-  it('« Choisir un autre modèle » d’une carte : la saisie passe en tour de table, menu ouvert', async () => {
-    setup()
-    act(() => requestRoundtableMenu())
-    expect(await screen.findByTestId('roundtable-menu')).toBeTruthy()
-    expect(screen.getByTestId('roundtable-tag')).toBeTruthy()
-  })
 })
 
 describe('relecture : clavier, focus, envoi lent, brouillon, Discussion', () => {
@@ -394,13 +386,6 @@ describe('relecture : clavier, focus, envoi lent, brouillon, Discussion', () => 
     t.type('Première, puis une suite tapée pendant l’envoi')
     await act(async () => release())
     expect(t.input.value).toBe('Première, puis une suite tapée pendant l’envoi')
-  })
-
-  it('« Choisir un autre modèle » sans tour possible ici : rien ne s’arme', () => {
-    setup([deep, b], { discussion: true })
-    act(() => requestRoundtableMenu())
-    expect(screen.queryByTestId('roundtable-menu')).toBeNull()
-    expect(screen.queryByTestId('roundtable-tag')).toBeNull()
   })
 
   it('Discussion : la commande n’est pas proposée dans le menu « / »', () => {
@@ -576,7 +561,7 @@ describe('ce qui empêche le départ, dit clairement, la question gardée', () =
     ],
     [
       { ok: false, error: 'slots', missing: 2 },
-      'Il manque 2 places de travaux : rien n’est parti.'
+      'Trop de travaux à la fois : il en faut 2 de plus (Réglages)'
     ],
     [{ ok: false, error: 'running' }, 'Un tour de table est déjà en cours dans cette conversation'],
     [{ ok: false, error: 'task' }, 'Pas de tour de table depuis un travail'],
@@ -653,7 +638,7 @@ describe('ce qui empêche le départ, dit clairement, la question gardée', () =
     const t = setup()
     t.type('/roundtable Q')
     const slots = await screen.findByTestId('roundtable-slots')
-    expect(slots.textContent).toContain('Il manque 2 places de travaux')
+    expect(plain(slots.textContent)).toContain('Trop de travaux à la fois : il en faut 2 de plus')
     expect(within(slots).getByTestId('roundtable-slots-settings').textContent).toBe('Réglages')
     expect(screen.queryByTestId('roundtable-cost')).toBeNull()
     await act(async () => t.enter())
