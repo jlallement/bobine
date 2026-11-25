@@ -2,6 +2,16 @@
 
 Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrigé
+
+- **Tour de table** : le coût de « Demander de l’appliquer » (et de tout message qui suit) n’est
+  plus ajouté au total du tour ; un coût nul de modèles gratuits s’affiche « gratuit », plus
+  « coût inconnu » ; un avis sans réponse courte lisible montre son début sur sa ligne ; si
+  l’agent de la conversation lance une commande pendant la synthèse ou la décision, la carte le
+  dit.
+
 ## 1.2.0-beta.1 — 25 novembre 2026
 
 ### Nouveau

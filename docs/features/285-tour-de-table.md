@@ -1338,3 +1338,24 @@ le main n'a pas livré l'étape 1) :
   `--verrou-demarrage` de l'agent factice : `initialize` attend que le fichier disparaisse), ou
   remplacée par un état terminal. Vitesse de l'agent factice variable pour les passes de stress
   (`ROUNDTABLE_MOCK_DELAY_MS`).
+
+- 2026-11-25 : recette de la 1.2.0-beta.1 packagée, partie main (branche `1.2-fix12-engine`).
+  - S-B1 : le coût d'« Appliquer » gonflait la décision (0,38136 au lieu de 0,0612). Cause, dans
+    le fil réel : Bob écrit sa dépense au fil du tour, relue à la fin d'un outil ; le relevé de la
+    décision restait ouvert pendant le message suivant (« ce qui arrive pendant son tour revient à
+    la tentative », fix6). Il se ferme désormais dès qu'un autre message part ; seule une nouvelle
+    tentative de la même étape le garde. Coûts des tentatives arrondis (0,3813599999…). Scénario
+    `arbitre-applique-comme-bob`.
+  - G-B1 : « coût inconnu » pour 0 $ de modèles gratuits. Régression de la revue finale de
+    l'interface (`costText(c, false)` au pied) ; le total porte maintenant, par unité, si tout vient
+    de modèles gratuits (`RoundtableTotal.costs[].free`, `free` des étapes).
+  - G-B4 : ligne vide pour un avis sans réponse courte lisible. Variantes réelles non reconnues
+    (« Réponse brève », « Suppositions ») et avis sans réponse courte (Nemotron) ; le résumé de la
+    ligne prend le début de l'avis (`OpinionDigest.excerpt`). Scénario
+    `avis-long-sans-reponse-courte`.
+  - G-B2 : l'arbitre OpenCode lance des commandes pendant la synthèse. Aucun mode plus restrictif
+    observé chez OpenCode pour l'arbitre (`plan` écrit par le shell, lot 0 O8 ; le mode
+    « participant » porte la consigne d'un participant) : rien n'est posé. La lecture seule de
+    l'étape reste garantie pour un agent qui demande (refus d'office), demandée sinon ; une
+    commande partie pendant l'étape pose `RoundtableStep.ranCommand`, dit en une ligne. Page
+    d'aide corrigée (garanti / demandé). Scénario `arbitre-commande`.

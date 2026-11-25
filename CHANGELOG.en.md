@@ -2,6 +2,15 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixed
+
+- **Roundtable**: the cost of “Ask to apply it” (and of any message that follows) is no longer
+  added to the roundtable’s total; a zero cost from free models reads “free”, no longer “cost
+  unknown”; an opinion without a readable short answer shows its start on its row; if the
+  conversation’s agent runs a command during the synthesis or the decision, the card says so.
+
 ## 1.2.0-beta.1 — November 25, 2026
 
 ### New
