@@ -647,6 +647,8 @@ describe('revue UX', () => {
     const second = { ...roundtable(), roundtableId: 'rt2' }
     show([...items, { kind: 'roundtable', id: 999, ...second }])
     expect(screen.queryByTestId('roundtable-apply')).toBeNull()
+    // G2 (recette) : « Faire réagir » non plus.
+    expect(screen.queryByTestId('roundtable-rebut')).toBeNull()
   })
 
   it('A4 : « Faire réagir » garde sa place quand « Appliquer » disparaît', () => {

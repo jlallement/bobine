@@ -145,13 +145,16 @@ function RoundtableActions({
   group,
   step,
   info,
-  followed
+  followed,
+  superseded
 }: {
   group: RoundtableGroupData
   step: RoundtableTurn['step']
   info: SubtasksInfo | undefined
   /** Un message de l'utilisateur suit déjà ce tour : « Appliquer » ne se propose plus. */
   followed: boolean
+  /** Un tour de table suit : plus rien, « Faire réagir » compris. */
+  superseded: boolean
 }) {
   const { t } = useTranslation()
   const { item } = group
@@ -168,7 +171,7 @@ function RoundtableActions({
   }
   const answered = (step === 'synthesis' ? item.synthesis : item.verdict)?.state === 'answered'
   if (!answered) return null
-  const rebut = step === 'synthesis' && !!gestures && canRebut(item)
+  const rebut = !superseded && step === 'synthesis' && !!gestures && canRebut(item)
   // Un message attend déjà dans la file, ou a suivi : il emporte la suite, rien à proposer.
   const onAsk = followed || info?.motherQueued || info?.motherArchived ? undefined : info?.onAsk
   if (!onAsk && !rebut) return null
@@ -232,6 +235,7 @@ function RoundtableAnswerFrame({
   group,
   info,
   followed,
+  superseded,
   children
 }: {
   turn: RoundtableTurn
@@ -239,6 +243,7 @@ function RoundtableAnswerFrame({
   group: RoundtableGroupData | undefined
   info: SubtasksInfo | undefined
   followed: boolean
+  superseded: boolean
   children: ReactNode
 }) {
   const { t } = useTranslation()
@@ -266,7 +271,13 @@ function RoundtableAnswerFrame({
         (turn.step === 'synthesis' && rebutted ? (
           <RebuttalCard group={group} info={info} />
         ) : (
-          <RoundtableActions group={group} step={turn.step} info={info} followed={followed} />
+          <RoundtableActions
+            group={group}
+            step={turn.step}
+            info={info}
+            followed={followed}
+            superseded={superseded}
+          />
         ))}
     </div>
   )
@@ -308,6 +319,9 @@ export function useRoundtableThread(
   const lastUser = items.findLast(
     (i) => (i.kind === 'user' && !i.from) || i.kind === 'roundtable'
   )?.id
+  // Un tour de table posé après : plus aucune action du précédent, pas même « Faire réagir »
+  // (G2 de la recette ; un simple message laisse la réplique possible).
+  const lastTour = items.findLast((i) => i.kind === 'roundtable')?.id
   return {
     /** Élément propre au tour de table : son rendu ; sinon `undefined` (rendu ordinaire). */
     entry: (item: TranscriptItem): ReactNode | undefined => {
@@ -342,6 +356,7 @@ export function useRoundtableThread(
           group={byId.get(turn.roundtableId)}
           info={info}
           followed={(lastUser ?? -1) > itemId}
+          superseded={(lastTour ?? -1) > itemId}
         >
           {rendered}
         </RoundtableAnswerFrame>
