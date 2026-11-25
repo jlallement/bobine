@@ -621,6 +621,19 @@ async function nominal(scheme) {
         )
         await ui.waitFor(`!!${ui.$('roundtable-apply')}`, 60_000)
         await affirm(ui, '285-replique-decision', [probes.threadFits()])
+        // La carte du tour, repliée, garde son total après la réplique (évaluation du
+        // 2026-11-25, E2) : « Consommé en tout », comme la carte « Réplique ».
+        await ui.ev(
+          `(${ui.$('roundtable-card')}.querySelector('[data-testid=roundtable-used]') ?? ${ui.$('roundtable-card')}).scrollIntoView({ block: 'center' })`
+        )
+        await affirm(ui, '285-carte-apres-replique', [probes.threadFits()])
+        const tourUsed = await ui.ev(
+          `${ui.$('roundtable-card')}.querySelector('[data-testid=roundtable-used]')?.textContent ?? ''`
+        )
+        check(
+          tourUsed.startsWith(L('roundtable.card.usedAll', { total: '' }).trim()),
+          `carte du tour après la réplique : « Consommé en tout » (${tourUsed})`
+        )
         await ui.click(ui.$('roundtable-apply'))
         await ui.waitFor(
           `[...document.querySelectorAll('[data-testid=user-message]')].some((m) => m.textContent.includes(${JSON.stringify(L('roundtable.synthesis.applyDraft'))}))`,

@@ -14,6 +14,9 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   « coût inconnu » ; un avis sans réponse courte lisible montre son début sur sa ligne ; si
   l’agent de la conversation lance une commande pendant la synthèse ou la décision, la carte le
   dit.
+- **Tour de table** : après « Faire réagir les participants », la carte du tour garde sa ligne
+  « Consommé en tout » (jetons, et « coût inconnu » quand l’agent ne dit pas de coût), repliée
+  comme dépliée.
 
 ## 1.2.0-beta.1 — 25 novembre 2026
 

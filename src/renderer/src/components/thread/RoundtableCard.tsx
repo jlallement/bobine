@@ -394,8 +394,15 @@ export function RoundtableCard({
       <FolderChanged files={item.folderChanged?.collecting} stage="collecting" />
       {!collapsed && <RoundtableFoot group={group} gestures={gestures} pending={pending} />}
       <GestureRefusal text={refusal} />
-      {used?.text && !rebutted && (
-        <UsedLine label={t('roundtable.card.used', { total: used.text })} detail={used.detail} />
+      {/* Toujours sur la carte du tour, repliée ou non (évaluation du 2026-11-25, E2) : après la
+          réplique, le même total « en tout » que la carte « Réplique », qu'on ne cherche pas. */}
+      {used?.text && (
+        <UsedLine
+          label={t(rebutted ? 'roundtable.card.usedAll' : 'roundtable.card.used', {
+            total: used.text
+          })}
+          detail={used.detail}
+        />
       )}
     </div>
   )

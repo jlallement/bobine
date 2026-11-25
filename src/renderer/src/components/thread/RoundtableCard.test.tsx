@@ -872,6 +872,37 @@ describe('réplique et décision', () => {
     )
   })
 
+  it('après la réplique, la carte du tour garde sa ligne « Consommé en tout » (E2, abonnement)', () => {
+    // OpenCode sur abonnement (évaluation du 2026-11-25) : jetons connus, coût annoncé à 0 $US.
+    const sub = (total: number) => ({ total, cost: { amount: 0, currency: 'USD' } })
+    const subtasks = info({
+      children: [
+        child('child-A', { usage: sub(46_761) }),
+        child('child-B', { usage: sub(46_892) }),
+        child('child-C', { usage: sub(54_673) })
+      ]
+    })
+    const rt = roundtable([
+      answered('A'),
+      answered('B'),
+      answered('C'),
+      { type: 'step-sent', step: 'synthesis', at: T0 },
+      { type: 'step-answered', step: 'synthesis', at: T0 + 1, usage: sub(176_985) },
+      { type: 'rebuttal', at: T0 + 2 },
+      rebutted('A', 'nuances'),
+      rebutted('B', 'maintains'),
+      rebutted('C', 'rallies')
+    ])
+    show(synthesized(rt, SYNTHESIS), subtasks)
+    // Repliée comme dépliée : la carte du tour dit ce qui est connu, jamais rien.
+    const used = within(card()).getByTestId('roundtable-used')
+    expect(plain(used.textContent)).toBe('Consommé en tout : 325,3k jetons · coût inconnu')
+    fireEvent.click(screen.getByTestId('roundtable-head-toggle'))
+    expect(plain(within(card()).getByTestId('roundtable-used').textContent)).toBe(
+      'Consommé en tout : 325,3k jetons · coût inconnu'
+    )
+  })
+
   it('dossier modifié pendant la réplique : la marque sur la réplique, pas sur l’avis', () => {
     const rt = done([
       { type: 'rebuttal', at: T0 + 2 },

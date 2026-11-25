@@ -1479,3 +1479,16 @@ le main n'a pas livré l'étape 1) :
     déjà le recueil (verrou de fin de tour ou de démarrage, ou porte sur `children.start`), ou
     n'agissent qu'après la synthèse ; « participant supprimé pendant le recueil » attend que la
     synthèse dise « supprimé », ce qui est l'état au départ par construction.
+
+- 2026-11-25 : évaluation réelle de la 1.2.0-beta.1 (OpenCode sur abonnement ChatGPT), E2 « pas de
+  ligne Consommé » (branche `1.2-fix17-engine`).
+  - Ni le moteur ni le calcul ne manquaient : les fils réels gardent les jetons des participants
+    (≈ 20 k en entrée, 1 k en sortie) et de la synthèse, coût annoncé 0 $US ; rendue avec ces
+    données, la carte « Réplique » disait « Consommé en tout : 456,4k jetons · coût inconnu ». Mais
+    la carte du tour perdait sa ligne dès la réplique (`!rebutted`, total déplacé sur la carte
+    « Réplique », plus bas, sous la synthèse) : c'est la carte du tour qu'on regarde.
+  - Corrigé : la carte du tour garde sa ligne dans toutes les phases, « Consommé en tout » après la
+    réplique (même total que la carte « Réplique », gardée comme sur la maquette). Écart à la
+    maquette : la ligne apparaît deux fois après la réplique.
+  - Essais : `RoundtableCard.test.tsx` (données d'abonnement, repliée et dépliée ; rouge avant) ;
+    e2e `tour-de-table` : capture `285-carte-apres-replique` et vérification (rouge avant).
