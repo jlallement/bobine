@@ -73,7 +73,8 @@ describe('worktrees', () => {
     ).toHaveLength(1)
   })
 
-  it('commits perdus : seulement ceux qu’aucune autre branche ne garde (D1 recette 1.0.0, fiche 280)', async () => {
+  /** Dépôt jetable et ses outils pour les essais des commits perdus (fiche 280). */
+  function lostSetup() {
     const root = repo()
     const worktrees = new Worktrees(gitCommand)
     const commit = (cwd: string, file: string) => {
@@ -81,15 +82,23 @@ describe('worktrees', () => {
       git(cwd, 'add', '.')
       git(cwd, 'commit', '-q', '-m', file)
     }
+    return { root, worktrees, commit }
+  }
 
-    // Fille fusionnée dans `main` (vraie fusion, pas d'avance rapide) : rien n'est perdu.
+  // « Commits perdus : seulement ceux qu'aucune autre branche ne garde » (D1 recette 1.0.0, fiche
+  // 280), en trois essais (fix19 : un seul dépassait 15 s sous Windows), mêmes vérifications.
+  it('commits perdus (1/3) : fille fusionnée dans `main` par une vraie fusion : rien de perdu', async () => {
+    const { root, worktrees, commit } = lostSetup()
     const merged = await worktrees.create(root)
     for (const file of ['a.txt', 'b.txt', 'c.txt']) commit(merged.path, file)
     commit(root, 'main.txt')
     expect(await worktrees.status(merged)).toMatchObject({ ahead: 3 })
     git(root, 'merge', '-q', '--no-edit', merged.branch)
     expect(await worktrees.status(merged)).toMatchObject({ dirty: 0, ahead: 0 })
+  })
 
+  it('commits perdus (2/3) : non fusionnée, puis fusionnée en partie dans une autre branche', async () => {
+    const { root, worktrees, commit } = lostSetup()
     // Fille non fusionnée : ses 3 commits restent annoncés, le départ et `main` ne comptent pas.
     const pending = await worktrees.create(root)
     commit(root, 'main2.txt')
@@ -98,7 +107,10 @@ describe('worktrees', () => {
     // Fusionnée en partie (2 sur 3 en avance rapide dans une autre branche) : il en reste 1.
     git(root, 'branch', 'partiel', `${pending.branch}~1`)
     expect(await worktrees.status(pending)).toMatchObject({ ahead: 1 })
+  })
 
+  it('commits perdus (3/3) : gardés par la branche de la mère, une étiquette ou une branche distante', async () => {
+    const { root, worktrees, commit } = lostSetup()
     // Fusionnée dans la branche de la mère, pas dans `main`, et `main` toujours en tête du dépôt.
     git(root, 'branch', 'mere')
     const child = await worktrees.create(root)
