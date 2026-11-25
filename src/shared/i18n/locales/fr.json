@@ -3469,6 +3469,10 @@
       "label": "Sous-agents en arrière-plan suivis jusqu’à leur fin",
       "detail": "Quand {{agent}} lance un sous-agent en arrière-plan, son outil rend la main tout de suite (`metadata.status: \"running\"`) : l’app le garde « en cours », relit sa session de temps en temps, et le dit fini avec sa réponse quand elle se termine."
     },
+    "modelRefused": {
+      "label": "Modèle refusé au message",
+      "detail": "Quand {{agent}} refuse un message parce que le modèle choisi n’est pas servi (fournisseur connecté qui ne le propose pas, compte qui ne le permet pas, quota gratuit épuisé), l’app reconnaît ses messages d’erreur et montre la carte « Le modèle … n’a pas répondu » avec « Choisir un autre modèle », au lieu de l’erreur brute."
+    },
     "modelRetry": {
       "label": "Modèle injoignable",
       "detail": "Quand {{agent}} ne joint pas son modèle (proxy, réseau), il réessaie sans fin sans le dire au fil ; l’app lit ses reprises (`_meta[\"opencode/retry\"]`) et le montre : tentative, prochaine tentative, son message."

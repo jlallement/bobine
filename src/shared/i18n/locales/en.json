@@ -3350,6 +3350,10 @@
       "label": "Background subagents followed until they end",
       "detail": "When {{agent}} starts a subagent in the background, its tool returns right away (`metadata.status: \"running\"`): the app keeps it “running”, rereads its session from time to time, and shows it done with its answer when it ends."
     },
+    "modelRefused": {
+      "label": "Model refused at a message",
+      "detail": "When {{agent}} refuses a message because the chosen model isn’t served (connected provider that doesn’t offer it, account that doesn’t allow it, free quota used up), the app recognizes its error messages and shows the “The … model didn’t answer” card with “Choose another model”, instead of the raw error."
+    },
     "modelRetry": {
       "label": "Unreachable model",
       "detail": "When {{agent}} can’t reach its model (proxy, network), it retries forever without saying so in the thread; the app reads its retries (`_meta[\"opencode/retry\"]`) and shows them: attempt, next attempt, its message."

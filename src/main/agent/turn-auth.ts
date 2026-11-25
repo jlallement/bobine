@@ -96,7 +96,11 @@ function unavailableModel(
   // Quota gratuit épuisé (fiche 267) : le modèle de la session, que le message ne nomme pas.
   if (rule.quota?.test(message.trim())) return model ? { ...model, quota: true } : undefined
   const named = rule.pattern.exec(message)?.[1]
-  return named && model?.id === named ? model : undefined
+  if (named) return model?.id === named ? model : undefined
+  // Nommé sans fournisseur (E6) : le nom entier, après le dernier « / » du modèle de la session.
+  const bare = rule.unqualified?.exec(message.trim())?.[1]
+  const tail = model?.id.slice(model.id.lastIndexOf('/') + 1)
+  return bare && tail === bare ? model : undefined
 }
 
 /** Avis du fil à la place de l'erreur brute (traduit à l'affichage, ADR-0014). */

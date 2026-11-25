@@ -23,6 +23,9 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 - **Fusion d’une tâche fille** : le commit de fusion dit « Merge branch '<branche de la tâche>'
   into <branche de travail> » et suit l’historique de la branche de travail, comme une fusion faite
   à la main (avant : « Merge branch 'master' into bobine/… », dans le mauvais sens).
+- **OpenCode avec un compte ChatGPT** : un modèle que le compte ne permet pas (« … is not supported
+  when using Codex with a ChatGPT account ») montre la carte « Le modèle … n’a pas répondu » avec
+  « Choisir un autre modèle », plus l’erreur brute.
 
 ## 1.2.0-beta.1 — 25 novembre 2026
 

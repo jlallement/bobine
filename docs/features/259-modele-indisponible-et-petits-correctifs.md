@@ -192,3 +192,20 @@ Aucune nouvelle dépendance. Pas d'ADR : on applique les règles des fiches 210 
   session annonce le modèle demandé avant un renvoi ; carte « Modèle refusé » quand le refus nomme un
   autre modèle que celui de la puce. Hypothèse restante non vérifiable : modèle de la session sorti du
   catalogue entre-temps (gpt-5.6 après la connexion à ChatGPT), qu'aucune sonde ne peut plus choisir.
+
+## Journal — 2026-11-25 : refus « not supported … ChatGPT account » reconnu (E6)
+
+- Relevé par la sonde E1 (OpenCode 2.3.0, abonnement ChatGPT) : `-32603` « Internal error: The
+  'gpt-5.5' model is not supported when using Codex with a ChatGPT account. » ; le modèle y est nommé
+  sans son fournisseur (`gpt-5.5` pour `openai/gpt-5.5`). Bobine montrait l'erreur brute.
+- Corrigé, générique : la règle du profil (`modelRefusedAtTurn`) reçoit un second motif,
+  `unqualified` (texte dans `opencode-contract.ts`), dont le nom est comparé, entier, à ce qui suit le
+  dernier « / » du modèle de la session ; même carte que « Model unavailable » (« Le modèle … n'a pas
+  répondu », « Choisir un autre modèle »), aucune marque dans le menu (marque « indisponible »
+  distincte reportée après la 1.2.0-beta.2), rien d'étendu au fournisseur.
+- `-32602` « model not found » au réglage : déjà couvert, générique (valeur absente des options :
+  pas envoyée ; refus de l'agent : avis « n'a pas pu passer au modèle … : cette conversation garde … »).
+- Repère `model-refused` ajouté à Réglages › Agents et à la matrice de `docs/agents.md` (il manquait
+  depuis la fiche 259, AGENTS.md le demande).
+- Essais : `turn-model-unavailable.test.ts` (texte exact de la trace : carte, modèle nommé ;
+  faux positifs : autre modèle de session, nom voisin, autre code), `capabilities.test.ts`.

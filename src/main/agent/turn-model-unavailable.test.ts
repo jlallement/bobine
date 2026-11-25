@@ -126,6 +126,38 @@ describe('turnAuthBlocker : modèle indisponible (fiche 259)', () => {
     expect(MODEL_UNAVAILABLE.pattern.exec(REAL.message)?.[1]).toBe('openai/gpt-6.2-sol')
     expect(MODEL_UNAVAILABLE.code).toBe(REAL.code)
   })
+
+  /** Sonde du 2026-11-25 (2.3.0, abonnement ChatGPT, E6) : le modèle sans son fournisseur. */
+  const NOT_SUPPORTED = new RequestError(
+    -32603,
+    "Internal error: The 'gpt-5.5' model is not supported when using Codex with a ChatGPT account.",
+    { service: 'session', errorName: 'provider.invalid-request' }
+  )
+  const gpt55: SessionControl = {
+    ...model('openai/gpt-5.5'),
+    options: [...model('x').options, { value: 'openai/gpt-5.5', name: 'OpenAI/GPT-5.5' }]
+  }
+
+  it('« not supported when using Codex with a ChatGPT account » : la carte du modèle refusé (E6)', () => {
+    expect(turnAuthBlocker(NOT_SUPPORTED, blockerOf, opencode, [gpt55])).toMatchObject({
+      atTurn: true,
+      model: { id: 'openai/gpt-5.5', name: 'OpenAI/GPT-5.5', unavailable: true }
+    })
+  })
+
+  it('« not supported » : un autre modèle, un nom voisin ou un autre code restent des erreurs', () => {
+    const at = (error: unknown, controls: SessionControl[]) =>
+      turnAuthBlocker(error, blockerOf, opencode, controls)
+    // La session est sur un autre modèle (un sous-agent…).
+    expect(at(NOT_SUPPORTED, [model('openai/gpt-6.1-sol')])).toBeUndefined()
+    // Le nom entier après le fournisseur, jamais un morceau.
+    const near = new RequestError(
+      -32603,
+      "Internal error: The 'gpt-5' model is not supported when using Codex with a ChatGPT account."
+    )
+    expect(at(near, [gpt55])).toBeUndefined()
+    expect(at(new RequestError(-32602, NOT_SUPPORTED.message), [gpt55])).toBeUndefined()
+  })
 })
 
 function mockProfile(scenario: string): AgentProfile {

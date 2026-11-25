@@ -281,6 +281,13 @@ export function specificItems(profile: AgentProfile): CapabilityItem[] {
       detail: t('capabilities.modelRetry.detail', { agent: name })
     })
   }
+  if (profile.modelRefusedAtTurn) {
+    items.push({
+      id: 'model-refused',
+      label: t('capabilities.modelRefused.label'),
+      detail: t('capabilities.modelRefused.detail', { agent: name })
+    })
+  }
   if (profile.toolStatus?.id === 'opencode-tool-calls') {
     items.push({
       id: 'execute-errors',

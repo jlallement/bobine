@@ -31,7 +31,14 @@ export const MODEL_UNAVAILABLE = {
    * or switch models. », pour le modèle gratuit de la session. Ancré au début : un message de
    * l'agent qui cite cette phrase plus loin n'est pas un refus.
    */
-  quota: /^(?:internal error: )?free usage limit reached\b/i
+  quota: /^(?:internal error: )?free usage limit reached\b/i,
+  /**
+   * Modèle que le compte connecté ne sert pas (2.3.0, sonde du 2026-11-25, E6, abonnement
+   * ChatGPT) : `-32603` « Internal error: The 'gpt-5.5' model is not supported when using Codex
+   * with a ChatGPT account. » (`data.errorName: provider.invalid-request`). Groupe 1 : le modèle
+   * **sans** son fournisseur, comparé entier à ce qui suit le fournisseur dans celui de la session.
+   */
+  unqualified: /^(?:internal error: )?the '([^'\s]+)' model is not supported\b/i
 }
 
 /** Titre des sessions jamais écrites (1.19 et 2.0.31) : « New session - <date ISO> ». */

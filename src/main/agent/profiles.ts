@@ -237,9 +237,11 @@ export interface AgentProfile {
    * modèle de la session : la carte « Modèle refusé » de la fiche 210, sans « connexion à faire ».
    * `quota` (fiche 267, N3) : refus du modèle de la session parce que son quota gratuit est épuisé
    * (OpenCode 2.3.0 : `-32603` « Free usage limit reached… »), au même code ; le message ne nomme
-   * pas le modèle, la session doit en avoir un. Absent : une erreur de tour ordinaire.
+   * pas le modèle, la session doit en avoir un. `unqualified` (E6) : refus qui nomme le modèle sans
+   * son fournisseur (groupe 1), égal à ce qui suit le dernier « / » du modèle de la session.
+   * Absent : une erreur de tour ordinaire.
    */
-  modelRefusedAtTurn?: { code: number; pattern: RegExp; quota?: RegExp }
+  modelRefusedAtTurn?: { code: number; pattern: RegExp; quota?: RegExp; unqualified?: RegExp }
   /**
    * Mode de départ passé dans `_meta` de `session/new` (fiche 163 ; Bob 2.0.6+ lit `bob/mode`), au
    * lieu d'un `session/set_mode` après l'ouverture. `ids` : identifiants de ses modes. Mode refusé

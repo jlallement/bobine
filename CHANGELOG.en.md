@@ -21,6 +21,9 @@ What changes for you, version by version. Shown in Settings › About.
 - **Merging a child task**: the merge commit reads “Merge branch '<task branch>' into <working
   branch>” and follows the working branch’s history, like a merge made by hand (before: “Merge
   branch 'master' into bobine/…”, the wrong way round).
+- **OpenCode with a ChatGPT account**: a model the account doesn’t allow (“… is not supported when
+  using Codex with a ChatGPT account”) shows the “The … model didn’t answer” card with “Choose
+  another model”, no longer the raw error.
 
 ## 1.2.0-beta.1 — November 25, 2026
 
