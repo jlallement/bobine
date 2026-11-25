@@ -94,7 +94,8 @@ export async function roundtableEnv(options: EnvOptions = {}) {
       '--scenario',
       scenario,
       '--delay',
-      '0',
+      // Vitesse de l'agent factice variable pour les passes de stress (aucun essai n'en dépend).
+      process.env['ROUNDTABLE_MOCK_DELAY_MS'] ?? '0',
       '--store',
       join(root, 's'),
       ...extra

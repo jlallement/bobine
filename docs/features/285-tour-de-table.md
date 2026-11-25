@@ -1331,3 +1331,10 @@ le main n'a pas livré l'étape 1) :
   la règle « seul au travail » est retirée ; une place n'est attribuable que si elle a elle-même
   appelé un outil `edit`, `delete`, `move` ou `execute` pendant son tour. Sinon, seule la marque
   du tour reste, « No participant can be identified as the author. ». Page d'aide corrigée.
+
+- 2026-11-25 : tests du moteur rendus indépendants de la vitesse des agents factices (branche
+  `1.2-fix10-engine`). Chaque assertion sur un état intermédiaire (« en cours », « en attente »,
+  « démarre ») est garantie par un verrou explicite (`--verrou-fin-de-tour`, et le nouveau
+  `--verrou-demarrage` de l'agent factice : `initialize` attend que le fichier disparaisse), ou
+  remplacée par un état terminal. Vitesse de l'agent factice variable pour les passes de stress
+  (`ROUNDTABLE_MOCK_DELAY_MS`).

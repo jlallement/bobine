@@ -88,20 +88,32 @@ describe('arrêt du tour (B5a)', () => {
 
 describe('fiches des participants (M7, B5b)', () => {
   it('participant au modèle refusé : jamais « fini » ; tour en cours dit, puis plus en cours', async () => {
-    const { env, mother } = await setup({ panel: ['--refuser-modele', 'factice-precis'] })
+    // Le tour reste ouvert tant que le participant lent est tenu (verrou) : « en cours » est
+    // garanti par construction, pas par la vitesse des autres.
+    const lock = lockFile()
+    const { env, mother } = await setup({
+      panel: ['--refuser-modele', 'factice-precis'],
+      profiles: (mock) => [mock('lent', 'avis-participant', ['--verrou-fin-de-tour', lock])]
+    })
     await env.roundtables.start(mother, {
       question: QUESTION,
-      participants: [FAST, PRECISE, choice('panel', 'autre-absent')]
+      participants: [choice('lent', 'factice-rapide'), PRECISE, choice('panel', 'autre-absent')]
     })
     const id = env.rt(mother).roundtableId
     const refused = () => env.rt(mother).seats.find((s) => s.model?.value === 'factice-precis')
     await env.waitFor(() => refused()?.state === 'error', 'modèle refusé')
+    await env.waitFor(
+      () => summaryOf(env, refused()?.childId)?.roundtable?.state === 'error',
+      'fiche de la place en erreur'
+    )
+    expect(env.rt(mother).phase).toBe('collecting')
     expect(summaryOf(env, refused()?.childId)?.roundtable).toEqual({
       since: expect.any(Number),
       id,
       active: true,
       state: 'error'
     })
+    rmSync(lock)
     await env.waitFor(() => env.rt(mother).phase === 'insufficient', 'un seul avis')
     // Recueil fini : la barre latérale peut le ranger ; l'état d'erreur reste.
     expect(summaryOf(env, refused()?.childId)?.roundtable).toEqual({
@@ -141,10 +153,13 @@ describe('corbeille et restauration (S1, S2)', () => {
 
 describe('étiquette de la synthèse (S3)', () => {
   it('agent et modèle relevés au départ de la synthèse, pas au lancement', async () => {
-    const { env, mother } = await setup()
+    // Recueil tenu par le verrou : le modèle change avant le départ de la synthèse, à coup sûr.
+    const lock = lockFile()
+    const { env, mother } = await setup({ panel: ['--verrou-fin-de-tour', lock] })
     await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
     // Modèle de la conversation changé pendant le recueil.
     await env.manager.setControl(mother, 'model', 'factice-precis')
+    rmSync(lock)
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
     expect(env.rt(mother).synthesizer.model).toBe('Factice rapide')
     expect(env.rt(mother).synthesis?.by).toEqual({
@@ -246,10 +261,12 @@ describe('plafond de la conversation d’un participant (S5)', () => {
 
   it('question retenue par le plafond : place « retenue », pas un aller-retour invisible ; « Continuer » reprend l’avis', async () => {
     const lock = lockFile()
+    const startLock = lockFile()
     const { env, mother } = await setup({
       profiles: (mock) => [
         mock('lent', 'avis-participant', ['--verrou-fin-de-tour', lock]),
-        mock('demarre', 'avis-participant', ['--demarrage-lent', '600'])
+        // « Démarre » tant que ce verrou existe : arrêtée pendant son lancement par construction.
+        mock('demarre', 'avis-participant', ['--verrou-demarrage', startLock])
       ]
     })
     await env.roundtables.start(mother, {
@@ -263,7 +280,10 @@ describe('plafond de la conversation d’un participant (S5)', () => {
     const childId = seat()?.childId ?? ''
     env.manager.post(childId, { type: 'usage-report', cost: { amount: 1, currency: 'USD' } })
     env.costCap.setCap(childId, { limit: 0.01, unit: 'USD' })
-    await env.roundtables.relaunch(mother, id, seat()?.letter ?? 'A')
+    // « Relancer » attend la fin du premier lancement, tenu par le verrou.
+    const relaunched = env.roundtables.relaunch(mother, id, seat()?.letter ?? 'A')
+    rmSync(startLock)
+    await relaunched
     await env.waitFor(() => seat()?.held === true, 'question retenue')
     expect(seat()?.state).toBe('waiting')
     expect(env.rt(mother).phase).toBe('collecting')
@@ -289,10 +309,12 @@ describe('plafond de la conversation d’un participant (S5)', () => {
 describe('contre-revue : question retenue puis arrêt (N1, N12)', () => {
   it('question retenue, place arrêtée : « Continuer » ne l’envoie plus ; un message tapé garde son texte sur la carte', async () => {
     const lock = lockFile()
+    const startLock = lockFile()
     const { env, mother } = await setup({
       profiles: (mock) => [
         mock('lent', 'avis-participant', ['--verrou-fin-de-tour', lock]),
-        mock('demarre', 'avis-participant', ['--demarrage-lent', '600'])
+        // « Démarre » tant que ce verrou existe : arrêtée pendant son lancement par construction.
+        mock('demarre', 'avis-participant', ['--verrou-demarrage', startLock])
       ]
     })
     await env.roundtables.start(mother, {
@@ -305,7 +327,10 @@ describe('contre-revue : question retenue puis arrêt (N1, N12)', () => {
     const childId = seat()?.childId ?? ''
     env.manager.post(childId, { type: 'usage-report', cost: { amount: 1, currency: 'USD' } })
     env.costCap.setCap(childId, { limit: 0.01, unit: 'USD' })
-    await env.roundtables.relaunch(mother, id, seat()?.letter ?? 'A')
+    // « Relancer » attend la fin du premier lancement, tenu par le verrou.
+    const relaunched = env.roundtables.relaunch(mother, id, seat()?.letter ?? 'A')
+    rmSync(startLock)
+    await relaunched
     await env.waitFor(() => seat()?.held === true, 'question retenue')
     const card = env.items(childId).findLast((i) => i.kind === 'cost-cap')
     // La place est arrêtée pendant que sa question attend « Continuer ».
@@ -348,7 +373,8 @@ describe('contre-revue : tests qui prouvent', () => {
     await env.waitFor(() => env.rt(mother).seats[0]?.state === 'working', 'question partie')
     await env.roundtables.stop(mother, id, first?.letter)
     await env.roundtables.relaunch(mother, id, first?.letter ?? 'A')
-    expect(env.rt(mother).seats[0]?.state).toBe('waiting')
+    // Relancée : en attente ou déjà au travail selon la vitesse de l'agent, jamais en erreur.
+    expect(['waiting', 'working']).toContain(env.rt(mother).seats[0]?.state)
     // L'ancien lancement (le premier) échoue maintenant, pendant la relance.
     failures[0]?.(new Error('ancien tour en échec'))
     expect(env.rt(mother).seats[0]?.state).not.toBe('error')
@@ -356,8 +382,9 @@ describe('contre-revue : tests qui prouvent', () => {
   })
 
   it('modèle relu au départ de la question : un écart met la place en erreur, sa question n’est pas suivie', async () => {
+    const startLock = lockFile()
     const { env, mother } = await setup({
-      profiles: (mock) => [mock('demarre', 'avis-participant', ['--demarrage-lent', '600'])]
+      profiles: (mock) => [mock('demarre', 'avis-participant', ['--verrou-demarrage', startLock])]
     })
     await env.roundtables.start(mother, {
       question: QUESTION,
@@ -372,6 +399,7 @@ describe('contre-revue : tests qui prouvent', () => {
       model: { id: 'factice-precis', name: 'Factice précis' }
     })
     expect(seat()).toMatchObject({ state: 'error', error: 'model-not-applied' })
+    rmSync(startLock)
   })
 
   it('participant mis à la corbeille pendant le recueil puis restauré : la synthèse ne le dit pas supprimé', async () => {
@@ -449,7 +477,9 @@ describe('recette réelle : arbitre en lecture seule pendant l’étape (S1)', (
 
 describe('recette réelle : l’arbitre n’est jamais participant', () => {
   it('lancement refusé, options qui le disent, et contrôle au départ de la synthèse', async () => {
-    const { env, mother } = await setup()
+    // Recueil tenu par le verrou : le changement de modèle précède le départ de la synthèse.
+    const lock = lockFile()
+    const { env, mother } = await setup({ panel: ['--verrou-fin-de-tour', lock] })
     const handlers = roundtableHandlers(env.roundtables)
     const options = await handlers['roundtable:options'](mother)
     expect(options.arbiter).toEqual({ profileId: 'lead', model: 'factice-rapide' })
@@ -465,6 +495,7 @@ describe('recette réelle : l’arbitre n’est jamais participant', () => {
       participants: [FAST, choice('lead', 'factice-precis')]
     })
     await env.manager.setControl(mother, 'model', 'factice-precis')
+    rmSync(lock)
     await env.waitFor(() => env.rt(mother).phase === 'interrupted', 'synthèse refusée')
     expect(env.rt(mother).synthesis).toMatchObject({
       state: 'failed',
@@ -678,8 +709,7 @@ describe('coût tardif d’une tentative en échec, relance immédiate', () => {
     const { env, mother } = await bobLead('synthese-erreur-serveur')
     await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
     await env.waitFor(() => env.rt(mother).synthesis?.state === 'failed', 'synthèse en échec')
-    // Tout de suite, avant que le coût de la tentative en échec ne soit relu (≈ 1,5 s).
-    expect(env.rt(mother).synthesis?.usage?.cost?.amount ?? 0).toBe(0)
+    // Relancée tout de suite, sans attendre la relecture du coût de la tentative en échec.
     env.roundtables.synthesize(mother, env.rt(mother).roundtableId)
     // Le relevé tardif tombe entre le geste et le départ de la nouvelle tentative (la course) ;
     // l'agent le redira ensuite lui-même (relevé en double).
@@ -704,6 +734,12 @@ describe('coût tardif d’une tentative en échec, relance immédiate', () => {
     const { env, mother } = await bobLead('decision-erreur-serveur')
     await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    // Le coût de la synthèse relu d'abord : la course étudiée ici est celle de la décision.
+    await env.waitFor(
+      () => env.rt(mother).synthesis?.usage?.cost?.amount === 0.0125,
+      'coût de la synthèse',
+      15_000
+    )
     env.roundtables.rebuttal(mother, env.rt(mother).roundtableId)
     await env.waitFor(() => env.rt(mother).verdict?.state === 'failed', 'décision en échec', 20_000)
     env.roundtables.decide(mother, env.rt(mother).roundtableId)

@@ -31,7 +31,7 @@ import { SessionStore, type StoredSession } from './store.mts'
 import { DEFAULT_MAX_STEPS, playWithinLimit, StepCounters } from './limite-etapes.mts'
 import { describeSettings, say, sayAll, type MockLanguage } from './langue.mts'
 import { installedModes, type InstalledModesOptions } from './modes-installes.mts'
-import { waitWhileLocked } from './verrou-fin-de-tour.mts'
+import { waitForStartLock, waitWhileLocked } from './verrou-fin-de-tour.mts'
 import { followToolList } from './suit-outils.mts'
 
 export interface MockAgentOptions {
@@ -117,6 +117,8 @@ export interface MockAgentOptions {
    * se termine pas (`verrou-fin-de-tour.mts`).
    */
   turnLock?: string
+  /** `--verrou-demarrage` : `initialize` attend que ce fichier disparaisse. */
+  startLock?: string
   /**
    * `--dossiers-en-plus` : annonce `sessionCapabilities.additionalDirectories`, comme OpenCode
    * (fiche 179). Sans, des dossiers reçus quand même sont refusés (`invalidParams`).
@@ -445,6 +447,7 @@ export function connectMockAgent(stream: Stream, options: MockAgentOptions): Age
       ...(options.slowStartMs
         ? await new Promise<object>((resolve) => setTimeout(() => resolve({}), options.slowStartMs))
         : {}),
+      ...(options.startLock ? await waitForStartLock(options.startLock).then(() => ({})) : {}),
       // `null` dans le scénario : champ absent de la réponse (fiche 198). Le type du SDK l'exige ;
       // `undefined` disparaît à l'envoi (JSON), comme chez un agent qui ne le dit pas.
       protocolVersion: (scenario.announce?.protocolVersion === null

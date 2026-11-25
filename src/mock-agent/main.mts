@@ -40,6 +40,7 @@ const { values } = parseArgs({
     'demarrage-bloque': { type: 'boolean' },
     panne: { type: 'string' },
     'demarrage-lent': { type: 'string' },
+    'verrou-demarrage': { type: 'string' },
     'verrou-fin-de-tour': { type: 'string' },
     'sans-plan': { type: 'boolean' },
     'suit-outils': { type: 'boolean' },
@@ -163,6 +164,7 @@ const connection = connectMockAgent(stream, {
     ? { slowStartMs: Number(values['demarrage-lent'] ?? process.env['MOCK_AGENT_SLOW_START_MS']) }
     : {}),
   ...(values['verrou-fin-de-tour'] ? { turnLock: values['verrou-fin-de-tour'] } : {}),
+  ...(values['verrou-demarrage'] ? { startLock: values['verrou-demarrage'] } : {}),
   ...(process.env['MOCK_AGENT_SLOW_CANCEL_MS']
     ? { slowCancelMs: Number(process.env['MOCK_AGENT_SLOW_CANCEL_MS']) }
     : {}),
