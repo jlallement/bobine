@@ -423,7 +423,15 @@ async function nominal(scheme) {
         // Fenêtre étroite (B7) : la carte tient, la méta passe sous le nom.
         for (const width of [760, 520]) {
           await ui.viewport(width)
-          await affirm(ui, `285-carte-${width}`, [probes.threadFits()])
+          await affirm(ui, `285-carte-${width}`, [
+            probes.threadFits(),
+            probes.custom(
+              'titre « Tour de table » sur une ligne, le résumé se réduit',
+              `const t = [...document.querySelectorAll('[data-testid=roundtable-card] .work-group-title')]
+              const lines = t.map((el) => { const cs = getComputedStyle(el); return Math.round(el.getBoundingClientRect().height / (parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.3)) })
+              return { ok: t.length > 0 && lines.every((n) => n === 1), detail: JSON.stringify(lines) }`
+            )
+          ])
         }
         await ui.viewport()
 
