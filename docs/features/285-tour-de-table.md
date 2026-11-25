@@ -1148,3 +1148,49 @@ le main n'a pas livré l'étape 1) :
   clavier d'une lettre se refermait aussitôt, au défilement qui amène l'élément en vue (Radix ferme
   au défilement). `Tip` (`common/Menus.tsx`) garde ouverte une infobulle ouverte par le focus quand
   un défilement la ferme dans les 300 ms ; le départ du pointeur la ferme toujours (`Tip.test.tsx`).
+
+- 2026-11-25 : contre-revue, régression `roles-export` et recette réelle, partie main (branche
+  `1.2-fix3-engine`). Chaque correction a un essai qui échoue sans elle (vérifié).
+  - Contre-revue. N1 : question retenue par le plafond puis place arrêtée, « Continuer » ne
+    l'envoie plus (`PromptOptions.roundtableQuestion`, reconnu par `dropHeld`) ; N12 : la carte
+    du plafond dit « Question du tour de table », jamais la consigne. N2 : « garanti par l'agent »
+    (`native`) seulement dans un dépôt git, et seulement si aucune définition du même nom n'est
+    ailleurs chez OpenCode (projet et parents, `.opencode`, configuration personnelle et système,
+    clés `agent` d'`opencode.json(c)`, d'après sa documentation publique du 2026-11-25). N4 :
+    `asData` repère les balises sur une copie normalisée et transmet le texte d'origine, borné
+    après neutralisation. N5 : le contexte joint commence par sa balise ; l'export ne retire que
+    les messages de l'app. N6 : un seul passage dans l'export. N7 : la réplique part au repos du
+    participant (ni tour ni file), empreinte prise avant l'envoi ; `core.hooksPath` dans
+    l'empreinte. N10 : participant supprimé pendant le recueil, absence dite à la synthèse. Le
+    chevauchement des tours entre participants n'est plus propagé (chacun juge son tour) ;
+    « réponse en cours » ne coupe que la demande partie.
+  - **Décision (N8)** : pendant un tour, un participant n'a aucune carte d'autorisation ; seules
+    une lecture ou une recherche dont toutes les cibles sont dans le dossier de la conversation
+    sont accordées d'office ; tout le reste est refusé et dit dans son fil (écriture, commande,
+    réseau `fetch`, `other`, genre absent, cible hors du dossier ou inconnue). « Garanti par
+    l'agent » dépend des réglages d'acceptation automatique de l'agent : Bobine ne tient ce niveau
+    que si le profil sait les lire, et ne suppose rien de Bob.
+  - Régression `roles-export` (« lancer dans ce mode ») : les vérifications sur le disque de N2 ne
+    s'appliquent qu'au rôle fourni « Participant » (`nativeMode(..., { strict })`) ; une
+    installation de Bobine à jour, dans le projet ou personnelle, redevient reconnue. Suite e2e
+    `roles-export` verte en local.
+  - Recette réelle. S1 : la synthèse et la décision sont en lecture seule le temps de leur tour
+    (`stepReadOnly` : `edit`, `delete`, `move`, `execute`, `switch_mode` refusés d'office ; la
+    lecture reste) ; empreinte du dossier avant l'envoi, comparée à la fin : `changedFolder` et
+    quelques fichiers (`changedFiles`) sur l'étape ; consigne « Do not create, edit or delete any
+    file… ». S2 : dernier échange = dernier message tapé et la réponse qui suit ; **choix** : si un
+    tour (ou un message de l'app) l'a suivi, rien n'est joint (le plus sûr : pas de synthèse d'un
+    tour précédent reprise, pas d'échange ancien présenté comme le dernier). S3 : « Participant A »
+    en toutes lettres, avec un exemple. G1 : agents des participants arrêtés au repos aux phases
+    `synthesized`, `decided`, `insufficient`, `stopped` (`releaseIdle`, mêmes règles que la mise en
+    veille : une conversation affichée garde le sien) ; agent au coût lu après coup (`costSource`)
+    libéré après la relecture du coût ; la réplique rouvre la session, modèle relu à son départ.
+    G3 : `ConversationSummary.roundtable.since`, début du travail en cours (avis, puis réplique).
+    G6 : la réponse courte garde `>` et `_` du texte. C1 : nom court du modèle sur l'arbitre et
+    l'étiquette de l'étape. C3 : sans réponse courte, « format non suivi ».
+  - **Décision du tech lead** : l'arbitre (agent et modèle de la conversation ; l'agent seul sans
+    choix de modèle) n'est jamais participant : problème de sélection `arbiter`, `roundtable:options`
+    rend `arbiter` (et un agent sans choix de modèle qui arbitre est indisponible, avec sa raison),
+    et la synthèse ne part pas si la conversation est passée au modèle d'un participant
+    (`step-failed`, `roundtable.error.arbiter`).
+  - Agent factice : `arbitre-ecrit`, `arbitre-demande-ecrire`, `participant-ecrit-replique`.
