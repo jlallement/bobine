@@ -394,9 +394,6 @@
   .roundtable-foot-short {
     display: inline;
   }
-  .roundtable-stop-all .roundtable-stop-label {
-    display: none;
-  }
 }
 
 /* Ligne de l'app à la place de la demande de synthèse ou de décision. */
@@ -633,4 +630,26 @@
 .roundtable-step-changed > svg {
   flex-shrink: 0;
   margin-top: 3px;
+}
+
+/*
+ * Revue finale (M1, S5) : une ligne garde sa hauteur quand un bouton y paraît, à toutes les
+ * largeurs ; la colonne de droite a la hauteur exacte d'un bouton. En carte étroite (fenêtre de
+ * 520 px, barre latérale ouverte), rien n'est coupé au milieu d'un mot : la durée et « a répondu »
+ * (la coche le dit) se masquent, et l'en-tête replié dit « N avis » seul.
+ */
+.roundtable-row .roundtable-row-side {
+  min-height: 26px;
+}
+.roundtable-row .roundtable-row-side .btn.small {
+  height: 26px;
+  padding-block: 0;
+  box-sizing: border-box;
+}
+@container (max-width: 400px) {
+  .roundtable-row .roundtable-duration,
+  .roundtable-row .roundtable-answered,
+  .roundtable-progress-extra {
+    display: none;
+  }
 }

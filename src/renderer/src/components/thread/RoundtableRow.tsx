@@ -253,7 +253,7 @@ function seatSide(
   if (seat.state === 'answered') {
     if (c.collecting)
       side.push(
-        <span>
+        <span className="roundtable-answered">
           {t('roundtable.state.answered')}
           {duration && <span className="roundtable-duration"> · {duration}</span>}
         </span>

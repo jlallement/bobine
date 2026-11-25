@@ -9,7 +9,7 @@
  * `window.api.roundtable`, et le main le refuse hors de sa phase.
  */
 import { ChevronDown, ChevronRight, Square } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import i18next from 'i18next'
 import {
@@ -247,7 +247,7 @@ const settled = (phase: string) =>
   phase === 'synthesized' || phase === 'rebutting' || phase === 'deciding' || phase === 'decided'
 
 /** « 2 avis sur 3 », « 3 avis · synthèse en cours » : ce que dit l'en-tête à droite. */
-function useProgress(group: RoundtableGroupData): string {
+function useProgress(group: RoundtableGroupData): ReactNode {
   const { t } = useTranslation()
   const { item } = group
   const opinions = usableSeats(item).length
@@ -280,7 +280,18 @@ function useProgress(group: RoundtableGroupData): string {
       // Repliée : les avis reçus, et les absents s'il y en a (B15).
       const absent = total - opinions
       const head = t('roundtable.card.opinions', { count: opinions })
-      return absent > 0 ? `${head} · ${t('roundtable.card.noOpinions', { count: absent })}` : head
+      // Carte étroite : « N avis » seul (M1) ; les absents sont dits sur leurs lignes.
+      return absent > 0 ? (
+        <>
+          {head}
+          <span className="roundtable-progress-extra">
+            {' · '}
+            {t('roundtable.card.noOpinions', { count: absent })}
+          </span>
+        </>
+      ) : (
+        head
+      )
     }
   }
 }
@@ -504,7 +515,7 @@ function RoundtableFoot({
             disabled={pending.has('stop-all') || !!item.stopping}
             data-testid="roundtable-stop"
           >
-            <Square size={12} aria-hidden />
+            <Square size={12} fill="currentColor" aria-hidden />
             <span className="roundtable-stop-label">
               {item.stopping ? t('roundtable.card.stopping') : t('roundtable.card.stop')}
             </span>
