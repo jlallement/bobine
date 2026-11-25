@@ -142,6 +142,60 @@ const lineFits = (cost, label) =>
     }`
   )
 
+/**
+ * Lignes immobiles (demande du tech lead, 2026-11-25) : pendant le recueil, à chaque image, la
+ * position de chaque ligne et du pied par rapport au haut de la carte. Un participant qui change
+ * d'état (réponse, erreur, dossier modifié, « Relancer ») ne doit déplacer ni les lignes suivantes
+ * ni le pied ; le dépli demandé par l'utilisateur est hors mesure.
+ */
+export const watchLayout = (ui) =>
+  ui.ev(`(() => {
+    const seen = { rows: {}, foot: [], frames: 0, changes: 0 }
+    window.__rtLayout = seen
+    let last = ''
+    const tick = () => {
+      const card = [...document.querySelectorAll('[data-testid=roundtable-card]')].at(-1)
+      if (card && card.dataset.phase === 'collecting' && !card.querySelector('.roundtable-row.open')) {
+        const top = card.getBoundingClientRect().top
+        const rows = [...card.querySelectorAll('[data-testid=roundtable-row]')]
+        const states = rows.map((r) => r.dataset.state + (r.querySelector('[data-testid=roundtable-changed]') ? '+' : '')).join(',')
+        if (last && states !== last) seen.changes++
+        last = states
+        seen.frames++
+        for (const r of rows) {
+          const y = Math.round(r.getBoundingClientRect().top - top)
+          const h = Math.round(r.getBoundingClientRect().height)
+          const key = r.dataset.letter
+          seen.rows[key] ??= []
+          if (!seen.rows[key].includes(y + ':' + h)) seen.rows[key].push(y + ':' + h)
+        }
+        const foot = card.querySelector('[data-testid=roundtable-foot]')
+        if (foot) {
+          const y = Math.round(foot.getBoundingClientRect().top - top) + ':' + Math.round(foot.getBoundingClientRect().height)
+          if (!seen.foot.includes(y)) seen.foot.push(y)
+        }
+      }
+      if (window.__rtLayout === seen) requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+    return true
+  })()`)
+
+/** Résultat de `watchLayout` : une seule position par ligne et pour le pied, malgré des changements. */
+export async function layoutStill(ui, label, minChanges = 1) {
+  const seen = await ui.ev(
+    `(() => { const s = window.__rtLayout; window.__rtLayout = null; return s })()`
+  )
+  const rows = Object.values(seen.rows)
+  check(
+    seen.changes >= minChanges &&
+      rows.length > 0 &&
+      rows.every((r) => r.length === 1) &&
+      seen.foot.length <= 1,
+    `${label} : aucune ligne ni le pied ne bougent quand un participant change d’état (${JSON.stringify(seen)})`
+  )
+}
+
 export const rowOf = (name) =>
   `[...document.querySelectorAll('[data-testid=roundtable-row]')].find((r) => r.querySelector('[data-testid=roundtable-row-name]')?.textContent.startsWith(${JSON.stringify(name)}))`
 export const rowState = (name, state) =>
@@ -519,6 +573,7 @@ async function degraded(scheme) {
         await ui.ev(`${ui.$('composer-input')}.focus()`)
         await ui.enter()
         await ui.waitFor(`!!${ui.$('roundtable-card')}`, 20_000)
+        await watchLayout(ui)
 
         // Modèle refusé : dit, sans substitution ; « Choisir un autre modèle » ouvre le menu.
         await ui.waitFor(`!!${ui.$('roundtable-other-model')}`, 30_000)
@@ -529,15 +584,8 @@ async function degraded(scheme) {
           'modèle refusé par l’agent : « modèle non appliqué », sans substitution'
         )
         await affirm(ui, '285-modele-refuse', [probes.threadFits()])
-        // Les lignes d'au-dessus changent de hauteur en arrivant à leur état (Gamma en erreur, sa
-        // raison sur deux lignes ; Delta et sa marque « a modifié des fichiers ») : sur une machine
-        // lente, cela arrivait entre l'appui et le relâché du clic (GitHub, Mac, sombre : appui sur
-        // « Choisir un autre modèle », relâché sur la ligne de Gamma). On clique une fois la carte
-        // posée : les participants rapides ont fini, seul le lent travaille.
-        await ui.waitFor(
-          `!!${rowOf('Gamma')}?.querySelector('[data-testid=roundtable-relaunch]') && !!${rowOf('Delta')}?.querySelector('[data-testid=roundtable-changed]') && ${rowState('Alpha', 'answered')}`,
-          30_000
-        )
+        // Clic direct : les lignes ne bougent plus quand une autre change d'état (sur GitHub, une
+        // ligne au-dessus grandissait entre l'appui et le relâché).
         await ui.click(ui.$('roundtable-other-model'))
         await ui.waitFor(`!!${ui.$('roundtable-menu')}`)
         await ui.key('Escape')
@@ -566,6 +614,7 @@ async function degraded(scheme) {
 
         // « Synthétiser sans attendre » : B, lent, est arrêté.
         await ui.waitFor(`!!${ui.$('roundtable-synthesize')}`, 30_000)
+        await layoutStill(ui, 'recueil, largeur normale', 3)
         await ui.click(ui.$('roundtable-synthesize'))
         await ui.waitFor(rowState(PEER(), 'stopped'), 20_000)
         check(

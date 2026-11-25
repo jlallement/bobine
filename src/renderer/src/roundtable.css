@@ -331,9 +331,6 @@
 .roundtable-state-icon[data-state='warning'] {
   color: var(--warn);
 }
-.roundtable-row .work-group-meta[data-wrap] {
-  white-space: normal;
-}
 .roundtable-readonly {
   display: inline-flex;
   color: var(--muted);
@@ -489,7 +486,9 @@
 }
 
 /* A3 : le pied sur une rangée, les gestes à droite, une hauteur qui ne bouge pas. */
-.roundtable-foot {
+/* Une seule rangée, toujours (`work-group-foot` passe à la ligne) : quand « Synthétiser sans
+   attendre » paraît, le pied ne grandit pas ; c'est la note qui se réduit. */
+.work-group-foot.roundtable-foot {
   flex-wrap: nowrap;
   min-height: 52px;
 }
@@ -510,18 +509,22 @@
   border-radius: var(--radius-xs);
 }
 
-/* B14 : « a modifié des fichiers » sur sa propre ligne, jamais coupé. */
+/*
+ * Hauteur de ligne constante : un changement d'état (réponse, erreur, arrêt, dossier modifié,
+ * « Relancer » ou « Choisir un autre modèle » qui paraissent) ne déplace ni les lignes suivantes
+ * ni le pied. Le nom et la seconde ligne ne passent jamais à la ligne ; la colonne de droite a la
+ * hauteur d'un bouton, même vide. La marque « fichiers modifiés » est à droite, jamais coupée.
+ */
 .roundtable-row .roundtable-row-mark {
-  display: block;
-  font-size: 12.5px;
-  white-space: normal;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
 }
-
-/* B7 : sous 600 px de carte, la méta (confiance, état) passe sous le nom. */
-.roundtable-row .work-group-name,
-.roundtable-row .work-group-meta {
-  white-space: normal;
+.roundtable-row .roundtable-row-side {
+  min-height: var(--roundtable-action-h, 28px);
 }
+/* B7 : sous 600 px de carte, la colonne de droite passe sous le nom ; sa place est réservée. */
 @container (max-width: 600px) {
   .roundtable-row > .work-group-row {
     flex-wrap: wrap;

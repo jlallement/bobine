@@ -135,7 +135,10 @@ describe('recueil des avis', () => {
     )
     const meta = within(row('C')).getByTestId('roundtable-row-meta')
     expect(plain(meta.textContent)).toBe('Sans avis : erreur de l’agent au bout de 0:38')
-    expect(meta.getAttribute('title')).toBe('Internal error: Model unavailable')
+    // Texte entier en infobulle (la ligne ne passe jamais à la ligne), puis le texte brut.
+    expect(plain(meta.getAttribute('title'))).toBe(
+      'Sans avis : erreur de l’agent au bout de 0:38\nInternal error: Model unavailable'
+    )
     fireEvent.click(within(row('C')).getByTestId('roundtable-relaunch'))
     expect(api.relaunch).toHaveBeenCalledWith('mother', 'rt1', 'C')
   })
@@ -197,15 +200,12 @@ describe('recueil des avis', () => {
       s.letter === 'B' ? { ...s, readOnly: 'requested' as const } : s
     )
     show(thread({ ...rt, seats }))
-    expect(within(row('B')).getByTestId('roundtable-changed').textContent).toContain(
-      'a modifié des fichiers du dossier'
-    )
-    // « a modifié des fichiers » sur sa propre ligne, hors de la méta coupée (B14).
-    expect(
-      within(row('B'))
-        .getByTestId('roundtable-changed')
-        .closest('[data-testid=roundtable-row-meta]')
-    ).toBeNull()
+    // « fichiers modifiés » dans la colonne de droite, jamais une ligne de plus (hauteur
+    // constante) ; le texte entier pour le lecteur d'écran et au survol.
+    const mark = within(row('B')).getByTestId('roundtable-changed')
+    expect(mark.textContent).toContain('fichiers modifiés')
+    expect(mark.getAttribute('aria-label')).toBe('a modifié des fichiers du dossier')
+    expect(mark.closest('[data-testid=roundtable-row-side]')).toBeTruthy()
     // Le détail « vérifiée dans le dépôt seulement » dans l'infobulle du bouclier.
     expect(within(row('B')).getByTestId('roundtable-readonly').getAttribute('aria-label')).toBe(
       'Lecture seule demandée, vérifiée dans le dépôt seulement'

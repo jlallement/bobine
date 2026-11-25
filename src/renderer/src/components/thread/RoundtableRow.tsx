@@ -317,6 +317,7 @@ export function RoundtableRow({
       lead={collecting || !expandable ? <StateIcon state={iconOf(seat)} /> : undefined}
       meta={meta.length > 0 ? <Dotted parts={meta} /> : undefined}
       wrap={!!trouble}
+      fullText={trouble}
       {...(seat.state === 'error' && seat.detail ? { detail: seat.detail } : {})}
       mark={seat.changedFolder}
       side={
@@ -531,6 +532,7 @@ function RoundtableRowFrame({
   lead,
   meta,
   wrap,
+  fullText,
   detail,
   mark,
   side,
@@ -546,8 +548,10 @@ function RoundtableRowFrame({
   /** Icône d'état ; absente, le chevron du dépliage. */
   lead: ReactNode
   meta: ReactNode
-  /** La méta est une raison : elle passe à la ligne plutôt que d'être coupée. */
+  /** La méta est une raison : son texte entier en infobulle (la ligne garde sa hauteur). */
   wrap: boolean
+  /** Texte entier de la méta, en infobulle quand elle est coupée. */
+  fullText?: string | undefined
   /** Texte brut d'une erreur, en infobulle de la méta (la ligne dit la raison traduite). */
   detail?: string
   /** Le dossier a changé pendant ce tour : une ligne à elle, jamais coupée (B14). */
@@ -555,24 +559,38 @@ function RoundtableRowFrame({
   side: ReactNode
   body: ReactNode
 }) {
+  const title = [wrap ? fullText : undefined, detail].filter(Boolean).join('\n')
+  // Hauteur de ligne constante (aucune ligne ne pousse les suivantes quand un participant change
+  // d'état) : le nom, puis une seconde ligne toujours là, coupée au besoin, son texte entier en
+  // infobulle. La marque du dossier et les gestes vont dans la colonne de droite.
   const name = (
     <span className="work-group-text">
       <SeatName seat={seat} />
-      {meta && (
+      {meta ? (
         <span
           className="work-group-meta"
           data-testid="roundtable-row-meta"
-          {...(wrap ? { 'data-wrap': '' } : {})}
-          {...(detail ? { title: detail } : {})}
+          {...(title ? { title } : {})}
         >
           {meta}
         </span>
-      )}
-      {mark && (
-        <span className="roundtable-row-mark" data-testid="roundtable-changed">
-          <TriangleAlert size={12} aria-hidden /> {i18next.t('roundtable.state.changedFolder')}
+      ) : (
+        <span className="work-group-meta" aria-hidden>
+          {'\u00a0'}
         </span>
       )}
+    </span>
+  )
+  const changed = i18next.t('roundtable.state.changedFolder')
+  const marked = mark && (
+    <span
+      className="roundtable-row-mark"
+      role="img"
+      aria-label={changed}
+      title={changed}
+      data-testid="roundtable-changed"
+    >
+      <TriangleAlert size={12} aria-hidden /> {i18next.t('roundtable.state.changedFolderShort')}
     </span>
   )
   const chevron = open ? (
@@ -609,6 +627,7 @@ function RoundtableRowFrame({
           </span>
         )}
         <span className="roundtable-row-side" data-testid="roundtable-row-side">
+          {marked}
           {side}
         </span>
       </div>

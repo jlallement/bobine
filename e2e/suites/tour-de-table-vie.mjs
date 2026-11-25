@@ -6,6 +6,8 @@ import {
   PEER,
   arbiterModel,
   choose,
+  layoutStill,
+  watchLayout,
   env,
   repo,
   rowOf,
@@ -51,14 +53,19 @@ async function stopAndSidebar(scheme) {
         await ui.type('/roundtable Cycle de vie ?')
         await ui.waitFor(`!!${ui.$('roundtable-line')}`)
         await choose(ui, [PEER(), 'Alpha', 'Beta'])
+        // Recueil mesuré à 760 px : aucune ligne ne bouge quand un participant répond.
+        await ui.viewport(760)
         await ui.ev(`${ui.$('composer-input')}.focus()`)
         await ui.enter()
         await ui.waitFor(`!!${ui.$('roundtable-card')}`, 20_000)
+        await watchLayout(ui)
         await ui.waitFor(
           `${rowState('Alpha', 'answered')} && ${rowState('Beta', 'answered')} && ${rowState(PEER(), 'working')}`,
           30_000
         )
 
+        await layoutStill(ui, 'recueil, 760 px')
+        await ui.viewport()
         // Pendant le tour : les trois participants dans la barre latérale.
         await ui.waitFor(`${sidebarSeats} === 3`, 10_000)
         await affirm(ui, '285-barre-pendant', [
@@ -252,9 +259,15 @@ async function twoTours(scheme) {
         await ui.type('/roundtable Premier tour ?')
         await ui.waitFor(`!!${ui.$('roundtable-line')}`)
         await choose(ui, ['Alpha', 'Beta', 'Omega'])
+        // Recueil mesuré à 520 px (la colonne de droite sous le nom, sa place réservée).
+        await ui.viewport(520)
         await ui.ev(`${ui.$('composer-input')}.focus()`)
         await ui.enter()
+        await ui.waitFor(`!!${ui.$('roundtable-card')}`, 20_000)
+        await watchLayout(ui)
         await ui.waitFor(`!!${ui.$('roundtable-actions')}`, 60_000)
+        await layoutStill(ui, 'recueil, 520 px')
+        await ui.viewport()
         await ui.click(ui.$('roundtable-head-toggle'))
         await ui.waitFor(
           `document.querySelectorAll('[data-testid=roundtable-seat-letter]').length === 3`

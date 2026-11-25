@@ -464,7 +464,12 @@ function RoundtableFoot({
   if (item.phase === 'collecting') {
     return (
       <div className="work-group-foot roundtable-foot" data-testid="roundtable-foot">
-        <span className="roundtable-foot-note" data-testid="roundtable-foot-note">
+        <span
+          className="roundtable-foot-note"
+          data-testid="roundtable-foot-note"
+          // Coupée quand la place manque (le pied reste sur une rangée) : le texte entier au survol.
+          title={t('roundtable.card.footerLevel', { level: readOnlyLevel(item) })}
+        >
           <span className="roundtable-foot-full">
             {t('roundtable.card.footerLevel', { level: readOnlyLevel(item) })}
           </span>

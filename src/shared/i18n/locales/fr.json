@@ -6693,7 +6693,8 @@
         "unverified": "Lecture seule non vérifiée"
       },
       "trashed": "conversation à la corbeille",
-      "held": "retenu par le plafond de sa conversation"
+      "held": "retenu par le plafond de sa conversation",
+      "changedFolderShort": "fichiers modifiés"
     },
     "confidence": {
       "high": "confiance haute",

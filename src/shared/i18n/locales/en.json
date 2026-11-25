@@ -6406,7 +6406,8 @@
         "unverified": "Read-only not verified"
       },
       "trashed": "conversation in the trash",
-      "held": "held by its conversation cost cap"
+      "held": "held by its conversation cost cap",
+      "changedFolderShort": "files changed"
     },
     "confidence": {
       "high": "high confidence",

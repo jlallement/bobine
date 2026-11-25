@@ -6477,6 +6477,7 @@ export type FrResources = {
       }
       readonly trashed: 'conversation à la corbeille'
       readonly held: 'retenu par le plafond de sa conversation'
+      readonly changedFolderShort: 'fichiers modifiés'
     }
     readonly confidence: {
       readonly high: 'confiance haute'
