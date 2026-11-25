@@ -38,3 +38,12 @@ export function cancelQuietly(
     // Conversation partie entre-temps : plus rien à arrêter.
   }
 }
+
+/** `true` si la promesse se résout avant `ms`, sinon `false` (elle n'est pas annulée). */
+export async function settledWithin(promise: Promise<unknown>, ms: number): Promise<boolean> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const late = new Promise<false>((resolve) => (timer = setTimeout(() => resolve(false), ms)))
+  const done = await Promise.race([promise.then(() => true as const), late])
+  clearTimeout(timer)
+  return done
+}

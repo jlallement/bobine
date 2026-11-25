@@ -437,13 +437,26 @@ export const roundtableScenarios: Record<string, Scenario> = {
   },
   'participant-ecrit-replique': {
     description:
-      'Tour de table : avis ordinaire ; à la réplique, écrit `note-replique.md` sans rien demander dès le début du tour, puis répond « Position : maintenue » : l’empreinte prise avant l’envoi le voit (contre-revue, N7)',
+      'Tour de table : avis ordinaire ; à la réplique, écrit `note-replique.md` sans rien demander dès le début du tour, par son outil `write` annoncé, puis répond « Position : maintenue » : l’empreinte prise avant l’envoi le voit (contre-revue, N7)',
     steps: [
       {
         kind: 'computed',
         build: ({ text, model, attachments }) =>
           text.includes(REBUTTAL_LEAD)
             ? [
+                // Par son outil `write`, annoncé comme OpenCode : l'écart lui est attribuable,
+                // même si un autre participant répliquait en même temps (machine lente).
+                {
+                  kind: 'update',
+                  update: {
+                    sessionUpdate: 'tool_call',
+                    toolCallId: 'rebuttal_write',
+                    title: 'write',
+                    kind: 'edit',
+                    status: 'completed',
+                    locations: [{ path: 'note-replique.md' }]
+                  }
+                },
                 { kind: 'write-file', path: 'note-replique.md', content: 'écrit à la réplique\n' },
                 ...rebuttal(text)
               ]

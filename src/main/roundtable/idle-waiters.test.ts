@@ -51,4 +51,18 @@ describe('agents des participants libérés (contre-recette N1)', () => {
     await vi.advanceTimersByTimeAsync(1)
     expect(released).toEqual(['bob'])
   })
+
+  it('statut listé qui quitte « démarre » sans évènement de l’agent : l’attente est rendue à la relecture', async () => {
+    let status = 'starting'
+    const idle = new IdleWaiters(() => status)
+    let done = false
+    void idle.wait('c', 60_000).then(() => (done = true))
+    await Promise.resolve()
+    expect(done).toBe(false)
+    // Lancement abandonné : la liste dit « prêt », l'agent n'émet rien.
+    status = 'ready'
+    idle.recheck()
+    await Promise.resolve()
+    expect(done).toBe(true)
+  })
 })

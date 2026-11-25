@@ -69,7 +69,7 @@ import type { StepFolder } from './step-folder'
 import type { AgentModels } from './agent-models'
 import { newRoundtable } from './new-roundtable'
 import { TourFolder } from './tour-folder'
-import { cancelQuietly, dropPending } from './conversation-ops'
+import { cancelQuietly, dropPending, settledWithin } from './conversation-ops'
 import { MotherSteps, titleOf } from './steps'
 import { IdleWaiters } from './idle-waiters'
 
@@ -117,6 +117,8 @@ export interface RoundtablesDeps {
   folder?: StepFolder
   /** Modèles d'un agent qu'aucune session n'a annoncés (N2). */
   models?: Pick<AgentModels, 'ensure'>
+  /** Bornes des attentes (essais) : arrêt des participants, fin d'un lancement avant « Relancer ». */
+  timeouts?: { stopMs?: number; relaunchMs?: number }
   /** Attente de la relecture du coût avant de libérer un agent au coût lu après coup (essais). */
   lateCostMs?: number
   /** Aléa du tirage des lettres (`Math.random` en vrai). */
@@ -572,6 +574,7 @@ export class Roundtables implements RoundtableService {
 
   /** Liste changée : un tour en cours dans une conversation archivée est arrêté. */
   listChanged(): void {
+    this.idle.recheck()
     const archived = new Set(
       this.deps.conversations
         .state()
@@ -921,16 +924,10 @@ export class Roundtables implements RoundtableService {
   }
 
   /** Le lancement en cours de cette place a fini (`false` : toujours en cours après l'attente). */
-  private async launchSettled(tour: LiveTour, letter: RoundtableLetter): Promise<boolean> {
+  private launchSettled(tour: LiveTour, letter: RoundtableLetter): Promise<boolean> {
     const launch = tour.launches.get(letter)
-    if (!launch) return true
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const late = new Promise<false>(
-      (resolve) => (timer = setTimeout(() => resolve(false), RELAUNCH_WAIT_MS))
-    )
-    const done = await Promise.race([launch.settled.then(() => true as const), late])
-    clearTimeout(timer)
-    return done
+    const ms = this.deps.timeouts?.relaunchMs ?? RELAUNCH_WAIT_MS
+    return launch ? settledWithin(launch.settled, ms) : Promise.resolve(true)
   }
 
   private exists(id: string): boolean {
@@ -958,7 +955,8 @@ export class Roundtables implements RoundtableService {
       this.cancel(motherId)
       busy.push(motherId)
     }
-    await Promise.all(busy.map((id) => this.idle.wait(id, STOP_WAIT_MS)))
+    const stopMs = this.deps.timeouts?.stopMs ?? STOP_WAIT_MS
+    await Promise.all(busy.map((id) => this.idle.wait(id, stopMs)))
     const current = this.read(motherId, roundtableId)
     if (!current) return
     const at = this.now()

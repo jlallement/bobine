@@ -141,6 +141,9 @@ export async function roundtableEnv(options: EnvOptions = {}) {
     attention: () => ({}),
     providers: () => [],
     random: () => 0,
+    // Aucune attente ne doit aller à sa borne : un arrêt attend des évènements, jamais la montre
+    // (un essai qui y arrive dépasse son délai au lieu de passer lentement).
+    timeouts: { stopMs: 60_000, relaunchMs: 60_000 },
     ...(options.lateCostMs !== undefined ? { lateCostMs: options.lateCostMs } : {}),
     dropHeld: (id, rt) =>
       costCap.dropHeld(

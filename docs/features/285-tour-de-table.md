@@ -1310,3 +1310,16 @@ le main n'a pas livré l'étape 1) :
   son tour. Siège relancé : pas concerné (le coût d'un participant est celui de toute sa
   conversation, coût tardif compris). Agent factice : `decision-erreur-serveur`. E2e : le cas
   « synthèse en échec » relance tout de suite, sans attendre le coût tardif.
+
+- 2026-11-25 : CI rouge sur les trois systèmes au commit e59814d1 (branche `1.2-fix8-engine`).
+  - « Arrêter » tout le tour attendait la borne de 10 s : une place dont le lancement est abandonné
+    (tour arrêté pendant le lancement) quitte « démarre » par la liste seule, sans évènement de
+    son agent ; l'attente du repos ne le voyait pas. **Défaut produit** : « arrêt en cours » jusqu'à
+    10 s dans l'app. `IdleWaiters.recheck` à chaque changement de la liste.
+  - Décision : un relevé tardif du coût de la synthèse arrivé pendant la décision était compté aussi
+    à la décision (machine lente). **Défaut produit** : la décision ne recouvre plus la synthèse
+    (`attemptsTotal(…, floor)`, recalculé à chaque évènement d'étape).
+  - N7 (macOS) : l'écriture de la réplique, sans outil annoncé, n'était plus attribuable quand un
+    autre participant répliquait en même temps : le scénario annonce son outil `write`.
+  - Bornes injectables : `RoundtablesDeps.timeouts` (`stopMs`, `relaunchMs`) ; les essais les
+    règlent à 60 s, pour qu'une attente qui irait à sa borne échoue au lieu de passer lentement.
