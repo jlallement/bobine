@@ -188,3 +188,13 @@ dossier de l'utilisateur.
   ne repasse pas par les crochets git de commit (`commit-tree`) ; la signature suit
   `commit.gpgSign`. Essais : `worktree-cycle.test.ts` (titre et parents, sans conflit et après
   conflit résolu ; rouges avant).
+  - Repli (relecture) : la récriture ne fait jamais échouer la fusion. Le commit récrit est relu
+    avant toute écriture (`rev-parse <commit>^{tree} ^1 ^2` : même arbre que le commit d'origine,
+    la base puis la branche pour parents) ; la seule écriture est `update-ref HEAD <récrit>
+    <origine>`, conditionnée à l'ancien commit. À la moindre erreur (récriture refusée, signature
+    impossible, dépôt inattendu, arbre différent), le commit de fusion d'origine est gardé tel quel
+    (ancien titre, même arbre) et la base avance jusqu'à lui comme avant ; un WARN le dit au journal.
+    Essais : récriture forcée en échec (`commit-tree` refusé : fusion faite, ancien titre, base au
+    bout de la branche, rien en cours ; rouge sans le repli) ; `commit.gpgSign=true` avec un
+    programme de signature en échec : git refuse déjà le commit de fusion lui-même, avant toute
+    récriture — refus net, ni la base ni la branche n'avancent (comportement d'avant, gardé).

@@ -11,6 +11,7 @@ import { notARepoOrError } from '../git/repo'
 import { nativeGitPath } from '../git/git-platform'
 import { launchSystem, type ProcessSystem } from '../process-launch'
 import { t } from 'i18next'
+import { log } from '../log'
 
 /** Au-delà, le fichier n'est pas montré (diff illisible, et lourd à transmettre). */
 export const MAX_DIFF_BYTES = 512 * 1024
@@ -282,22 +283,39 @@ export function insideWorkspace(workspace: string, path: string): string {
  * de fusion est récrit comme celui de la branche **dans** la base (évaluation du 2026-11-25, E3) —
  * même arbre, la base en premier parent, « Merge branch '<branche>' into <base> » — avant que la
  * base n'avance jusqu'à lui. L'historique `--first-parent` de la base reste le sien.
+ *
+ * Jamais d'échec de la fusion à cause d'elle : la récriture est vérifiée (même arbre, mêmes parents
+ * inversés) avant la seule écriture, `update-ref` conditionné à l'ancien commit ; à la moindre
+ * erreur (signature impossible, dépôt inattendu), le commit de fusion d'origine est gardé, tel quel,
+ * et c'est dit au journal. Rend vrai si le commit a été récrit.
  */
 export async function mergeIntoBase(
   git: (args: string[]) => Promise<string>,
   branch: string,
   base: string
-): Promise<void> {
-  const [head, tree, branchTip, baseTip] = (
-    await git(['rev-parse', 'HEAD', 'HEAD^{tree}', 'HEAD^1', 'HEAD^2'])
-  ).split('\n')
-  if (!head || !tree || !branchTip || !baseTip) throw new Error('mergeIntoBase: no merge commit')
-  const message = `Merge branch '${branch}' into ${base}`
-  const commit = (
-    await git(['commit-tree', tree, '-p', baseTip, '-p', branchTip, '-m', message])
-  ).trim()
-  // Même arbre : ni l'index ni les fichiers du worktree ne changent, seule la branche avance.
-  await git(['update-ref', '-m', `merge: ${branch} into ${base}`, 'HEAD', commit, head])
+): Promise<boolean> {
+  try {
+    const [head, tree, branchTip, baseTip] = (
+      await git(['rev-parse', 'HEAD', 'HEAD^{tree}', 'HEAD^1', 'HEAD^2'])
+    ).split('\n')
+    if (!head || !tree || !branchTip || !baseTip) throw new Error('no merge commit at HEAD')
+    const message = `Merge branch '${branch}' into ${base}`
+    const commit = (
+      await git(['commit-tree', tree, '-p', baseTip, '-p', branchTip, '-m', message])
+    ).trim()
+    // Garantie relue, pas supposée : même arbre, la base puis la branche pour parents.
+    const check = (await git(['rev-parse', `${commit}^{tree}`, `${commit}^1`, `${commit}^2`]))
+      .split('\n')
+      .join(' ')
+    if (check !== `${tree} ${baseTip} ${branchTip}`) throw new Error('rewritten merge differs')
+    // Seule écriture : la branche du worktree passe au commit récrit, si elle est encore sur
+    // l'ancien. Même arbre : ni l'index ni les fichiers du worktree ne changent.
+    await git(['update-ref', '-m', `merge: ${branch} into ${base}`, 'HEAD', commit, head])
+    return true
+  } catch (error) {
+    log.warn(`Fusion de ${branch} : commit de fusion gardé tel quel (${String(error)})`)
+    return false
+  }
 }
 
 /** Le chemin existe sur le disque (un lien vers rien compte). */

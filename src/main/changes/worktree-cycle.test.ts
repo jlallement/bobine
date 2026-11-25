@@ -157,6 +157,64 @@ describe('cycle d’un worktree (fiche 110)', () => {
     expect(git(root, 'rev-parse', target.worktree.branch)).toBe(git(root, 'rev-parse', 'main'))
   })
 
+  /** Branche de la fille et `main` qui ont chacune un commit : la fusion fait un commit. */
+  async function diverged() {
+    const env = await setup()
+    write(env.target, 'a.txt', 'a\n')
+    await env.cycle.commit(env.target, { message: 'feat: a', files: ['a.txt'] })
+    writeFileSync(join(env.root, 'b.txt'), 'b\n')
+    git(env.root, 'add', '.')
+    git(env.root, 'commit', '-q', '-m', 'b')
+    return env
+  }
+
+  it('récriture du commit de fusion en échec : la fusion se fait quand même, commit d’origine gardé (E3)', async () => {
+    const { root, target } = await diverged()
+    // `commit-tree` refusé (dépôt inattendu, signature impossible…) : seule la récriture échoue.
+    const refusing: Run = (file, args, options) =>
+      args.includes('commit-tree')
+        ? Promise.resolve({ code: 128, stdout: Buffer.from(''), stderr: 'fatal: refusé' })
+        : gitCommand(file, args, options)
+    const cycle = new WorktreeCycle(refusing)
+    const [base, branch] = [
+      git(root, 'rev-parse', 'main'),
+      git(root, 'rev-parse', target.worktree.branch)
+    ]
+    expect(await cycle.merge(target)).toEqual({ status: 'merged', kind: 'merge', base: 'main' })
+    // L'ancien commit, tel quel : arbre complet, base au bout de la branche, rien en cours.
+    expect(git(root, 'log', '--format=%s', '-1')).toBe(
+      `Merge branch 'main' into ${target.worktree.branch}`
+    )
+    expect(git(root, 'log', '--format=%P', '-1').split(' ')).toEqual([branch, base])
+    expect(git(root, 'rev-parse', 'main')).toBe(git(root, 'rev-parse', target.worktree.branch))
+    expect(existsSync(join(root, 'a.txt')) && existsSync(join(root, 'b.txt'))).toBe(true)
+    expect(git(root, 'status', '--porcelain')).toBe('')
+    expect(git(target.worktree.path, 'status', '--porcelain')).toBe('')
+  })
+
+  it.skipIf(ON_WINDOWS)(
+    'signature exigée et impossible : refus net, base ni branche avancées (E3)',
+    async () => {
+      const { root, target, cycle } = await diverged()
+      // Programme de signature factice en échec, pour ce dépôt seulement.
+      const gpg = join(root, '..', `faux-gpg-${Date.now()}.sh`)
+      writeFileSync(gpg, '#!/bin/sh\necho "signature impossible" >&2\nexit 1\n')
+      chmodSync(gpg, 0o755)
+      dirs.push(gpg)
+      git(root, 'config', 'commit.gpgSign', 'true')
+      git(root, 'config', 'gpg.program', gpg)
+      const [base, branch] = [
+        git(root, 'rev-parse', 'main'),
+        git(root, 'rev-parse', target.worktree.branch)
+      ]
+      // git signe aussi le commit de fusion lui-même : la fusion échoue avant toute récriture.
+      await expect(cycle.merge(target)).rejects.toThrow()
+      expect(git(root, 'rev-parse', 'main')).toBe(base)
+      expect(git(root, 'rev-parse', target.worktree.branch)).toBe(branch)
+      expect(existsSync(join(root, 'a.txt'))).toBe(false)
+    }
+  )
+
   it('conflit : listé, abandon, puis résolution et reprise', async () => {
     const { root, target, cycle } = await setup()
     write(target, 'README.md', '# Démo\n\nVersion 2\n')
