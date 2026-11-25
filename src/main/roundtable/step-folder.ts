@@ -9,7 +9,7 @@
  * dossier, ni dans les dossiers ignorés.
  */
 import { messageOf } from '@shared/errors'
-import { folderFingerprint } from '../conversations/folder-fingerprint'
+import { folderState } from '../conversations/folder-fingerprint'
 import { log } from '../log'
 import type { Run } from '../simulator/run'
 
@@ -28,15 +28,6 @@ export interface StepFolder {
   changes: (before: FolderBaseline) => Promise<string[] | undefined>
 }
 
-async function statusLines(run: Run, workspace: string): Promise<string[]> {
-  const result = await run('git', ['status', '--porcelain=v1', '-z', '-uall', '--', '.'], {
-    cwd: workspace,
-    timeoutMs: 30_000
-  })
-  if (result.code !== 0 || result.timedOut) throw new Error('git status')
-  return result.stdout.toString('utf8').split('\0').filter(Boolean)
-}
-
 /** Chemin d'une ligne de `git status --porcelain` (`XY chemin`) ; l'origine d'un renommage, seule. */
 const pathOf = (line: string) => (/^.. /.test(line) ? line.slice(3) : line)
 
@@ -44,8 +35,8 @@ export function stepFolder(run: Run): StepFolder {
   return {
     baseline: async (workspace) => {
       try {
-        const fingerprint = await folderFingerprint(run, workspace)
-        return { workspace, fingerprint, status: new Set(await statusLines(run, workspace)) }
+        const { fingerprint, status } = await folderState(run, workspace)
+        return { workspace, fingerprint, status: new Set(status) }
       } catch (error) {
         log.debug(`Tour de table : dossier de l'étape non surveillé (${messageOf(error)})`)
         return undefined
@@ -53,10 +44,9 @@ export function stepFolder(run: Run): StepFolder {
     },
     changes: async (before) => {
       try {
-        if ((await folderFingerprint(run, before.workspace)) === before.fingerprint)
-          return undefined
-        const lines = await statusLines(run, before.workspace)
-        return [...new Set(lines.filter((l) => !before.status.has(l)).map(pathOf))]
+        const after = await folderState(run, before.workspace)
+        if (after.fingerprint === before.fingerprint) return undefined
+        return [...new Set(after.status.filter((l) => !before.status.has(l)).map(pathOf))]
       } catch (error) {
         log.warn(`Tour de table : fin de l'étape non vérifiée (${messageOf(error)})`)
         return undefined

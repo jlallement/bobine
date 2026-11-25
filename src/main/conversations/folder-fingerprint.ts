@@ -66,11 +66,24 @@ async function hooksPath(run: Run, workspace: string): Promise<string> {
   return `${value}\0${stamps.join('\0')}`
 }
 
+/** Empreinte d'un dossier, et ses lignes de `git status` (fichiers suivis et non suivis). */
+export interface FolderState {
+  fingerprint: string
+  /** `git status --porcelain=v1 -z -uall`, une entrée par ligne. */
+  status: string[]
+}
+
 /**
  * Lève si une commande git échoue ou dépasse son délai (dossier hors d'un dépôt, dépôt sans
  * commit…) : une empreinte partielle ferait croire à un changement, ou le cacherait.
+ *
+ * Cinq commandes git (au lieu de huit, CI Windows du 2026-11-25 : un processus git y coûte des
+ * dizaines de millisecondes, et un tour de table en prend plusieurs par participant) : HEAD, la
+ * branche et le dossier commun en une seule ; les fichiers non suivis lus dans `git status -uall`
+ * (ce que listait `ls-files --others --exclude-standard`, mêmes règles d'exclusion, un fichier
+ * par entrée, dossiers non suivis parcourus, noms bruts avec `-z`). Rien de moins n'est vu.
  */
-export async function folderFingerprint(run: Run, workspace: string): Promise<string> {
+export async function folderState(run: Run, workspace: string): Promise<FolderState> {
   const git = async (args: string[]) => {
     const result = await run('git', args, { cwd: workspace, timeoutMs: 30_000 })
     if (result.code !== 0 || result.timedOut) {
@@ -80,12 +93,24 @@ export async function folderFingerprint(run: Run, workspace: string): Promise<st
   }
   const lines = (out: Buffer | string) => out.toString('utf8').split('\0').filter(Boolean)
   const hash = createHash('sha256')
-  hash.update(await git(['rev-parse', 'HEAD']))
-  hash.update(await git(['rev-parse', '--abbrev-ref', 'HEAD']))
-  hash.update(await git(['status', '--porcelain=v1', '-z', '-uall', '--', '.']))
+  // HEAD, branche courante, dossier commun (le même pour un worktree), racine du dépôt.
+  const refs = (
+    await git(['rev-parse', 'HEAD', '--abbrev-ref', 'HEAD', '--git-common-dir', '--show-toplevel'])
+  )
+    .toString('utf8')
+    .split('\n')
+  // Les chemins de `git status --porcelain` partent de la racine du dépôt, pas du dossier de
+  // travail (qui peut en être un sous-dossier) ; ceux de `ls-files` partaient du dossier.
+  const top = (refs[3] ?? '').trim() || workspace
+  hash.update(`${refs[0] ?? ''}\0${refs[1] ?? ''}\0`)
+  const status = lines(await git(['status', '--porcelain=v1', '-z', '-uall', '--', '.']))
+  hash.update(status.join('\0'))
   hash.update(await git(['diff', 'HEAD', '--binary', '--', '.']))
-  for (const file of lines(await git(['ls-files', '-z', '--others', '--exclude-standard']))) {
-    hash.update(`${file}\0${await stamp(join(workspace, file))}\0`)
+  // Fichiers non suivis : taille et date (leur contenu n'est pas dans le diff).
+  for (const line of status) {
+    if (!line.startsWith('?? ')) continue
+    const file = line.slice(3)
+    hash.update(`${file}\0${await stamp(join(top, file))}\0`)
   }
   // Ignorés regroupés par dossier (`traditional`, sans `-uall`) : jamais tout `node_modules/`.
   const ignored = lines(
@@ -93,10 +118,15 @@ export async function folderFingerprint(run: Run, workspace: string): Promise<st
   ).filter((line) => line.startsWith('!! '))
   for (const line of ignored) {
     const path = line.slice(3)
-    hash.update(`${line}\0${path.endsWith('/') ? '' : await stamp(join(workspace, path))}\0`)
+    hash.update(`${line}\0${path.endsWith('/') ? '' : await stamp(join(top, path))}\0`)
   }
-  const commonDir = (await git(['rev-parse', '--git-common-dir'])).toString('utf8').trim()
+  const commonDir = (refs[2] ?? '').trim()
   hash.update(await gitSetup(resolve(workspace, commonDir || '.git')))
   hash.update(await hooksPath(run, workspace))
-  return hash.digest('hex')
+  return { fingerprint: hash.digest('hex'), status }
+}
+
+/** Empreinte seule (`folderState`). */
+export async function folderFingerprint(run: Run, workspace: string): Promise<string> {
+  return (await folderState(run, workspace)).fingerprint
 }
