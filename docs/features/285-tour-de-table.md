@@ -1275,3 +1275,26 @@ le main n'a pas livré l'étape 1) :
   - Demande de synthèse ou de décision : une seule mention, « The folder changed during the
     roundtable: <fichiers>. », avec les participants attribuables, plus d'avertissement par avis.
   - Agent factice : `participant-ecrit` annonce son outil `write` ; `participant-ecrit-cache`.
+
+- 2026-11-25 : dernière passe de contrôle, partie interface (branche `1.2`, avec `1.2-fix5-engine`).
+  S2 : « Choisir un autre modèle » retiré (et `roundtable-menu-request.ts`) ; la saisie ne passe
+  jamais en tour de table pendant un tour ; un refus est périmé au changement de phase. S3 : menu
+  des participants à côté fixé à l'ouverture, liste à hauteur gardée pendant la recherche, champ à
+  la place du bouton (M2), raison d'une case désactivée dans une ligne d'état (M6). S4 : au repli
+  de la carte, si le fil ne suivait pas le bas, le haut de la carte reste en place. S5 : colonne
+  de droite de hauteur fixe ; mesures aux trois largeurs avec un « Relancer » qui paraît. S1 : un
+  seul avis du dossier modifié par étape, dans la carte ; la marque de ligne seulement si
+  attribuable ; formule « un rôle en lecture seule qui travaille dans ce dossier » retirée.
+  Simplifications : boucliers seulement sur une ligne qui diffère du pied ; un seul accès à la
+  conversation d'un participant (ligne dépliée, toute ligne se déplie) ; plus de « sans avis » à
+  droite ni de note « Synthèse avec N avis » ; une seule ligne d'étiquette par synthèse ou
+  décision ; « Consommé » sans « N participants sans chiffre » ; avis déplié en entier ; pas
+  d'icône devant la ligne de la saisie ; infobulle sans « Chacun reçoit la question », la
+  destination de chaque agent (M15). Mineurs : M1 (carte étroite), M3, M4 (`/roundtable` grisé
+  pendant un tour), M5 (bouton ou menu 📎), M11 (lignes par lettre au repli), M12 (`costText`),
+  M14. Textes revus (français, anglais, glossaire) ; page d'aide alignée. GitHub : mesure large
+  panneau fermé (le panneau « Session » s'ouvre au premier message et faisait passer la colonne
+  sous 600 px) ; le coût tardif d'une tentative de synthèse en échec est perdu si l'on relance
+  avant sa relecture (réducteur : `step-usage` ignoré pendant une nouvelle tentative) — défaut
+  côté moteur signalé, l'essai attend ce coût avant de relancer.
+
