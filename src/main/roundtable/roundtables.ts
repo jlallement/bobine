@@ -86,6 +86,7 @@ export type RoundtableManager = Pick<
   | 'rename'
   | 'updateRecord'
   | 'releaseIdle'
+  | 'profileOf'
 >
 
 export interface RoundtablesDeps {
@@ -310,9 +311,12 @@ export class Roundtables implements RoundtableService {
     for (const seat of rt.seats) {
       const summary = seat.childId ? list.find((c) => c.id === seat.childId) : undefined
       if (!summary?.roundtable) continue
-      if (summary.roundtable.active === active && summary.roundtable.state === seat.state) continue
+      // Début du travail en cours : l'avis, puis la réplique (G3).
+      const since = rt.phase === 'rebutting' ? seat.rebuttal?.askedAt : seat.startedAt
+      const { roundtable: now } = summary
+      if (now.active === active && now.state === seat.state && now.since === since) continue
       this.deps.conversations.updateRecord(summary.id, (record) => {
-        record.roundtableSeat = { state: seat.state, active }
+        record.roundtableSeat = { state: seat.state, active, ...(since ? { since } : {}) }
       })
     }
   }
@@ -360,7 +364,8 @@ export class Roundtables implements RoundtableService {
           const now = this.read(motherId, after.roundtableId)
           if (now && AGENTS_RELEASED.has(now.phase) && this.exists(childId))
             this.deps.conversations.releaseIdle(childId)
-        }
+        },
+        (childId) => !!this.deps.conversations.profileOf(childId)?.costSource
       )
     }
     if (FINISHED_PHASES.has(after.phase)) this.release(after.roundtableId)

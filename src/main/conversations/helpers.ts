@@ -233,7 +233,10 @@ export function summaryOf(
           roundtable: {
             id: record.roundtable,
             active: record.roundtableSeat?.active ?? false,
-            ...(record.roundtableSeat ? { state: record.roundtableSeat.state } : {})
+            ...(record.roundtableSeat ? { state: record.roundtableSeat.state } : {}),
+            ...(record.roundtableSeat?.since !== undefined
+              ? { since: record.roundtableSeat.since }
+              : {})
           }
         }
       : {})

@@ -97,6 +97,7 @@ describe('fiches des participants (M7, B5b)', () => {
     const refused = () => env.rt(mother).seats.find((s) => s.model?.value === 'factice-precis')
     await env.waitFor(() => refused()?.state === 'error', 'modèle refusé')
     expect(summaryOf(env, refused()?.childId)?.roundtable).toEqual({
+      since: expect.any(Number),
       id,
       active: true,
       state: 'error'
@@ -104,6 +105,7 @@ describe('fiches des participants (M7, B5b)', () => {
     await env.waitFor(() => env.rt(mother).phase === 'insufficient', 'un seul avis')
     // Recueil fini : la barre latérale peut le ranger ; l'état d'erreur reste.
     expect(summaryOf(env, refused()?.childId)?.roundtable).toEqual({
+      since: expect.any(Number),
       id,
       active: false,
       state: 'error'
@@ -525,5 +527,47 @@ describe('recette réelle : agents des participants libérés (G1)', () => {
       () => children.every((id) => env.manager.view(id).snapshot === null),
       'agents libérés après l’arrêt'
     )
+  })
+})
+
+describe('recette réelle : étiquettes lisibles (C1)', () => {
+  it('nom de modèle court sur l’arbitre et l’étiquette de la synthèse, sans préfixe de fournisseur', async () => {
+    const { env, mother } = await setup({ leadProfile: { env: { MOCK_MODELS: 'long' } } })
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    expect(env.rt(mother).synthesizer.model).toBe('Factice rapide')
+    expect(env.rt(mother).synthesis?.by).toEqual({
+      profileId: 'lead',
+      label: 'Factice lead',
+      model: 'Factice rapide'
+    })
+  })
+})
+
+describe('recette réelle : chronomètre de la réplique (G3)', () => {
+  it('la fiche du participant dit le début de la réplique, pas celui de son avis', async () => {
+    const lock = join(mkdtempSync(join(tmpdir(), 'tour-verrou-')), 'verrou')
+    const { env, mother } = await setup({
+      profiles: (mock) => [mock('lent', 'avis-participant', ['--verrou-fin-de-tour', lock])]
+    })
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [choice('lent', 'factice-rapide'), choice('lent', 'factice-precis')]
+    })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    const childId = env.seatChild(mother, 'A')
+    const opinionStart = env.rt(mother).seats.find((s) => s.letter === 'A')?.startedAt
+    expect(summaryOf(env, childId)?.roundtable?.since).toBe(opinionStart)
+    writeFileSync(lock, '')
+    env.roundtables.rebuttal(mother, env.rt(mother).roundtableId)
+    await env.waitFor(
+      () => env.rt(mother).seats.every((s) => s.rebuttal?.state === 'working'),
+      'répliques au travail'
+    )
+    const askedAt = env.rt(mother).seats.find((s) => s.letter === 'A')?.rebuttal?.askedAt
+    expect(askedAt).toBeGreaterThan(opinionStart ?? Infinity)
+    expect(summaryOf(env, childId)?.roundtable?.since).toBe(askedAt)
+    rmSync(lock)
+    await env.waitFor(() => env.rt(mother).phase === 'decided', 'décision rendue', 20_000)
   })
 })

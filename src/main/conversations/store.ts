@@ -89,7 +89,7 @@ export interface ConversationRecord {
    */
   roundtable?: string
   /** Sa place dans le tour (fiche 285) : son état, et le tour en cours ou non. */
-  roundtableSeat?: { state: RoundtableSeatState; active: boolean }
+  roundtableSeat?: { state: RoundtableSeatState; active: boolean; since?: number }
 }
 
 export const SAFE_ID = /^[\w-]+$/
@@ -151,7 +151,10 @@ function withSeat(record: ConversationRecord): ConversationRecord {
     seat !== null &&
     SEAT_STATES.includes(seat.state) &&
     typeof seat.active === 'boolean'
-  return { ...rest, roundtable: id, ...(valid ? { roundtableSeat: seat } : {}) }
+  if (!valid) return { ...rest, roundtable: id }
+  const { since, ...kept } = seat
+  const timed = typeof since === 'number' && Number.isFinite(since) ? { since } : {}
+  return { ...rest, roundtable: id, roundtableSeat: { ...kept, ...timed } }
 }
 
 const SEAT_STATES: readonly unknown[] = ['waiting', 'working', 'answered', 'stopped', 'error']

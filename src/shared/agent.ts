@@ -798,6 +798,11 @@ export interface ConversationSummary {
     id: string
     active: boolean
     state?: import('./roundtable').RoundtableSeatState
+    /**
+     * Début du travail en cours de la place (ms) : l'avis, puis la réplique (recette réelle, G3) ;
+     * le chronomètre de Session › En cours part de là.
+     */
+    since?: number
   }
 }
 

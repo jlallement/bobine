@@ -18,6 +18,7 @@ import type { AgentEvent, ConversationsState, ConversationView } from '@shared/a
 import type { AttentionState } from '@shared/attention'
 import type { MessageOrigin } from '@shared/children'
 import { messageOf } from '@shared/errors'
+import { shortModelName } from '@shared/models'
 import type { Roundtable, RoundtableEvent, RoundtableStepKind } from '@shared/roundtable'
 import { synthesisRequest, verdictRequest } from '@shared/roundtable-prompts'
 import type { ConversationManager } from '../conversations/manager'
@@ -201,7 +202,8 @@ export class MotherSteps {
             by: {
               profileId: summary.profileId,
               label: summary.profileLabel,
-              ...(model ? { model } : {})
+              // Nom court et lisible (« Tidepool Alpha Free », pas « opencode/… », C1).
+              ...(model ? { model: shortModelName(model) } : {})
             }
           }
         : {})

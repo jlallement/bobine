@@ -7,6 +7,7 @@ import type { ConversationSummary } from '@shared/agent'
 import { attachmentName } from '@shared/attachments'
 import { newSeats, type Roundtable, type RoundtableParticipant } from '@shared/roundtable'
 import type { RoundtableStartRequest } from '@shared/roundtable-ipc'
+import { shortModelName } from '@shared/models'
 import { modelControl } from '../agent/models-seen'
 import type { ConversationManager } from '../conversations/manager'
 
@@ -38,7 +39,8 @@ export function newRoundtable(
     const name = nameOf(choice.profileId, choice.model.value)
     return { ...choice, model: { ...choice.model, name }, label: name, agentLabel }
   })
-  const model = control?.options.find((o) => o.value === control.currentValue)?.name
+  const name = control?.options.find((o) => o.value === control.currentValue)?.name
+  const model = name ? shortModelName(name) : undefined
   const names = (request.attachments ?? []).map(attachmentName)
   return {
     roundtableId: randomUUID(),
