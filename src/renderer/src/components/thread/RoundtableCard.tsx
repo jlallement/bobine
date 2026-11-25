@@ -41,7 +41,7 @@ import {
   totalText
 } from '../roundtable/roundtable-view'
 import { useTrashedIds } from '../roundtable/useTrashedIds'
-import { RoundtableRow } from './RoundtableRow'
+import { RoundtableRow, SeatLetters } from './RoundtableRow'
 import type { SubtasksInfo } from './Subtasks'
 import { currentReport, workUsage } from './work-card'
 import '../../roundtable.css'
@@ -343,24 +343,26 @@ export function RoundtableCard({
         )}
       </div>
       {!collapsed && (
-        <div className="work-group-rows">
-          {item.seats.map((seat) => (
-            <SeatRow
-              key={seat.letter}
-              seat={seat}
-              group={group}
-              info={info}
-              work={group.works.get(seat.letter)}
-              activity={seat.childId ? activity.get(seat.childId) : undefined}
-              open={openLetter === seat.letter}
-              onToggle={() => setOpenLetter((l) => (l === seat.letter ? undefined : seat.letter))}
-              gestures={gestures}
-              pending={pending}
-              shield={mixed}
-              presence={presence(seat)}
-            />
-          ))}
-        </div>
+        <SeatLetters.Provider value={!!item.synthesis?.sentAt}>
+          <div className="work-group-rows">
+            {item.seats.map((seat) => (
+              <SeatRow
+                key={seat.letter}
+                seat={seat}
+                group={group}
+                info={info}
+                work={group.works.get(seat.letter)}
+                activity={seat.childId ? activity.get(seat.childId) : undefined}
+                open={openLetter === seat.letter}
+                onToggle={() => setOpenLetter((l) => (l === seat.letter ? undefined : seat.letter))}
+                gestures={gestures}
+                pending={pending}
+                shield={mixed}
+                presence={presence(seat)}
+              />
+            ))}
+          </div>
+        </SeatLetters.Provider>
       )}
       {!collapsed && <RoundtableFoot group={group} gestures={gestures} pending={pending} />}
       <GestureRefusal text={refusal} />

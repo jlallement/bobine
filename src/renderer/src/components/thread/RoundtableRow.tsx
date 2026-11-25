@@ -19,7 +19,7 @@ import {
   TriangleAlert
 } from 'lucide-react'
 import i18next from 'i18next'
-import type { ReactNode } from 'react'
+import { createContext, useContext, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ConversationSummary } from '@shared/agent'
 import {
@@ -131,10 +131,27 @@ function StateIcon({ state }: { state: IconState }) {
 const iconOf = (seat: Pick<RoundtableSeat, 'state' | 'error'>): IconState =>
   seat.state === 'error' ? (MODEL_ERRORS.has(seat.error ?? '') ? 'warning' : 'error') : seat.state
 
+/**
+ * La synthèse existe : chaque ligne montre sa lettre (« A »), pour faire le lien avec la synthèse
+ * même quand le modèle écrit la lettre seule (recette du 2026-11-25, S3).
+ */
+export const SeatLetters = createContext(false)
+
 /** Nom du participant, et son agent en gris quand il diffère (« GLM 5.3 Flash · OpenCode »). */
-function SeatName({ seat }: { seat: Pick<RoundtableSeat, 'label' | 'agentLabel'> }) {
+function SeatName({ seat }: { seat: Pick<RoundtableSeat, 'label' | 'agentLabel' | 'letter'> }) {
+  const lettered = useContext(SeatLetters)
   return (
     <span className="work-group-name" data-testid="roundtable-row-name">
+      {lettered && (
+        <span
+          className="roundtable-seat-letter"
+          role="img"
+          aria-label={i18next.t('roundtable.card.letter', { letter: seat.letter })}
+          data-testid="roundtable-seat-letter"
+        >
+          {seat.letter}
+        </span>
+      )}
       {seatLabel(seat)}
       {seat.agentLabel !== seat.label && (
         <span className="work-group-sub"> · {seat.agentLabel}</span>

@@ -957,6 +957,43 @@ describe('contrat du moteur (fix2)', () => {
     expect(within(row('A')).queryByTestId('roundtable-open-row')).toBeNull()
   })
 
+  it('C1 : l’étiquette garde le nom court du modèle, sans préfixe de fournisseur', () => {
+    const rt = roundtable([
+      answered('A'),
+      answered('B'),
+      answered('C'),
+      {
+        type: 'step-sent',
+        step: 'synthesis',
+        at: T0,
+        by: { profileId: 'agent-b', label: 'OpenCode', model: 'opencode/Tidepool Alpha Free' }
+      },
+      { type: 'step-answered', step: 'synthesis', at: T0 + 1 }
+    ])
+    show(synthesized(rt, SYNTHESIS))
+    expect(screen.getByTestId('roundtable-answer-label').textContent).toBe(
+      'Synthèse du tour de table · Tidepool Alpha Free'
+    )
+  })
+
+  it('S3 (recette) : la lettre de chaque ligne, dès que la synthèse est partie', () => {
+    const { unmount } = wrap(
+      <Transcript
+        items={thread(roundtable([answered('A'), answered('B')]), OPINIONS)}
+        onRespondPermission={vi.fn()}
+        onRespondElicitation={vi.fn()}
+        subtasks={info()}
+      />
+    )
+    expect(screen.queryByTestId('roundtable-seat-letter')).toBeNull()
+    unmount()
+    show(synthesized(done(), SYNTHESIS))
+    fireEvent.click(screen.getByTestId('roundtable-head-toggle'))
+    const letters = screen.getAllByTestId('roundtable-seat-letter')
+    expect(letters.map((l) => l.textContent)).toEqual(['A', 'B', 'C'])
+    expect(letters[0]?.getAttribute('aria-label')).toBe('Participant A')
+  })
+
   it('S3 : l’étiquette de la synthèse lit l’agent et le modèle de la demande', () => {
     const rt = roundtable([
       answered('A'),

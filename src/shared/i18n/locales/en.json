@@ -6354,7 +6354,8 @@
       "noOpinions_other": "{{count}} without opinion",
       "relaunchStopped_one": "Run the stopped participant again",
       "relaunchStopped_other": "Run the {{count}} stopped participants again",
-      "stopping": "stopping"
+      "stopping": "stopping",
+      "letter": "Participant {{letter}}"
     },
     "state": {
       "waiting": "waiting",

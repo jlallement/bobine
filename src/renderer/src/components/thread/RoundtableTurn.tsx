@@ -19,6 +19,7 @@ import {
   rebuttalMultiplier,
   type RoundtableLetter
 } from '@shared/roundtable'
+import { shortModelName } from '@shared/models'
 import type { TranscriptItem } from '@shared/transcript'
 import type { RoundtableGroupData, WorkLayout } from '@shared/work-groups'
 import { ipcErrorText } from '../../ipc-errors'
@@ -39,7 +40,7 @@ import {
   useRoundtableTotal,
   useSeatPresence
 } from './RoundtableCard'
-import { RebuttalRow } from './RoundtableRow'
+import { RebuttalRow, SeatLetters } from './RoundtableRow'
 import type { SubtasksInfo } from './Subtasks'
 
 type UserItem = Extract<TranscriptItem, { kind: 'user' }>
@@ -104,31 +105,33 @@ function RebuttalCard({
           {t('roundtable.rebuttal.answers', { count: answeredRebuttals(item).length })}
         </span>
       </div>
-      <div className="work-group-rows">
-        {seats.map((seat) => {
-          const childId = seat.childId
-          const { rebuttal } = seatReports(group.works.get(seat.letter), seat)
-          return (
-            seat.rebuttal && (
-              <RebuttalRow
-                key={seat.letter}
-                seat={seat}
-                rebuttal={seat.rebuttal}
-                report={rebuttal}
-                child={info?.children.find((c) => c.id === childId)}
-                activity={childId ? activity.get(childId) : undefined}
-                open={open === seat.letter}
-                onToggle={() => setOpen((l) => (l === seat.letter ? undefined : seat.letter))}
-                onOpen={
-                  childId && presence(seat) === 'here' && info
-                    ? () => info.onOpen(childId)
-                    : undefined
-                }
-              />
+      <SeatLetters.Provider value={!!item.synthesis?.sentAt}>
+        <div className="work-group-rows">
+          {seats.map((seat) => {
+            const childId = seat.childId
+            const { rebuttal } = seatReports(group.works.get(seat.letter), seat)
+            return (
+              seat.rebuttal && (
+                <RebuttalRow
+                  key={seat.letter}
+                  seat={seat}
+                  rebuttal={seat.rebuttal}
+                  report={rebuttal}
+                  child={info?.children.find((c) => c.id === childId)}
+                  activity={childId ? activity.get(childId) : undefined}
+                  open={open === seat.letter}
+                  onToggle={() => setOpen((l) => (l === seat.letter ? undefined : seat.letter))}
+                  onOpen={
+                    childId && presence(seat) === 'here' && info
+                      ? () => info.onOpen(childId)
+                      : undefined
+                  }
+                />
+              )
             )
-          )
-        })}
-      </div>
+          })}
+        </div>
+      </SeatLetters.Provider>
       {used?.text && (
         <UsedLine
           label={t('roundtable.card.usedAll', { total: used.text })}
@@ -253,7 +256,8 @@ function RoundtableAnswerFrame({
   // d'une version précédente : ceux de la conversation au lancement du tour.
   const step = turn.step === 'verdict' ? group?.item.verdict : group?.item.synthesis
   const by = step?.by ?? group?.item.synthesizer
-  const model = by?.model ?? by?.label ?? ''
+  // Nom court (« opencode/Tidepool Alpha Free » → « Tidepool Alpha Free », recette C1).
+  const model = by?.model ? shortModelName(by.model) : (by?.label ?? '')
   const rebutted = !!group?.item.seats.some((s) => s.rebuttal)
   return (
     <div className="roundtable-answer" data-testid="roundtable-answer" data-step={turn.step}>

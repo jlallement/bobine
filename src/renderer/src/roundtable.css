@@ -574,3 +574,20 @@
 .thread > :last-child .roundtable-answer > [data-testid='roundtable-rebuttal']:last-child {
   margin-bottom: 76px;
 }
+
+/* Lettre du participant, devant son nom, dès que la synthèse existe (recette, S3). */
+.roundtable-seat-letter {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  vertical-align: 1px;
+}

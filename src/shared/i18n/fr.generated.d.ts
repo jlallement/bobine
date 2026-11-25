@@ -6425,6 +6425,7 @@ export type FrResources = {
       readonly relaunchStopped_many: 'Relancer les {{count}} participants arrêtés'
       readonly relaunchStopped_other: 'Relancer les {{count}} participants arrêtés'
       readonly stopping: 'arrêt en cours'
+      readonly letter: 'Participant {{letter}}'
     }
     readonly state: {
       readonly waiting: 'en attente'

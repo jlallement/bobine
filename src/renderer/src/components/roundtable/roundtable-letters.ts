@@ -17,24 +17,48 @@ interface HastNode {
   children?: HastNode[]
 }
 
-/** « Participant C », « participant C », « Participants A et C » ne comptent que lettre par lettre. */
-const LETTER = /\b([Pp]articipant)\s+([A-E])\b/g
+/**
+ * « Participant C », « participant C », et les formes groupées « Participants A et B »,
+ * « Participants A, B et C », « participants A and B » (recette du 2026-11-25, S3 : les vrais
+ * modèles groupent). Une lettre seule, hors de ces formes, reste du texte : « A » est aussi un mot.
+ */
+const GROUP = /\b[Pp]articipants?\s+[A-E](?:(?:\s*,\s*|\s+(?:et|and|&)\s+|\s*\/\s*)[A-E])*\b/g
+/** Les lettres d'une forme (majuscules A à E, isolées). */
+const LETTERS = /\b[A-E]\b/g
+
+type Part = string | { text: string; letter: string }
 
 /** Morceaux d'un texte : du texte, ou une lettre connue (`[mention, lettre]`). */
-export function splitLetters(
-  text: string,
-  known: Readonly<Record<string, string>>
-): (string | { text: string; letter: string })[] {
-  const parts: (string | { text: string; letter: string })[] = []
+export function splitLetters(text: string, known: Readonly<Record<string, string>>): Part[] {
+  const parts: Part[] = []
   let last = 0
-  for (const match of text.matchAll(LETTER)) {
-    const letter = match[2] ?? ''
-    if (!known[letter] || match.index === undefined) continue
-    if (match.index > last) parts.push(text.slice(last, match.index))
-    parts.push({ text: match[0], letter })
-    last = match.index + match[0].length
+  const push = (from: number, to: number, letter?: string) => {
+    if (to <= from) return
+    const piece = text.slice(from, to)
+    if (letter) parts.push({ text: piece, letter })
+    else if (typeof parts.at(-1) === 'string') parts[parts.length - 1] += piece
+    else parts.push(piece)
   }
-  if (last < text.length) parts.push(text.slice(last))
+  for (const match of text.matchAll(GROUP)) {
+    if (match.index === undefined) continue
+    const start = match.index
+    // Le mot « Participant(s) » va avec la première lettre ; les suivantes, seules.
+    const word = match[0].search(/\s/)
+    let first = true
+    for (const inner of match[0].slice(word).matchAll(LETTERS)) {
+      const letter = inner[0]
+      const at = start + word + (inner.index ?? 0)
+      if (!known[letter]) {
+        first = false
+        continue
+      }
+      push(last, first ? start : at)
+      push(first ? start : at, at + 1, letter)
+      last = at + 1
+      first = false
+    }
+  }
+  push(last, text.length)
   return parts
 }
 

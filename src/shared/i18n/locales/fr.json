@@ -6641,7 +6641,8 @@
       "relaunchStopped_one": "Relancer le participant arrêté",
       "relaunchStopped_many": "Relancer les {{count}} participants arrêtés",
       "relaunchStopped_other": "Relancer les {{count}} participants arrêtés",
-      "stopping": "arrêt en cours"
+      "stopping": "arrêt en cours",
+      "letter": "Participant {{letter}}"
     },
     "state": {
       "waiting": "en attente",
