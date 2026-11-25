@@ -6485,6 +6485,8 @@ export type FrResources = {
       readonly participant: 'Participant {{letter}}'
       readonly apply: 'Demander à {{agent}} de l’appliquer'
       readonly applyDraft: 'Applique ta recommandation du tour de table.'
+      readonly changed: '{{agent}} a modifié des fichiers pendant la synthèse.'
+      readonly changedFiles: '{{agent}} a modifié des fichiers pendant la synthèse : {{files}}'
     }
     readonly rebuttal: {
       readonly action: 'Faire réagir les participants'
@@ -6506,6 +6508,8 @@ export type FrResources = {
       readonly requested_many: 'Décision demandée · {{count}} répliques'
       readonly requested_other: 'Décision demandée · {{count}} répliques'
       readonly again: 'Demander la décision'
+      readonly changed: '{{agent}} a modifié des fichiers pendant la décision.'
+      readonly changedFiles: '{{agent}} a modifié des fichiers pendant la décision : {{files}}'
     }
     readonly error: {
       readonly running: 'Un tour de table est déjà en cours dans cette conversation : attendez sa synthèse.'

@@ -957,6 +957,31 @@ describe('contrat du moteur (fix2)', () => {
     expect(within(row('A')).queryByTestId('roundtable-open-row')).toBeNull()
   })
 
+  it('S1 (recette) : l’agent a écrit pendant la synthèse, un avertissement sous l’étiquette', () => {
+    const rt = roundtable([
+      answered('A'),
+      answered('B'),
+      answered('C'),
+      {
+        type: 'step-sent',
+        step: 'synthesis',
+        at: T0,
+        by: { profileId: 'agent-a', label: 'OpenCode', model: 'Tidepool' }
+      },
+      { type: 'step-answered', step: 'synthesis', at: T0 + 1 },
+      { type: 'step-changed-folder', step: 'synthesis', files: ['NOTES.md', 'src/a.ts'] }
+    ])
+    show(synthesized(rt, SYNTHESIS))
+    expect(plain(screen.getByTestId('roundtable-step-changed').textContent)).toBe(
+      'OpenCode a modifié des fichiers pendant la synthèse : NOTES.md et src/a.ts'
+    )
+  })
+
+  it('S1 : rien d’écrit, aucun avertissement', () => {
+    show(synthesized(done(), SYNTHESIS))
+    expect(screen.queryByTestId('roundtable-step-changed')).toBeNull()
+  })
+
   it('C1 : l’étiquette garde le nom court du modèle, sans préfixe de fournisseur', () => {
     const rt = roundtable([
       answered('A'),

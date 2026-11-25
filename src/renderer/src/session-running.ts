@@ -78,7 +78,7 @@ export function trackRunning(
     const before = known.get(obs.key)
     // Une entrée déjà finie qui repart (participant d'un tour à la réplique, recette G3) : son
     // chronomètre repart, il ne reprend pas le début de son travail précédent.
-    const restarted = !obs.ended && !previous.running.some((entry) => entry.key === obs.key)
+    const restarted = !ended && !previous.running.some((entry) => entry.key === obs.key)
     const startedAt = obs.startedAt ?? (restarted ? undefined : before?.startedAt) ?? now
     if (!ended) {
       finished.delete(obs.key)

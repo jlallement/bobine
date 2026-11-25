@@ -10,7 +10,7 @@
  *   réagir les participants » avec le rappel en jetons ; une fois la réplique lancée, sa carte.
  * - Sous la décision : « Demander à <agent> de l'appliquer ».
  */
-import { Pencil, Reply } from 'lucide-react'
+import { Pencil, Reply, TriangleAlert } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -28,6 +28,7 @@ import { RoundtableIcon } from '../roundtable/RoundtableIcon'
 import {
   letterNames,
   roundtableTurns,
+  listText,
   seatReports,
   type RoundtableTurn
 } from '../roundtable/roundtable-view'
@@ -267,6 +268,22 @@ function RoundtableAnswerFrame({
           {turn.step === 'synthesis'
             ? t('roundtable.synthesis.label', { model })
             : t('roundtable.decision.label', { model })}
+        </div>
+      )}
+      {first && step?.changedFolder && (
+        // L'étape devait se faire en lecture seule : l'agent a écrit quand même (recette, S1).
+        <div className="roundtable-step-changed" role="note" data-testid="roundtable-step-changed">
+          <TriangleAlert size={13} aria-hidden />
+          {t(
+            turn.step === 'synthesis'
+              ? step.changedFiles?.length
+                ? 'roundtable.synthesis.changedFiles'
+                : 'roundtable.synthesis.changed'
+              : step.changedFiles?.length
+                ? 'roundtable.decision.changedFiles'
+                : 'roundtable.decision.changed',
+            { agent: by?.label ?? '', files: listText(step.changedFiles ?? []) }
+          )}
         </div>
       )}
       {children}

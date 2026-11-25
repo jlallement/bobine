@@ -6413,7 +6413,9 @@
       "requested_other": "Synthesis requested · {{count}} opinions",
       "participant": "Participant {{letter}}",
       "apply": "Ask {{agent}} to apply it",
-      "applyDraft": "Apply your roundtable recommendation."
+      "applyDraft": "Apply your roundtable recommendation.",
+      "changed": "{{agent}} changed files during the synthesis.",
+      "changedFiles": "{{agent}} changed files during the synthesis: {{files}}"
     },
     "rebuttal": {
       "action": "Ask participants to respond",
@@ -6432,7 +6434,9 @@
       "label": "Roundtable decision · {{model}}",
       "requested_one": "Decision requested · {{count}} rebuttal",
       "requested_other": "Decision requested · {{count}} rebuttals",
-      "again": "Ask for the decision"
+      "again": "Ask for the decision",
+      "changed": "{{agent}} changed files during the decision.",
+      "changedFiles": "{{agent}} changed files during the decision: {{files}}"
     },
     "error": {
       "running": "A roundtable is already running in this conversation: wait for its synthesis.",

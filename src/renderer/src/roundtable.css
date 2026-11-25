@@ -601,3 +601,17 @@
   line-height: 1;
   vertical-align: 1px;
 }
+
+/* L'agent a écrit pendant la synthèse ou la décision, qui devaient se faire en lecture seule (S1). */
+.roundtable-step-changed {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 2px 0 8px;
+  color: var(--warn);
+  font-size: 13px;
+}
+.roundtable-step-changed > svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
