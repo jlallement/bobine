@@ -1366,3 +1366,16 @@ le main n'a pas livré l'étape 1) :
     commande partie pendant l'étape pose `RoundtableStep.ranCommand`, dit en une ligne ; une commande
     demandée puis refusée d'office ne l'est pas (scénario `arbitre-demande-commande`). Page d'aide
     corrigée (garanti / demandé). Scénario `arbitre-commande`.
+
+- 2026-11-25 : CI rouge à eb212df9 (branche `1.2-fix13-engine`).
+  - `verify (Windows)` : l'essai « commande lancée par l'arbitre » jouait trois tours dans un seul
+    `it` (15,1 s) ; trois essais, ≈ 1 s chacun en local. Aucun essai de
+    `roundtables-recette.test.ts` au-dessus de 2,7 s en local.
+  - `pnpm e2e (macOS)` : la suite `tour-de-table` est passée de 2 min 08 à 3 min 42 sur le Mac de
+    GitHub. Fix12 n'a touché à aucune suite e2e ; en local, avant et après fix12, la suite dure la
+    même chose (50/53 s contre 51/54 s ; sous `taskpolicy -b`, 164 s contre 163 s) : la cause du
+    +1 min 30 n'a pas été reproduite (le même lot est plus lent de 13 % en médiane sur toutes ses
+    suites). Marge : la vie des participants devient une suite à part, `tour-de-table-vie`
+    (clair, sombre seulement avec `--themes both`, aucun rendu sombre vérifié), mêmes vérifications
+    et mêmes captures. La carte « en cours » se regarde sous verrou de fin de tour (sous charge,
+    elle pouvait déjà être repliée).

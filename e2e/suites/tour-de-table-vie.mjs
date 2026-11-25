@@ -28,7 +28,8 @@ import {
  * 4. Synthèse retenue par le plafond de la conversation, puis « Continuer » : la carte du plafond
  *    montre un libellé traduit ; l'étiquette de la synthèse nomme le modèle qui l'a écrite (S3).
  */
-export async function lifecycle(scheme) {
+export async function lifecycleSuite(scheme) {
+  console.log(`\n— Tour de table, vie des participants (${scheme})`)
   await stopAndSidebar(scheme)
   await heldSynthesis(scheme)
   await twoTours(scheme)

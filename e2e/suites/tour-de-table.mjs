@@ -4,7 +4,6 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { affirm, probes } from '../affirm.mjs'
 import { FEATURES, L, check, withApp } from '../lib.mjs'
-import { lifecycle } from './tour-de-table-vie.mjs'
 
 /**
  * Tour de table (fiche 285), contre l'agent factice et son pair (« Agent factice B ») : chaque
@@ -242,7 +241,8 @@ export async function roundtableSuite(scheme) {
   await nominal(scheme)
   await degraded(scheme)
   await guarded(scheme)
-  await lifecycle(scheme)
+  // La vie des participants après le tour est une suite à part (`tour-de-table-vie`) : la suite
+  // entière dépassait le plafond d'une suite sur les machines lentes de GitHub.
   await restart(scheme)
 }
 
@@ -326,6 +326,10 @@ async function guarded(scheme) {
 /** 1. Journée nominale. */
 async function nominal(scheme) {
   const workspace = repo()
+  // Verrou de fin de tour de l'agent factice : la carte « en cours » se regarde pendant que les
+  // participants sont tenus, jamais selon leur vitesse (machine lente : la carte était repliée).
+  const locks = mkdtempSync(join(tmpdir(), 'bob-e2e-tour-de-table-verrou-'))
+  const turnLock = join(locks, 'verrou')
   try {
     await withApp(
       scheme,
@@ -462,6 +466,7 @@ async function nominal(scheme) {
         await ui.viewport()
 
         // Lancement : Entrée envoie ; une seule bulle, la question n'est pas un message envoyé.
+        writeFileSync(turnLock, '')
         await ui.ev(`${ui.$('composer-input')}.focus()`)
         await ui.enter()
         await ui.waitFor(`!!${ui.$('roundtable-card')}`, 20_000)
@@ -496,6 +501,7 @@ async function nominal(scheme) {
             return { ok: Math.max(...mid) - Math.min(...mid) <= 3, detail: mid.map(Math.round).join(', ') + ' · rouge ' + red }`
           )
         ])
+        rmSync(turnLock, { force: true })
 
         // Synthèse automatique malgré l'erreur de Gamma ; la carte se replie.
         await ui.waitFor(`!!${ui.$('roundtable-answer-label')}`, 60_000)
@@ -602,10 +608,11 @@ async function nominal(scheme) {
       },
       undefined,
       'synthese-tour-de-table',
-      env(workspace)
+      env(workspace, { MOCK_AGENT_TURN_LOCK: turnLock })
     )
   } finally {
     rmSync(workspace, { recursive: true, force: true })
+    rmSync(locks, { recursive: true, force: true })
   }
 }
 

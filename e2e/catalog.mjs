@@ -2252,7 +2252,8 @@ export const SUITES = [
   },
   {
     // Tour de table (fiche 285) : lancement, menu, ligne du surcoût mesurée à trois largeurs,
-    // carte, avis, synthèse et lettres, réplique, décision, cas dégradés, redémarrage.
+    // carte, avis, synthèse et lettres, réplique, décision, cas dégradés, redémarrage. La vie des
+    // participants après le tour est la suite `tour-de-table-vie`.
     name: 'tour-de-table',
     file: 'tour-de-table.mjs',
     run: 'roundtableSuite',
@@ -2280,6 +2281,33 @@ export const SUITES = [
       'src/main/conversations/children*.ts',
       'src/main/roles/',
       'src/mock-agent/scenarios-tour-de-table.mts'
+    ]
+  },
+  {
+    // Tour de table (fiche 285), vie des participants après le tour : arrêt, barre latérale,
+    // corbeille, synthèse retenue, deux tours, synthèse qui écrit, synthèse en échec et son coût.
+    // Sortie de `tour-de-table` (trop longue sur les machines lentes de GitHub) ; aucun rendu
+    // sombre vérifié ici : clair seulement, sauf `--themes both`.
+    name: 'tour-de-table-vie',
+    file: 'tour-de-table-vie.mjs',
+    run: 'lifecycleSuite',
+    themes: BOTH,
+    sources: [
+      `${C}roundtable/`,
+      `${C}thread/Roundtable*.tsx`,
+      `${C}sidebar/history-order.ts`,
+      `${C}sidebar/conversation-state.ts`,
+      `${C}panel/SessionRunning.tsx`,
+      `${C}thread/CostCapCard.tsx`,
+      'src/main/conversations/cost-cap.ts',
+      `${R}roundtable.css`,
+      'src/shared/roundtable*.ts',
+      'src/shared/work-groups.ts',
+      'src/main/roundtable/',
+      'src/main/conversations/children*.ts',
+      'src/main/roles/',
+      'src/mock-agent/scenarios-tour-de-table.mts',
+      'e2e/suites/tour-de-table.mjs'
     ]
   },
   {
