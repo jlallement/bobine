@@ -3,7 +3,7 @@ import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { affirm, probes } from '../affirm.mjs'
-import { L, check, withApp } from '../lib.mjs'
+import { FEATURES, L, check, withApp } from '../lib.mjs'
 import { lifecycle } from './tour-de-table-vie.mjs'
 
 /**
@@ -33,7 +33,8 @@ const MODELS = [
   'fx/delta=Fx/Delta',
   'fx/zeta=Fx/Zeta',
   'fx/omega=Fx/Omega',
-  'fx/sigma=Fx/Sigma'
+  'fx/sigma=Fx/Sigma',
+  'fx/kappa=Fx/Kappa'
 ].join(',')
 
 /** Scénario de chaque modèle ; « Factice précis » (la conversation) joue la synthèse. */
@@ -45,7 +46,8 @@ export const BY_MODEL = (rapide = 'avis-participant') =>
     'fx/gamma=avis-erreur',
     'fx/delta=participant-ecrit',
     'fx/omega=participant-outils',
-    'fx/sigma=avis-change-modele'
+    'fx/sigma=avis-change-modele',
+    'fx/kappa=participant-ecrit-cache'
   ].join(',')
 
 export const PEER = () => L('profiles.mockPeer.label')
@@ -193,6 +195,28 @@ export async function layoutStill(ui, label, minChanges = 1) {
       rows.every((r) => r.length === 1) &&
       seen.foot.length <= 1,
     `${label} : aucune ligne ni le pied ne bougent quand un participant change d’état (${JSON.stringify(seen)})`
+  )
+}
+
+/**
+ * Menu des participants (S3, M2 de la passe de contrôle) : « Autres modèles… » cède sa place exacte
+ * au champ de recherche, et le champ ne bouge pas pendant la frappe (le menu ne change ni de côté
+ * ni de hauteur). Le menu est ouvert, la recherche pas encore.
+ */
+export async function searchStill(ui, label) {
+  const top = (sel) =>
+    ui.ev(`Math.round(document.querySelector('${sel}').getBoundingClientRect().top)`)
+  await ui.waitFor(`!!${ui.$('roundtable-others')}`)
+  const button = await top('[data-testid=roundtable-others]')
+  await ui.click(ui.$('roundtable-others'))
+  await ui.waitFor(`document.activeElement === ${ui.$('roundtable-search')}`)
+  const field = await top('.roundtable-search')
+  await ui.type('zzz')
+  await ui.waitFor(`!!${ui.$('roundtable-none')}`)
+  const typed = await top('.roundtable-search')
+  check(
+    button === field && field === typed,
+    `${label} : le champ prend la place du bouton et ne bouge pas à la frappe (${button} → ${field} → ${typed})`
   )
 }
 
@@ -349,7 +373,10 @@ async function nominal(scheme) {
           ),
           probes.custom(
             'aucune mention de gratuité ni de prix',
-            `const t = document.querySelector('[data-testid=roundtable-menu]').textContent
+            // Les textes de l'app seulement : un vrai modèle peut s'appeler « … Free » (M14).
+            `const menu = document.querySelector('[data-testid=roundtable-menu]').cloneNode(true)
+            menu.querySelectorAll('.roundtable-option-name, .roundtable-option-agent').forEach((n) => n.remove())
+            const t = menu.textContent
             return { ok: !/gratuit|free|\\$/i.test(t), detail: t.slice(0, 200) }`
           )
         ])
@@ -407,6 +434,19 @@ async function nominal(scheme) {
             return { ok: getComputedStyle(p.querySelector('.roundtable-pick-short')).display !== 'none' && getComputedStyle(p.querySelector('.roundtable-pick-full')).display === 'none' && p.getAttribute('aria-label') === ${JSON.stringify(L('roundtable.line.participants', { count: 4 }))} }`
           )
         ])
+        // M5 : à cette largeur, le bouton du tour est dans la barre, ou (barre repliée) dans le menu
+        // de 📎 quand il y en a un ; sans menu 📎, il reste la commande.
+        const inBar = await ui.ev(`(${ui.$('roundtable-toggle')}?.offsetWidth ?? 0) > 0`)
+        if (!inBar && FEATURES.screenCapture) {
+          await ui.click(ui.$('attach'))
+          await ui.waitFor(`!!${ui.$('attach-roundtable')}`, 5000)
+          await ui.key('Escape')
+          await ui.waitFor(`!${ui.$('attach-menu-content')}`)
+        }
+        check(
+          true,
+          `520 px : le tour de table ${inBar ? 'dans la barre' : 'dans le menu de 📎 ou par la commande'}`
+        )
         await ui.viewport()
 
         // Lancement : Entrée envoie ; une seule bulle, la question n'est pas un message envoyé.
@@ -449,11 +489,13 @@ async function nominal(scheme) {
         await ui.waitFor(`!!${ui.$('roundtable-answer-label')}`, 60_000)
         await ui.waitFor(`${ui.$('roundtable-card')}?.dataset.collapsed === 'true'`, 60_000)
         await ui.waitFor(`!!${ui.$('roundtable-actions')}`, 60_000)
+        // Une seule ligne d'étiquette, qui dit le nombre d'avis (simplification 4).
         check(
-          (await ui.ev(`${ui.$('roundtable-request')}.textContent`)).includes(
-            L('roundtable.synthesis.requested', { count: 3 })
-          ),
-          'synthèse : « Synthèse demandée · 3 avis »'
+          !(await ui.ev(`!!${ui.$('roundtable-request')}`)) &&
+            (await ui.ev(`${ui.$('roundtable-answer-label')}.textContent`)).endsWith(
+              L('roundtable.card.opinions', { count: 3 })
+            ),
+          'synthèse : une seule ligne d’étiquette, « … · 3 avis »'
         )
         await affirm(ui, '285-apres-synthese', [
           probes.custom(
@@ -573,23 +615,28 @@ async function degraded(scheme) {
         await ui.ev(`${ui.$('composer-input')}.focus()`)
         await ui.enter()
         await ui.waitFor(`!!${ui.$('roundtable-card')}`, 20_000)
+        // Forme large mesurée à part, fenêtre et panneau fixés : le panneau « Session » s'ouvre de
+        // lui-même au premier message (fiche 166) et, dans une fenêtre plus petite (GitHub), la
+        // colonne passait sous 600 px pendant la mesure (forme empilée, mesurée à 760 et 520 px).
+        await ui.closePanel()
+        await ui.viewport(1280)
         await watchLayout(ui)
 
-        // Modèle refusé : dit, sans substitution ; « Choisir un autre modèle » ouvre le menu.
-        await ui.waitFor(`!!${ui.$('roundtable-other-model')}`, 30_000)
+        // Modèle refusé : dit sur sa ligne, sans substitution ; plus de « Choisir un autre
+        // modèle » (S2 de la passe de contrôle) : le menu le signalera au tour suivant.
+        await ui.waitFor(rowState('Zeta', 'error'), 30_000)
         check(
           await ui.ev(
             `${rowOf('Zeta')}.textContent.includes(${JSON.stringify(L('roundtable.state.reason.model-not-applied'))})`
           ),
           'modèle refusé par l’agent : « modèle non appliqué », sans substitution'
         )
+        check(
+          !(await ui.ev(`!!${ui.$('roundtable-other-model')}`)) &&
+            !(await ui.ev(`!!${ui.$('roundtable-tag')}`)),
+          'modèle refusé : aucun bouton qui fasse basculer la saisie'
+        )
         await affirm(ui, '285-modele-refuse', [probes.threadFits()])
-        // Clic direct : les lignes ne bougent plus quand une autre change d'état (sur GitHub, une
-        // ligne au-dessus grandissait entre l'appui et le relâché).
-        await ui.click(ui.$('roundtable-other-model'))
-        await ui.waitFor(`!!${ui.$('roundtable-menu')}`)
-        await ui.key('Escape')
-        await ui.waitFor(`!${ui.$('roundtable-menu')}`)
 
         // Erreur puis « Relancer » (pendant que B travaille encore).
         await ui.waitFor(
@@ -623,6 +670,19 @@ async function degraded(scheme) {
           ),
           'synthèse sans attendre : le lent arrêté'
         )
+        // Un écrivain parmi cinq (S1) : un seul avis du dossier modifié, une seule ligne marquée.
+        await ui.waitFor(`!!${ui.$('roundtable-folder-changed')}`, 20_000)
+        await ui.ev(`${ui.$('roundtable-head-toggle')}?.click(), true`).catch(() => {})
+        await affirm(ui, '285-avis-dossier', [
+          probes.custom(
+            'un avis par tour, une ligne marquée (Delta)',
+            `const card = document.querySelector('[data-testid=roundtable-card]')
+            const notes = card.querySelectorAll('[data-testid=roundtable-folder-changed]').length
+            const marked = [...card.querySelectorAll('[data-testid=roundtable-row]')].filter((r) => r.querySelector('[data-testid=roundtable-changed]')).map((r) => r.querySelector('[data-testid=roundtable-row-name]').textContent)
+            return { ok: notes === 1 && marked.length === 1 && marked[0].startsWith('Delta'), detail: JSON.stringify({ notes, marked }) }`
+          )
+        ])
+        await ui.viewport()
         await ui.waitFor(`!!${ui.$('roundtable-actions')}`, 60_000)
 
         // Un second tour, arrêté en entier.

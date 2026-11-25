@@ -9,6 +9,7 @@ import {
   arbiterModel,
   choose,
   layoutStill,
+  searchStill,
   watchLayout,
   env,
   repo,
@@ -55,7 +56,8 @@ async function stopAndSidebar(scheme) {
         await ui.ev(`${ui.$('composer-input')}.focus()`)
         await ui.type('/roundtable Cycle de vie ?')
         await ui.waitFor(`!!${ui.$('roundtable-line')}`)
-        await choose(ui, [PEER(), 'Alpha', 'Beta'])
+        // Gamma échoue (« Relancer » paraît) : la ligne ne change pas de hauteur pour autant (S5).
+        await choose(ui, [PEER(), 'Alpha', 'Beta', 'Gamma'])
         // Recueil mesuré à 760 px : aucune ligne ne bouge quand un participant répond.
         await ui.viewport(760)
         await ui.ev(`${ui.$('composer-input')}.focus()`)
@@ -63,19 +65,19 @@ async function stopAndSidebar(scheme) {
         await ui.waitFor(`!!${ui.$('roundtable-card')}`, 20_000)
         await watchLayout(ui)
         await ui.waitFor(
-          `${rowState('Alpha', 'answered')} && ${rowState('Beta', 'answered')} && ${rowState(PEER(), 'working')}`,
+          `${rowState('Alpha', 'answered')} && ${rowState('Beta', 'answered')} && !!${rowOf('Gamma')}?.querySelector('[data-testid=roundtable-relaunch]') && ${rowState(PEER(), 'working')}`,
           30_000
         )
 
-        await layoutStill(ui, 'recueil, 760 px')
+        await layoutStill(ui, 'recueil, 760 px', 3)
         await ui.viewport()
         // Pendant le tour : les trois participants dans la barre latérale.
-        await ui.waitFor(`${sidebarSeats} === 3`, 10_000)
+        await ui.waitFor(`${sidebarSeats} === 4`, 10_000)
         await affirm(ui, '285-barre-pendant', [
           probes.custom(
             'trois participants dans la barre latérale, le lent au travail partout',
             `const session = ${sessionChildren}
-            return { ok: ${sidebarSeats} === 3 && (session === -1 || session === 1), detail: JSON.stringify({ session }) }`
+            return { ok: ${sidebarSeats} === 4 && (session === -1 || session === 1), detail: JSON.stringify({ session }) }`
           )
         ])
 
@@ -133,7 +135,10 @@ async function stopAndSidebar(scheme) {
         await ui.viewport()
 
         // « Ouvrir sa conversation » depuis la carte : le participant ouvert reste dans la liste.
-        await ui.click(`${rowOf('Alpha')}.querySelector('[data-testid=roundtable-open-row]')`)
+        // Un seul accès : la ligne dépliée, « Ouvrir sa conversation » (simplification 2).
+        await ui.click(`${rowOf('Alpha')}.querySelector('[data-testid=roundtable-row-toggle]')`)
+        await ui.waitFor(`!!${rowOf('Alpha')}.querySelector('[data-testid=roundtable-open]')`)
+        await ui.click(`${rowOf('Alpha')}.querySelector('[data-testid=roundtable-open]')`)
         await ui.waitFor(`${activeId}.then((id) => id !== ${JSON.stringify(mother)})`, 10_000)
         const alpha = await ui.ev(activeId)
         await ui.waitFor(`${sidebarSeats} === 1`, 10_000)
@@ -149,18 +154,18 @@ async function stopAndSidebar(scheme) {
           `${meta('Alpha')} === ${JSON.stringify(L('roundtable.state.trashed'))}`,
           10_000
         )
-        check(
-          !(await ui.ev(`!!${rowOf('Alpha')}.querySelector('[data-testid=roundtable-open-row]')`)),
-          'à la corbeille : pas de bouton « Ouvrir »'
-        )
         await ui.click(`${rowOf('Alpha')}.querySelector('[data-testid=roundtable-row-toggle]')`)
         await ui.waitFor(`!!${rowOf('Alpha')}.querySelector('[data-testid=work-body]')`)
+        check(
+          !(await ui.ev(`!!${rowOf('Alpha')}.querySelector('[data-testid=roundtable-open]')`)),
+          'à la corbeille : l’avis se lit, pas de « Ouvrir sa conversation »'
+        )
         await affirm(ui, '285-participant-corbeille', [probes.threadFits()])
         await ui.ev(
           `window.api.profile.restoreFromTrash(${JSON.stringify(alpha)}).then(() => true)`
         )
         await ui.waitFor(
-          `!!${rowOf('Alpha')}.querySelector('[data-testid=roundtable-open-row]') && ${meta('Alpha')} !== ${JSON.stringify(L('roundtable.state.trashed'))}`,
+          `!!${rowOf('Alpha')}.querySelector('[data-testid=roundtable-open]') && ${meta('Alpha')} !== ${JSON.stringify(L('roundtable.state.trashed'))}`,
           10_000
         )
         check(true, 'restauré : la ligne revient comme avant')
@@ -261,7 +266,7 @@ async function twoTours(scheme) {
         await ui.ev(`${ui.$('composer-input')}.focus()`)
         await ui.type('/roundtable Premier tour ?')
         await ui.waitFor(`!!${ui.$('roundtable-line')}`)
-        await choose(ui, ['Alpha', 'Beta', 'Omega'])
+        await choose(ui, ['Alpha', 'Beta', 'Omega', 'Gamma'])
         // Recueil mesuré à 520 px (la colonne de droite sous le nom, sa place réservée).
         await ui.viewport(520)
         await ui.ev(`${ui.$('composer-input')}.focus()`)
@@ -269,18 +274,19 @@ async function twoTours(scheme) {
         await ui.waitFor(`!!${ui.$('roundtable-card')}`, 20_000)
         await watchLayout(ui)
         await ui.waitFor(`!!${ui.$('roundtable-actions')}`, 60_000)
-        await layoutStill(ui, 'recueil, 520 px')
+        await layoutStill(ui, 'recueil, 520 px', 3)
         await ui.viewport()
         await ui.click(ui.$('roundtable-head-toggle'))
         await ui.waitFor(
-          `document.querySelectorAll('[data-testid=roundtable-seat-letter]').length === 3`
+          `document.querySelectorAll('[data-testid=roundtable-seat-letter]').length === 4`
         )
         await affirm(ui, '285-lettres-seules', [
           probes.custom(
             'lettres groupées reconnues, lettre seule laissée telle quelle, une pastille par ligne',
             `const marked = [...document.querySelectorAll('[data-testid=roundtable-answer] [data-testid=roundtable-letter]')].map((a) => a.textContent.trim().slice(-1))
             const badges = [...document.querySelectorAll('[data-testid=roundtable-seat-letter]')].map((b) => b.textContent + '=' + b.getAttribute('aria-label'))
-            const ok = marked.includes('B') && marked.includes('C') && !marked.includes('A') && badges.length === 3 && badges.every((b) => /^([A-C])=Participant \\1$/.test(b))
+            // Trois avis : la première lettre seule (non marquée), les deux autres groupées (marquées).
+            const ok = new Set(marked).size === 2 && badges.length === 4 && badges.every((b) => /^([A-D])=Participant \\1$/.test(b))
             return { ok, detail: JSON.stringify({ marked, badges }) }`
           )
         ])
@@ -290,6 +296,13 @@ async function twoTours(scheme) {
         await ui.ev(`${ui.$('composer-input')}.focus()`)
         await ui.type('/roundtable Second tour ?')
         await ui.waitFor(`!!${ui.$('roundtable-cost-full')}`)
+        // Menu en bas d'une conversation : le champ de recherche ne bouge pas non plus (S3).
+        await ui.click(ui.$('roundtable-participants'))
+        await ui.waitFor(`!!${ui.$('roundtable-menu')}`)
+        await searchStill(ui, 'menu en bas d’une conversation')
+        await ui.key('Escape')
+        await ui.waitFor(`!${ui.$('roundtable-menu')}`)
+        await ui.ev(`${ui.$('composer-input')}.focus()`)
         await ui.enter()
         await ui.waitFor(
           `document.querySelectorAll('[data-testid=roundtable-card]').length === 2`,
@@ -337,11 +350,26 @@ async function arbiterWrites(scheme) {
             return { ok: !!o && o.querySelector('[data-testid=roundtable-option-reason]')?.textContent === ${JSON.stringify(L('roundtable.menu.arbiterShort'))} && others.every((h) => h === Math.round(o.getBoundingClientRect().height)) && o.getAttribute('aria-disabled') === 'true' && o.textContent.includes(${JSON.stringify(await ui.ev(`${ui.$('model-chip')}.textContent.trim()`))}), detail: o?.textContent }`
           )
         ])
+        await searchStill(ui, 'menu sur l’accueil')
         await ui.key('Escape')
-        await choose(ui, ['Alpha', 'Beta'])
+        await ui.waitFor(`!${ui.$('roundtable-menu')}`)
+        await choose(ui, ['Alpha', 'Kappa'])
         await ui.ev(`${ui.$('composer-input')}.focus()`)
         await ui.enter()
         await ui.waitFor(`!!${ui.$('roundtable-step-changed')}`, 60_000)
+        // Kappa écrit hors de tout outil annoncé pendant qu'Alpha travaille aussi
+        // (`participant-ecrit-cache`) : un avis du dossier modifié, aucune ligne marquée.
+        await ui.click(ui.$('roundtable-head-toggle'))
+        await affirm(ui, '285-avis-dossier-cache', [
+          probes.custom(
+            'écart non attribuable : un avis, aucune ligne marquée',
+            `const card = document.querySelector('[data-testid=roundtable-card]')
+            const notes = [...card.querySelectorAll('[data-testid=roundtable-folder-changed]')].map((n) => n.textContent)
+            const marked = card.querySelectorAll('[data-testid=roundtable-changed]').length
+            return { ok: notes.length === 1 && marked === 0, detail: JSON.stringify({ notes, marked }) }`
+          )
+        ])
+        await ui.click(ui.$('roundtable-head-toggle'))
         const warning = await ui.ev(`${ui.$('roundtable-step-changed')}.textContent`)
         check(
           warning.includes('notes-arbitre.md'),
@@ -389,7 +417,33 @@ async function failedSynthesisCost(scheme) {
             L('roundtable.card.synthesisFailed'),
           'synthèse en échec : « synthèse non rendue »'
         )
-        await ui.click(ui.$('roundtable-synthesize'))
+        // Le coût de la tentative en échec arrive après coup (relu 1,5 s plus tard, comme Bob) :
+        // relancer avant lui le perdait (course du moteur, signalée ; l'interface affiche ce que
+        // l'élément du tour porte). On attend qu'il soit compté : 2 avis + 1 tentative, 0,0375.
+        const partial = (0.0375).toLocaleString(LANG === 'en' ? 'en-US' : 'fr-FR', {
+          maximumFractionDigits: 4
+        })
+        await ui.waitFor(
+          `${ui.$('roundtable-used')}?.textContent.includes(${JSON.stringify(partial)})`,
+          15_000
+        )
+        // S4 : le fil ne suit pas le bas (remonté) ; au repli de la carte, son haut ne bouge pas
+        // et le fil ne défile pas jusqu'à la fin de la synthèse.
+        await ui.viewport(1280, 560)
+        const scroller = `document.querySelector('.main > .scroll')`
+        await ui.ev(`(${scroller}.scrollTop = 0, true)`)
+        const cardTop = `Math.round(document.querySelector('[data-testid=roundtable-card]').getBoundingClientRect().top)`
+        const before = await ui.ev(cardTop)
+        // Un clic sans défilement (le bouton peut être sous le bord de la fenêtre).
+        await ui.ev(`(${ui.$('roundtable-synthesize')}.click(), true)`)
+        await ui.waitFor(`${ui.$('roundtable-card')}?.dataset.collapsed === 'true'`, 60_000)
+        await ui.waitFor(`!!${ui.$('roundtable-actions')}`, 60_000)
+        const after = await ui.ev(cardTop)
+        check(
+          Math.abs(after - before) <= 1,
+          `S4 : au repli, le haut de la carte reste en place (${before} → ${after})`
+        )
+        await ui.viewport()
         await ui.waitFor(`!!${ui.$('roundtable-answer-label')}`, 60_000)
         // 2 avis et 2 tentatives de synthèse à 0,0125 : 0,05, relus après coup.
         const total = (0.05).toLocaleString(LANG === 'en' ? 'en-US' : 'fr-FR', {
