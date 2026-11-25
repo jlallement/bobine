@@ -1213,3 +1213,20 @@ le main n'a pas livré l'étape 1) :
     et la synthèse ne part pas si la conversation est passée au modèle d'un participant
     (`step-failed`, `roundtable.error.arbiter`).
   - Agent factice : `arbitre-ecrit`, `arbitre-demande-ecrire`, `participant-ecrit-replique`.
+
+- 2026-11-25 : recette réelle, partie interface (branche `1.2-fix3-ui`, avec `1.2-fix3-engine` et
+  `origin/1.1` fusionnées). G2 : un tour posé après masque aussi « Faire réagir » du précédent (un
+  simple message la laisse). S3 : lettres groupées (« Participants A et B », « A, B et C »,
+  « and »), jamais une lettre seule ; pastille de la lettre sur chaque ligne dès que la synthèse
+  est partie (scénario factice `synthese-lettres-seules`). S1 : avertissement sous l'étiquette de
+  la synthèse ou de la décision quand `changedFolder` est posé, fichiers compris (8 au plus). Arbitre :
+  désactivé dans le menu avec sa raison (agent sans choix de modèle compris, montré même
+  indisponible), retenu devenu l'arbitre dit sur la ligne (Entrée ouvre le menu), étape refusée
+  (`roundtable.error.arbiter`) dite au pied, en-tête « synthèse non rendue », reprise par
+  « Synthétiser » ; une autre panne d'étape : texte traduit, brut en infobulle. G3 : chronomètre de
+  Session › En cours pris de `roundtable.since`, et une entrée finie qui repart repart de zéro. G5 :
+  « au moins N fois les jetons d'une question simple » partout (ligne, rappel, aide, glossaire). C1 :
+  nom court du modèle sur les étiquettes. C2 : l'aide nomme le bouton de relance. C3 : « format non
+  suivi » passe avant la confiance. Réplique pas encore partie : « en attente : il finit son
+  travail en cours ». Permissions : aucune carte d'autorisation pour un participant (e2e `Omega`).
+
