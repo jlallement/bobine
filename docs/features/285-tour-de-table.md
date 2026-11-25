@@ -1396,3 +1396,28 @@ le main n'a pas livré l'étape 1) :
     pourquoi n'est pas établi ; l'échec dit désormais ce que la page voyait (largeurs, écran,
     visibilité) pour la prochaine fois.
 
+
+- 2026-11-25 : essais du tour de table trop près du délai de 15 s sous Windows (`verify (Windows)`
+  rouge à f129b7dc ; branche `1.2-fix15-engine`, refaite après relecture).
+  - Cause mesurée : les processus git, tous à la suite dans la file git de l'app (≈ 6 ms chacun en
+    local, des dizaines sous Windows) : 60 pour l'essai le plus simple, 5 273 pour les cinq
+    fichiers d'essais du tour de table. Le garde-fou de lecture seule par tour et par participant
+    (deux empreintes), l'empreinte du tour et celle de l'étape, chacune de 8 commandes, plus un
+    `git status` de plus. S'y ajoutent l'attente réelle du modèle strict (250 ms par place dont le
+    modèle change) et le lancement des agents factices (≈ 90 ms chacun en local).
+  - Produit (aucune vérification retirée) : empreinte en 5 commandes, qui rend ses lignes de
+    `git status`, réutilisées par l'étape ; chemins joints à la racine du dépôt (ceux de
+    `git status` en partent : un dossier de travail sous la racine voyait mal ses fichiers non
+    suivis et ignorés). Nouveaux essais d'équivalence (dossier non suivi, espaces, non ASCII,
+    sous-dossier, renommage), verts avec l'ancienne et la nouvelle empreinte.
+  - Essais : dossier sans dépôt git par défaut, un vrai dépôt pour les essais qui vérifient la
+    surveillance (ils échouent sans) ; attente du modèle strict à 0 dans les essais, champ à part
+    (`strictSettleMs`), la branche stricte toujours prise (essai qui le prouve), l'attente réelle
+    gardée dans l'essai du modèle qui retombe. Processus git : 5 273 → 685 ; durée locale des cinq
+    fichiers 113 → 91 s.
+  - Relevé, non corrigé : une étape qui part avant la relecture tardive du coût de l'échange
+    précédent (Bob) compte aussi cet échange (`costStart` encore inconnu) ; le délai des empreintes
+    git le masquait dans les essais.
+  - Retiré après relecture : l'absence d'empreinte par tour pour un participant `enforced`
+    (déclaration du profil, pas une observation : Bob peut écrire sans demander si ses règles
+    d'approbation le permettent).
