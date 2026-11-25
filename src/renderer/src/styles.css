@@ -2890,7 +2890,8 @@ a.btn {
 .composer-bar:is([data-fold='2'], [data-fold='3'], [data-fold='4'], [data-fold='5']) .usage-percent,
 .composer-bar:is([data-fold='3'], [data-fold='4'], [data-fold='5']) .mode-chip .chip-label,
 .composer-bar:not([data-no-capture]):is([data-fold='4'], [data-fold='5']) > .session-settings-slot,
-.composer-bar:not([data-no-capture]):is([data-fold='4'], [data-fold='5']) > .roundtable-toggle-slot {
+.composer-bar:not([data-no-capture]):is([data-fold='4'], [data-fold='5'])
+  > .roundtable-toggle-slot {
   display: none;
 }
 
