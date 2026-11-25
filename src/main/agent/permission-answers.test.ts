@@ -138,3 +138,55 @@ describe('demande posée à une fille en lecture seule (essais réels avant 1.0.
     expect(notes.map((n) => (n.type === 'notice' ? n.level : ''))).toEqual(['info', 'warning'])
   })
 })
+
+describe('tour de table : participants et étapes (fiche 285, N8, S1)', () => {
+  const yes = { outcome: { outcome: 'selected', optionId: 'yes' } }
+  const no = { outcome: { outcome: 'selected', optionId: 'no' } }
+  const at = (
+    kind: RequestPermissionRequest['toolCall']['kind'],
+    ...paths: string[]
+  ): RequestPermissionRequest => ({
+    ...request(kind),
+    toolCall: { ...request(kind).toolCall, locations: paths.map((path) => ({ path })) }
+  })
+
+  it('N8 : un participant ne lit ou ne cherche d’office que dans son dossier ; tout le reste est refusé', () => {
+    const { rules: participant, refused } = rules({
+      readOnly: 'participant',
+      place: { workspace: abs('/projet'), home: abs('/maison') },
+      // Même un outil « toujours autorisé » ne passe pas : pas de carte pendant un tour.
+      autoAllowed: () => true,
+      remembered: { has: () => true }
+    })
+    expect(automaticAnswer(at('read', abs('/projet/src/a.ts')), participant)).toEqual(yes)
+    expect(automaticAnswer(at('search', abs('/projet')), participant)).toEqual(yes)
+    expect(automaticAnswer(at('read', 'src/relatif.ts'), participant)).toEqual(yes)
+    const refusedCases = [
+      at('read', abs('/maison/.ssh/id')),
+      at('read', abs('/projet/a.ts'), abs('/ailleurs/b.ts')),
+      at('read', abs('/projet/../ailleurs/b.ts')),
+      at('read', abs('/projet-voisin/a.ts')),
+      at('read'),
+      at('fetch', abs('/projet/a.ts')),
+      at('other', abs('/projet/a.ts')),
+      at(undefined, abs('/projet/a.ts')),
+      at('execute', abs('/projet')),
+      at('edit', abs('/projet/a.ts')),
+      at('think')
+    ]
+    for (const r of refusedCases) expect(automaticAnswer(r, participant)).toEqual(no)
+    expect(refused).toHaveLength(refusedCases.length)
+  })
+
+  it('S1 : pendant la synthèse ou la décision, écrire, déplacer, supprimer, exécuter, changer de mode sont refusés', () => {
+    const { rules: step, refused } = rules({ stepReadOnly: true, autoAllowed: () => true })
+    for (const kind of ['edit', 'delete', 'move', 'execute', 'switch_mode'] as const)
+      expect(automaticAnswer(request(kind), step)).toEqual(no)
+    expect(refused).toHaveLength(5)
+    // Une lecture reste possible (l'arbitre vérifie une affirmation décisive).
+    expect(automaticAnswer(request('read'), step)).toEqual(yes)
+    // Hors du tour de l'étape : la conversation redevient normale.
+    const { rules: normal } = rules()
+    expect(automaticAnswer(request('execute'), normal)).toBeUndefined()
+  })
+})

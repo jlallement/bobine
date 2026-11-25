@@ -210,6 +210,8 @@ export interface ConversationManagerOptions {
    * reste une limite souple : ce sont les conversations ordinaires au repos qui laissent la place.
    */
   keepLive?: (id: string) => boolean
+  /** Demande d'un tour de table en cours dans cette conversation : son tour est en lecture seule. */
+  roundtableStep?: (id: string) => boolean
   /** Fil lu du disque : évènements qui le règlent (tour de table interrompu, fiche 285). */
   settleLoaded?: (id: string, items: readonly TranscriptItem[]) => AgentEvent[]
   /** Corbeille des conversations supprimées (fiche 196) ; celle de `conversationsDir` sinon. */

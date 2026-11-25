@@ -153,6 +153,8 @@ export interface AgentHostOptions {
    * `participant` (tour de table, fiche 285) : les commandes aussi.
    */
   readOnly?: boolean | 'participant'
+  /** Tour d'une étape du tour de table en cours (synthèse, décision, fiche 285) : relu à chaque demande. */
+  stepReadOnly?: () => boolean
   /** Discussion (fiche 224) : écritures accordées dans ce dossier, refusées ailleurs. */
   writeArea?: string
   /** Délais de démarrage et d'arrêt (remplaçables pour les tests) ; voir `TIMEOUTS`. */

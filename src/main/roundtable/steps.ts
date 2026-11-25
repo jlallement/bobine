@@ -93,6 +93,11 @@ export class MotherSteps {
     return this.sending.has(motherId) || this.answering.has(motherId)
   }
 
+  /** Une demande du tour est en route ou en cours de réponse ici : son tour est en lecture seule. */
+  stepActive(motherId: string): boolean {
+    return this.holds(motherId)
+  }
+
   /** Évènements de cette conversation encore attendus (demande en cours, coût après coup). */
   watches(motherId: string): boolean {
     return this.holds(motherId) || this.costWatch.has(motherId)

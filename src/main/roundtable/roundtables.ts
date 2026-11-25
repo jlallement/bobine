@@ -216,6 +216,11 @@ export class Roundtables implements RoundtableService {
     })
   }
 
+  /** Synthèse ou décision en cours dans cette conversation (son tour est en lecture seule). */
+  stepActive(motherId: string): boolean {
+    return this.steps.stepActive(motherId)
+  }
+
   /** Tours et places suivis en mémoire (essais : rien ne reste après la fin d'un tour). */
   tracked(): { tours: number; seats: number } {
     return { tours: this.live.size, seats: this.seatsByChild.size }

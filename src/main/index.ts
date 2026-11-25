@@ -611,6 +611,7 @@ async function start(): Promise<void> {
     roles: roles.library,
     keepLive: (id) => children?.keepLive(id) ?? false,
     settleLoaded: (id, items) => roundtables?.settleLoaded(id, items) ?? [],
+    roundtableStep: (id) => roundtables?.stepActive(id) ?? false,
     // Agents vivants au plus : le réglage, sauf `BOBINE_MAX_LIVE` (essais, e2e `filles`, fiche 102).
     maxLive: imposedLiveLimit(process.env),
     ...conversationRelease({ terminals, browser, browserTools }),

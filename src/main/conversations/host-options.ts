@@ -47,6 +47,7 @@ export interface HostOptionsInput {
     | 'memory'
     | 'agentHome'
     | 'roles'
+    | 'roundtableStep'
   > &
     Partial<Pick<ConversationManagerOptions, 'conversationsDir'>>
   settings: SettingsStore
@@ -142,6 +143,8 @@ export function hostOptions(input: HostOptionsInput): AgentHostOptions {
       record.space === 'discussion' || record.roundtable
         ? []
         : roleToolModules(app.toolModules, record.role),
+    // Synthèse ou décision d'un tour de table (fiche 285) : en lecture seule le temps de ce tour.
+    stepReadOnly: () => app.roundtableStep?.(record.id) ?? false,
     ...(record.roundtable
       ? { readOnly: 'participant' as const }
       : record.role?.readOnly

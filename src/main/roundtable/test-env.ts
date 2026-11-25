@@ -113,6 +113,7 @@ export async function roundtableEnv(options: EnvOptions = {}) {
     toolModules: [childrenToolsModule(() => late.children)],
     keepLive: (id) => late.children?.keepLive(id) ?? false,
     settleLoaded: (id, items) => late.roundtables?.settleLoaded(id, items) ?? [],
+    roundtableStep: (id) => late.roundtables?.stepActive(id) ?? false,
     settingsFile: join(root, 'settings.json'),
     conversationsDir: join(root, 'conversations'),
     defaultWorkspace: repo,
