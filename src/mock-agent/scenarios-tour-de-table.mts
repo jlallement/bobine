@@ -106,6 +106,10 @@ const letters = (text: string, outcome: 'answered' | 'absent') =>
   [...text.matchAll(new RegExp(`participant="([A-E])" outcome="${outcome}"`, 'g'))].map((m) => m[1])
 
 /** Synthèse (six rubriques) ou décision (sept), d'après le bloc reçu ; sinon une réponse simple. */
+/** Message de l'app qui demande la synthèse ou la décision. */
+const isStep = (text: string) =>
+  /<bobine_roundtable_[0-9a-f]+ step="(?:synthesis|verdict)"/.test(text)
+
 function arbiter(text: string): Step[] {
   const step = /<bobine_roundtable_[0-9a-f]+ step="(synthesis|verdict)"/.exec(text)?.[1]
   if (!step) return [{ kind: 'text', text: 'Réponse ordinaire, hors tour de table.' }]
@@ -295,6 +299,56 @@ export const roundtableScenarios: Record<string, Scenario> = {
     description:
       'Conversation qui arbitre un tour de table : à la demande de synthèse, les six rubriques en citant les lettres reçues, puis les lettres présentes et absentes et le nombre d’avertissements « dossier changé » ; à la demande de décision, sept rubriques ; sinon une réponse simple',
     steps: [{ kind: 'computed', build: ({ text }) => arbiter(text) }]
+  },
+  'arbitre-ecrit': {
+    description:
+      'Conversation qui arbitre et écrit sans demander (comme OpenCode par défaut) : à la demande de synthèse ou de décision, écrit `notes-arbitre.md`, puis répond comme `synthese-tour-de-table` ; le garde-fou de l’étape voit le dossier changé (fiche 285, S1)',
+    steps: [
+      {
+        kind: 'computed',
+        build: ({ text }) =>
+          isStep(text)
+            ? [
+                { kind: 'write-file', path: 'notes-arbitre.md', content: 'prise de notes\n' },
+                ...arbiter(text)
+              ]
+            : arbiter(text)
+      }
+    ]
+  },
+  'arbitre-demande-ecrire': {
+    description:
+      'Conversation qui arbitre et demande à écrire `notes-arbitre.md` (`kind: edit`, comme Bob) à la demande de synthèse ou de décision, et à un message qui contient « notes » : refusé d’office pendant l’étape, carte ordinaire en dehors (fiche 285, S1)',
+    steps: [
+      {
+        kind: 'computed',
+        build: ({ text }) =>
+          !isStep(text) && !/notes/i.test(text)
+            ? arbiter(text)
+            : [
+                {
+                  kind: 'permission',
+                  toolCall: {
+                    toolCallId: 'arbiter_edit',
+                    title: 'Writing file notes-arbitre.md',
+                    kind: 'edit'
+                  },
+                  options: [
+                    { optionId: 'allow', name: 'Allow once', kind: 'allow_once' },
+                    { optionId: 'reject', name: 'Reject', kind: 'reject_once' }
+                  ],
+                  branches: {
+                    allow: [
+                      { kind: 'write-file', path: 'notes-arbitre.md', content: 'écrit\n' },
+                      { kind: 'text', text: 'Écriture acceptée.\n' },
+                      ...arbiter(text)
+                    ],
+                    reject: [{ kind: 'text', text: 'Écriture refusée.\n' }, ...arbiter(text)]
+                  }
+                }
+              ]
+      }
+    ]
   },
   replique: {
     description:

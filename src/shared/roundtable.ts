@@ -192,7 +192,18 @@ export interface RoundtableStep {
   /** Ce qu'a consommé ce tour de l'agent, tel qu'il l'a communiqué. */
   usage?: UsageDigest
   detail?: string
+  /**
+   * Le dossier a changé pendant le tour de l'étape (agent qui écrit sans demander, fiche 285, S1) :
+   * la synthèse ou la décision devait se faire en lecture seule.
+   */
+  changedFolder?: true
+  /** Quelques fichiers touchés, lus dans `git status` (au plus `STEP_CHANGED_FILES`). */
+  changedFiles?: string[]
 }
+
+/** Fichiers touchés gardés sur une étape qui a changé le dossier, au plus. */
+export const STEP_CHANGED_FILES = 8
+const STEP_FILE_CHARS = 200
 
 /** L'élément `roundtable` du fil de la conversation en cours, remplacé sur place. */
 export interface Roundtable {
@@ -268,6 +279,8 @@ export type RoundtableEvent =
   | { type: 'step-failed'; step: RoundtableStepKind; detail?: string }
   /** Coût communiqué après coup (Bob) : remplace la consommation du tour de l'agent. */
   | { type: 'step-usage'; step: RoundtableStepKind; usage: UsageDigest }
+  /** Le dossier a changé pendant le tour de l'étape (constaté après sa réponse). */
+  | { type: 'step-changed-folder'; step: RoundtableStepKind; files: string[] }
   /** « Faire réagir les participants » : une seule fois par tour. */
   | { type: 'rebuttal'; at: number }
   | {
@@ -515,6 +528,18 @@ function reduceStep(
       return running ? withStep(rt, key, { ...step, state: 'held' }) : rt
     case 'step-usage':
       return withStep(rt, key, { ...step, usage: event.usage })
+    case 'step-changed-folder': {
+      // Constaté à la fin du tour : l'étape a répondu (ou échoué) entre-temps.
+      if (step.state === 'waiting') return rt
+      const files = event.files
+        .slice(0, STEP_CHANGED_FILES)
+        .map((f) => (f.length > STEP_FILE_CHARS ? `${f.slice(0, STEP_FILE_CHARS - 1)}…` : f))
+      return withStep(rt, key, {
+        ...step,
+        changedFolder: true,
+        ...(files.length ? { changedFiles: files } : {})
+      })
+    }
     case 'step-failed':
       if (!running) return rt
       return {
@@ -646,6 +671,7 @@ export function reduceRoundtable(rt: Roundtable, event: RoundtableEvent): Roundt
     case 'step-answered':
     case 'step-failed':
     case 'step-usage':
+    case 'step-changed-folder':
       return reduceStep(rt, event)
     default: {
       const next = reduceSeat(rt, event)

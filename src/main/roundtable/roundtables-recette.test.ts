@@ -3,7 +3,7 @@
  * l'agent factice : arrêt cohérent, fiches des participants, corbeille, étiquette de la synthèse,
  * erreurs typées, durée après « Relancer », titres lisibles.
  */
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -391,5 +391,55 @@ describe('contre-revue : tests qui prouvent', () => {
     expect(received).not.toContain('its conversation was deleted')
     expect(received).toContain('stopped by the user')
     rmSync(lock)
+  })
+})
+
+describe('recette réelle : arbitre en lecture seule pendant l’étape (S1)', () => {
+  it('demande d’écriture pendant la synthèse : refusée d’office ; après, une carte ordinaire', async () => {
+    const { env, mother } = await setup({ lead: 'arbitre-demande-ecrire' })
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    expect(env.replies(mother).at(-1)).toContain('Écriture refusée.')
+    expect(existsSync(join(env.repo, 'notes-arbitre.md'))).toBe(false)
+    expect(env.roundtables.stepActive(mother)).toBe(false)
+    // Hors de l'étape, la conversation redevient normale : la demande attend l'utilisateur.
+    void env.manager.prompt(mother, 'Prends des notes')
+    await env.waitFor(
+      () =>
+        env.events.some(
+          (e) => e.conversationId === mother && e.event.type === 'permission-request'
+        ),
+      'carte d’autorisation ordinaire'
+    )
+    const request = env.events.findLast(
+      (e) => e.conversationId === mother && e.event.type === 'permission-request'
+    )?.event
+    if (request?.type !== 'permission-request') throw new Error('pas de demande')
+    env.manager.respondPermission(mother, request.requestId, 'allow')
+    await env.waitFor(
+      () => env.replies(mother).at(-1)?.includes('Écriture acceptée.') ?? false,
+      'écriture acceptée hors étape'
+    )
+  })
+
+  it('écriture sans demander pendant la synthèse : l’étape dit le dossier changé et le fichier', async () => {
+    const { env, mother } = await setup({ lead: 'arbitre-ecrit' })
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    await env.roundtables.stepFolderChecked(mother)
+    await env.waitFor(() => !!env.rt(mother).synthesis?.changedFolder, 'dossier changé dit')
+    expect(env.rt(mother).synthesis).toMatchObject({
+      state: 'answered',
+      changedFolder: true,
+      changedFiles: ['notes-arbitre.md']
+    })
+  })
+
+  it('synthèse sans écriture : rien n’est signalé', async () => {
+    const { env, mother } = await setup()
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    await env.roundtables.stepFolderChecked(mother)
+    expect(env.rt(mother).synthesis?.changedFolder).toBeUndefined()
   })
 })

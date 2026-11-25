@@ -63,6 +63,7 @@ import { refusalOf, roundtableOptions, type ParticipantMode } from './options'
 import { participantRole } from './participant-role'
 import { reportReply, stepReply, turnReply } from './readings'
 import { SeatEvents, type SeatRef } from './seat-events'
+import type { StepFolder } from './step-folder'
 import { MotherSteps, titleOf } from './steps'
 import { IdleWaiters } from './idle-waiters'
 
@@ -104,6 +105,8 @@ export interface RoundtablesDeps {
   dropHeld?: (conversationId: string, roundtableId: string) => void
   /** Mode installé pour le rôle « Participant » (décision C3) ; absent : aucun. */
   participantMode?: ParticipantMode
+  /** Empreinte du dossier autour de la synthèse et de la décision (S1) ; absent : aucune. */
+  folder?: StepFolder
   /** Aléa du tirage des lettres (`Math.random` en vrai). */
   random?: () => number
   now?: () => number
@@ -182,6 +185,7 @@ export class Roundtables implements RoundtableService {
       tours: (motherId) => this.tours(motherId),
       textOf: (rt, kind, letter) => this.textOf(rt, kind, letter as RoundtableLetter),
       watchesSettled: (rt) => this.watchesSettled(rt),
+      ...(deps.folder ? { folder: deps.folder } : {}),
       gone: (childId) => !!childId && !this.exists(childId),
       now: () => this.now()
     })
@@ -219,6 +223,11 @@ export class Roundtables implements RoundtableService {
   /** Synthèse ou décision en cours dans cette conversation (son tour est en lecture seule). */
   stepActive(motherId: string): boolean {
     return this.steps.stepActive(motherId)
+  }
+
+  /** Comparaison du dossier de la dernière étape finie (essais). */
+  stepFolderChecked(motherId: string): Promise<void> {
+    return this.steps.folderChecked(motherId)
   }
 
   /** Tours et places suivis en mémoire (essais : rien ne reste après la fin d'un tour). */
