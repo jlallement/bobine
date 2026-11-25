@@ -286,7 +286,10 @@ async function nominal(scheme) {
         await affirm(ui, '285-participants', [
           probes.custom(
             'cinq cochés, les autres désactivés avec leur raison',
-            `const opts = [...document.querySelectorAll('[data-testid=roundtable-option]')]
+            // Seulement les agents de l'essai : ce qui est installé sur la machine (Bob, OpenCode)
+            // ne change pas le résultat (un agent absent n'est pas proposé du tout).
+            `const mine = [${JSON.stringify(L('profiles.mock.label'))}, ${JSON.stringify(PEER())}]
+            const opts = [...document.querySelectorAll('[data-testid=roundtable-option]')].filter((o) => mine.some((m) => o.textContent.includes(m)))
             const off = opts.filter((o) => o.getAttribute('aria-selected') !== 'true')
             return { ok: opts.filter((o) => o.getAttribute('aria-selected') === 'true').length === 5 && off.length > 0 && off.every((o) => o.getAttribute('aria-disabled') === 'true' && o.title === ${JSON.stringify(L('roundtable.menu.full'))}), detail: off.map((o) => o.textContent + ':' + o.getAttribute('aria-disabled')).join(', ') }`
           ),

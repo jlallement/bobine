@@ -35,7 +35,7 @@ fichier.
 
 « 3 participants ▾ » ouvre un menu à cases : les modèles utilisés récemment d'abord, puis
 **Autres modèles…** pour chercher dans la liste complète. Un agent qui ne laisse pas choisir son
-modèle (IBM Bob) tient sur une ligne. De deux à cinq participants ; au-delà, les autres cases se
+modèle (IBM Bob) tient sur une ligne. Un agent absent de cet ordinateur n'est pas proposé. De deux à cinq participants ; au-delà, les autres cases se
 désactivent.
 
 Chaque case est retenue aussitôt, pour ce tour et les suivants : il n'y a rien à enregistrer. La

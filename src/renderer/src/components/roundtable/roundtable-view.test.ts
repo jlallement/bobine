@@ -165,15 +165,20 @@ describe('menu des participants', () => {
     ])
   })
 
-  it('agent indisponible : sa case désactivée avec sa raison', () => {
+  it('agent non installé : absent du menu ; déjà retenu, en tête avec sa raison', () => {
     const opts = options()
     opts.agents[1] = {
       ...(opts.agents[1] as RoundtableAgentOption),
       available: false,
       reason: 'Non installé'
     }
-    const entry = menuEntries(opts, []).main.find((e) => e.agentLabel === 'Agent B')
-    expect(entry).toMatchObject({ disabled: 'unavailable', reason: 'Non installé' })
+    const all = (choices: RoundtableChoice[]) => {
+      const { main, others } = menuEntries(opts, choices)
+      return [...main, ...others]
+    }
+    expect(all([]).some((e) => e.agentLabel === 'Agent B')).toBe(false)
+    const kept = all([{ profileId: 'agent-b' }]).find((e) => e.agentLabel === 'Agent B')
+    expect(kept).toMatchObject({ checked: true, reason: 'Non installé' })
   })
 
   it('aucune mention de gratuité ni de prix dans les cases', () => {

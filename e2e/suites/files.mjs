@@ -224,7 +224,9 @@ export async function filesSuite(scheme) {
         )
         // Retour à src/app.ts (la suite cherche dedans) par son lien du fil.
         await ui.click(`document.querySelector('[data-testid=file-link]')`)
-        await ui.waitFor(showing('src/app.ts'))
+        // Le chemin de la vue change avant que le code du fichier soit lu et rendu : attendre le
+        // code lui-même (ligne demandée par le lien), sinon `focus()` part sur un élément absent.
+        await ui.waitFor(`${showing('src/app.ts')} && ${ui.$('file-code')}?.dataset.asked === '3'`)
 
         // ⌘F dans le code : premier résultat dès la frappe, « 1 sur N ».
         await ui.ev(`${ui.$('file-code')}.focus()`)

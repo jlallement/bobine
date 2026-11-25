@@ -33,7 +33,7 @@ more than 8,000 characters is refused too: attach the details as a file.
 
 “3 participants ▾” opens a checkbox menu: recently used models first, then **Other models…** to
 search the whole list. An agent that does not let you choose its model (IBM Bob) takes a single
-line. Two to five participants; beyond that, the other boxes are disabled.
+line. An agent missing from this computer is not offered. Two to five participants; beyond that, the other boxes are disabled.
 
 Every box is kept at once, for this roundtable and the next ones: nothing to save. The first time,
 the line says “Choose participants”, and ↩ opens the menu.

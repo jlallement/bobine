@@ -312,7 +312,11 @@ function orphanEntry(choice: RoundtableChoice, options: RoundtableOptions): Menu
     // Décocher retire le couple tel qu'il est retenu (modèle compris).
     modelChoice: !!choice.model,
     checked: true,
-    reason: i18next.t(trouble === 'gone' ? 'roundtable.menu.gone' : 'roundtable.menu.modelGone')
+    reason:
+      trouble === 'unavailable'
+        ? (options.agents.find((a) => a.profileId === choice.profileId)?.reason ??
+          i18next.t('roundtable.menu.gone'))
+        : i18next.t(trouble === 'gone' ? 'roundtable.menu.gone' : 'roundtable.menu.modelGone')
   }
 }
 
@@ -324,6 +328,9 @@ function listedEntries(
   const main: MenuEntry[] = []
   const others: MenuEntry[] = []
   for (const agent of options?.agents ?? []) {
+    // Agent absent de cette machine (non installé) : pas proposé du tout, on ne propose pas ce
+    // qu'on ne peut pas choisir. Déjà retenu, il reste en tête comme « orphelin », avec sa raison.
+    if (!agent.available) continue
     if (!choosesModel(agent)) {
       main.push(entryOf(agent, { profileId: agent.profileId }, chosen, full))
       continue
