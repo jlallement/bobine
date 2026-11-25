@@ -182,7 +182,7 @@ describe('garde-fou des rôles en lecture seule (fiche 223)', () => {
     expect(s.changed).toEqual([])
   })
 
-  it('fiche 285 : participants d’un même tour — un outil des autres ne les rend pas « partagés », un écart est dit à tous ceux qui se chevauchent', async () => {
+  it('fiche 285 : participants d’un même tour — un outil des autres ne les rend pas « partagés », chacun dont le tour couvre l’écriture la voit lui-même', async () => {
     let folder = 'propre'
     const run: Run = async (_file, args) => ({
       code: 0,

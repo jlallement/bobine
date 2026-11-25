@@ -100,11 +100,9 @@ export class MotherSteps {
 
   /** La conversation a une demande de ce tour en cours de réponse. */
   answeringFor(motherId: string, roundtableId: string): boolean {
-    // En route aussi (avant son `user-message`) : un arrêt doit la couper.
-    return (
-      this.answering.get(motherId)?.roundtableId === roundtableId ||
-      this.sending.get(motherId)?.roundtableId === roundtableId
-    )
+    // Une demande encore en route n'a pas besoin d'être coupée ici : arrivée après l'arrêt, elle
+    // est annulée à son départ (`sent`).
+    return this.answering.get(motherId)?.roundtableId === roundtableId
   }
 
   forget(motherId: string): void {

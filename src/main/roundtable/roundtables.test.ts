@@ -269,6 +269,10 @@ describe('tour de table : réplique et décision (fiche 285, lot 3)', () => {
     const sent = env
       .users(a ?? '')
       .find((u) => u.from?.kind === 'roundtable' && u.from.step === 'rebuttal')
+    // La réplique retenue est bien le tour de la réplique, pas « Et une autre » mis en file avant.
+    const seatA = env.rt(mother).seats.find((s) => s.childId === a)
+    expect(seatA?.rebuttal?.askedAt).toBe(sent?.at)
+    expect(seatA?.rebuttal?.stance).toBe('maintains')
     expect(sent?.from).toMatchObject({ kind: 'roundtable', id, step: 'rebuttal' })
     expect(sent?.text).toContain('You are participant')
     expect(env.users(b ?? '').at(-1)?.from).toMatchObject({ step: 'rebuttal' })

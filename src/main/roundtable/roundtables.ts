@@ -488,15 +488,16 @@ export class Roundtables implements RoundtableService {
     this.idle.release(id)
     const seat = this.seatsByChild.get(id)
     if (seat) {
-      // Rien de figé dans l'élément (corbeille, restauration, effacement) : l'interface lit
-      // l'existence de la conversation. Seul un participant au travail est arrêté.
+      // Rien de figé dans l'élément (corbeille, restauration, effacement) : l'absence se constate
+      // à la construction de la synthèse, et l'interface lit l'existence de la conversation. Un
+      // participant au travail est seulement arrêté (son agent l'est avec sa conversation).
       const rt = this.read(seat.motherId, seat.roundtableId)
       const at = this.now()
       if (rt?.phase === 'collecting') {
         this.apply(seat.motherId, seat.roundtableId, {
           type: 'seat-stopped',
           letter: seat.letter,
-          reason: 'removed',
+          reason: 'user',
           at
         })
       } else if (rt?.phase === 'rebutting') {
@@ -504,7 +505,7 @@ export class Roundtables implements RoundtableService {
           type: 'rebuttal-seat',
           letter: seat.letter,
           state: 'stopped',
-          stopped: 'removed',
+          stopped: 'user',
           at
         })
       }

@@ -323,3 +323,73 @@ describe('contre-revue : question retenue puis arrêt (N1, N12)', () => {
     rmSync(lock)
   })
 })
+
+describe('contre-revue : tests qui prouvent', () => {
+  it('jeton : un ancien lancement qui échoue après son départ ne met pas en erreur la relance', async () => {
+    const lock = lockFile()
+    const { env, mother } = await setup({
+      profiles: (mock) => [mock('lent', 'avis-participant', ['--verrou-fin-de-tour', lock])]
+    })
+    const failures: ((error: unknown) => void)[] = []
+    const start = env.children.start.bind(env.children)
+    env.children.start = async (motherId, request, by) => {
+      if (request.launchFailed) failures.push(request.launchFailed)
+      return start(motherId, request, by)
+    }
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [choice('lent', 'factice-rapide'), choice('lent', 'factice-precis')]
+    })
+    const id = env.rt(mother).roundtableId
+    const first = env.rt(mother).seats[0]
+    await env.waitFor(() => env.rt(mother).seats[0]?.state === 'working', 'question partie')
+    await env.roundtables.stop(mother, id, first?.letter)
+    await env.roundtables.relaunch(mother, id, first?.letter ?? 'A')
+    expect(env.rt(mother).seats[0]?.state).toBe('waiting')
+    // L'ancien lancement (le premier) échoue maintenant, pendant la relance.
+    failures[0]?.(new Error('ancien tour en échec'))
+    expect(env.rt(mother).seats[0]?.state).not.toBe('error')
+    rmSync(lock)
+  })
+
+  it('modèle relu au départ de la question : un écart met la place en erreur, sa question n’est pas suivie', async () => {
+    const { env, mother } = await setup({
+      profiles: (mock) => [mock('demarre', 'avis-participant', ['--demarrage-lent', '600'])]
+    })
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [FAST, choice('demarre', 'factice-rapide')]
+    })
+    const seat = () => env.rt(mother).seats.find((s) => s.profileId === 'demarre')
+    expect(seat()?.state).toBe('waiting')
+    // Ce que pose l'hôte si la question part avec un autre modèle que celui vérifié.
+    env.manager.post(seat()?.childId ?? '', {
+      type: 'user-message',
+      text: QUESTION,
+      model: { id: 'factice-precis', name: 'Factice précis' }
+    })
+    expect(seat()).toMatchObject({ state: 'error', error: 'model-not-applied' })
+  })
+
+  it('participant mis à la corbeille pendant le recueil puis restauré : la synthèse ne le dit pas supprimé', async () => {
+    const lock = lockFile()
+    const { env, mother } = await setup({
+      lead: 'echo',
+      profiles: (mock) => [mock('lent', 'avis-participant', ['--verrou-fin-de-tour', lock])]
+    })
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [FAST, PRECISE, choice('lent', 'factice-rapide')]
+    })
+    const slow = () => env.rt(mother).seats.find((s) => s.profileId === 'lent')
+    await env.waitFor(() => slow()?.state === 'working', 'participant lent au travail')
+    const childId = slow()?.childId ?? ''
+    await env.manager.delete(childId, { fromAgent: false })
+    env.manager.restoreFromTrash(childId)
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    const received = env.replies(mother).at(-1) ?? ''
+    expect(received).not.toContain('its conversation was deleted')
+    expect(received).toContain('stopped by the user')
+    rmSync(lock)
+  })
+})
