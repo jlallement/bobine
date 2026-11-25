@@ -682,8 +682,14 @@ async function degraded(scheme) {
           'synthèse sans attendre : le lent arrêté'
         )
         // Un écrivain parmi cinq (S1) : un seul avis du dossier modifié, une seule ligne marquée.
+        // Mesuré carte posée : la synthèse rendue, la carte repliée, puis rouverte (ses lignes ne
+        // sont rendues qu'ouverte) ; jamais un clic « au cas où » qui dépend de la machine.
         await ui.waitFor(`!!${ui.$('roundtable-folder-changed')}`, 20_000)
-        await ui.ev(`${ui.$('roundtable-head-toggle')}?.click(), true`).catch(() => {})
+        await ui.waitFor(`${ui.$('roundtable-card')}?.dataset.collapsed === 'true'`, 60_000)
+        await ui.click(ui.$('roundtable-head-toggle'))
+        await ui.waitFor(
+          `document.querySelector('[data-testid=roundtable-card]').querySelectorAll('[data-testid=roundtable-row]').length === 5`
+        )
         await affirm(ui, '285-avis-dossier', [
           probes.custom(
             'un avis par tour, une ligne marquée (Delta)',
