@@ -28,6 +28,8 @@ What changes for you, version by version. Shown in Settings › About.
   opening an empty one.
 - **Recent models**: a model no longer enters them just by being picked or when it was refused,
   only after it answered (roundtable participants menu, “Continue with another agent”).
+- **First launch with `bobine <folder>`**: the welcome’s “Where to work?” step offers that folder
+  first (“Use this folder”).
 
 ## 1.2.0-beta.1 — November 25, 2026
 

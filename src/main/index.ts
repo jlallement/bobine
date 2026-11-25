@@ -826,6 +826,7 @@ async function start(): Promise<void> {
     cwd: neutralFolder,
     userData: app.getPath('userData'),
     workspaceOf: (id) => conversations.workspaceOf(id),
+    launchFolder: () => launch.pendingFolder,
     // Modèle de la puce de la conversation de l'accueil, pour l'essai (fiche 245, D16).
     modelOf: (id, profileId) =>
       conversations.profileOf(id)?.id === profileId

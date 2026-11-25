@@ -69,6 +69,20 @@ describe('accueil du premier lancement, côté main (fiche 188)', () => {
     expect(onboarding.state()).toMatchObject({ due: true, agents: [summary] })
   })
 
+  it('`bobine <dossier>` au premier lancement : le dossier demandé est proposé par l’accueil (E4)', () => {
+    const folder = mkdtempSync(join(tmpdir(), 'bobine-e4-'))
+    expect(setup({ launchFolder: () => folder }).onboarding.state().launchFolder).toBe(folder)
+    // Dossier absent ou aucune demande : rien de proposé.
+    expect(
+      setup({ launchFolder: () => join(folder, 'absent') }).onboarding.state()
+    ).not.toHaveProperty('launchFolder')
+    expect(setup().onboarding.state()).not.toHaveProperty('launchFolder')
+    // Accueil pas à montrer : rien non plus.
+    expect(
+      setup({ decision: { due: false }, launchFolder: () => folder }).onboarding.state()
+    ).not.toHaveProperty('launchFolder')
+  })
+
   it('pas à montrer : aucun agent demandé, rien d’écrit', () => {
     const summaries = vi.fn(() => [summary])
     const { onboarding, setOnboarding } = setup({ decision: { due: false }, summaries })

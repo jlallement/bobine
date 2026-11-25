@@ -391,3 +391,8 @@
   align-items: center;
   gap: 5px;
 }
+
+/* Dossier demandé au lancement (E4) : un chemin long se coupe n'importe où. */
+.onboarding-path {
+  overflow-wrap: anywhere;
+}

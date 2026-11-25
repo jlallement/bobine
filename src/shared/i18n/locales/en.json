@@ -5058,6 +5058,8 @@
       "title": "Where to work?",
       "subtitle": "The agent reads and edits files in this folder, with your approval.",
       "subtitleWithoutAsking": "The agent reads and edits files in this folder without asking for permission: that’s its default setting.",
+      "launchTitle": "The folder you asked for",
+      "useLaunch": "Use this folder",
       "projectTitle": "An existing project",
       "projectHelp": "Preferably a git repository.",
       "choose": "Choose…",

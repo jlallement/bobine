@@ -242,9 +242,10 @@ export function ActionLine(props: {
   title: string
   help?: ReactNode
   children?: ReactNode
+  testId?: string
 }) {
   return (
-    <div className="onboarding-line top">
+    <div className="onboarding-line top" data-testid={props.testId}>
       <span className="onboarding-line-icon">{props.icon}</span>
       <div className="grow" style={{ minWidth: 0 }}>
         <div className="onboarding-line-title">{props.title}</div>

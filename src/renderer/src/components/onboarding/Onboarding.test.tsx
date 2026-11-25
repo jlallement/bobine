@@ -21,9 +21,14 @@ const BOB = { id: 'bob', label: 'IBM Bob', available: false, reason: 'Commande `
 let resolveCheck: (result: AgentReadiness) => void = () => {}
 let api: Record<string, ReturnType<typeof vi.fn>>
 
-function mount(agents: ProfileSummary[] = [MOCK, BOB as ProfileSummary]) {
+function mount(agents: ProfileSummary[] = [MOCK, BOB as ProfileSummary], launchFolder?: string) {
   api = {
-    state: vi.fn(async () => ({ due: true, agents, trialFolder: '~/Bobine' })),
+    state: vi.fn(async () => ({
+      due: true,
+      agents,
+      trialFolder: '~/Bobine',
+      ...(launchFolder ? { launchFolder } : {})
+    })),
     check: vi.fn(
       (_request: CheckRequest) =>
         new Promise<AgentReadiness>((resolve) => {
@@ -50,8 +55,8 @@ afterEach(() => {
   window.api = original
 })
 
-async function setup(agents?: ProfileSummary[]) {
-  mount(agents)
+async function setup(agents?: ProfileSummary[], launchFolder?: string) {
+  mount(agents, launchFolder)
   const hook = renderHook(() => useOnboarding({ conversationId: 'c1', pageOpen: false }))
   await waitFor(() => expect(hook.result.current.visible).toBe(true))
   const configure = vi.fn(async () => undefined)
@@ -104,6 +109,35 @@ describe('accueil du premier lancement (fiche 188)', () => {
     // Toujours à l'étape Connexion : Échap n'a rien passé.
     expect(screen.getByTestId('onboarding-back-agent')).toBeTruthy()
     expect(api['finish']).not.toHaveBeenCalled()
+  })
+
+  it('`bobine <dossier>` : « Où travailler ? » propose d’abord le dossier demandé (E4)', async () => {
+    const { configure, rerender } = await setup(undefined, '/projets/bricole')
+    await act(async () => fireEvent.click(screen.getByTestId('onboarding-continue')))
+    await act(async () => resolveCheck({ state: 'ready', level: 'connect', ms: 900 }))
+    rerender()
+    await act(async () => fireEvent.click(screen.getByTestId('onboarding-continue')))
+    rerender()
+    const line = screen.getByTestId('onboarding-launch-folder')
+    expect(line.textContent).toContain('/projets/bricole')
+    const use = screen.getByTestId('onboarding-use-launch-folder')
+    expect(use.className).toContain('primary')
+    expect(document.activeElement).toBe(use)
+    // « Choisir… » reste là, sans être le bouton principal.
+    expect(screen.getByTestId('onboarding-choose-folder').className).not.toContain('primary')
+    await act(async () => fireEvent.click(use))
+    expect(configure).toHaveBeenLastCalledWith({ workspace: '/projets/bricole' })
+  })
+
+  it('sans dossier demandé : « Choisir… » reste le bouton principal', async () => {
+    const { rerender } = await setup()
+    await act(async () => fireEvent.click(screen.getByTestId('onboarding-continue')))
+    await act(async () => resolveCheck({ state: 'ready', level: 'connect', ms: 900 }))
+    rerender()
+    await act(async () => fireEvent.click(screen.getByTestId('onboarding-continue')))
+    rerender()
+    expect(screen.queryByTestId('onboarding-launch-folder')).toBeNull()
+    expect(screen.getByTestId('onboarding-choose-folder').className).toContain('primary')
   })
 
   it('essai répondu par un autre modèle que celui de la conversation : l’écart est dit (fiche 245, D16)', async () => {

@@ -5288,6 +5288,8 @@
       "title": "Où travailler ?",
       "subtitle": "L’agent lit et modifie les fichiers de ce dossier, avec votre accord.",
       "subtitleWithoutAsking": "L’agent lit et modifie les fichiers de ce dossier sans demander d’autorisation : c’est son réglage par défaut.",
+      "launchTitle": "Le dossier demandé",
+      "useLaunch": "Utiliser ce dossier",
       "projectTitle": "Un projet existant",
       "projectHelp": "De préférence un dépôt git.",
       "choose": "Choisir…",

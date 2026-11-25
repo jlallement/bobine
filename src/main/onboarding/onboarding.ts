@@ -9,7 +9,7 @@
  * message, supprimées après, retentées au lancement suivant ; l'agent est arrêté sur-le-champ si
  * l'app se ferme ou si la fenêtre disparaît.
  */
-import { existsSync, mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync, statSync } from 'node:fs'
 import { removeQuietly } from './scratch'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -67,6 +67,8 @@ export interface OnboardingDeps {
   modelOf?: (conversationId: string, profileId: string) => RequestedModel | undefined
   /** Dossier d'une conversation (pour ses suggestions) ; lève si aucun n'est choisi. */
   workspaceOf: (conversationId: string) => string
+  /** Dossier d'un `bobine <dossier>` qui attend la fin de l'accueil (E4). */
+  launchFolder?: () => string | undefined
   /** Lance une commande dans le terminal de l'app de cette conversation ; rend l'onglet. */
   runInTerminal: (conversationId: string, cwd: string, command: string) => string
   /** Où créer le dossier d'essai (`~/Bobine`), et sous quoi il doit rester (le dossier personnel). */
@@ -85,6 +87,14 @@ export interface OnboardingDeps {
   recordUsage?: (row: TurnRow) => void
   /** Essai réussi : l'agent est prêt (connexion faite), son quota peut être relu (fiche 205). */
   onReady?: (profileId: string) => void
+}
+
+const isFolder = (path: string): boolean => {
+  try {
+    return statSync(path).isDirectory()
+  } catch {
+    return false
+  }
 }
 
 export class Onboarding {
@@ -109,10 +119,13 @@ export class Onboarding {
 
   state(): OnboardingState {
     const due = this.due()
+    // `bobine <dossier>` en attente de la fin de l'accueil (fiche 259, D36) : proposé d'abord (E4).
+    const launchFolder = due ? this.deps.launchFolder?.() : undefined
     return {
       due,
       agents: due ? this.deps.summaries() : [],
-      trialFolder: displayPath(this.deps.trialParent, homedir())
+      trialFolder: displayPath(this.deps.trialParent, homedir()),
+      ...(launchFolder && isFolder(launchFolder) ? { launchFolder } : {})
     }
   }
 

@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
@@ -15,6 +15,7 @@ import { L, MAIN_PORT, NEUTRAL_AGENT_ENV, check, mainProcess, sleep, withApp } f
 export async function onboardingSuite(scheme) {
   console.log(`\n— Accueil du premier lancement (${scheme})`)
   await fullJourney(scheme)
+  await launchFolder(scheme)
   await noAgentBeforeChoice(scheme)
   await terminalLogin(scheme)
   await ssoStuck(scheme)
@@ -234,6 +235,37 @@ async function fullJourney(scheme) {
     args
   )
   // Relancée, l'accueil ne revient pas : vérifié dans `parcours-premier-lancement`.
+}
+
+/**
+ * `bobine <dossier>` sur un profil neuf (évaluation du 2026-11-25, E4) : « Où travailler ? » propose
+ * d'abord le dossier demandé ; l'utiliser mène à l'essai dans ce dossier.
+ */
+async function launchFolder(scheme) {
+  const { userData, trial } = fresh()
+  const project = realpathSync(mkdtempSync(join(tmpdir(), 'bob-e2e-accueil-demande-')))
+  await withApp(
+    scheme,
+    async (ui) => {
+      await ui.waitFor(`!!${ui.$('onboarding')}`)
+      await ui.click(ui.$('onboarding-continue'))
+      await ui.waitFor(`!!${ui.$('onboarding-ready')}`)
+      await ui.click(ui.$('onboarding-continue'))
+      await ui.waitFor(`!!${ui.$('onboarding-choose-folder')}`)
+      await ui.shot('188-3b-dossier-demande')
+      const line = await ui.ev(`${ui.$('onboarding-launch-folder')}?.textContent ?? ''`)
+      check(line.includes(project), `dossier demandé proposé d’abord (${line})`)
+      await ui.click(ui.$('onboarding-use-launch-folder'))
+      // Étape Essai atteinte par le dossier demandé (le dossier transmis : essai du composant).
+      await ui.waitFor(`!!${ui.$('onboarding-send')}`)
+      check(true, 'dossier demandé utilisé : étape Essai')
+    },
+    userData,
+    'premier-essai',
+    env(trial),
+    [project]
+  )
+  rmSync(project, { recursive: true, force: true })
 }
 
 async function terminalLogin(scheme) {

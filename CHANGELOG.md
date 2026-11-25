@@ -30,6 +30,8 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   conversation vide.
 - **Modèles récents** : un modèle n’y entre plus au seul choix ou s’il a été refusé, seulement après
   avoir répondu (menu des participants du tour de table, « Continuer avec un autre agent »).
+- **Premier lancement avec `bobine <dossier>`** : l’étape « Où travailler ? » de l’accueil propose
+  d’abord ce dossier (« Utiliser ce dossier »).
 
 ## 1.2.0-beta.1 — 25 novembre 2026
 

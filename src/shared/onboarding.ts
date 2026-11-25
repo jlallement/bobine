@@ -11,6 +11,8 @@ export interface OnboardingState {
   agents: ProfileSummary[]
   /** Où le dossier d'essai serait créé, tel qu'à montrer (`~/Bobine`). */
   trialFolder: string
+  /** Dossier demandé au lancement (`bobine <dossier>`, E4), proposé d'abord par « Où travailler ? ». */
+  launchFolder?: string
 }
 
 /**

@@ -28,6 +28,7 @@ export function useOnboarding(options: { conversationId: string | null; pageOpen
   const [visible, setVisible] = useState(false)
   const [agents, setAgents] = useState<ProfileSummary[]>([])
   const [trialFolder, setTrialFolder] = useState('')
+  const [launchFolder, setLaunchFolder] = useState<string | undefined>(undefined)
   const [check, setCheck] = useState<CheckState>({ status: 'idle' })
   const [hints, setHints] = useState<FolderHints | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -42,6 +43,7 @@ export function useOnboarding(options: { conversationId: string | null; pageOpen
         if (!alive || !state.due) return
         setAgents(state.agents)
         setTrialFolder(state.trialFolder)
+        setLaunchFolder(state.launchFolder)
         setVisible(true)
       },
       () => {}
@@ -132,6 +134,8 @@ export function useOnboarding(options: { conversationId: string | null; pageOpen
     agents,
     /** Où le dossier d'essai serait créé, tel qu'à montrer. */
     trialFolder,
+    /** Dossier demandé au lancement (`bobine <dossier>`), proposé d'abord (E4). */
+    launchFolder,
     check,
     hints,
     error,

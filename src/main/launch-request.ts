@@ -85,6 +85,11 @@ export class LaunchController {
     return this.waiting.length > 0
   }
 
+  /** Dossier de la dernière demande en attente (proposé par l'accueil, E4). */
+  get pendingFolder(): string | undefined {
+    return this.waiting.at(-1)?.folder
+  }
+
   request(request: LaunchRequest): void {
     if (this.deps) void this.run(this.deps, request)
     else this.waiting.push(request)

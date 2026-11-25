@@ -5115,6 +5115,8 @@ export type FrResources = {
       readonly title: 'Où travailler ?'
       readonly subtitle: 'L’agent lit et modifie les fichiers de ce dossier, avec votre accord.'
       readonly subtitleWithoutAsking: 'L’agent lit et modifie les fichiers de ce dossier sans demander d’autorisation : c’est son réglage par défaut.'
+      readonly launchTitle: 'Le dossier demandé'
+      readonly useLaunch: 'Utiliser ce dossier'
       readonly projectTitle: 'Un projet existant'
       readonly projectHelp: 'De préférence un dépôt git.'
       readonly choose: 'Choisir…'

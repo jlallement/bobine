@@ -104,6 +104,8 @@ export function Onboarding(props: Props) {
         return (
           <FolderStep
             trialFolder={onboarding.trialFolder}
+            launchFolder={onboarding.launchFolder}
+            onLaunchFolder={useFolder}
             writesWithoutAsking={agent?.writesWithoutAsking === true}
             onChoose={() => void window.api.workspace.choose().then(useFolder, () => {})}
             onTrial={() =>
@@ -435,11 +437,15 @@ function Actions(props: { onOtherAgent: () => void; onSkip: () => void; onRetry?
  */
 function FolderStep(props: {
   trialFolder: string
+  /** `bobine <dossier>` : le dossier demandé, proposé d'abord (évaluation du 2026-11-25, E4). */
+  launchFolder: string | undefined
+  onLaunchFolder: (folder: string) => unknown
   writesWithoutAsking: boolean
   onChoose: () => void
   onTrial: () => void
 }) {
   const { t } = useTranslation()
+  const { launchFolder } = props
   const subtitle = props.writesWithoutAsking
     ? t('onboarding.folder.subtitleWithoutAsking')
     : t('onboarding.folder.subtitle')
@@ -447,15 +453,33 @@ function FolderStep(props: {
     <>
       <Title title={t('onboarding.folder.title')} subtitle={subtitle} />
       <div className="onboarding-card">
+        {launchFolder && (
+          <ActionLine
+            icon={<FolderOpen size={16} />}
+            title={t('onboarding.folder.launchTitle')}
+            // Chemin long, sans espace : coupé où il faut, jamais sous le bouton.
+            help={<span className="onboarding-path">{launchFolder}</span>}
+            testId="onboarding-launch-folder"
+          >
+            <button
+              className="btn primary"
+              onClick={() => props.onLaunchFolder(launchFolder)}
+              autoFocus
+              data-testid="onboarding-use-launch-folder"
+            >
+              {t('onboarding.folder.useLaunch')}
+            </button>
+          </ActionLine>
+        )}
         <ActionLine
           icon={<FolderOpen size={16} />}
           title={t('onboarding.folder.projectTitle')}
           help={t('onboarding.folder.projectHelp')}
         >
           <button
-            className="btn primary"
+            className={`btn ${launchFolder ? '' : 'primary'}`}
             onClick={props.onChoose}
-            autoFocus
+            autoFocus={!launchFolder}
             data-testid="onboarding-choose-folder"
           >
             {t('onboarding.folder.choose')}

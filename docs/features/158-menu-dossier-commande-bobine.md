@@ -76,3 +76,21 @@ Fait. Choix :
   pour le dossier demandé (Chromium place les options en tête de l'`argv`) : `userArguments` saute
   le premier argument qui n'est pas une option, test à l'appui ; e2e `command` lancé avec
   `--inspect`, presse-papiers relu patiemment et verrou `presse-papiers`. Suite e2e complète verte.
+
+## Journal — 2026-11-25 : premier lancement avec un dossier (évaluation de la 1.2.0-beta.1, E4)
+
+- Constat (17:42) : `bobine <dossier>` sur un profil neuf : l'accueil redemandait « Où travailler ? »
+  sans proposer le dossier donné (la demande attend la fin de l'accueil, fiche 259, D36), et
+  « Choisir… » ouvrait la fenêtre de macOS ailleurs.
+- Corrigé : l'état de l'accueil porte le dossier de la demande en attente (`launchFolder`, lu dans
+  `LaunchController.pendingFolder`, seulement s'il existe et si l'accueil est dû) ; « Où
+  travailler ? » le propose d'abord (« Le dossier demandé », bouton principal « Utiliser ce
+  dossier »), « Choisir… » et le dossier d'essai restent. Profil temporaire des essais inchangé
+  (l'accueil n'y est pas dû). À la fin de l'accueil, la demande ouvre toujours sa conversation dans
+  ce dossier (inchangé, fiche 259).
+- Non fait : « Choisir… » n'ouvre pas la fenêtre de macOS sur le dossier demandé (inutile une fois
+  qu'il est proposé).
+- Essais : `onboarding.test.ts` (état : dossier existant proposé, absent ou accueil pas dû : rien),
+  `Onboarding.test.tsx` (proposé d'abord, bouton principal, `configure({ workspace })` ; sans
+  dossier : « Choisir… » principal), e2e `onboarding` (scène `launchFolder`, capture
+  `188-3b-dossier-demande`, rouge avant).
