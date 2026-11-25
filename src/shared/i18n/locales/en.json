@@ -6315,7 +6315,9 @@
       "gone": "No longer exists: uncheck it",
       "modelGone": "Model unavailable: uncheck it",
       "arbiter": "It is this conversation’s model: it writes the synthesis",
-      "arbiterShort": "writes the synthesis"
+      "arbiterShort": "writes the synthesis",
+      "loadingModels": "{{agent}} · loading models…",
+      "defaultModel": "{{agent}} · default model"
     },
     "card": {
       "title": "Roundtable",

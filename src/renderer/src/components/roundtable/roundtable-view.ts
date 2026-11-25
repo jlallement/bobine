@@ -136,8 +136,17 @@ export interface ParticipantGroup {
 }
 
 /** Nom affiché d'un participant retenu : son modèle (nom court), sinon son agent. */
-export const choiceLabel = (choice: RoundtableChoice, agent: string): string =>
-  choice.model ? shortModelName(choice.model.name) : agent
+export const choiceLabel = (
+  choice: RoundtableChoice,
+  agent: string,
+  /** L'agent se choisit un modèle, mais aucun n'est retenu : « <agent> · modèle par défaut ». */
+  modelChoice = false
+): string =>
+  choice.model
+    ? shortModelName(choice.model.name)
+    : modelChoice
+      ? i18next.t('roundtable.menu.defaultModel', { agent })
+      : agent
 
 /** Destination d'un participant retenu, d'après ce que le main sait de son agent et de ses modèles. */
 function choiceDestination(
@@ -166,7 +175,7 @@ export function participantGroups(
       group = { agent: name, models: [], destinations: [] }
       groups.push(group)
     }
-    group.models.push(choiceLabel(choice, name))
+    group.models.push(choiceLabel(choice, name, !!agent?.modelChoice))
     const destination = choiceDestination(choice, agent)
     if (destination && !group.destinations.includes(destination))
       group.destinations.push(destination)
@@ -176,7 +185,9 @@ export function participantGroups(
 
 /** Un agent sans choix de modèle : son nom seul, jamais « X · par X ». */
 export const agentOnly = (group: ParticipantGroup): boolean =>
-  group.models.length === 1 && group.models[0] === group.agent
+  group.models.length === 1 &&
+  (group.models[0] === group.agent ||
+    group.models[0] === i18next.t('roundtable.menu.defaultModel', { agent: group.agent }))
 
 /**
  * Participants dans l'ordre du menu (B16) : la carte garde l'ordre des cases, pas celui des clics.
@@ -240,7 +251,7 @@ export interface MenuEntry {
   modelChoice: boolean
   checked: boolean
   /** Case désactivée : 5 déjà cochées, ou agent indisponible ; la raison est dite. */
-  disabled?: 'full' | 'unavailable' | 'arbiter'
+  disabled?: 'full' | 'unavailable' | 'arbiter' | 'loading'
   reason?: string
 }
 
@@ -270,7 +281,7 @@ function entryOf(
     return {
       key,
       choice,
-      label: choiceLabel(choice, agent.label),
+      label: choiceLabel(choice, agent.label, agent.modelChoice),
       agentLabel: agent.label,
       modelChoice: !!choice.model,
       checked,
@@ -294,7 +305,7 @@ function entryOf(
   return {
     key,
     choice,
-    label: choiceLabel(choice, agent.label),
+    label: choiceLabel(choice, agent.label, agent.modelChoice),
     agentLabel: agent.label,
     modelChoice: choosesModel(agent),
     checked,
@@ -358,6 +369,20 @@ function listedEntries(
     // avec sa raison : on comprend pourquoi il manque.
     const arbitrating = !agent.modelChoice && arbiter?.profileId === agent.profileId
     if (!agent.available && !arbitrating) continue
+    // Modèles pas encore connus (agent jamais lancé, contre-recette N2) : une ligne « chargement »,
+    // non cochable, que les modèles remplacent à leur arrivée, à la même place.
+    if (agent.modelChoice && !choosesModel(agent) && agent.modelsState === 'loading') {
+      main.push({
+        key: `loading:${agent.profileId}`,
+        choice: { profileId: agent.profileId },
+        label: i18next.t('roundtable.menu.loadingModels', { agent: agent.label }),
+        agentLabel: agent.label,
+        modelChoice: false,
+        checked: false,
+        disabled: 'loading'
+      })
+      continue
+    }
     if (!choosesModel(agent)) {
       main.push(entryOf(agent, { profileId: agent.profileId }, chosen, full, arbiter))
       continue

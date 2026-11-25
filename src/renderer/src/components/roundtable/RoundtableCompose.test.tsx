@@ -9,7 +9,11 @@ import type { ComponentProps } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AgentSnapshot } from '@shared/agent'
 import type { RoundtableChoice } from '@shared/roundtable'
-import type { RoundtableOptions, RoundtableStartResult } from '@shared/roundtable-ipc'
+import type {
+  RoundtableAgentOption,
+  RoundtableOptions,
+  RoundtableStartResult
+} from '@shared/roundtable-ipc'
 import css from '../../roundtable.css?raw'
 import styles from '../../styles.css?raw'
 import { Composer } from '../composer/Composer'
@@ -754,5 +758,67 @@ describe('barre de saisie repliée (GitHub, Linux à 760 px)', () => {
     expect(styles).toMatch(
       /:is\(\[data-fold='4'\], \[data-fold='5'\]\)\s*>\s*\.roundtable-toggle-slot\s*\{\s*display: none;/
     )
+  })
+})
+
+describe('modèles d’un agent pas encore connus (contre-recette N2)', () => {
+  const withA = (extra: Partial<RoundtableAgentOption>) => {
+    const opts = options()
+    opts.agents[0] = { ...(opts.agents[0] as RoundtableAgentOption), ...extra }
+    return opts
+  }
+  const rows = () =>
+    screen
+      .getAllByTestId('roundtable-option')
+      .map((o) => o.textContent?.replace(/[\u00a0\u202f]/g, ' '))
+
+  it('chargement, puis les modèles à la place de la ligne, sans réordonner le reste', async () => {
+    api.options
+      .mockReset()
+      .mockResolvedValueOnce(withA({ recent: [], others: [], modelsState: 'loading' }))
+      .mockResolvedValueOnce(withA({ recent: [], others: [], modelsState: 'loading' }))
+      .mockResolvedValueOnce(withA({ recent: [], others: [], modelsState: 'loading' }))
+      .mockResolvedValue(options())
+    const t = setup([b])
+    t.type('/roundtable Q')
+    fireEvent.click(screen.getByTestId('roundtable-participants'))
+    const loading = await screen.findByText('Agent A · chargement des modèles…', { exact: false })
+    const row = loading.closest('[data-testid=roundtable-option]') as HTMLElement
+    expect(row.getAttribute('aria-disabled')).toBe('true')
+    expect(rows().at(-1)).toContain('Agent B')
+    await waitFor(() => expect(rows()[0]).toContain('DeepSeek V4.1 Flash'), { timeout: 4000 })
+    // Les modèles arrivent là où était la ligne « chargement » ; Agent B reste en bas.
+    expect(rows().at(-1)).toContain('Agent B')
+  })
+
+  it('modèle par défaut : l’agent seul, avec un libellé explicite, cochable', async () => {
+    api.options.mockResolvedValue(withA({ recent: [], others: [], modelsState: 'default' }))
+    const t = setup([b])
+    t.type('/roundtable Q')
+    fireEvent.click(screen.getByTestId('roundtable-participants'))
+    const label = await screen.findByText('Agent A · modèle par défaut', { exact: false })
+    const row = label.closest('[data-testid=roundtable-option]') as HTMLElement
+    expect(row.getAttribute('aria-disabled')).toBeNull()
+    expect(row.textContent?.match(/Agent A/g)?.length).toBe(1)
+  })
+
+  it('menu fermé pendant le chargement : plus aucune relecture', async () => {
+    api.options.mockResolvedValue(withA({ recent: [], others: [], modelsState: 'loading' }))
+    const t = setup([b])
+    t.type('/roundtable Q')
+    fireEvent.click(screen.getByTestId('roundtable-participants'))
+    await screen.findByText('Agent A · chargement des modèles…', { exact: false })
+    await waitFor(() => expect(api.options.mock.calls.length).toBeGreaterThan(2), { timeout: 3000 })
+    fireEvent.keyDown(screen.getByTestId('roundtable-menu'), { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByTestId('roundtable-menu')).toBeNull())
+    const calls = api.options.mock.calls.length
+    // Horloges simulées : toute relecture programmée après la fermeture partirait ici.
+    vi.useFakeTimers()
+    try {
+      await act(async () => vi.advanceTimersByTimeAsync(5000))
+      expect(api.options.mock.calls.length).toBe(calls)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

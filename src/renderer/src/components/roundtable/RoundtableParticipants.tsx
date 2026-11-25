@@ -186,7 +186,9 @@ export function RoundtableParticipants({
                 </span>
               ) : (
                 // Un agent sans choix de modèle tient sur une ligne : son nom n'est pas répété.
-                entry.label !== entry.agentLabel && (
+                // « <agent> · modèle par défaut » ou « chargement » : l'agent est déjà dans le libellé.
+                entry.label !== entry.agentLabel &&
+                !!entry.choice.model && (
                   <span className="roundtable-option-agent">{entry.agentLabel}</span>
                 )
               )}

@@ -85,12 +85,13 @@ function ParticipantsTip({
             {groups.map((g) => (
               <span key={g.agent} className="roundtable-tip-line">
                 {agentOnly(g)
-                  ? g.destinations.length > 0
+                  ? // L'agent seul, ou « <agent> · modèle par défaut » (contre-recette N2).
+                    g.destinations.length > 0
                     ? t('roundtable.line.agentTo', {
-                        agent: g.agent,
+                        agent: g.models[0] ?? g.agent,
                         destination: listText(g.destinations)
                       })
-                    : g.agent
+                    : (g.models[0] ?? g.agent)
                   : g.destinations.length > 0
                     ? t('roundtable.line.byTo', {
                         models: listText(g.models),

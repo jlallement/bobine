@@ -72,8 +72,11 @@ export function useRoundtableCompose({
   const [menuOpen, setMenuOpenState] = useState(false)
   // Fermeture du menu : un second Échap tout de suite après ne retire pas le mode (B10).
   const closedAt = useRef(0)
+  // Chaque ouverture du menu : un nouveau délai pour les modèles qui se chargent.
+  const [openings, setOpenings] = useState(0)
   const setMenuOpen = useCallback((open: boolean) => {
     if (!open) closedAt.current = Date.now()
+    else setOpenings((n) => n + 1)
     setMenuOpenState(open)
   }, [])
   const [options, setOptions] = useState<RoundtableOptions | undefined>()
@@ -105,6 +108,7 @@ export function useRoundtableCompose({
   useEffect(() => {
     if (menuOpen) reload()
   }, [menuOpen, reload])
+  const shownOptions = useModelsLoading(options, menuOpen, openings, reload)
 
   const enter = useCallback(() => {
     if (!usable) return
@@ -225,7 +229,7 @@ export function useRoundtableCompose({
     blocked: !!config?.running,
     menuOpen,
     setMenuOpen,
-    options,
+    options: shownOptions,
     choices,
     state,
     toggle,
@@ -338,4 +342,50 @@ export function useComposerRoundtable(
         }
       : {}
   }
+}
+
+/** Relecture des modèles d'un agent en cours de chargement : environ toutes les secondes. */
+const MODELS_POLL_MS = 1000
+/** Au-delà, l'agent se propose seul, « modèle par défaut » (contre-recette N2). */
+const MODELS_LOADING_MS = 15_000
+
+/**
+ * Agent dont les modèles se chargent (`modelsState: 'loading'`) : tant que le menu est ouvert, les
+ * options sont relues toutes les secondes, 15 s au plus ; ensuite l'agent est traité comme
+ * `default`. Rien ne se relit menu fermé.
+ */
+function useModelsLoading(
+  options: RoundtableOptions | undefined,
+  menuOpen: boolean,
+  /** Numéro de l'ouverture du menu : le délai repart à chaque ouverture. */
+  opening: number,
+  reload: () => void
+): RoundtableOptions | undefined {
+  const loading = !!options?.agents.some((a) => a.modelsState === 'loading')
+  const since = useRef({ opening: -1, at: 0 })
+  // Ouverture dont le délai est écoulé (une autre ouverture repart de zéro).
+  const [expired, setExpired] = useState(-1)
+  const over = expired === opening
+  useEffect(() => {
+    if (!menuOpen || !loading || over) return
+    if (since.current.opening !== opening) since.current = { opening, at: Date.now() }
+    const left = MODELS_LOADING_MS - (Date.now() - since.current.at)
+    const timer = setTimeout(
+      () => (left <= MODELS_POLL_MS ? setExpired(opening) : reload()),
+      Math.max(0, Math.min(MODELS_POLL_MS, left))
+    )
+    return () => clearTimeout(timer)
+  }, [menuOpen, loading, over, opening, options, reload])
+  return useMemo(
+    () =>
+      over && options
+        ? {
+            ...options,
+            agents: options.agents.map((a) =>
+              a.modelsState === 'loading' ? { ...a, modelsState: 'default' as const } : a
+            )
+          }
+        : options,
+    [over, options]
+  )
 }

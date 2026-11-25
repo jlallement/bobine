@@ -178,6 +178,8 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | arbitre ; C’est le modèle de cette conversation : il fait la synthèse | arbiter ; It is this conversation’s model: it writes the synthesis | La conversation qui fait la synthèse ; jamais participante. |
 | <agent> a modifié des fichiers pendant la synthèse | <agent> changed files during the synthesis | Synthèse et décision en lecture seule ; dit si l’agent écrit quand même. |
 | synthèse non rendue ; décision non rendue | synthesis not given ; decision not given | Étape qui n’a pas pu partir (arbitre devenu participant…). |
+| <agent> · modèle par défaut ; <agent> · chargement des modèles… | <agent> · default model ; <agent> · loading models… | Agent qui se choisit un modèle, aucun connu : l'agent seul, explicitement ; pendant que Bobine les demande, une ligne non cochable. |
+| fait la synthèse de ce tour | writes the synthesis | Raison courte de l'arbitre dans le menu. |
 | arrêt en cours | stopping | Arrêt du tour demandé, les participants s'arrêtent d'abord. |
 | retenu par le plafond de sa conversation | held by its conversation cost cap | Question d'un participant retenue ; « Continuer » se donne dans sa conversation. |
 | conversation à la corbeille ; conversation supprimée | conversation in the trash ; conversation deleted | Ligne d'un participant, lue de l'existence de sa conversation. |

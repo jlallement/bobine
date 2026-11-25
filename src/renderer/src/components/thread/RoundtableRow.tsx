@@ -137,9 +137,26 @@ const iconOf = (seat: Pick<RoundtableSeat, 'state' | 'error'>): IconState =>
  */
 export const SeatLetters = createContext(false)
 
+/**
+ * Agents qui se choisissent un modèle (`childModel`) : un participant sans modèle retenu y est
+ * « <agent> · modèle par défaut », comme dans le menu (contre-recette N2).
+ */
+export const ModelChoiceAgents = createContext<ReadonlySet<string>>(new Set())
+
+export const modelChoiceAgents = (
+  info: { profiles?: readonly { id: string; childModel?: boolean }[] } | undefined
+): ReadonlySet<string> =>
+  new Set((info?.profiles ?? []).filter((p) => p.childModel).map((p) => p.id))
+
 /** Nom du participant, et son agent en gris quand il diffère (« GLM 5.3 Flash · OpenCode »). */
-function SeatName({ seat }: { seat: Pick<RoundtableSeat, 'label' | 'agentLabel' | 'letter'> }) {
+function SeatName({
+  seat
+}: {
+  seat: Pick<RoundtableSeat, 'label' | 'agentLabel' | 'letter' | 'model' | 'profileId'>
+}) {
   const lettered = useContext(SeatLetters)
+  const choosing = useContext(ModelChoiceAgents)
+  const byDefault = !seat.model && choosing.has(seat.profileId)
   return (
     <span className="roundtable-row-title">
       {lettered && (
@@ -153,8 +170,10 @@ function SeatName({ seat }: { seat: Pick<RoundtableSeat, 'label' | 'agentLabel' 
         </span>
       )}
       <span className="work-group-name" data-testid="roundtable-row-name">
-        {seatLabel(seat)}
-        {seat.agentLabel !== seat.label && (
+        {byDefault
+          ? i18next.t('roundtable.menu.defaultModel', { agent: seatLabel(seat) })
+          : seatLabel(seat)}
+        {seat.agentLabel !== seat.label && !byDefault && (
           <span className="work-group-sub"> · {seat.agentLabel}</span>
         )}
       </span>

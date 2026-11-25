@@ -14,6 +14,7 @@ import type { RoundtableAgentOption } from '@shared/roundtable-ipc'
 import type { TranscriptItem } from '@shared/transcript'
 import { workLayout } from '@shared/work-groups'
 import {
+  agentOnly,
   enterAction,
   letterNames,
   lineState,
@@ -343,5 +344,13 @@ describe('l’arbitre ne participe pas (décision du 2026-11-25)', () => {
     )
     expect(state).toEqual({ kind: 'arbiter', name: 'GLM 5.3 Flash' })
     expect(enterAction(state)).toBe('menu')
+  })
+})
+
+describe('modèle par défaut (contre-recette N2)', () => {
+  it('infobulle : « <agent> · modèle par défaut », sans « · par <agent> »', () => {
+    const [group] = participantGroups([{ profileId: 'agent-a' }], options())
+    expect(group?.models).toEqual(['Agent A · modèle par défaut'])
+    expect(group && agentOnly(group)).toBe(true)
   })
 })

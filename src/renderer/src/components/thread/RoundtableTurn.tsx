@@ -41,7 +41,7 @@ import {
   useRoundtableTotal,
   useSeatPresence
 } from './RoundtableCard'
-import { RebuttalRow, SeatLetters } from './RoundtableRow'
+import { RebuttalRow, SeatLetters, ModelChoiceAgents, modelChoiceAgents } from './RoundtableRow'
 import type { SubtasksInfo } from './Subtasks'
 
 type UserItem = Extract<TranscriptItem, { kind: 'user' }>
@@ -106,33 +106,35 @@ function RebuttalCard({
           {t('roundtable.rebuttal.answers', { count: answeredRebuttals(item).length })}
         </span>
       </div>
-      <SeatLetters.Provider value={!!item.synthesis?.sentAt}>
-        <div className="work-group-rows">
-          {seats.map((seat) => {
-            const childId = seat.childId
-            const { rebuttal } = seatReports(group.works.get(seat.letter), seat)
-            return (
-              seat.rebuttal && (
-                <RebuttalRow
-                  key={seat.letter}
-                  seat={seat}
-                  rebuttal={seat.rebuttal}
-                  report={rebuttal}
-                  child={info?.children.find((c) => c.id === childId)}
-                  activity={childId ? activity.get(childId) : undefined}
-                  open={open === seat.letter}
-                  onToggle={() => setOpen((l) => (l === seat.letter ? undefined : seat.letter))}
-                  onOpen={
-                    childId && presence(seat) === 'here' && info
-                      ? () => info.onOpen(childId)
-                      : undefined
-                  }
-                />
+      <ModelChoiceAgents.Provider value={modelChoiceAgents(info)}>
+        <SeatLetters.Provider value={!!item.synthesis?.sentAt}>
+          <div className="work-group-rows">
+            {seats.map((seat) => {
+              const childId = seat.childId
+              const { rebuttal } = seatReports(group.works.get(seat.letter), seat)
+              return (
+                seat.rebuttal && (
+                  <RebuttalRow
+                    key={seat.letter}
+                    seat={seat}
+                    rebuttal={seat.rebuttal}
+                    report={rebuttal}
+                    child={info?.children.find((c) => c.id === childId)}
+                    activity={childId ? activity.get(childId) : undefined}
+                    open={open === seat.letter}
+                    onToggle={() => setOpen((l) => (l === seat.letter ? undefined : seat.letter))}
+                    onOpen={
+                      childId && presence(seat) === 'here' && info
+                        ? () => info.onOpen(childId)
+                        : undefined
+                    }
+                  />
+                )
               )
-            )
-          })}
-        </div>
-      </SeatLetters.Provider>
+            })}
+          </div>
+        </SeatLetters.Provider>
+      </ModelChoiceAgents.Provider>
       {used?.text && (
         <UsedLine
           label={t('roundtable.card.usedAll', { total: used.text })}
