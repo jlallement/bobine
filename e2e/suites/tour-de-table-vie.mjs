@@ -92,24 +92,32 @@ async function stopAndSidebar(scheme) {
         // N9 : « ↓ » près du bas, la carte en bout de fil. Son pied n'est pas sous le bouton, et le
         // bouton qui disparaît ne fait rien sauter (le fil ne se recale pas).
         await ui.viewport(1280, 560)
+        // L'avis d'Alpha déplié : le fil dépasse assez la fenêtre pour s'éloigner du bas.
+        await ui.click(`${rowOf('Alpha')}.querySelector('[data-testid=roundtable-row-toggle]')`)
+        await ui.waitFor(`!!${rowOf('Alpha')}.querySelector('[data-testid=roundtable-row-open]')`)
         const scroller = `document.querySelector('.main > .scroll')`
         const goTo = (gap) =>
           ui.ev(
             `(async () => { const s = ${scroller}; s.scrollTop = s.scrollHeight - s.clientHeight - ${gap}; await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); await new Promise((r) => setTimeout(r, 150)); const card = document.querySelector('[data-testid=roundtable-card]').getBoundingClientRect(); return { gap: s.scrollHeight - s.clientHeight - s.scrollTop, anchor: Math.round(card.top + s.scrollTop), button: !!document.querySelector('[data-testid=scroll-to-bottom]') } })()`
           )
-        const near = await goTo(70)
+        // Du bas, on remonte juste assez pour que « ↓ » paraisse (61 px, seuil de 60) : le pied de
+        // la carte, au bout du fil, n'est pas sous lui (B18).
+        await goTo(0)
+        const near = await goTo(61)
         const foot = await ui.ev(
-          `(() => { const b = document.querySelector('[data-testid=scroll-to-bottom]')?.getBoundingClientRect(); const f = document.querySelector('[data-testid=roundtable-card] [data-testid=roundtable-used]')?.getBoundingClientRect(); return !!b && !!f && (f.bottom <= b.top || f.top >= b.bottom || f.right <= b.left || f.left >= b.right) })()`
+          `(() => { const b = document.querySelector('[data-testid=scroll-to-bottom]')?.getBoundingClientRect(); const u = document.querySelector('[data-testid=roundtable-card] [data-testid=roundtable-used]'); const r = document.createRange(); if (u) r.selectNodeContents(u); const f = u && r.getBoundingClientRect(); const ok = !!b && !!f && f.width > 0 && f.bottom <= b.top; return ok || JSON.stringify({ b, f, scrollBottom: document.querySelector('.main > .scroll').getBoundingClientRect().bottom }) })()`
         )
         const bottom = await goTo(30)
         check(
           near.button &&
             !bottom.button &&
-            foot &&
+            foot === true &&
             near.anchor === bottom.anchor &&
             bottom.gap === 30,
           `« ↓ » près du bas : pied visible, aucun saut à sa disparition (${JSON.stringify({ near, bottom, foot })})`
         )
+        await ui.click(`${rowOf('Alpha')}.querySelector('[data-testid=roundtable-row-toggle]')`)
+        await ui.waitFor(`!${rowOf('Alpha')}.querySelector('[data-testid=roundtable-row-open]')`)
         await ui.viewport()
 
         // « Ouvrir sa conversation » depuis la carte : le participant ouvert reste dans la liste.

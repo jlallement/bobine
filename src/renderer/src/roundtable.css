@@ -565,11 +565,12 @@
 }
 
 /*
- * Tour de table en bout de fil : un espace réservé sous son pied (« Consommé », confiance des
+ * Tour de table en bout de fil : un espace réservé sous son pied (76 px : au seuil de « ↓ », 60 px
+ * du bas, le pied passe au-dessus du bouton) (« Consommé », confiance des
  * répliques), pour que « ↓ » ne le couvre pas près du bas (revue UX, B18). Toujours là tant que la
  * carte est le dernier élément : rien n'apparaît ni ne disparaît avec le bouton, aucun saut (N9).
  */
 .thread > .roundtable-entry:last-child,
 .thread > :last-child .roundtable-answer > [data-testid='roundtable-rebuttal']:last-child {
-  margin-bottom: 48px;
+  margin-bottom: 76px;
 }

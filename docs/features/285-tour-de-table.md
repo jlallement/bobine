@@ -1148,3 +1148,22 @@ le main n'a pas livré l'étape 1) :
   clavier d'une lettre se refermait aussitôt, au défilement qui amène l'élément en vue (Radix ferme
   au défilement). `Tip` (`common/Menus.tsx`) garde ouverte une infobulle ouverte par le focus quand
   un défilement la ferme dans les 300 ms ; le départ du pointeur la ferme toujours (`Tip.test.tsx`).
+
+- 2026-11-25 : contre-revue, partie interface (branche `1.2-fix3-ui`). N3 : un brouillon
+  `/roundtable …` n'est repris en tour de table que si celui-ci est utilisable dans la conversation
+  (Discussion, `/roundtable` de l'agent ou de l'utilisateur : le texte garde son préfixe ;
+  réglages lus après le montage : repris à ce moment-là). N9 : plus de marge basse du fil qui
+  apparaît avec « ↓ » (elle recalait le défilement près du bas, et `:has()` était réévalué à
+  chaque insertion) ; un espace réservé, fixe, sous une carte du tour en bout de fil ; mesuré en
+  e2e (pied visible près du bas, aucun saut quand « ↓ » disparaît). N10 : corbeille relue quand
+  elle change dans la fenêtre (évènement `bobine:trash-changed`, posé par Réglages › Données, le
+  main n'en publie pas) et à chaque réouverture de la carte. N11 : seule une infobulle ouverte par
+  le focus lui-même résiste au défilement qui suit ; JSDoc de `focusWithoutIntent` remis à sa
+  place. Titre « Tour de table » jamais coupé, le résumé de droite se réduit. N12 : l'aperçu
+  « retenu » se construit dans le main, rien côté interface. Suite e2e complète sur GitHub :
+  menu des participants sans les agents absents de la machine (on ne propose pas ce qu'on ne peut
+  pas choisir ; déjà retenu, il reste en tête avec sa raison ; le contrat n'a pas d'état « pas
+  prêt » distinct d'« absent », `ProfileSummary.available` seul) ; le bouton du tour de table se
+  replie au niveau 4 dans le menu de 📎 avec les réglages de la session (barre sur deux lignes à
+  760 px avec les polices de Linux) ; `files` : l'essai attendait le chemin de la vue, pas son
+  code (défaut de l'essai, déjà en 1.1).
