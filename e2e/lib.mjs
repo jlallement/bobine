@@ -871,7 +871,14 @@ export async function withApp(
         } else await cdp('Emulation.clearDeviceMetricsOverride')
         // La page a pris sa nouvelle largeur (fiche 279, au lieu de 300 ms fixes) ; sans largeur,
         // celle de la vraie fenêtre.
-        await waitFor(`innerWidth === ${width || naturalWidth}`, 5000)
+        await waitFor(`innerWidth === ${width || naturalWidth}`, 5000).catch(async (error) => {
+          // Ce que la page voyait (fiche 285, macOS CI du 2026-11-25 : largeur jamais revenue,
+          // cause non établie) : la vraie fenêtre a-t-elle changé, la page était-elle cachée ?
+          const seen = await ev(
+            `JSON.stringify({ innerWidth, outerWidth, screen: screen.availWidth, visibility: document.visibilityState, natural: ${naturalWidth} })`
+          ).catch(() => 'page injoignable')
+          throw new Error(`${error.message} — ${seen}`)
+        })
         // Deux images rendues à la nouvelle taille (fiche 250) : les `ResizeObserver` de la page
         // (repli de la barre de saisie…) ne passent qu'au rendu d'une image, et une machine chargée
         // n'en produit parfois aucune en 300 ms (runner macOS de GitHub).

@@ -1373,9 +1373,26 @@ le main n'a pas livré l'étape 1) :
     `roundtables-recette.test.ts` au-dessus de 2,7 s en local.
   - `pnpm e2e (macOS)` : la suite `tour-de-table` est passée de 2 min 08 à 3 min 42 sur le Mac de
     GitHub. Fix12 n'a touché à aucune suite e2e ; en local, avant et après fix12, la suite dure la
-    même chose (50/53 s contre 51/54 s ; sous `taskpolicy -b`, 164 s contre 163 s) : la cause du
-    +1 min 30 n'a pas été reproduite (le même lot est plus lent de 13 % en médiane sur toutes ses
-    suites). Marge : la vie des participants devient une suite à part, `tour-de-table-vie`
+    même chose (50/53 s contre 51/54 s ; sous `taskpolicy -b`, 164 s contre 163 s). Cause établie
+    ensuite : un incident GitHub (« Actions dégradées » ce jour-là) ; un lot comparatif lancé à la
+    même heure sur v1.2.0-beta.1 et sur `1.2` donne des durées normales des deux côtés. Marge : la vie des participants devient une suite à part, `tour-de-table-vie`
     (clair, sombre seulement avec `--themes both`, aucun rendu sombre vérifié), mêmes vérifications
     et mêmes captures. La carte « en cours » se regarde sous verrou de fin de tour (sous charge,
     elle pouvait déjà être repliée).
+
+- 2026-11-25 : `tour-de-table-vie` rouge une fois sur le Mac de GitHub (lot anglais, 80d636d6 ;
+  branche `1.2-fix14-engine`).
+  - « recueil, 760 px » : `changes: 2` en 47 images. Cause, à la lecture : la sonde comptait les
+    changements d'état **une fois par image** (`requestAnimationFrame`) et n'était posée qu'après
+    l'apparition de la carte ; une suite rapide (17 s) faisait passer plusieurs participants d'un
+    état à l'autre entre deux images, ou avant la pose. Les trois sondes « recueil » (largeur
+    normale, 760 px, 520 px) suivent maintenant chaque changement d'une ligne
+    (`MutationObserver` sur `data-state`), et les agents factices restent « en attente » sous un
+    verrou de démarrage (`MOCK_AGENT_START_LOCK`, nouveau) tant que la mesure n'est pas posée :
+    chaque ligne change sous ses yeux, quelle que soit la vitesse. Seuil inchangé (3).
+  - « délai dépassé : innerWidth === 1280 » au retour à la vraie taille : non reproduit (vie seule
+    10/10 et sous charge 5/5 en anglais, trois lots de démarrage à 3 jobs). La vraie fenêtre n'était
+    plus de 1280 px de large à ce moment (une largeur émulée de 1280 aurait satisfait l'attente),
+    pourquoi n'est pas établi ; l'échec dit désormais ce que la page voyait (largeurs, écran,
+    visibilité) pour la prochaine fois.
+
