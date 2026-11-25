@@ -17,6 +17,14 @@ const alias = { '@shared': resolve(__dirname, 'src/shared') }
 const CONCURRENT_JOURNEYS = 2
 
 /**
+ * Workers de vitest : `BOBINE_TEST_WORKERS` (entier), posé par `ci.yml` sous Windows seulement (un
+ * worker pour deux cœurs, fiche 250 : sur `windows-2025`, le défaut de vitest, cœurs − 1, faisait
+ * caler des essais de 1 à 2 s jusqu'au délai de 15 s). Absent ou invalide : défaut de vitest.
+ */
+const workers = Number(process.env.BOBINE_TEST_WORKERS)
+const maxWorkers = Number.isInteger(workers) && workers > 0 ? workers : undefined
+
+/**
  * Deux projets (fiche 043) : « node » pour le main, le preload, le partagé et l'agent factice ;
  * « renderer » (jsdom + Testing Library) pour les composants React. `pnpm coverage` ajoute le
  * rapport de couverture (texte, et `coverage/` en HTML, ignoré par git).
@@ -26,6 +34,7 @@ export default defineConfig({
   test: {
     globalSetup: ['scripts/vitest-tmp.ts'],
     testTimeout: 15_000,
+    ...(maxWorkers ? { maxWorkers } : {}),
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],

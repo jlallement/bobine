@@ -27,7 +27,18 @@ done
 if [[ -f package.json ]]; then
   step "Lint";      pnpm -s lint      || fail=1
   step "Typecheck"; pnpm -s typecheck || fail=1
-  step "Tests";     pnpm -s test      || fail=1
+  if [[ "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
+    # En CI (fiche 250) : rapport JSON en plus, puis machine, workers et essais les plus lents,
+    # que les tests passent ou non (un rouge par délai dépassé devient lisible).
+    # Chemin relatif, dans un dossier ignoré : le même pour bash et node sous Windows.
+    report="node_modules/.vitest-report.json"
+    step "Tests"; pnpm -s test --reporter=default --reporter=json --outputFile.json="$report" || fail=1
+    step "Relevé des tests"
+    node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-report.mts "$report" 10 || true
+    rm -f "$report"
+  else
+    step "Tests";     pnpm -s test      || fail=1
+  fi
 else
   echo -e "\n(pas encore de package.json : lint/typecheck/tests ignorés — voir fiche 001)"
 fi

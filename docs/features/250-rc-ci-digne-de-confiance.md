@@ -209,6 +209,17 @@ Dependabot comme les autres.
   `jobs=2` / `jobs=3`) : `defaultJobs` d'après les cœurs aussi en CI, un job pour 2 cœurs arrondi
   au-dessus, entre 1 et `CI_MAX_JOBS` = 3 (remplace `DEFAULT_JOBS`) : 2 sur le runner Mac (3
   cœurs) et sur le runner Linux (4 cœurs, déjà `--jobs 2` dans `e2e.yml`).
+- 2026-11-25 — `verify (Windows)` rouge deux fois de suite sur le commit de la 1.2.0-beta.2
+  (d98d1aac, run 45704718911) : délais de 15 s dépassés sur des essais différents à chaque
+  tentative (`ipc-agent`, `manager-discussion`, puis `worktrees`), essais de 1 à 2 s d'habitude ;
+  macOS et Linux verts. Cause retenue : la concurrence sur un runner lent. Vitest prend par
+  défaut cœurs − 1 workers (3 sur `windows-2025`, 4 vCPU attendus : à confirmer dans le journal),
+  chacun pouvant lancer des agents node. Mesure, Windows en CI seulement : un worker pour deux
+  cœurs (`BOBINE_TEST_WORKERS`, posé par `ci.yml`, lu par `vitest.config.ts`) ; rien ne change en
+  local ni sur macOS et Linux. En CI, `verify` écrit aussi un rapport JSON de vitest puis
+  `scripts/test-report.mts` : cœurs, workers, charge (pas sous Windows), mémoire, les dix essais
+  les plus lents, que les tests passent ou non. Délai d'essai porté à 30 s sous Windows en CI :
+  commit séparé, facultatif.
 
 ## Reste à vérifier sur GitHub (après la poussée)
 
