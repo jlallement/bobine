@@ -315,7 +315,6 @@ profil factice déclare alors `roleExport` comme Bob ou OpenCode et passe ces op
 | `avis-change-modele` | Tour de table : en plein tour, annonce un autre modèle (`config_option_update`), puis son avis : l'app le met en « modèle non appliqué » |
 | `avis-en-deux` | Tour de table : avis en deux morceaux de texte séparés par une lecture : l'app garde la réponse entière du tour |
 | `participant-lit-shell` | Tour de table : lit par le shell (`tool_call` `kind: execute`), puis son avis |
-| `participant-lit-ecrit` | Tour de table : lit par le shell, écrit `note-participant.md` sans demander, puis son avis (deux participants qui exécutent, l'un écrit) |
 | `participant-outils` | Tour de table : liste les outils de l'app reçus (`tools/list`), puis demande une commande (`kind: execute`) : aucun outil, commande refusée d'office |
 | `avis-hors-format` | Tour de table : avis libre, sans les rubriques (« format non suivi ») |
 | `avis-lent` | Tour de table : 100 pas de `--delay` (4 s par défaut, annulable), puis l'avis. Dans les essais, préférer `--verrou-fin-de-tour` |

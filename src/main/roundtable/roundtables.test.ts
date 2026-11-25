@@ -37,7 +37,9 @@ function lockFile(): string {
 
 describe('tour de table : lancer et recueillir (fiche 285, lot 1)', () => {
   it('chaque participant est une fille en lecture seule, sans worktree, qui reçoit question, consigne et dernier échange, jamais un autre avis', async () => {
-    const { env, mother } = await setup({ lead: 'echo' })
+    // Recueil tenu par le verrou : « collecting » juste après le lancement, par construction.
+    const lock = lockFile()
+    const { env, mother } = await setup({ lead: 'echo', panel: ['--verrou-fin-de-tour', lock] })
     const result = await env.roundtables.start(mother, {
       question: QUESTION,
       participants: [FAST, PRECISE],
@@ -57,6 +59,7 @@ describe('tour de table : lancer et recueillir (fiche 285, lot 1)', () => {
       ['factice-rapide', 'Factice panel', 'enforced'],
       ['factice-precis', 'Factice panel', 'enforced']
     ])
+    rmSync(lock)
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
     // La bulle de la question vient de l'élément du tour : aucun message de plus dans le fil.
     expect(

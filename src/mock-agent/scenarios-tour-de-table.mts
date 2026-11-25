@@ -282,15 +282,6 @@ export const roundtableScenarios: Record<string, Scenario> = {
       ...opinion(text, model, attachments)
     ])
   },
-  'participant-lit-ecrit': {
-    description:
-      'Tour de table : participant qui lit par le shell, puis écrit `note-participant.md` sans demander, puis donne son avis (deux participants qui exécutent, l’un écrit : revue sécurité)',
-    steps: participant((text, model, attachments) => [
-      shellRead,
-      { kind: 'write-file', path: 'note-participant.md', content: 'écrit par le shell\n' },
-      ...opinion(text, model, attachments)
-    ])
-  },
   'participant-outils': {
     description:
       'Tour de table : participant qui liste les outils de l’app reçus (`tools/list` du serveur MCP de Bobine), puis demande à lancer une commande (`kind: execute`) : il doit n’avoir aucun outil, et la commande est refusée d’office',
