@@ -111,6 +111,14 @@ Fichiers :
   nouvelle version : cas des deux lignes ajoutés aux tests (`update-check.test.ts`), aucun
   changement de code. Non prouvé sur GitHub : premier tag `v1.1.*`, après fusion de `main` dans
   `1.1` (le tag lance le `release.yml` du commit tagué).
+- 2026-11-25 — Troisième ligne (ADR-0073, décision de Jérôme) : `guard` accepte aussi un tag
+  `v1.2.*` sur `origin/1.2` (première préversion : `1.2.0-beta.1`) ; `ci.yml` tourne sur les
+  poussées de `main`, `1.1` et `1.2`. Lignes : `v1.0.*` ← `main`, `v1.1.*` ← `1.1`,
+  `v1.2.*` ← `1.2` ; toute autre refusée. Script du `guard` rejoué en local contre
+  `origin/main`, `origin/1.1` et `origin/1.2` (sept cas, dont `v1.3.0-beta.1` refusé) ;
+  `actionlint` propre (hors l'étiquette de runner `ubuntu-26.04`, inconnue de sa version
+  locale). Avis de nouvelle version : aucun changement (constat dans l'ADR-0073). Non prouvé sur
+  GitHub : premier tag `v1.2.*`, après que ces changements sont dans `1.2`.
 
 ## Écarts au plan
 

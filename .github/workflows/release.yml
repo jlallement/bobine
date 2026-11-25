@@ -18,9 +18,9 @@
 #
 # Dépôt public (fiche 218) : le jeton est en lecture partout ; seul le job `publish`, qui ne fait
 # que télécharger les fichiers construits et créer la Release, l'a en écriture. Une Release ne part
-# que d'un commit de la branche de sa ligne (`v1.0.*` : `main` ; `v1.1.*` : `1.1`, ADR-0068) dont
-# `ci.yml` est vert sur macOS, Linux et Windows (job `guard`). Un tag avec suffixe (`v1.0.0-beta.1`,
-# `v1.1.0-rc.1`) donne une Release « préversion », jamais « Latest ». Actions tierces épinglées par
+# que d'un commit de la branche de sa ligne (`v1.0.*` : `main` ; `v1.1.*` : `1.1`, ADR-0068 ;
+# `v1.2.*` : `1.2`, ADR-0073) dont `ci.yml` est vert sur macOS, Linux et Windows (job `guard`). Un tag avec suffixe (`v1.0.0-beta.1`,
+# `v1.1.0-rc.1`, `v1.2.0-beta.1`) donne une Release « préversion », jamais « Latest ». Actions tierces épinglées par
 # SHA (Dependabot).
 #
 # Signature (fiche 111). Sans secret, signature ad hoc, comme `pnpm package` en local. Avec ces
@@ -61,7 +61,8 @@ jobs:
       contents: read
       checks: read
     steps:
-      # Historique complet : `origin/main` et `origin/1.1` servent à vérifier d'où part le tag.
+      # Historique complet : `origin/main`, `origin/1.1` et `origin/1.2` servent à vérifier d'où
+      # part le tag.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
@@ -77,8 +78,8 @@ jobs:
           fi
 
       # Un tag posé sur une branche de travail (ou par un jeton volé) ne publie rien : pousser la
-      # branche de sa ligne d'abord, puis le tag. Deux lignes, chacune sa branche (ADR-0068) :
-      # `v1.0.*` depuis `main`, `v1.1.*` (préversions de la ligne suivante) depuis `1.1`. Toute
+      # branche de sa ligne d'abord, puis le tag. Trois lignes, chacune sa branche (ADR-0068,
+      # ADR-0073) : `v1.0.*` depuis `main`, `v1.1.*` depuis `1.1`, `v1.2.*` depuis `1.2`. Toute
       # autre ligne est refusée : en ouvrir une est une décision (ce tableau, fiche 218).
       - name: Le commit tagué est sur la branche de sa ligne
         if: github.ref_type == 'tag'
@@ -86,8 +87,9 @@ jobs:
           case "$GITHUB_REF_NAME" in
             v1.0.*) line=v1.0 branch=main ;;
             v1.1.*) line=v1.1 branch=1.1 ;;
+            v1.2.*) line=v1.2 branch=1.2 ;;
             *)
-              echo "::error::Tag $GITHUB_REF_NAME : ligne sans branche de publication (v1.0.* depuis main, v1.1.* depuis 1.1, ADR-0068)."
+              echo "::error::Tag $GITHUB_REF_NAME : ligne sans branche de publication (v1.0.* depuis main, v1.1.* depuis 1.1, v1.2.* depuis 1.2, ADR-0068, ADR-0073)."
               exit 1
               ;;
           esac
@@ -100,7 +102,8 @@ jobs:
       # CI bloquante sur les trois systèmes (fiche 229, décision de Jérôme) : un tag ne construit
       # rien tant que `ci.yml` n'est pas vert sur macOS, Linux et Windows pour ce commit. Lecture
       # du statut du commit par l'API (jeton du job, lecture seule, aucun secret) ; on attend les
-      # jobs encore en cours (poussée de `main` ou de `1.1` juste avant le tag), une heure au plus.
+      # jobs encore en cours (poussée de la branche de la ligne juste avant le tag), une heure au
+      # plus.
       - name: CI verte sur les trois systèmes pour ce commit
         if: github.ref_type == 'tag'
         env:
