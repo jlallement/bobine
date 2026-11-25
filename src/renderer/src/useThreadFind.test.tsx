@@ -124,7 +124,14 @@ describe('barre de recherche du fil (fiche 086)', () => {
   async function openWithQuery() {
     render(<Host />)
     await act(async () => fireEvent.click(screen.getByTestId('search-then-find')))
-    await waitFor(() => expect(findCount()).toBe('1 / 3'))
+    // Le compte paraît au rendu qui suit le calcul (minuterie de `SETTLE_MS`, hors d'`act`) ; le
+    // résultat courant est surligné par l'effet de ce rendu, un peu après. `waitFor` repart sur la
+    // mutation du compte : attendre les deux états, sinon le test lisait le surlignage avant son
+    // effet (sous charge : « expected undefined to be 'un jeton' »).
+    await waitFor(() => {
+      expect(findCount()).toBe('1 / 3')
+      expect(current()).toBe('un jeton')
+    })
   }
 
   it('recherche reprise : premier résultat surligné, le champ a le focus (history n° 3)', async () => {
