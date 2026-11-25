@@ -497,6 +497,24 @@ describe('revue UX : saisie et menu', () => {
     expect(glmRow.textContent).not.toContain('Agent A')
   })
 
+  it('M6 : la raison d’une case désactivée se lit dans la ligne d’état du menu', async () => {
+    api.options.mockResolvedValue(options({ arbiter: { profileId: 'agent-a', model: 'glm' } }))
+    const t = setup([deep, b])
+    t.type('/roundtable Q')
+    const menu = await openMenu()
+    const status = within(menu).getByTestId('roundtable-menu-status')
+    expect(status.textContent).toBe(
+      'Chacun reçoit la question et peut lire les fichiers de ce dossier.'
+    )
+    const glmRow = within(menu)
+      .getAllByRole('option')
+      .find((o) => o.textContent?.includes('GLM 5.3 Flash')) as HTMLElement
+    fireEvent.mouseMove(glmRow)
+    expect(status.textContent?.replace(/[\u00a0\u202f]/g, ' ')).toBe(
+      'C’est le modèle de cette conversation : il fait la synthèse'
+    )
+  })
+
   it('A2 : la recherche filtre toute la liste', async () => {
     const t = setup([deep, b])
     t.type('/roundtable Q')

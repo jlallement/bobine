@@ -220,7 +220,6 @@ export function RoundtableLine({
       data-state={state.kind}
       ref={line}
     >
-      <RoundtableIcon size={15} className="roundtable-line-icon" />
       <Popover.Root open={roundtable.menuOpen} onOpenChange={roundtable.setMenuOpen}>
         <ParticipantsTip roundtable={roundtable} files={files}>
           <Popover.Trigger
@@ -236,32 +235,7 @@ export function RoundtableLine({
         </ParticipantsTip>
         <Popover.Anchor virtualRef={anchor} />
         <Popover.Portal>
-          <Popover.Content
-            className="menu model-menu roundtable-popover"
-            side="top"
-            align="start"
-            sideOffset={8}
-            collisionPadding={12}
-            onInteractOutside={() => {
-              outside.current = true
-            }}
-            onCloseAutoFocus={(event) => {
-              if (outside.current) {
-                outside.current = false
-                return
-              }
-              event.preventDefault()
-              roundtable.focus()
-            }}
-            // Le focus va à la liste : `RoundtableParticipants` s'en charge.
-            onOpenAutoFocus={(event) => event.preventDefault()}
-          >
-            <RoundtableParticipants
-              options={roundtable.options}
-              choices={roundtable.choices}
-              onToggle={roundtable.toggle}
-            />
-          </Popover.Content>
+          <ParticipantsPopover roundtable={roundtable} anchor={anchor} outsideRef={outside} />
         </Popover.Portal>
       </Popover.Root>
       <LineStatus roundtable={roundtable} />
@@ -279,3 +253,60 @@ export function RoundtableLine({
     </div>
   )
 }
+
+/**
+ * Le menu des participants, monté à son ouverture : son côté (au-dessus ou au-dessous de la
+ * saisie) est choisi une fois, d'après la place, et ne bascule plus tant qu'il est ouvert (S3 de
+ * la revue finale : une liste filtrée plus courte le faisait sauter de 526 px).
+ */
+function ParticipantsPopover({
+  roundtable,
+  anchor,
+  outsideRef
+}: {
+  roundtable: RoundtableCompose
+  anchor: { current: { getBoundingClientRect: () => DOMRect } }
+  outsideRef: { current: boolean }
+}) {
+  const [place] = useState(() => {
+    const rect = anchor.current.getBoundingClientRect()
+    const above = rect.top - MENU_MARGIN
+    const below = window.innerHeight - rect.bottom - MENU_MARGIN
+    const side: 'top' | 'bottom' = above >= MENU_ROOM || above >= below ? 'top' : 'bottom'
+    return { side, room: Math.max(160, Math.round(side === 'top' ? above : below)) }
+  })
+  return (
+    <Popover.Content
+      className="menu model-menu roundtable-popover"
+      side={place.side}
+      align="start"
+      sideOffset={8}
+      avoidCollisions={false}
+      style={{ maxHeight: Math.min(440, place.room) }}
+      data-side-fixed={place.side}
+      onInteractOutside={() => {
+        outsideRef.current = true
+      }}
+      onCloseAutoFocus={(event) => {
+        if (outsideRef.current) {
+          outsideRef.current = false
+          return
+        }
+        event.preventDefault()
+        roundtable.focus()
+      }}
+      // Le focus va à la liste : `RoundtableParticipants` s'en charge.
+      onOpenAutoFocus={(event) => event.preventDefault()}
+    >
+      <RoundtableParticipants
+        options={roundtable.options}
+        choices={roundtable.choices}
+        onToggle={roundtable.toggle}
+      />
+    </Popover.Content>
+  )
+}
+
+/** Marge du menu au bord de la fenêtre, et place au-dessus qui suffit pour s'y ouvrir. */
+const MENU_MARGIN = 12
+const MENU_ROOM = 260

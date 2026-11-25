@@ -121,7 +121,12 @@ export function RoundtableParticipants({
     }
   }
 
+  // La liste garde, pendant la recherche, la hauteur qu'elle avait à son ouverture : le champ
+  // prend la place exacte du bouton et aucune case n'arrive sous le pointeur (M2), et le menu ne
+  // change pas de taille pendant la frappe (S3).
+  const [listHeight, setListHeight] = useState<number | undefined>()
   const openSearch = () => {
+    setListHeight(list.current?.offsetHeight)
     setSearching(true)
     setActive(main.length)
     // Le champ apparaît au rendu suivant.
@@ -138,6 +143,7 @@ export function RoundtableParticipants({
         ref={list}
         id={`${id}-list`}
         className="roundtable-menu-list"
+        style={searching && listHeight ? { height: listHeight, maxHeight: listHeight } : undefined}
         role="listbox"
         aria-multiselectable
         aria-labelledby={`${id}-title`}
@@ -233,7 +239,12 @@ export function RoundtableParticipants({
             {t('roundtable.menu.others')}
           </button>
         ))}
-      <div className="roundtable-menu-foot">{t('roundtable.menu.footer')}</div>
+      {/* Ligne d'état : la raison d'une case désactivée sous le pointeur ou au clavier (M6). */}
+      <div className="roundtable-menu-foot" role="status" data-testid="roundtable-menu-status">
+        {visible[active]?.disabled && visible[active]?.reason
+          ? visible[active]?.reason
+          : t('roundtable.menu.footer')}
+      </div>
     </div>
   )
 }
