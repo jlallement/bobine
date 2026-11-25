@@ -308,3 +308,40 @@ describe('tours de synthèse et de décision', () => {
     expect(turns.byAnswer.size).toBe(0)
   })
 })
+
+describe('l’arbitre ne participe pas (décision du 2026-11-25)', () => {
+  const all = (opts: ReturnType<typeof options>, choices: RoundtableChoice[] = []) => {
+    const { main, others } = menuEntries(opts, choices)
+    return [...main, ...others]
+  }
+
+  it('le modèle de la conversation : désactivé dans le menu, avec sa raison', () => {
+    const opts = options({ arbiter: { profileId: 'agent-a', model: 'glm' } })
+    const glm = all(opts).find((e) => e.choice.model?.value === 'glm')
+    expect(glm?.disabled).toBe('arbiter')
+    expect(glm?.reason?.replace(/[\u00a0\u202f]/g, ' ')).toBe(
+      'C’est le modèle de cette conversation : il fait la synthèse'
+    )
+    expect(all(opts).find((e) => e.choice.model?.value === 'deep')?.disabled).toBeUndefined()
+  })
+
+  it('un agent sans choix de modèle qui arbitre : montré désactivé, même indisponible', () => {
+    const opts = options({ arbiter: { profileId: 'agent-b' } })
+    opts.agents[1] = { ...(opts.agents[1] as RoundtableAgentOption), available: false, reason: 'x' }
+    const entry = all(opts).find((e) => e.agentLabel === 'Agent B')
+    expect(entry).toMatchObject({ disabled: 'arbiter' })
+  })
+
+  it('un retenu devenu l’arbitre : la ligne le dit, Entrée ouvre le menu', () => {
+    const glm = {
+      profileId: 'agent-a',
+      model: { controlId: 'model', value: 'glm', name: 'GLM 5.3 Flash' }
+    }
+    const state = lineState(
+      [glm, { profileId: 'agent-b' }],
+      options({ arbiter: { profileId: 'agent-a', model: 'glm' } })
+    )
+    expect(state).toEqual({ kind: 'arbiter', name: 'GLM 5.3 Flash' })
+    expect(enterAction(state)).toBe('menu')
+  })
+})

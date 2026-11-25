@@ -6,6 +6,7 @@
  */
 import * as Tooltip from '@radix-ui/react-tooltip'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import i18next from 'i18next'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ConversationSummary } from '@shared/agent'
@@ -975,6 +976,42 @@ describe('contrat du moteur (fix2)', () => {
     expect(plain(screen.getByTestId('roundtable-step-changed').textContent)).toBe(
       'OpenCode a modifié des fichiers pendant la synthèse : NOTES.md et src/a.ts'
     )
+  })
+
+  it('arbitre devenu participant : la synthèse n’est pas partie, dit et repris', () => {
+    const detail = i18next.t('roundtable.error.arbiter')
+    show(
+      thread(
+        roundtable([
+          answered('A'),
+          answered('B'),
+          answered('C'),
+          { type: 'step-failed', step: 'synthesis', detail }
+        ]),
+        OPINIONS
+      )
+    )
+    expect(screen.getByTestId('roundtable-progress').textContent).toBe('synthèse non rendue')
+    expect(screen.getByTestId('roundtable-step-failed').textContent).toBe(detail)
+    fireEvent.click(screen.getByTestId('roundtable-synthesize'))
+    expect(api.synthesize).toHaveBeenCalledWith('mother', 'rt1')
+  })
+
+  it('une autre panne de l’étape : un texte traduit, le texte brut en infobulle', () => {
+    show(
+      thread(
+        roundtable([
+          answered('A'),
+          answered('B'),
+          answered('C'),
+          { type: 'step-failed', step: 'synthesis', detail: 'Internal error' }
+        ]),
+        OPINIONS
+      )
+    )
+    const note = screen.getByTestId('roundtable-step-failed')
+    expect(note.getAttribute('title')).toBe('Internal error')
+    expect(note.textContent).not.toContain('Internal error')
   })
 
   it('S1 : rien d’écrit, aucun avertissement', () => {

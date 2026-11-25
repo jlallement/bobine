@@ -6360,6 +6360,7 @@ export type FrResources = {
       readonly byTo: '{{models}} · par {{agent}} · vers {{destination}}'
       readonly needTwo: 'il en faut au moins 2'
       readonly agentTo: '{{agent}} · vers {{destination}}'
+      readonly arbiter: '{{name}} fait la synthèse de ce tour : choisissez un autre participant'
     }
     readonly cost: {
       readonly full: 'au moins {{n}} fois les jetons d’une question simple'
@@ -6375,6 +6376,7 @@ export type FrResources = {
       readonly once: 'Une seule fois, sans choix de modèle'
       readonly gone: 'N’existe plus : décochez-le'
       readonly modelGone: 'Modèle indisponible : décochez-le'
+      readonly arbiter: 'C’est le modèle de cette conversation : il fait la synthèse'
     }
     readonly card: {
       readonly title: 'Tour de table'
@@ -6426,6 +6428,9 @@ export type FrResources = {
       readonly relaunchStopped_other: 'Relancer les {{count}} participants arrêtés'
       readonly stopping: 'arrêt en cours'
       readonly letter: 'Participant {{letter}}'
+      readonly synthesisFailed: 'synthèse non rendue'
+      readonly decisionFailed: 'décision non rendue'
+      readonly stepFailed: 'La demande n’a pas abouti : relancez-la.'
     }
     readonly state: {
       readonly waiting: 'en attente'

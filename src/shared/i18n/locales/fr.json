@@ -6576,7 +6576,8 @@
       "unknownAgent": "Un agent retiré",
       "byTo": "{{models}} · par {{agent}} · vers {{destination}}",
       "needTwo": "il en faut au moins 2",
-      "agentTo": "{{agent}} · vers {{destination}}"
+      "agentTo": "{{agent}} · vers {{destination}}",
+      "arbiter": "{{name}} fait la synthèse de ce tour : choisissez un autre participant"
     },
     "cost": {
       "full": "au moins {{n}} fois les jetons d’une question simple",
@@ -6591,7 +6592,8 @@
       "full": "5 participants au plus",
       "once": "Une seule fois, sans choix de modèle",
       "gone": "N’existe plus : décochez-le",
-      "modelGone": "Modèle indisponible : décochez-le"
+      "modelGone": "Modèle indisponible : décochez-le",
+      "arbiter": "C’est le modèle de cette conversation : il fait la synthèse"
     },
     "card": {
       "title": "Tour de table",
@@ -6642,7 +6644,10 @@
       "relaunchStopped_many": "Relancer les {{count}} participants arrêtés",
       "relaunchStopped_other": "Relancer les {{count}} participants arrêtés",
       "stopping": "arrêt en cours",
-      "letter": "Participant {{letter}}"
+      "letter": "Participant {{letter}}",
+      "synthesisFailed": "synthèse non rendue",
+      "decisionFailed": "décision non rendue",
+      "stepFailed": "La demande n’a pas abouti : relancez-la."
     },
     "state": {
       "waiting": "en attente",

@@ -6296,7 +6296,8 @@
       "unknownAgent": "A removed agent",
       "byTo": "{{models}} · via {{agent}} · to {{destination}}",
       "needTwo": "at least 2 needed",
-      "agentTo": "{{agent}} · to {{destination}}"
+      "agentTo": "{{agent}} · to {{destination}}",
+      "arbiter": "{{name}} writes this roundtable’s synthesis: choose another participant"
     },
     "cost": {
       "full": "at least {{n}}× the tokens of a plain question",
@@ -6311,7 +6312,8 @@
       "full": "5 participants at most",
       "once": "Once only, no model choice",
       "gone": "No longer exists: uncheck it",
-      "modelGone": "Model unavailable: uncheck it"
+      "modelGone": "Model unavailable: uncheck it",
+      "arbiter": "It is this conversation’s model: it writes the synthesis"
     },
     "card": {
       "title": "Roundtable",
@@ -6355,7 +6357,10 @@
       "relaunchStopped_one": "Run the stopped participant again",
       "relaunchStopped_other": "Run the {{count}} stopped participants again",
       "stopping": "stopping",
-      "letter": "Participant {{letter}}"
+      "letter": "Participant {{letter}}",
+      "synthesisFailed": "synthesis not given",
+      "decisionFailed": "decision not given",
+      "stepFailed": "The request did not go through: run it again."
     },
     "state": {
       "waiting": "waiting",

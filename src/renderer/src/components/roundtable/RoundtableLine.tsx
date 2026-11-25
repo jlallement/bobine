@@ -137,6 +137,12 @@ function LineStatus({ roundtable }: { roundtable: RoundtableCompose }) {
           {t('roundtable.line.unavailable', { agent: state.agent })}
         </span>
       )
+    case 'arbiter':
+      return (
+        <span className="roundtable-line-alert" role="status" data-testid="roundtable-arbiter">
+          {t('roundtable.line.arbiter', { name: state.name })}
+        </span>
+      )
     case 'question':
       return (
         <span className="roundtable-line-alert" role="status" data-testid="roundtable-too-long">

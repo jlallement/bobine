@@ -270,6 +270,9 @@ function useProgress(group: RoundtableGroupData): string {
     case 'stopped':
       return t('roundtable.card.stopped')
     case 'interrupted':
+      // Synthèse ou décision qui n'a pas pu partir (arbitre devenu participant…) : pas un redémarrage.
+      if (item.synthesis?.state === 'failed') return t('roundtable.card.synthesisFailed')
+      if (item.verdict?.state === 'failed') return t('roundtable.card.decisionFailed')
       return t('roundtable.card.interrupted')
     default: {
       // Repliée : les avis reçus, et les absents s'il y en a (B15).
@@ -503,9 +506,22 @@ function RoundtableFoot({
     )
   }
   const decide = gestures && (from === 'rebutting' || from === 'deciding')
+  const failedStep = [item.synthesis, item.verdict].find((s) => s?.state === 'failed')
+  const failed = failedStep ? (failedStep.detail ?? '') : undefined
   if (item.phase === 'interrupted' && (synthesize || resumable || decide || lost)) {
     return (
       <div className="work-group-foot roundtable-foot" data-testid="roundtable-foot">
+        {failed !== undefined && (
+          // Le refus de l'app (arbitre) se dit tel quel ; le texte brut d'un agent, en infobulle (B1).
+          <span
+            className="roundtable-foot-note"
+            role="alert"
+            data-testid="roundtable-step-failed"
+            {...(failed === t('roundtable.error.arbiter') ? {} : { title: failed })}
+          >
+            {failed === t('roundtable.error.arbiter') ? failed : t('roundtable.card.stepFailed')}
+          </span>
+        )}
         {lost && (
           <span className="roundtable-foot-note" data-testid="roundtable-attachments-lost">
             {t('roundtable.error.attachmentsLost')}

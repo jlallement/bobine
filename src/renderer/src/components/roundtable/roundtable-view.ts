@@ -21,6 +21,7 @@ import {
   type RoundtableSeat,
   type RoundtableTotal
 } from '@shared/roundtable'
+import { isArbiter, type RoundtableArbiter } from '@shared/roundtable'
 import type { RoundtableAgentOption, RoundtableOptions } from '@shared/roundtable-ipc'
 import { QUESTION_CHARS } from '@shared/roundtable-prompts'
 import type { DataDestination, HandoverModel } from '@shared/handover'
@@ -47,6 +48,8 @@ export type LineState =
   | { kind: 'question'; max: number }
   | { kind: 'choose' }
   | { kind: 'unavailable'; agent: string }
+  /** Un participant retenu est l'arbitre (le modèle de la conversation a changé) : Entrée ouvre le menu. */
+  | { kind: 'arbiter'; name: string }
   | { kind: 'slots'; missing: number; count: number }
   | { kind: 'ready'; count: number; multiplier: number }
 
@@ -63,9 +66,11 @@ const agentName = (options: RoundtableOptions | undefined, profileId: string): s
 export function choiceTrouble(
   choice: RoundtableChoice,
   options: RoundtableOptions
-): 'gone' | 'unavailable' | 'model' | undefined {
+): 'gone' | 'arbiter' | 'unavailable' | 'model' | undefined {
   const agent = options.agents.find((a) => a.profileId === choice.profileId)
   if (!agent) return 'gone'
+  // L'arbitre ne participe pas (décision du 2026-11-25) : il jugerait son propre avis.
+  if (isArbiter(choice, options.arbiter, agent.modelChoice)) return 'arbiter'
   if (!agent.available) return 'unavailable'
   if (!choice.model) return undefined
   if (!agent.modelChoice) return 'model'
@@ -91,6 +96,8 @@ export function lineState(
   if (options && broken) {
     // Le modèle retiré se nomme lui-même ; sinon l'agent (ou un libellé générique s'il n'est plus).
     const agent = agentName(options, broken.profileId)
+    if (choiceTrouble(broken, options) === 'arbiter')
+      return { kind: 'arbiter', name: choiceLabel(broken, agent) }
     return {
       kind: 'unavailable',
       agent: choiceTrouble(broken, options) === 'model' ? choiceLabel(broken, agent) : agent
@@ -106,7 +113,8 @@ export function lineState(
 /** Entrée dans la ligne : envoyer, ouvrir le menu, ou rien (la ligne dit déjà pourquoi). */
 export function enterAction(state: LineState): 'send' | 'menu' | 'none' {
   if (state.kind === 'ready') return 'send'
-  if (state.kind === 'choose' || state.kind === 'unavailable') return 'menu'
+  if (state.kind === 'choose' || state.kind === 'unavailable' || state.kind === 'arbiter')
+    return 'menu'
   return 'none'
 }
 
@@ -231,7 +239,7 @@ export interface MenuEntry {
   modelChoice: boolean
   checked: boolean
   /** Case désactivée : 5 déjà cochées, ou agent indisponible ; la raison est dite. */
-  disabled?: 'full' | 'unavailable'
+  disabled?: 'full' | 'unavailable' | 'arbiter'
   reason?: string
 }
 
@@ -251,10 +259,24 @@ function entryOf(
   agent: RoundtableAgentOption,
   choice: RoundtableChoice,
   chosen: ReadonlySet<string>,
-  full: boolean
+  full: boolean,
+  arbiter?: RoundtableArbiter
 ): MenuEntry {
   const key = choiceKey(choice)
   const checked = chosen.has(key)
+  // Le modèle de la conversation fait la synthèse : désactivé (coché, il reste décochable).
+  if (isArbiter(choice, arbiter, agent.modelChoice)) {
+    return {
+      key,
+      choice,
+      label: choiceLabel(choice, agent.label),
+      agentLabel: agent.label,
+      modelChoice: !!choice.model,
+      checked,
+      ...(checked ? {} : { disabled: 'arbiter' as const }),
+      reason: i18next.t('roundtable.menu.arbiter')
+    }
+  }
   const disabled = !checked
     ? !agent.available
       ? ('unavailable' as const)
@@ -327,22 +349,26 @@ function listedEntries(
 ): { main: MenuEntry[]; others: MenuEntry[] } {
   const main: MenuEntry[] = []
   const others: MenuEntry[] = []
+  const arbiter = options?.arbiter
   for (const agent of options?.agents ?? []) {
     // Agent absent de cette machine (non installé) : pas proposé du tout, on ne propose pas ce
     // qu'on ne peut pas choisir. Déjà retenu, il reste en tête comme « orphelin », avec sa raison.
-    if (!agent.available) continue
+    // L'agent sans choix de modèle qui arbitre est indisponible pour le main, mais montré désactivé
+    // avec sa raison : on comprend pourquoi il manque.
+    const arbitrating = !agent.modelChoice && arbiter?.profileId === agent.profileId
+    if (!agent.available && !arbitrating) continue
     if (!choosesModel(agent)) {
-      main.push(entryOf(agent, { profileId: agent.profileId }, chosen, full))
+      main.push(entryOf(agent, { profileId: agent.profileId }, chosen, full, arbiter))
       continue
     }
     const shown = new Set<string>()
     for (const model of agent.recent) {
-      const entry = entryOf(agent, modelChoiceOf(agent, model), chosen, full)
+      const entry = entryOf(agent, modelChoiceOf(agent, model), chosen, full, arbiter)
       shown.add(entry.key)
       main.push(entry)
     }
     for (const model of agent.others) {
-      const entry = entryOf(agent, modelChoiceOf(agent, model), chosen, full)
+      const entry = entryOf(agent, modelChoiceOf(agent, model), chosen, full, arbiter)
       if (shown.has(entry.key)) continue
       shown.add(entry.key)
       // Coché parmi les autres : montré avec les récents, pour qu'on voie ce qui part.
