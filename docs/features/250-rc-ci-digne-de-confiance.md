@@ -205,6 +205,10 @@ Dependabot comme les autres.
   suites indicatives, macOS et Linux, où le défaut reste 2) ; jobs du lot écrits en tête du
   relevé ; « Broken pipe » de `ps | head` supprimé. Défaut en CI inchangé tant que les mesures
   `jobs=2` / `jobs=3` ne sont pas faites (règle proposée à part : branche `1.2-e2e-jobs-rule`).
+- 2026-11-25 — Règle proposée (branche `1.2-e2e-jobs-rule`, à fusionner selon les mesures
+  `jobs=2` / `jobs=3`) : `defaultJobs` d'après les cœurs aussi en CI, un job pour 2 cœurs arrondi
+  au-dessus, entre 1 et `CI_MAX_JOBS` = 3 (remplace `DEFAULT_JOBS`) : 2 sur le runner Mac (3
+  cœurs) et sur le runner Linux (4 cœurs, déjà `--jobs 2` dans `e2e.yml`).
 
 ## Reste à vérifier sur GitHub (après la poussée)
 

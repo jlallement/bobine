@@ -62,8 +62,8 @@ jobs:
     name: pnpm e2e (macOS arm64)
     if: github.event_name == 'schedule' || inputs.systeme == 'macos' || inputs.systeme == 'les-deux'
     runs-on: macos-15
-    # Français puis anglais, 3 suites à la fois (défaut du lanceur en CI) sur un runner à 3 cœurs :
-    # charge 15 à 20 relevée le 2026-11-25 (fiche 250) ; entrée `jobs` pour comparer.
+    # Français puis anglais, 2 suites à la fois (défaut du lanceur en CI : un job pour 2 cœurs) sur
+    # un runner à 3 cœurs ; à 3, charge 15 à 20 relevée le 2026-11-25 (fiche 250). Entrée `jobs`.
     timeout-minutes: 90
     steps:
       - name: Suites demandées

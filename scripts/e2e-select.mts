@@ -23,8 +23,11 @@ export type Scheme = (typeof BOTH)[number]
 export const THEME_MODES = ['auto', 'both', 'light', 'dark'] as const
 export type ThemeMode = (typeof THEME_MODES)[number]
 
-/** Processus en parallèle par défaut sur GitHub (`--jobs`) : runners à 3 cœurs. */
-export const DEFAULT_JOBS = 3
+/**
+ * Au plus, par défaut, en CI (`--jobs`). Fiche 250 (2026-11-25) : à 3 jobs sur le runner Mac de
+ * GitHub (3 cœurs, 7 Gio), charge 15 à 20 et pages qui mettent ~12 s à répondre.
+ */
+export const CI_MAX_JOBS = 3
 /**
  * Au plus, par défaut, sur une machine locale (fiche 279, mesuré sur un Mac à 15 cœurs) : à
  * 5 tâches le temps machine ne monte que de 2 % ; à 8, chaque lancement double, saturation.
@@ -36,12 +39,16 @@ export const isCi = (env: Readonly<Record<string, string | undefined>>): boolean
   env.GITHUB_ACTIONS === 'true' || env.CI === 'true'
 
 /**
- * `--jobs` par défaut : 3 en CI ; en local, un job pour 3 cœurs, entre 1 et `LOCAL_MAX_JOBS`
- * (les attentes des suites sont des minuteurs, pas du calcul). Avec d'autres travaux lourds à
- * côté, `--jobs 3` à la main.
+ * `--jobs` par défaut, d'après les cœurs dans les deux cas. En local, un job pour 3 cœurs, entre 1
+ * et `LOCAL_MAX_JOBS` (les attentes des suites sont des minuteurs, pas du calcul ; avec d'autres
+ * travaux lourds à côté, `--jobs 3` à la main). En CI, machine partagée sans marge : un job pour
+ * 2 cœurs arrondi au-dessus, entre 1 et `CI_MAX_JOBS` (2 sur les runners à 3 ou 4 cœurs, comme le
+ * `--jobs 2` déjà imposé sous Linux).
  */
 export const defaultJobs = (cores: number, ci: boolean): number =>
-  ci ? DEFAULT_JOBS : Math.max(1, Math.min(LOCAL_MAX_JOBS, Math.floor(cores / 3)))
+  ci
+    ? Math.max(1, Math.min(CI_MAX_JOBS, Math.ceil(cores / 2)))
+    : Math.max(1, Math.min(LOCAL_MAX_JOBS, Math.floor(cores / 3)))
 /**
  * Au plus : les ports des apps d'essai sont partagés entre les processus (plages de 300 ports
  * coupées en autant de tranches), 12 tranches de 25 ports restent confortables.
@@ -162,7 +169,7 @@ function themesOf(values: ReadonlyMap<string, string>, flags: ReadonlySet<string
  */
 export function parseArgs(
   argv: readonly string[],
-  defaults: { jobs: number } = { jobs: DEFAULT_JOBS }
+  defaults: { jobs: number } = { jobs: CI_MAX_JOBS }
 ): Options {
   const values = new Map<string, string>()
   const flags = new Set<string>()
