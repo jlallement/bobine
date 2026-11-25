@@ -15,7 +15,11 @@ import { childrenMergeHandlers } from './children-merge-ipc'
 
 const dirs: string[] = []
 afterEach(() => {
-  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true })
+  // Windows : un processus git qui finit tient encore le dossier un instant (`EPERM`, CI du
+  // 2026-11-25) ; quelques nouvelles tentatives espacées, comme le fait `rm -rf` sous Windows.
+  for (const dir of dirs.splice(0)) {
+    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
+  }
 })
 
 const git = (cwd: string, ...args: string[]) =>
