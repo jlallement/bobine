@@ -1147,3 +1147,28 @@ describe('dossier modifié : un seul avis par tour (S1 de la passe de contrôle)
     expect(screen.queryByTestId('roundtable-changed')).toBeNull()
   })
 })
+
+describe('M11 : lignes par lettre une fois la synthèse rendue', () => {
+  it('pendant le recueil, l’ordre des places ; repliée, A, B, C', () => {
+    const letters = () =>
+      [...card().querySelectorAll('[data-testid=roundtable-row]')].map(
+        (r) => (r as HTMLElement).dataset.letter
+      )
+    const collecting = roundtable([answered('A')])
+    const reversed = { ...collecting, seats: [...collecting.seats].reverse() }
+    const { unmount } = wrap(
+      <Transcript
+        items={thread(reversed, OPINIONS)}
+        onRespondPermission={vi.fn()}
+        onRespondElicitation={vi.fn()}
+        subtasks={info()}
+      />
+    )
+    expect(letters()).toEqual(['C', 'B', 'A'])
+    unmount()
+    const rt = done()
+    show(synthesized({ ...rt, seats: [...rt.seats].reverse() }, SYNTHESIS))
+    fireEvent.click(screen.getByTestId('roundtable-head-toggle'))
+    expect(letters()).toEqual(['A', 'B', 'C'])
+  })
+})

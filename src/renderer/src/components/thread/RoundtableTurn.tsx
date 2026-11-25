@@ -93,7 +93,10 @@ function RebuttalCard({
 }) {
   const { t } = useTranslation()
   const { item } = group
-  const seats = item.seats.filter((s) => s.rebuttal)
+  // Par lettre (A, B, C…), comme la carte repliée (M11).
+  const seats = item.seats
+    .filter((s) => s.rebuttal)
+    .sort((a, b) => a.letter.localeCompare(b.letter))
   const [open, setOpen] = useState<RoundtableLetter | undefined>()
   const running = seats.filter(
     (s) => s.rebuttal?.state === 'working' || s.rebuttal?.state === 'waiting'

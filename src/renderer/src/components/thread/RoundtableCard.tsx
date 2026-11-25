@@ -9,7 +9,7 @@
  * `window.api.roundtable`, et le main le refuse hors de sa phase.
  */
 import { ChevronDown, ChevronRight, Square, TriangleAlert } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import i18next from 'i18next'
 import {
@@ -309,6 +309,7 @@ export function RoundtableCard({
   // Repliée d'office après la synthèse ; un clic la rouvre (et la replie).
   const [reopened, setReopened] = useState(false)
   const collapsed = folded && !reopened
+  const cardRef = useHoldOnFold(folded)
   const [openLetter, setOpenLetter] = useState<RoundtableLetter | undefined>()
   const { gestures, refusal, pending } = useRoundtableGestures(info, item)
   const progress = useProgress(group)
@@ -322,6 +323,7 @@ export function RoundtableCard({
   const presence = useSeatPresence(item, info, !collapsed)
   return (
     <div
+      ref={cardRef}
       className="work-group roundtable-card"
       data-testid="roundtable-card"
       data-phase={item.phase}
@@ -362,7 +364,9 @@ export function RoundtableCard({
         <ModelChoiceAgents.Provider value={modelChoiceAgents(info)}>
           <SeatLetters.Provider value={!!item.synthesis?.sentAt}>
             <div className="work-group-rows">
-              {item.seats.map((seat) => (
+              {/* Repliée après la synthèse, les lignes se rangent par lettre (A, B, C…, M11) :
+                  au repli, jamais sous les yeux de l'utilisateur. */}
+              {(folded ? [...item.seats].sort(byLetter) : item.seats).map((seat) => (
                 <SeatRow
                   key={seat.letter}
                   seat={seat}
@@ -635,3 +639,38 @@ export function FolderChanged({
     </div>
   )
 }
+
+/**
+ * Repli de la carte à l'arrivée de la synthèse (S4 de la passe de contrôle) : si le fil ne suivait
+ * pas le bas, le haut de la carte reste où il était (le fil ne défile pas ; le début de la
+ * synthèse paraît juste sous la carte repliée). L'ancrage du défilement du navigateur gardait la
+ * fin du fil et faisait sortir la carte par le haut. Si le fil suivait le bas, rien ne change.
+ */
+function useHoldOnFold(folded: boolean) {
+  const cardRef = useRef<HTMLDivElement>(null)
+  // Défilement du fil juste avant le repli, et le fil suivait-il le bas.
+  const seen = useRef({ scrollTop: 0, following: true })
+  useEffect(() => {
+    const scroller = cardRef.current?.closest<HTMLElement>('.scroll')
+    if (!scroller) return
+    const note = () => {
+      seen.current = {
+        scrollTop: scroller.scrollTop,
+        following: scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 60
+      }
+    }
+    note()
+    scroller.addEventListener('scroll', note, { passive: true })
+    return () => scroller.removeEventListener('scroll', note)
+  }, [])
+  const wasFolded = useRef(folded)
+  useLayoutEffect(() => {
+    const scroller = cardRef.current?.closest<HTMLElement>('.scroll')
+    if (folded && !wasFolded.current && scroller && !seen.current.following)
+      scroller.scrollTop = seen.current.scrollTop
+    wasFolded.current = folded
+  }, [folded])
+  return cardRef
+}
+
+const byLetter = (a: { letter: string }, b: { letter: string }) => a.letter.localeCompare(b.letter)
