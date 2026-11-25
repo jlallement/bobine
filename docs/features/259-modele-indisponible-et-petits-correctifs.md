@@ -165,3 +165,30 @@ Aucune nouvelle dépendance. Pas d'ADR : on applique les règles des fiches 210 
   - E2e non lancées (consigne) : à lancer `connexion-expiree`, `onboarding`, `diagnostic`, `command` (`bobine <dossier>`),
     clair et sombre, captures de la carte et de l'étape Dossier à regarder.
 
+
+## Journal — 2026-11-25 : modèle affiché et modèle utilisé divergents (1.2.0-beta.1, E1, non corrigé)
+
+- Relevé en usage réel (évaluation « bricole », 18:17) : conversation sur OpenCode, puce et panneau
+  Session sur GPT-6.1 Sol, mais le message renvoyé échoue « Internal error: Model unavailable:
+  openai/gpt-5.6 », précédé de l'avis « Réglage « effort » non appliqué (default) : Réglage inconnu :
+  effort ». Journal de l'app (niveau normal, sans `agents.log`) : refus du premier message
+  (17:15:39Z, carte), relance de l'agent par `restartWith` (« Réessayer », 17:16:11Z), session rouverte
+  (même identifiant), réglages de la conversation `{model: gpt-6.1-sol, effort: default, mode: build}`
+  réappliqués, `effort` absent des options annoncées (refus côté app), renvoi refusé en 25 ms. Le refus
+  nomme un autre modèle que celui de la puce : erreur brute, pas la carte « Modèle refusé ».
+- Sonde ACP directe (OpenCode 2.3.0, abonnement ChatGPT, dossier temporaire vide, 2 messages refusés,
+  2 messages courts réussis), journal hors dépôt :
+  - `openai/gpt-5.6` n'est plus au catalogue (`-32602` « model not found ») : la séquence exacte ne
+    peut plus être rejouée. `openai/gpt-5.5` (proposé, refusé par ce compte) en tient lieu : refus
+    `-32603` « Internal error: The 'gpt-5.5' model is not supported when using Codex with a ChatGPT
+    account. » (`errorName: provider.invalid-request`), autre texte que « Model unavailable ».
+  - Réglage du modèle (`session/set_config_option`) : réponse en 3 à 7 ms portant déjà la nouvelle
+    valeur, aucun `config_option_update` ensuite (5 s guettées).
+  - Processus relancé, `session/load` : rend le dernier modèle **choisi** dans la session (6.1 Sol si
+    réglé avant l'arrêt, même sans message ensuite ; sinon le modèle refusé). `effort` toujours annoncé.
+  - Modèle réappliqué puis message envoyé aussitôt : parti et répondu (deux essais). **Divergence non
+    reproduite.**
+- Non corrigé (consigne : pas de correction sur une supposition). Pistes, à trancher : attendre que la
+  session annonce le modèle demandé avant un renvoi ; carte « Modèle refusé » quand le refus nomme un
+  autre modèle que celui de la puce. Hypothèse restante non vérifiable : modèle de la session sorti du
+  catalogue entre-temps (gpt-5.6 après la connexion à ChatGPT), qu'aucune sonde ne peut plus choisir.
