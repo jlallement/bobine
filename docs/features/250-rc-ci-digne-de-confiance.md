@@ -196,6 +196,19 @@ Dependabot comme les autres.
   détaché, hors du groupe du lanceur et sans chemin du dépôt, échappe au relevé. En local
   (`quick`, `browser-annotate`, `tour-de-table-vie`, `launch`, 5 jobs ; puis `launch`, `quick`
   en anglais, un job) : aucun processus restant.
+- 2026-11-25 — Relevé sur le runner Mac (run 45674773577, lot vert) : aucun processus restant
+  après le français ni après l'anglais ; machine à 3 cœurs et 7 Gio, charge 14,8 / 17,7 / 20,9
+  (1, 5, 15 min) en fin de lot français, 11,9 / 13,6 / 15,5 en fin d'anglais, 1,5 à 2,3 Gio
+  libres. Piste : la densité, 3 jobs par défaut en CI (`DEFAULT_JOBS`) soit un par cœur, quand
+  la règle locale en donne un pour 3 cœurs. Pour mesurer : entrée `jobs` du lancement à la main
+  de `e2e.yml` (par l'environnement, nombre de 1 à 12 ou rien ; lots français, anglais et
+  suites indicatives, macOS et Linux, où le défaut reste 2) ; jobs du lot écrits en tête du
+  relevé ; « Broken pipe » de `ps | head` supprimé. Défaut en CI inchangé tant que les mesures
+  `jobs=2` / `jobs=3` ne sont pas faites (règle proposée à part : branche `1.2-e2e-jobs-rule`).
+- 2026-11-25 — Règle proposée (branche `1.2-e2e-jobs-rule`, à fusionner selon les mesures
+  `jobs=2` / `jobs=3`) : `defaultJobs` d'après les cœurs aussi en CI, un job pour 2 cœurs arrondi
+  au-dessus, entre 1 et `CI_MAX_JOBS` = 3 (remplace `DEFAULT_JOBS`) : 2 sur le runner Mac (3
+  cœurs) et sur le runner Linux (4 cœurs, déjà `--jobs 2` dans `e2e.yml`).
 
 ## Reste à vérifier sur GitHub (après la poussée)
 

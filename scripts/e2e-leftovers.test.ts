@@ -94,6 +94,12 @@ describe('relevé de fin de lot e2e', () => {
     expect(line.endsWith('…')).toBe(true)
   })
 
+  it('dit les jobs du lot avant la charge', () => {
+    const machine = { load: [1, 1, 1], cores: 3, freeBytes: 0, totalBytes: 0 }
+    expect(formatLoad({ ...machine, jobs: 2 })).toMatch(/^2 jobs · charge 1\.00 /)
+    expect(formatLoad({ ...machine, jobs: 1 })).toMatch(/^1 job · charge /)
+  })
+
   it('dit la charge, les cœurs et la mémoire libre', () => {
     expect(
       formatLoad({

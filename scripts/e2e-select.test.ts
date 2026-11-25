@@ -176,9 +176,15 @@ describe('jobs par défaut (fiche 279)', () => {
     expect(defaultJobs(2, false)).toBe(1)
   })
 
-  it('en CI : 3, quelle que soit la machine', () => {
+  it('en CI : un job pour 2 cœurs arrondi au-dessus, au plus 3, au moins 1 (fiche 250)', () => {
+    // Runner Mac de GitHub (3 cœurs) et runner Linux (4 cœurs) : 2.
+    expect(defaultJobs(3, true)).toBe(2)
+    expect(defaultJobs(4, true)).toBe(2)
+    expect(defaultJobs(2, true)).toBe(1)
+    expect(defaultJobs(1, true)).toBe(1)
+    expect(defaultJobs(0, true)).toBe(1)
+    expect(defaultJobs(5, true)).toBe(3)
     expect(defaultJobs(15, true)).toBe(3)
-    expect(defaultJobs(2, true)).toBe(3)
     expect(isCi({ GITHUB_ACTIONS: 'true' })).toBe(true)
     expect(isCi({ CI: 'true' })).toBe(true)
     expect(isCi({})).toBe(false)

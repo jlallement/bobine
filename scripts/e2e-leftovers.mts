@@ -151,14 +151,17 @@ export interface LoadInfo {
   cores: number
   freeBytes: number
   totalBytes: number
+  /** Suites jouées en même temps par le lot (`--jobs`), pour comparer des lots entre eux. */
+  jobs?: number
 }
 
 const gib = (bytes: number): string => (bytes / 1024 ** 3).toFixed(1)
 
-/** Une ligne : charge moyenne (1, 5, 15 min), cœurs, mémoire libre. */
+/** Une ligne : jobs du lot (s'il y en a), charge moyenne (1, 5, 15 min), cœurs, mémoire libre. */
 export function formatLoad(l: LoadInfo): string {
   const [a = 0, b = 0, c = 0] = l.load
-  return `charge ${a.toFixed(2)} ${b.toFixed(2)} ${c.toFixed(2)} (1, 5, 15 min) · ${l.cores} cœurs · mémoire libre ${gib(l.freeBytes)} / ${gib(l.totalBytes)} Gio`
+  const jobs = l.jobs === undefined ? '' : `${l.jobs} job${l.jobs > 1 ? 's' : ''} · `
+  return `${jobs}charge ${a.toFixed(2)} ${b.toFixed(2)} ${c.toFixed(2)} (1, 5, 15 min) · ${l.cores} cœurs · mémoire libre ${gib(l.freeBytes)} / ${gib(l.totalBytes)} Gio`
 }
 
 /** Le relevé, prêt à écrire (dépôt raccourci en `.`, commandes tronquées). */
@@ -235,7 +238,7 @@ export const loadNow = (): LoadInfo => ({
  * un processus qui finissait de sortir (crashpad, rendu de Chromium) n'est pas un survivant.
  */
 export async function leftoverReport(
-  o: SnapshotOptions & { recheckMs?: number; title?: string }
+  o: SnapshotOptions & { recheckMs?: number; title?: string; jobs?: number }
 ): Promise<string[]> {
   const recheck = o.recheckMs ?? 3000
   let items = snapshotLeftovers(o)
@@ -245,7 +248,7 @@ export async function leftoverReport(
     items = snapshotLeftovers(o)
     waited = true
   }
-  const head = `${o.title ?? 'Relevé de fin de lot'}${waited ? ` (revu après ${recheck / 1000} s)` : ''} : ${formatLoad(loadNow())}`
+  const head = `${o.title ?? 'Relevé de fin de lot'}${waited ? ` (revu après ${recheck / 1000} s)` : ''} : ${formatLoad({ ...loadNow(), jobs: o.jobs })}`
   if (!items) return [head, 'processus : relevé indisponible sur ce système']
   return [head, ...formatLeftovers(items, o.root)]
 }

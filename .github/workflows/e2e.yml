@@ -38,14 +38,21 @@ on:
         type: choice
         options: [macos, linux, windows, les-deux]
         default: macos
+      jobs:
+        description: 'Suites en parallèle (`--jobs`, 1 à 12 ; vide : défaut du lanceur, 2 sous Linux)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
 
 # Suites demandées : passées par l'environnement, jamais interpolées dans un `run:` (fiche 218),
 # et refusées si elles contiennent autre chose que des noms et des options (`--jobs 1`).
+# Jobs (`--jobs`, fiche 250, mesure de la densité sur le runner Mac) : de même, un nombre ou rien,
+# appliqué aux lots français et anglais et aux suites indicatives, sur macOS et Linux.
 env:
   SUITES: ${{ inputs.suites }}
+  JOBS: ${{ inputs.jobs }}
   # La nuit : les deux thèmes pour toutes les suites (ADR-0071, `--themes both`). Sinon, vide : le
   # sombre ciblé du lanceur, ou `--light` / `--dark` passés dans les suites demandées.
   THEMES: ${{ github.event_name == 'schedule' && 'both' || '' }}
@@ -55,13 +62,18 @@ jobs:
     name: pnpm e2e (macOS arm64)
     if: github.event_name == 'schedule' || inputs.systeme == 'macos' || inputs.systeme == 'les-deux'
     runs-on: macos-15
-    # Français puis anglais, 3 suites à la fois sur un runner à 3 cœurs : large, jamais mesuré ici.
+    # Français puis anglais, 2 suites à la fois (défaut du lanceur en CI : un job pour 2 cœurs) sur
+    # un runner à 3 cœurs ; à 3, charge 15 à 20 relevée le 2026-11-25 (fiche 250). Entrée `jobs`.
     timeout-minutes: 90
     steps:
       - name: Suites demandées
         run: |
           if [[ ! "$SUITES" =~ ^[A-Za-z0-9\ ._=-]*$ ]]; then
             echo "::error::Suites refusées : seulement des noms de suites et des options (pnpm e2e --list)."
+            exit 1
+          fi
+          if [[ ! "$JOBS" =~ ^([1-9]|1[0-2])?$ ]]; then
+            echo "::error::Jobs refusés : un nombre de 1 à 12, ou rien."
             exit 1
           fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -97,7 +109,9 @@ jobs:
           [[ -n "$THEMES" ]] && themes=(--themes "$THEMES")
           skip=()
           [[ ${#suites[@]} -eq 0 ]] && skip=(--skip perf --skip simulator --skip android --skip browser --skip parcours-outils)
-          pnpm e2e ${themes[@]+"${themes[@]}"} ${skip[@]+"${skip[@]}"} ${suites[@]+"${suites[@]}"}
+          jobs=()
+          [[ -n "$JOBS" ]] && jobs=(--jobs "$JOBS")
+          pnpm e2e ${jobs[@]+"${jobs[@]}"} ${themes[@]+"${themes[@]}"} ${skip[@]+"${skip[@]}"} ${suites[@]+"${suites[@]}"}
       # Diagnostic (2026-11-25) : le lot anglais est par moments bien plus lent que le français et
       # des suites y attendent l'agent en vain. Relevé seulement, jamais bloquant : processus du
       # dépôt ou des dossiers jetables encore vivants, charge, mémoire, plus gros consommateurs.
@@ -109,7 +123,9 @@ jobs:
           memory_pressure -Q 2>/dev/null | tail -n 1 || true
           uptime
           echo "Plus gros consommateurs (pid, âge, %CPU, %MEM, commande) :"
-          ps -Ao pid=,etime=,%cpu=,%mem=,comm= -r | head -n 8 || true
+          # Sortie gardée entière puis coupée : `ps | head` faisait écrire « Broken pipe » à ps.
+          top_cpu="$(ps -Ao pid=,etime=,%cpu=,%mem=,comm= -r 2>/dev/null || true)"
+          head -n 8 <<< "$top_cpu"
       - name: Essais (anglais)
         run: |
           read -ra suites <<< "$SUITES"
@@ -117,7 +133,9 @@ jobs:
           [[ -n "$THEMES" ]] && themes=(--themes "$THEMES")
           skip=()
           [[ ${#suites[@]} -eq 0 ]] && skip=(--skip perf --skip simulator --skip android --skip browser --skip parcours-outils)
-          pnpm e2e --lang en ${themes[@]+"${themes[@]}"} ${skip[@]+"${skip[@]}"} ${suites[@]+"${suites[@]}"}
+          jobs=()
+          [[ -n "$JOBS" ]] && jobs=(--jobs "$JOBS")
+          pnpm e2e --lang en ${jobs[@]+"${jobs[@]}"} ${themes[@]+"${themes[@]}"} ${skip[@]+"${skip[@]}"} ${suites[@]+"${suites[@]}"}
       # Jouées et montrées (une annotation par contrôle en échec, `--indicative`), sans faire
       # échouer le job (voir plus haut). Français puis anglais, comme les autres.
       - name: Suites indicatives sur ce runner (perf, simulator, android, browser, parcours-outils)
@@ -126,9 +144,11 @@ jobs:
         run: |
           themes=()
           [[ -n "$THEMES" ]] && themes=(--themes "$THEMES")
+          jobs=()
+          [[ -n "$JOBS" ]] && jobs=(--jobs "$JOBS")
           rc=0
-          pnpm e2e --indicative ${themes[@]+"${themes[@]}"} perf simulator android browser parcours-outils || rc=1
-          pnpm e2e --indicative --lang en ${themes[@]+"${themes[@]}"} perf simulator android browser parcours-outils || rc=1
+          pnpm e2e --indicative ${jobs[@]+"${jobs[@]}"} ${themes[@]+"${themes[@]}"} perf simulator android browser parcours-outils || rc=1
+          pnpm e2e --indicative --lang en ${jobs[@]+"${jobs[@]}"} ${themes[@]+"${themes[@]}"} perf simulator android browser parcours-outils || rc=1
           exit $rc
       - name: Captures
         if: always()
@@ -152,6 +172,10 @@ jobs:
         run: |
           if [[ ! "$SUITES" =~ ^[A-Za-z0-9\ ._=-]*$ ]]; then
             echo "::error::Suites refusées : seulement des noms de suites et des options (pnpm e2e --list)."
+            exit 1
+          fi
+          if [[ ! "$JOBS" =~ ^([1-9]|1[0-2])?$ ]]; then
+            echo "::error::Jobs refusés : un nombre de 1 à 12, ou rien."
             exit 1
           fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -201,7 +225,7 @@ jobs:
           [[ -n "$THEMES" ]] && themes=(--themes "$THEMES")
           skip=()
           [[ ${#suites[@]} -eq 0 ]] && skip=(--skip perf)
-          xvfb-run -a -s "-screen 0 1920x1200x24" scripts/with-wm pnpm e2e --jobs 2 ${themes[@]+"${themes[@]}"} ${skip[@]+"${skip[@]}"} ${suites[@]+"${suites[@]}"}
+          xvfb-run -a -s "-screen 0 1920x1200x24" scripts/with-wm pnpm e2e --jobs "${JOBS:-2}" ${themes[@]+"${themes[@]}"} ${skip[@]+"${skip[@]}"} ${suites[@]+"${suites[@]}"}
       # `perf` jouée et montrée (une annotation par contrôle en échec), sans faire échouer le job
       # (voir plus haut) : ses mesures restent lisibles.
       - name: Mesures de performance (indicatives sur cette machine)
@@ -210,7 +234,9 @@ jobs:
         run: |
           themes=()
           [[ -n "$THEMES" ]] && themes=(--themes "$THEMES")
-          xvfb-run -a -s "-screen 0 1920x1200x24" scripts/with-wm pnpm e2e --indicative ${themes[@]+"${themes[@]}"} perf
+          jobs=()
+          [[ -n "$JOBS" ]] && jobs=(--jobs "$JOBS")
+          xvfb-run -a -s "-screen 0 1920x1200x24" scripts/with-wm pnpm e2e --indicative ${jobs[@]+"${jobs[@]}"} ${themes[@]+"${themes[@]}"} perf
       - name: Captures
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

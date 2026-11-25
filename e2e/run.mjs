@@ -22,8 +22,9 @@
  *   pnpm e2e --indicative perf          sur GitHub, chaque contrôle en échec devient une annotation
  *                                       `::warning::` ; code de sortie inchangé (fiche 250)
  *
- * En parallèle (`--jobs N` ; par défaut un job pour 3 cœurs, au plus 5, et 3 sur GitHub : fiche
- * 279 ; `--jobs 3` à la main si d'autres travaux lourds tournent), chaque suite et chaque thème
+ * En parallèle (`--jobs N` ; par défaut un job pour 3 cœurs, au plus 5 : fiche 279 ; en CI, un
+ * pour 2 cœurs, au plus 3 : fiche 250 ; `--jobs 3` à la main si d'autres travaux lourds
+ * tournent), chaque suite et chaque thème
  * tournent dans leur propre
  * processus (`pool.mjs`) : une ligne par suite finie (durée, job), sa sortie entière si elle
  * échoue (`--verbose` : toujours). Une suite qui prend une ressource de toute la machine tourne
@@ -255,7 +256,12 @@ if (options.indicative && !isChild && process.env.GITHUB_ACTIONS === 'true') {
 // Relevé (pas un garde-fou) : ce que le lot laisse vivre, et la charge de la machine.
 if (!isChild) {
   console.log()
-  for (const line of await leftoverReport({ root, runId: process.env[RUN_MARK] })) {
+  const report = await leftoverReport({
+    root,
+    runId: process.env[RUN_MARK],
+    jobs: parallel ? options.jobs : 1
+  })
+  for (const line of report) {
     console.log(line)
   }
 }
