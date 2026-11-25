@@ -35,7 +35,8 @@ fichier.
 
 « 3 participants ▾ » ouvre un menu à cases : les modèles utilisés récemment d'abord, puis
 **Autres modèles…** pour chercher dans la liste complète. Un agent qui ne laisse pas choisir son
-modèle (IBM Bob) tient sur une ligne. Un agent absent de cet ordinateur n'est pas proposé. De deux à cinq participants ; au-delà, les autres cases se
+modèle (IBM Bob) tient sur une ligne. Un agent absent de cet ordinateur n'est pas proposé. De deux
+à cinq participants ; au-delà, les autres cases se
 désactivent.
 
 Chaque case est retenue aussitôt, pour ce tour et les suivants : il n'y a rien à enregistrer. La
@@ -78,10 +79,19 @@ carte (« conversation à la corbeille ») ; restaurée, sa ligne redevient ce q
 Quand tous ont fini avec au moins deux avis, la conversation reçoit d'elle-même les avis, sans le
 nom des modèles (« Participant A, B, C ») : elle juge les arguments, pas les marques. Sa réponse
 porte l'étiquette « Synthèse du tour de table », et la carte se replie en une ligne (un clic la
-rouvre). Au survol ou au focus de « Participant C », le vrai nom s'affiche.
+rouvre). Au survol ou au focus de « Participant C » (ou « Participants B et C »), le vrai nom
+s'affiche ; sur la carte, chaque ligne porte sa lettre, pour faire le lien quand la synthèse écrit
+la lettre seule.
 
-**Demander à … de l'appliquer** envoie à la conversation un message ordinaire : c'est le seul
-moment où des fichiers peuvent changer.
+La synthèse et la décision se font en lecture seule : la conversation ne peut ni écrire ni lancer
+de commande pendant ces tours. Si son agent passe outre, un avertissement s'affiche sous
+l'étiquette, avec les fichiers modifiés. **Demander à … de l'appliquer** envoie à la conversation
+un message ordinaire : c'est le seul moment où des fichiers changent.
+
+Le modèle de la conversation fait la synthèse : il ne peut pas être participant (il jugerait son
+propre avis). Dans le menu, sa case est désactivée et dit pourquoi ; si vous changez le modèle de
+la conversation pour celui d'un participant, la ligne le dit, et la synthèse ne part pas tant que
+ce n'est pas réglé.
 
 Après un redémarrage de Bobine, rien ne repart seul : la carte propose **Synthétiser avec N avis**
 ou **Relancer le participant arrêté** (**Relancer les N participants arrêtés**).

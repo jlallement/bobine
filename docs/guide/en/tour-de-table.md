@@ -77,7 +77,16 @@ own, without the model names (“Participant A, B, C”): it judges the argument
 answer is labelled “Roundtable synthesis”, and the card folds into one line (a click opens it
 again). Hovering or focusing “Participant C” shows the real name.
 
-**Ask … to apply it** sends the conversation an ordinary message: the only time files may change.
+The synthesis and the decision are read-only: the conversation can neither write nor run a
+command during those turns. If its agent goes ahead anyway, a warning shows under the label, with
+the changed files. **Ask … to apply it** sends the conversation an ordinary message: the only time
+files change.
+
+The conversation’s model writes the synthesis: it cannot be a participant (it would judge its own
+opinion). In the menu its box is disabled and says why; if you switch the conversation to a
+participant’s model, the line says so, and the synthesis does not start until that is settled.
+Each row of the card carries its letter, to make the link when the synthesis writes the letter
+alone.
 
 After Bobine restarts, nothing starts again on its own: the card offers **Synthesize with N
 opinions** or **Run the stopped participant again** (**Run the N stopped participants again**).
