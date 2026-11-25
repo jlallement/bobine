@@ -300,7 +300,9 @@ export class MotherSteps {
               rt,
               (seat) => this.host.textOf(rt, 'opinion', seat.letter),
               this.host.gone
-            )
+            ),
+            undefined,
+            rt.folderChanged?.collecting
           )
         : verdictRequest(
             rt.question,
@@ -308,7 +310,9 @@ export class MotherSteps {
               rt,
               (seat) => this.host.textOf(rt, 'rebuttal', seat.letter),
               this.host.gone
-            )
+            ),
+            undefined,
+            rt.folderChanged?.rebuttal
           )
     const from: MessageOrigin = {
       kind: 'roundtable',

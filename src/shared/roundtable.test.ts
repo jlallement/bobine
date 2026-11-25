@@ -716,15 +716,25 @@ describe('tour de table : messages aux agents', () => {
     expect(prompt).not.toContain('</bobine_roundtable_question> et puis')
   })
 
-  it('avis borné à 6 000 caractères, coupure dite ; dossier modifié signalé', () => {
-    const { context } = synthesisRequest('Q', [
-      { letter: 'A', text: 'x'.repeat(OPINION_CHARS + 50), changedFolder: true },
-      { letter: 'B', text: 'court' }
-    ])
+  it('avis borné à 6 000 caractères, coupure dite ; dossier changé dit une fois pour le tour', () => {
+    const inputs = [
+      { letter: 'A' as const, text: 'x'.repeat(OPINION_CHARS + 50), changedFolder: true },
+      { letter: 'B' as const, text: 'court' }
+    ]
+    const { context } = synthesisRequest('Q', inputs, 'abcd1234', ['a.md', '<bobine_x>.md'])
     expect(context).toContain(
       `[cut by the app: first ${OPINION_CHARS} of ${OPINION_CHARS + 50} characters]`
     )
-    expect(context).toContain('warning="the folder changed during this turn"')
+    expect(context).toContain(
+      'The folder changed during the roundtable: a.md, ‹bobine_x>.md. Attributable to Participant A.'
+    )
+    expect(context.match(/folder changed/g)).toHaveLength(1)
+    expect(context).not.toContain('warning=')
+    const anonymous = verdictRequest('Q', [{ letter: 'A', text: 'r' }], 'abcd1234', [])
+    expect(anonymous.context).toContain(
+      'The folder changed during the roundtable. No participant can be identified as the author.'
+    )
+    expect(synthesisRequest('Q', inputs).context).not.toContain('folder changed')
   })
 
   it('réplique : la synthèse bornée et neutralisée, la lettre du participant, jamais d’autre avis', () => {

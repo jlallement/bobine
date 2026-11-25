@@ -246,4 +246,53 @@ describe('garde-fou des rôles en lecture seule (fiche 223)', () => {
     expect(watch.watching).toBe(0)
     expect(posted).toEqual([])
   })
+
+  it('passe de contrôle S1 : écart attribuable à qui a écrit, ou à qui travaillait seul ; jamais à un tour arrêté ; mère jamais avertie', async () => {
+    let folder = 'propre'
+    const run: Run = async (_file, args) => ({
+      code: 0,
+      stdout: Buffer.from(args[0] === 'status' ? folder : ''),
+      stderr: ''
+    })
+    const facts: [string, { attributable: boolean; stopped: boolean }][] = []
+    const posted: [string, AgentEvent][] = []
+    const participant = (id: string) => summary(id, { ...CHILD, id })
+    const watch = new ReadOnlyWatch({
+      conversations: { post: (id, event) => posted.push([id, event]) > 0 },
+      summary: (id) => (id === 'm' ? summary('m') : participant(id)),
+      run,
+      changed: (id, f) => facts.push([id, f]),
+      group: () => 'tour'
+    })
+    const send = (id: string, event: AgentEvent) => watch.onEvent({ conversationId: id, event })
+    const tick = () => new Promise((resolve) => setTimeout(resolve, 20))
+    const edit: AgentEvent = {
+      type: 'update',
+      update: { sessionUpdate: 'tool_call', toolCallId: 'w', title: 'write', kind: 'edit' }
+    }
+    // Trois tours qui se chevauchent : seul `a` a lancé un outil d'écriture ; `c` s'arrête.
+    for (const id of ['a', 'b', 'c']) send(id, userMessage)
+    send('a', edit)
+    await tick()
+    folder = `${folder}+`
+    send('a', turnEnd)
+    send('b', turnEnd)
+    send('c', { type: 'turn-end', stopReason: 'cancelled' })
+    await Promise.all(['a', 'b', 'c'].map((id) => watch.settled(id)))
+    expect(Object.fromEntries(facts)).toEqual({
+      a: { attributable: true, stopped: false },
+      b: { attributable: false, stopped: false },
+      c: { attributable: false, stopped: true }
+    })
+    // Un seul participant au travail : l'écart lui revient, même sans outil annoncé.
+    facts.length = 0
+    send('b', userMessage)
+    await tick()
+    folder = `${folder}+`
+    send('b', turnEnd)
+    await watch.settled('b')
+    expect(facts).toEqual([['b', { attributable: true, stopped: false }]])
+    // La conversation d'origine ne reçoit aucun bandeau par participant.
+    expect(posted.filter(([id]) => id === 'm')).toEqual([])
+  })
 })

@@ -29,7 +29,7 @@ export interface ReadOnlyWatchDeps {
   summary: (id: string) => ConversationSummary
   run: Run
   /** Un écart constaté (fiche 265 : la carte du Code reviewer le dit aussi). */
-  changed?: (id: string) => void
+  changed?: (id: string, facts: ChangeFacts) => void
   /**
    * Groupe de conversations qui travaillent ensemble sur le même dossier (participants d'un même
    * tour de table, fiche 285) : leurs outils ne rendent pas les tours des autres « partagés ».
@@ -44,6 +44,17 @@ export interface ReadOnlyWatchDeps {
   inRepo?: (workspace: string) => boolean
 }
 
+/** Ce qu'on sait d'un écart, pour l'attribuer (participants d'un tour de table, fiche 285). */
+export interface ChangeFacts {
+  /**
+   * L'écart lui revient : il a lui-même lancé un outil qui peut écrire pendant ce tour, ou aucun
+   * autre membre de son groupe ne travaillait pendant ce tour.
+   */
+  attributable: boolean
+  /** Son tour s'est arrêté ou a échoué (jamais marqué). */
+  stopped: boolean
+}
+
 interface Turn {
   workspace: string
   /** Empreinte de départ ; `undefined` : elle n'a pas pu être prise. */
@@ -52,6 +63,10 @@ interface Turn {
   shared: boolean
   /** Groupe de la conversation (`group`) : ses outils ne rendent pas « partagés » les autres. */
   group?: string
+  /** Elle a lancé elle-même un outil qui peut écrire pendant ce tour. */
+  wrote: boolean
+  /** Un autre membre de son groupe a travaillé pendant une partie de ce tour. */
+  overlapped: boolean
 }
 
 /** Fille en lecture seule suivie ici : un rôle de conseil, ou le Code reviewer (fiche 265). */
@@ -81,8 +96,9 @@ export class ReadOnlyWatch {
     else if (event.type === 'turn-end' || event.type === 'turn-error') {
       const turn = this.turns.get(id)
       this.turns.delete(id)
+      const stopped = event.type === 'turn-error' || event.stopReason === 'cancelled'
       if (turn) {
-        const done = this.check(id, turn).catch((error: unknown) =>
+        const done = this.check(id, turn, stopped).catch((error: unknown) =>
           log.warn('Lecture seule : fin de tour non vérifiée :', messageOf(error))
         )
         this.checking.set(id, done)
@@ -170,13 +186,31 @@ export class ReadOnlyWatch {
    */
   private begin(id: string, workspace: string, baseline: Promise<string | undefined>): void {
     const group = this.deps.group?.(id)
-    this.turns.set(id, { workspace, baseline, shared: false, ...(group ? { group } : {}) })
+    // Tours du même groupe qui se chevauchent : aucun n'est seul pendant ce temps.
+    let overlapped = false
+    if (group !== undefined) {
+      for (const [other, turn] of this.turns) {
+        if (other === id || turn.group !== group) continue
+        turn.overlapped = true
+        overlapped = true
+      }
+    }
+    this.turns.set(id, {
+      workspace,
+      baseline,
+      shared: false,
+      wrote: false,
+      overlapped,
+      ...(group ? { group } : {})
+    })
   }
 
   private noteTool(id: string, update: { sessionUpdate: string; kind?: string | null }): void {
     if (this.turns.size === 0) return
     if (update.sessionUpdate !== 'tool_call' && update.sessionUpdate !== 'tool_call_update') return
     if (!update.kind || !WRITING_KINDS.has(update.kind)) return
+    const own = this.turns.get(id)
+    if (own) own.wrote = true
     const workspace = this.find(id)?.workspace
     // Même groupe (participants d'un tour de table) : pas « partagé » ; un changement du dossier
     // sera dit à tous les tours qui se chevauchent (`check`).
@@ -187,7 +221,7 @@ export class ReadOnlyWatch {
     }
   }
 
-  private async check(id: string, turn: Turn): Promise<void> {
+  private async check(id: string, turn: Turn, stopped: boolean): Promise<void> {
     if (turn.shared) {
       this.deps.unjudged?.(id)
       return
@@ -213,14 +247,15 @@ export class ReadOnlyWatch {
     }
     if (after === before) return
     log.warn(`Rôle en lecture seule (${id.slice(0, 8)}) : le dossier a changé pendant son tour`)
-    this.deps.changed?.(id)
+    this.deps.changed?.(id, { attributable: turn.wrote || !turn.overlapped, stopped })
     this.deps.conversations.post(id, {
       type: 'notice',
       level: 'warning',
       message: { key: 'roles.notice.folderChanged' }
     })
     const motherId = child.startedFrom?.id
-    if (motherId && this.find(motherId)) {
+    // Participant d'un tour de table : un seul avis, sur la carte du tour (fiche 285, S1).
+    if (motherId && turn.group === undefined && this.find(motherId)) {
       this.deps.conversations.post(motherId, {
         type: 'notice',
         level: 'warning',

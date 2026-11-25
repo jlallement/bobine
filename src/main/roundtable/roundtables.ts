@@ -68,6 +68,8 @@ import { SeatEvents, type SeatRef } from './seat-events'
 import type { StepFolder } from './step-folder'
 import type { AgentModels } from './agent-models'
 import { newRoundtable } from './new-roundtable'
+import { TourFolder } from './tour-folder'
+import { cancelQuietly, dropPending } from './conversation-ops'
 import { MotherSteps, titleOf } from './steps'
 import { IdleWaiters } from './idle-waiters'
 
@@ -188,10 +190,12 @@ export class Roundtables implements RoundtableService {
   private launchCount = 0
   private readonly steps: MotherSteps
   private readonly idle: IdleWaiters
+  private readonly tourFolder: TourFolder
   private readonly seats: SeatEvents
 
   constructor(deps: RoundtablesDeps) {
     this.deps = deps
+    this.tourFolder = new TourFolder(deps.folder)
     this.idle = new IdleWaiters(
       (id) => deps.conversations.state().conversations.find((c) => c.id === id)?.status,
       (id) => deps.conversations.view(id).snapshot?.queued.length ?? 0
@@ -233,9 +237,12 @@ export class Roundtables implements RoundtableService {
     // qu'il n'a pas pu juger ramène la lecture seule « demandée » à « non vérifiée ».
     deps.children.watchParticipants({
       group: (childId) => this.seatsByChild.get(childId)?.roundtableId,
-      changed: (childId) => {
+      // Marque de place seulement si l'écart lui est attribuable, jamais sur un tour arrêté ; le
+      // fait lui-même appartient au tour (`TourFolder`, passe de contrôle S1).
+      changed: (childId, facts) => {
         const ref = this.seatsByChild.get(childId)
-        if (ref) apply(ref.motherId, ref.roundtableId, this.seats.folderChanged(ref))
+        if (ref && facts.attributable && !facts.stopped)
+          apply(ref.motherId, ref.roundtableId, this.seats.folderChanged(ref))
       },
       unjudged: (childId) => {
         const ref = this.seatsByChild.get(childId)
@@ -360,6 +367,12 @@ export class Roundtables implements RoundtableService {
       const tour = this.live.get(after.roundtableId)
       if (tour) tour.attachments = []
     }
+    const ended = (stage: 'collecting' | 'rebuttal') =>
+      this.tourFolder.end(after.roundtableId, stage, (event) =>
+        this.apply(motherId, after.roundtableId, event)
+      )
+    if (before.phase === 'collecting' && after.phase !== 'collecting') ended('collecting')
+    if (before.phase === 'rebutting' && after.phase !== 'rebutting') ended('rebuttal')
     if (after.phase === 'synthesizing' || after.phase === 'deciding') this.steps.schedule(motherId)
     if (AGENTS_RELEASED.has(after.phase) && before.phase !== after.phase) {
       const late = (id: string) => !!this.deps.conversations.profileOf(id)?.costSource
@@ -383,29 +396,12 @@ export class Roundtables implements RoundtableService {
     }
   }
 
-  /** Réplique de ce tour encore en file ou retenue au plafond chez ce participant : retirée. */
   private dropPending(childId: string, roundtableId: string): void {
-    this.deps.dropHeld?.(childId, roundtableId)
-    try {
-      const queued = this.deps.conversations.view(childId).snapshot?.queued ?? []
-      for (const message of queued) {
-        if (message.from?.kind === 'roundtable' && message.from.id === roundtableId) {
-          this.deps.conversations.unqueue(childId, message.id)
-        }
-      }
-    } catch {
-      // Conversation partie entre-temps : plus rien en file.
-    }
+    dropPending(this.deps.conversations, this.deps.dropHeld, childId, roundtableId)
   }
 
   private cancel(conversationId: string): void {
-    try {
-      void this.deps.conversations.cancel(conversationId).catch((error: unknown) => {
-        log.warn(`Tour de table : arrêt de ${conversationId.slice(0, 8)} impossible :`, error)
-      })
-    } catch {
-      // Conversation partie entre-temps : plus rien à arrêter.
-    }
+    cancelQuietly(this.deps.conversations, conversationId)
   }
 
   /** Le tour est mené par ce processus : ses places sont suivies, il n'est plus « à régler ». */
@@ -473,6 +469,7 @@ export class Roundtables implements RoundtableService {
     await Promise.all(
       rt.seats.flatMap((s) => (s.childId ? [this.deps.children.watchSettled(s.childId)] : []))
     )
+    await this.tourFolder.settled(rt.roundtableId)
   }
 
   // -------------------------------------------------------------------------------------------
@@ -649,6 +646,8 @@ export class Roundtables implements RoundtableService {
         summary,
         request
       )
+      // Empreinte du dossier avant toute question (le fait « dossier changé » est celui du tour).
+      await this.tourFolder.begin(rt.roundtableId, 'collecting', summary.workspace)
       if (summary.draft) this.deps.conversations.keepDraft(motherId, request.question)
       const exchange = lastExchangeText(items)
       if (exchange) rt.withLastExchange = true
@@ -833,6 +832,8 @@ export class Roundtables implements RoundtableService {
     const next = this.apply(motherId, roundtableId, { type: 'rebuttal', at: this.now() })
     if (!next) throw new Error(t('roundtable.error.phase'))
     log.info(`Tour de table ${roundtableId.slice(0, 8)} : réplique demandée`)
+    // Empreinte du dossier avant le départ des répliques (passe de contrôle, S1).
+    const ready = this.tourFolder.begin(roundtableId, 'rebuttal', this.summary(motherId).workspace)
     for (const seat of next.seats) {
       if (seat.rebuttal?.state !== 'waiting' || !seat.childId) continue
       // Conversation à la corbeille : pas de réplique, sans erreur.
@@ -858,11 +859,11 @@ export class Roundtables implements RoundtableService {
         )
       // Envoyée au repos du participant, jamais en file d'attente : l'empreinte de lecture seule
       // se prend avant l'envoi, pas en même temps que l'agent commence (contre-revue, N7).
-      if (!this.idle.restless(childId)) send()
-      else
-        void this.idle
-          .atRest(childId, () => this.rebuttalWaiting(ref) && this.exists(childId))
-          .then((ok) => ok && send())
+      void ready
+        .then(() =>
+          this.idle.atRest(childId, () => this.rebuttalWaiting(ref) && this.exists(childId))
+        )
+        .then((ok) => ok && send())
     }
   }
 
