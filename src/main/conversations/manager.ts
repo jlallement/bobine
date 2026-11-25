@@ -93,6 +93,7 @@ import {
   draftSessionsOpen,
   dropAllDraftSessions,
   stepCommandOf,
+  shownMother,
   type ChildLink,
   type DetachedRequest,
   type Origin
@@ -369,9 +370,7 @@ export class ConversationManager {
   }
 
   /** Commande d'une étape du profil (connexion, licence), à lancer dans le terminal de l'app. */
-  stepCommand(id: string, stepId: string): string {
-    return stepCommandOf(this.profileOf(id), stepId)
-  }
+  stepCommand = (id: string, stepId: string): string => stepCommandOf(this.profileOf(id), stepId)
 
   /* ---------- Navigation ---------- */
 
@@ -1257,6 +1256,9 @@ export class ConversationManager {
    * l'espace Code, même dossier (le dépôt principal pour un worktree supprimé, fiche 036).
    */
   private replaceActive(record: ConversationRecord, gone: boolean): void {
+    // Une fille rangée (« Nettoyer », archivée, supprimée) : sa conversation d'origine (E3).
+    const mother = shownMother(record, (id) => this.conversations.get(id))
+    if (mother) return void this.select(mother)
     const profileId = this.profileOrDefault(record.profileId).id
     const draft =
       record.space === 'discussion'
@@ -1482,9 +1484,7 @@ export class ConversationManager {
   }
 
   /** Attend les écritures asynchrones en cours (tests). */
-  settled(): Promise<void> {
-    return this.writer.settled()
-  }
+  settled = (): Promise<void> => this.writer.settled()
 
   /**
    * Fil de la conversation, lu du disque à la première demande. Un fichier abîmé est mis de côté

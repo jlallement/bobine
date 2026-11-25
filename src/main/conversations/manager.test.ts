@@ -1278,6 +1278,31 @@ describe('ConversationManager', () => {
     app.manager.stopAll()
   })
 
+  it('« Nettoyer » une fille ouverte : sa conversation d’origine revient, pas une conversation vide (E3)', async () => {
+    const env = environment()
+    const repo = realpathSync(env.workspaceA)
+    const git = (...args: string[]) =>
+      execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', ...args], {
+        cwd: repo,
+        encoding: 'utf8'
+      }).trim()
+    writeFileSync(join(repo, 'README.md'), 'un\n')
+    git('init', '-q', '-b', 'main')
+    git('add', '.')
+    git('commit', '-q', '-m', 'init')
+    const app = env.launch()
+    const mother = app.manager.state().activeId
+    await app.manager.prompt(mother, 'Délègue')
+    const child = await app.manager.createChild(mother, 'La tâche')
+    app.manager.select(child.id)
+    const worktree = app.manager.leaveWorktree(child.id)
+    await new Worktrees(gitCommand).remove(worktree, { force: true })
+    expect(app.manager.state().activeId).toBe(mother)
+    // Aucune conversation vide créée à la place de la fille.
+    expect(app.manager.state().conversations.filter((c) => c.draft)).toEqual([])
+    app.manager.stopAll()
+  })
+
   it('dossier hérité disparu : la nouvelle conversation repart d’un dossier qui existe, et le dit (0.9.1, D21)', async () => {
     const env = environment()
     const app = env.launch()

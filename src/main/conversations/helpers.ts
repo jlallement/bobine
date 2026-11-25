@@ -626,3 +626,16 @@ export function stepCommandOf(profile: AgentProfile | undefined, stepId: string)
   if (!step) throw new Error(t('conversations.error.unknownStep', { step: stepId }))
   return step.command
 }
+
+/**
+ * Conversation à montrer quand la conversation active part (archivée, nettoyée, supprimée) et que
+ * c'est une fille : sa mère, si elle est là, ni brouillon ni archivée (évaluation du 2026-11-25, E3 :
+ * « Nettoyer » ouvrait une conversation vide à l'agent arrêté). Sinon `undefined`.
+ */
+export function shownMother(
+  record: Pick<ConversationRecord, 'startedFrom'>,
+  get: (id: string) => Pick<Conversation, 'draft' | 'record'> | undefined
+): string | undefined {
+  const mother = record.startedFrom && get(record.startedFrom.id)
+  return mother && !mother.draft && !mother.record.archived ? mother.record.id : undefined
+}

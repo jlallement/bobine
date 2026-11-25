@@ -198,3 +198,8 @@ dossier de l'utilisateur.
     bout de la branche, rien en cours ; rouge sans le repli) ; `commit.gpgSign=true` avec un
     programme de signature en échec : git refuse déjà le commit de fusion lui-même, avant toute
     récriture — refus net, ni la base ni la branche n'avancent (comportement d'avant, gardé).
+- 2026-11-25 (E3, suite) : « Nettoyer » sur une fille ouverte ouvrait une conversation vide (agent
+  arrêté) à sa place (0.9.1, D21). Désormais, quand la conversation active qui part (archivée,
+  nettoyée, supprimée) est une fille, sa mère est montrée si elle est là, ni brouillon ni archivée
+  (`shownMother`, `helpers.ts`) ; sinon, comme avant, une nouvelle conversation dans le dépôt
+  principal. Essai `manager.test.ts` (rouge avant).

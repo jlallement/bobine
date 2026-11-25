@@ -24,6 +24,8 @@ What changes for you, version by version. Shown in Settings › About.
 - **OpenCode with a ChatGPT account**: a model the account doesn’t allow (“… is not supported when
   using Codex with a ChatGPT account”) shows the “The … model didn’t answer” card with “Choose
   another model”, no longer the raw error.
+- **Cleaning up an open child task** brings you back to its original conversation, instead of
+  opening an empty one.
 
 ## 1.2.0-beta.1 — November 25, 2026
 

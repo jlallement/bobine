@@ -26,6 +26,8 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 - **OpenCode avec un compte ChatGPT** : un modèle que le compte ne permet pas (« … is not supported
   when using Codex with a ChatGPT account ») montre la carte « Le modèle … n’a pas répondu » avec
   « Choisir un autre modèle », plus l’erreur brute.
+- **Nettoyer une tâche fille** ouverte ramène à sa conversation d’origine, au lieu d’ouvrir une
+  conversation vide.
 
 ## 1.2.0-beta.1 — 25 novembre 2026
 
