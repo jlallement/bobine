@@ -6722,7 +6722,8 @@
         "nuances": "nuance",
         "rallies": "se rallie"
       },
-      "requested": "Réplique demandée par le tour de table"
+      "requested": "Réplique demandée par le tour de table",
+      "waiting": "en attente : il finit son travail en cours"
     },
     "decision": {
       "label": "Décision du tour de table · {{model}}",

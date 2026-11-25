@@ -6433,7 +6433,8 @@
         "nuances": "nuances",
         "rallies": "rallies"
       },
-      "requested": "Rebuttal requested by the roundtable"
+      "requested": "Rebuttal requested by the roundtable",
+      "waiting": "waiting: finishing its current work"
     },
     "decision": {
       "label": "Roundtable decision · {{model}}",

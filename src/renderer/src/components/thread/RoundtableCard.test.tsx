@@ -757,6 +757,16 @@ describe('gestes : un à la fois, refus dits', () => {
 })
 
 describe('réplique et décision', () => {
+  it('réplique pas encore partie (le participant finit son travail) : « en attente », dit', () => {
+    show(synthesized(done([{ type: 'rebuttal', at: T0 + 2 }]), SYNTHESIS))
+    const rows = screen.getAllByTestId('roundtable-rebuttal-row')
+    expect(rows.length).toBe(3)
+    for (const row of rows)
+      expect(plain(within(row).getByTestId('roundtable-row-meta').textContent)).toBe(
+        'en attente : il finit son travail en cours'
+      )
+  })
+
   it('positions par ligne, puis la décision et « Appliquer » seul', () => {
     const rt = done([
       { type: 'rebuttal', at: T0 + 2 },

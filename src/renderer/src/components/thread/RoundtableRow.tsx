@@ -469,17 +469,20 @@ export function RebuttalRow({
   const done = rebuttal.state === 'answered' && !!text
   const meta = rebuttal.held
     ? t('roundtable.rebuttal.held')
-    : running
-      ? activity
-        ? undefined
-        : t('roundtable.state.working')
-      : rebuttal.state === 'stopped' && rebuttal.stopped
-        ? t(STOP_KEYS[rebuttal.stopped])
-        : rebuttal.state === 'error'
-          ? t('roundtable.state.error', {
-              reason: t(REASON_KEYS[rebuttal.error ?? 'agent-error'])
-            })
-          : text && rebuttalSummary(text)
+    : rebuttal.state === 'waiting'
+      ? // Pas encore partie : le participant finit ce qu'il faisait (elle part à son repos).
+        t('roundtable.rebuttal.waiting')
+      : running
+        ? activity
+          ? undefined
+          : t('roundtable.state.working')
+        : rebuttal.state === 'stopped' && rebuttal.stopped
+          ? t(STOP_KEYS[rebuttal.stopped])
+          : rebuttal.state === 'error'
+            ? t('roundtable.state.error', {
+                reason: t(REASON_KEYS[rebuttal.error ?? 'agent-error'])
+              })
+            : text && rebuttalSummary(text)
   const asRow = {
     ...seat,
     state: rebuttal.state,
@@ -496,7 +499,7 @@ export function RebuttalRow({
       onToggle={onToggle}
       lead={done ? undefined : <StateIcon state={iconOf(asRow)} />}
       meta={
-        running && activity ? (
+        running && activity && rebuttal.state !== 'waiting' ? (
           <RowActivity activity={activity} workspace={child?.workspace} />
         ) : (
           meta || undefined

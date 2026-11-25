@@ -6506,6 +6506,7 @@ export type FrResources = {
         readonly rallies: 'se rallie'
       }
       readonly requested: 'Réplique demandée par le tour de table'
+      readonly waiting: 'en attente : il finit son travail en cours'
     }
     readonly decision: {
       readonly label: 'Décision du tour de table · {{model}}'
