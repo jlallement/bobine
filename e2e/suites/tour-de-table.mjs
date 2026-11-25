@@ -443,8 +443,12 @@ async function nominal(scheme) {
         await ui.waitFor(`!document.querySelector('[role=tooltip]')`, 5000)
         // Au clavier (focus visible), sans pointeur : Tab jusqu'à la lettre.
         await ui.ev(`(() => { document.activeElement?.blur(); return true })()`)
-        for (let i = 0; i < 80 && !(await ui.ev(`document.activeElement === ${letter}`)); i++)
+        for (let i = 0; i < 200 && !(await ui.ev(`document.activeElement === ${letter}`)); i++)
           await ui.press('Tab')
+        check(
+          await ui.ev(`document.activeElement === ${letter}`),
+          `lettre atteinte au clavier (${await ui.ev(`document.activeElement?.outerHTML.slice(0, 120)`)})`
+        )
         await ui.waitFor(`!!document.querySelector('[role=tooltip]')`, 5000)
         check(true, 'lettre : infobulle au focus seul')
 

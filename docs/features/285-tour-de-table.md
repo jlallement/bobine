@@ -1144,3 +1144,7 @@ le main n'a pas livré l'étape 1) :
   dit déjà « vérifiée dans le dépôt seulement ». E2e : section « vie des participants »
   (`tour-de-table-vie.mjs`) : arrêt, barre latérale pendant et après, « Ouvrir sa conversation »,
   corbeille puis restauration, synthèse retenue par le plafond puis « Continuer ».
+  Défaut trouvé par l'e2e (une fois sur trois sous charge) : l'infobulle ouverte par le focus
+  clavier d'une lettre se refermait aussitôt, au défilement qui amène l'élément en vue (Radix ferme
+  au défilement). `Tip` (`common/Menus.tsx`) garde ouverte une infobulle ouverte par le focus quand
+  un défilement la ferme dans les 300 ms ; le départ du pointeur la ferme toujours (`Tip.test.tsx`).

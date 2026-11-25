@@ -145,7 +145,6 @@ async function heldSynthesis(scheme) {
         await ui.ready()
         await ui.closePanel()
         await arbiterModel(ui)
-        const model = await ui.ev(`${ui.$('model-chip')}.textContent.trim()`)
         await ui.send('Bonjour')
         await ui.ready()
         // Plafond plus bas que ce premier tour : donné à la conversation par « Par défaut »
@@ -183,6 +182,8 @@ async function heldSynthesis(scheme) {
         await ui.click(`${lastCap}.querySelector('[data-testid=cost-cap-continue]')`)
         await ui.waitFor(`!!${ui.$('roundtable-answer-label')}`, 40_000)
         const label = await ui.ev(`${ui.$('roundtable-answer-label')}.textContent`)
+        // Le modèle de la conversation (inchangé depuis la demande), lu une fois la synthèse rendue.
+        const model = await ui.ev(`${ui.$('model-chip')}.textContent.trim()`)
         check(
           label === L('roundtable.synthesis.label', { model }),
           `étiquette de la synthèse : le modèle qui l’a écrite (${label})`

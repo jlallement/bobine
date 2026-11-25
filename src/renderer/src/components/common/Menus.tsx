@@ -56,6 +56,12 @@ if (typeof window !== 'undefined') {
  * sans clavier ni souris dessus : pas d'infobulle. Sans prise en charge de `:focus-visible` (jsdom
  * des essais), rien n'est filtré.
  */
+/** Délai pendant lequel le défilement dû au focus ne ferme pas l'infobulle qu'il vient d'ouvrir. */
+const FOCUS_SCROLL_MS = 300
+
+/** Fermeture demandée par Radix pendant un évènement de défilement (et non au départ du pointeur). */
+const closedByScroll = (): boolean => (globalThis as { event?: Event }).event?.type === 'scroll'
+
 export function focusWithoutIntent(element: HTMLElement): boolean {
   if (document.activeElement !== element || Date.now() - lastPointerDown > 800) return false
   if (typeof CSS === 'undefined' || !CSS.supports?.('selector(:focus-visible)')) return false
@@ -85,11 +91,23 @@ export function Tip({
   const keys = command && SHORTCUTS.find((shortcut) => shortcut.command === command)?.keys
   const trigger = useRef<HTMLButtonElement>(null)
   const [open, setOpen] = useState(false)
+  const focusOpenedAt = useRef(0)
   // Une infobulle suit le survol ou le focus au clavier, pas un focus rendu par un menu qui se
   // ferme : elle recouvrait ce qu'on venait d'ouvrir (fiche 185, F7).
   const onOpenChange = (next: boolean) => {
     const element = trigger.current
     if (next && element && focusWithoutIntent(element)) return
+    const focused = !!element && document.activeElement === element
+    if (next && focused) focusOpenedAt.current = Date.now()
+    // Le défilement qui amène l'élément focalisé en vue ferme l'infobulle (Radix ferme au
+    // défilement) : juste après un focus, elle reste ouverte (fiche 285, lettres au clavier).
+    if (
+      !next &&
+      focused &&
+      closedByScroll() &&
+      Date.now() - focusOpenedAt.current < FOCUS_SCROLL_MS
+    )
+      return
     setOpen(next)
   }
   return (
