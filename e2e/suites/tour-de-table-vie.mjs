@@ -10,6 +10,7 @@ import {
   choose,
   layoutStill,
   searchStill,
+  startLock,
   watchLayout,
   env,
   repo,
@@ -47,6 +48,7 @@ const activeId = `window.api.conversations.get().then((s) => s.activeId)`
 
 async function stopAndSidebar(scheme) {
   const workspace = repo()
+  const starts = startLock()
   try {
     await withApp(
       scheme,
@@ -61,10 +63,12 @@ async function stopAndSidebar(scheme) {
         await choose(ui, [PEER(), 'Alpha', 'Beta', 'Gamma'])
         // Recueil mesuré à 760 px : aucune ligne ne bouge quand un participant répond.
         await ui.viewport(760)
+        starts.hold()
         await ui.ev(`${ui.$('composer-input')}.focus()`)
         await ui.enter()
         await ui.waitFor(`!!${ui.$('roundtable-card')}`, 20_000)
         await watchLayout(ui)
+        await starts.release(ui, 4)
         await ui.waitFor(
           `${rowState('Alpha', 'answered')} && ${rowState('Beta', 'answered')} && !!${rowOf('Gamma')}?.querySelector('[data-testid=roundtable-relaunch]') && ${rowState(PEER(), 'working')}`,
           30_000
@@ -174,6 +178,7 @@ async function stopAndSidebar(scheme) {
       undefined,
       'synthese-tour-de-table',
       env(workspace, {
+        ...starts.env,
         MOCK_AGENT_SCENARIO_BY_MODEL: BY_MODEL('avis-lent'),
         MOCK_AGENT_DELAY_MS: '150',
         // L'agent factice met 2,5 s à rendre un tour annulé : « arrêt en cours » se voit.
@@ -181,6 +186,7 @@ async function stopAndSidebar(scheme) {
       })
     )
   } finally {
+    starts.cleanup()
     rmSync(workspace, { recursive: true, force: true })
   }
 }
@@ -257,6 +263,7 @@ async function heldSynthesis(scheme) {
  */
 async function twoTours(scheme) {
   const workspace = repo()
+  const starts = startLock()
   try {
     await withApp(
       scheme,
@@ -270,10 +277,12 @@ async function twoTours(scheme) {
         await choose(ui, ['Alpha', 'Beta', 'Omega', 'Gamma'])
         // Recueil mesuré à 520 px (la colonne de droite sous le nom, sa place réservée).
         await ui.viewport(520)
+        starts.hold()
         await ui.ev(`${ui.$('composer-input')}.focus()`)
         await ui.enter()
         await ui.waitFor(`!!${ui.$('roundtable-card')}`, 20_000)
         await watchLayout(ui)
+        await starts.release(ui, 4)
         await ui.waitFor(`!!${ui.$('roundtable-actions')}`, 60_000)
         await layoutStill(ui, 'recueil, 520 px', 3)
         await ui.viewport()
@@ -315,10 +324,12 @@ async function twoTours(scheme) {
       undefined,
       'synthese-tour-de-table',
       env(workspace, {
+        ...starts.env,
         MOCK_AGENT_SCENARIO_BY_MODEL: `${BY_MODEL()},factice-precis=synthese-lettres-seules`
       })
     )
   } finally {
+    starts.cleanup()
     rmSync(workspace, { recursive: true, force: true })
   }
 }

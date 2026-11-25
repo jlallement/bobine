@@ -153,34 +153,69 @@ export const watchLayout = (ui) =>
   ui.ev(`(() => {
     const seen = { rows: {}, foot: [], frames: 0, changes: 0 }
     window.__rtLayout = seen
-    let last = ''
-    const tick = () => {
-      const card = [...document.querySelectorAll('[data-testid=roundtable-card]')].at(-1)
-      if (card && card.dataset.phase === 'collecting' && !card.querySelector('.roundtable-row.open')) {
-        const top = card.getBoundingClientRect().top
-        const rows = [...card.querySelectorAll('[data-testid=roundtable-row]')]
-        const states = rows.map((r) => r.dataset.state + (r.querySelector('[data-testid=roundtable-changed]') ? '+' : '')).join(',')
-        if (last && states !== last) seen.changes++
-        last = states
-        seen.frames++
-        for (const r of rows) {
-          const y = Math.round(r.getBoundingClientRect().top - top)
-          const h = Math.round(r.getBoundingClientRect().height)
-          const key = r.dataset.letter
-          seen.rows[key] ??= []
-          if (!seen.rows[key].includes(y + ':' + h)) seen.rows[key].push(y + ':' + h)
-        }
-        const foot = card.querySelector('[data-testid=roundtable-foot]')
-        if (foot) {
-          const y = Math.round(foot.getBoundingClientRect().top - top) + ':' + Math.round(foot.getBoundingClientRect().height)
-          if (!seen.foot.includes(y)) seen.foot.push(y)
-        }
+    const card = () => [...document.querySelectorAll('[data-testid=roundtable-card]')].at(-1)
+    const measuring = (c) => c && c.dataset.phase === 'collecting' && !c.querySelector('.roundtable-row.open')
+    const measure = () => {
+      const c = card()
+      if (!measuring(c)) return
+      const top = c.getBoundingClientRect().top
+      for (const r of c.querySelectorAll('[data-testid=roundtable-row]')) {
+        const y = Math.round(r.getBoundingClientRect().top - top)
+        const h = Math.round(r.getBoundingClientRect().height)
+        const key = r.dataset.letter
+        seen.rows[key] ??= []
+        if (!seen.rows[key].includes(y + ':' + h)) seen.rows[key].push(y + ':' + h)
       }
-      if (window.__rtLayout === seen) requestAnimationFrame(tick)
+      const foot = c.querySelector('[data-testid=roundtable-foot]')
+      if (foot) {
+        const y = Math.round(foot.getBoundingClientRect().top - top) + ':' + Math.round(foot.getBoundingClientRect().height)
+        if (!seen.foot.includes(y)) seen.foot.push(y)
+      }
+    }
+    // Chaque changement d'état d'une ligne, un par un (un relevé par image en regroupait plusieurs
+    // quand l'agent allait plus vite que l'affichage : 2 changements vus au lieu de 7).
+    const observer = new MutationObserver((records) => {
+      const c = card()
+      if (!measuring(c)) return
+      for (const m of records) {
+        const row = m.target
+        if (row.dataset?.testid === 'roundtable-row' && c.contains(row) && m.oldValue !== row.dataset.state) seen.changes++
+      }
+      measure()
+    })
+    observer.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['data-state'], attributeOldValue: true })
+    const tick = () => {
+      if (window.__rtLayout !== seen) return observer.disconnect()
+      if (measuring(card())) seen.frames++
+      measure()
+      requestAnimationFrame(tick)
     }
     requestAnimationFrame(tick)
     return true
   })()`)
+
+/**
+ * Verrou de démarrage des agents factices (`MOCK_AGENT_START_LOCK`) : posé avant l'envoi, les
+ * participants restent « en attente » ; retiré une fois la mesure en place (`watchLayout`), chaque
+ * ligne change d'état sous ses yeux, quelle que soit la vitesse de la machine.
+ */
+export function startLock() {
+  const dir = mkdtempSync(join(tmpdir(), 'bob-e2e-tour-de-table-demarrage-'))
+  const file = join(dir, 'verrou')
+  return {
+    env: { MOCK_AGENT_START_LOCK: file },
+    hold: () => writeFileSync(file, ''),
+    /** Mesure en place et toutes les lignes « en attente » : les agents démarrent. */
+    release: async (ui, rows) => {
+      await ui.waitFor(
+        `(() => { const r = [...document.querySelectorAll('[data-testid=roundtable-card]')].at(-1)?.querySelectorAll('[data-testid=roundtable-row]') ?? []; return r.length === ${rows} && [...r].every((x) => x.dataset.state === 'waiting') })()`,
+        20_000
+      )
+      rmSync(file, { force: true })
+    },
+    cleanup: () => rmSync(dir, { recursive: true, force: true })
+  }
+}
 
 /** Résultat de `watchLayout` : une seule position par ligne et pour le pied, malgré des changements. */
 export async function layoutStill(ui, label, minChanges = 1) {
@@ -619,6 +654,7 @@ async function nominal(scheme) {
 /** 2. Cas dégradés. */
 async function degraded(scheme) {
   const workspace = repo()
+  const starts = startLock()
   try {
     await withApp(
       scheme,
@@ -631,6 +667,7 @@ async function degraded(scheme) {
         await ui.waitFor(`!!${ui.$('roundtable-line')}`)
         // Lent (B), en erreur, refusé, qui écrit, sain.
         await choose(ui, [PEER(), 'Gamma', 'Zeta', 'Delta', 'Alpha'])
+        starts.hold()
         await ui.ev(`${ui.$('composer-input')}.focus()`)
         await ui.enter()
         await ui.waitFor(`!!${ui.$('roundtable-card')}`, 20_000)
@@ -639,6 +676,7 @@ async function degraded(scheme) {
         // passait alors sous 600 px pendant la mesure (forme empilée, mesurée à 760 et 520 px).
         await ui.closePanel()
         await watchLayout(ui)
+        await starts.release(ui, 5)
 
         // Modèle refusé : dit sur sa ligne, sans substitution ; plus de « Choisir un autre
         // modèle » (S2 de la passe de contrôle) : le menu le signalera au tour suivant.
@@ -723,6 +761,7 @@ async function degraded(scheme) {
       undefined,
       'synthese-tour-de-table',
       env(workspace, {
+        ...starts.env,
         MOCK_AGENT_SCENARIO_BY_MODEL: BY_MODEL('avis-lent'),
         MOCK_AGENT_WRITES: 'silent',
         // Le lent le reste le temps des gestes (100 pas de 150 ms) ; les autres scénarios du tour
@@ -731,6 +770,7 @@ async function degraded(scheme) {
       })
     )
   } finally {
+    starts.cleanup()
     rmSync(workspace, { recursive: true, force: true })
   }
 }

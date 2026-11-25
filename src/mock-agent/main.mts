@@ -165,7 +165,9 @@ const connection = connectMockAgent(stream, {
     ? { slowStartMs: Number(values['demarrage-lent'] ?? process.env['MOCK_AGENT_SLOW_START_MS']) }
     : {}),
   ...(values['verrou-fin-de-tour'] ? { turnLock: values['verrou-fin-de-tour'] } : {}),
-  ...(values['verrou-demarrage'] ? { startLock: values['verrou-demarrage'] } : {}),
+  ...((values['verrou-demarrage'] ?? process.env['MOCK_AGENT_START_LOCK'])
+    ? { startLock: values['verrou-demarrage'] ?? process.env['MOCK_AGENT_START_LOCK'] }
+    : {}),
   ...(process.env['MOCK_AGENT_SLOW_CANCEL_MS']
     ? { slowCancelMs: Number(process.env['MOCK_AGENT_SLOW_CANCEL_MS']) }
     : {}),
