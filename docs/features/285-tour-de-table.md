@@ -1500,3 +1500,10 @@ le main n'a pas livré l'étape 1) :
   suivant. Corrigé : un tour fini pendant la relecture du précédent laisse un premier changement à
   celui-ci et continue de lire pour le sien (rien n'est tu, seule la fin de lecture en dépend).
   Essai à horloge simulée dans `session-cost.test.ts` (rouge avant).
+
+- 2026-11-25 : fix18 — modèle de la conversation toujours dans la liste principale du menu des
+  participants (désactivé, sa raison), même hors des récents (profil neuf, modèle jamais répondu ;
+  régression d'E7, voir fiche 108). Profil neuf sans récent : la liste principale montre l'arbitre et
+  les agents sans choix de modèle, les modèles annoncés restent sous « Autres modèles… » (recherche
+  comprise) ; le premier usage (« 2 à 5 modèles ») s'y fait. Essais `roundtable-view.test.ts` (rouges
+  avant), e2e `tour-de-table-vie` (`285-menu-arbitre`).

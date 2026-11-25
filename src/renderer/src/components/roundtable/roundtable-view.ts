@@ -398,11 +398,15 @@ function listedEntries(
       main.push(entry)
     }
     for (const model of agent.others) {
-      const entry = entryOf(agent, modelChoiceOf(agent, model), chosen, full, arbiter)
+      const choice = modelChoiceOf(agent, model)
+      const entry = entryOf(agent, choice, chosen, full, arbiter)
       if (shown.has(entry.key)) continue
       shown.add(entry.key)
-      // Coché parmi les autres : montré avec les récents, pour qu'on voie ce qui part.
-      ;(entry.checked ? main : others).push(entry)
+      // Coché parmi les autres : montré avec les récents, pour qu'on voie ce qui part. Le modèle de
+      // la conversation aussi, désactivé avec sa raison, même s'il n'a encore répondu à rien (il
+      // n'est pas un récent : fix18) ; sinon un profil neuf ne verrait pas qui fait la synthèse.
+      const upfront = entry.checked || isArbiter(choice, arbiter, agent.modelChoice)
+      ;(upfront ? main : others).push(entry)
     }
   }
   return { main, others }

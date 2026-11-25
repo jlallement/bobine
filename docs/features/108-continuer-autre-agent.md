@@ -176,3 +176,12 @@ Pas de nouvelle dépendance.
   lit pas les récents. Récents déjà enregistrés gardés tels quels (pas de migration cette nuit).
   Essais : `models-seen.test.ts`, `manager.test.ts` (modèle choisi sans réponse : absent ; après un
   tour : en tête ; rouge avant).
+- 2026-11-25 (fix18, régression d'E7 trouvée par la suite e2e complète de la 1.2.0-beta.2) : le
+  menu des participants du tour de table ne montrait plus le modèle de la conversation (l'arbitre,
+  désactivé « écrit la synthèse ») quand il venait d'être choisi : la liste principale du menu est
+  « récents + cochés », et ce modèle n'entre plus dans les récents avant d'avoir répondu. Corrigé dans
+  le menu (`roundtable-view.ts`) : l'arbitre est toujours dans la liste principale, récent ou non.
+  Autres lecteurs des récents vérifiés : « Continuer avec un autre agent » (les récents ne sont que
+  des raccourcis ; « Choisir le modèle de … » propose tous les modèles annoncés), tâches filles,
+  relecture et puce de la saisie (réglage de modèle de la session, pas les récents), nom des
+  participants (`new-roundtable.ts`, modèles annoncés) : rien d'autre à corriger.

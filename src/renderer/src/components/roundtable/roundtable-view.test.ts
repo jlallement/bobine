@@ -350,6 +350,27 @@ describe('l’arbitre ne participe pas (décision du 2026-11-25)', () => {
     expect(all(opts).find((e) => e.choice.model?.value === 'deep')?.disabled).toBeUndefined()
   })
 
+  it('modèle de la conversation hors des récents (jamais répondu) : dans la liste principale (fix18)', () => {
+    // Choisi dans la puce, il n'a encore répondu à rien : pas un récent (E7), mais toujours montré,
+    // désactivé avec sa raison, pas rangé sous « Autres modèles… ».
+    const { main, others } = menuEntries(
+      options({ arbiter: { profileId: 'agent-a', model: 'nemo' } }),
+      []
+    )
+    expect(main.find((e) => e.choice.model?.value === 'nemo')?.disabled).toBe('arbiter')
+    expect(others.some((e) => e.choice.model?.value === 'nemo')).toBe(false)
+  })
+
+  it('profil neuf, aucun récent : les modèles annoncés restent proposés (fix18)', () => {
+    const fresh = options({ arbiter: { profileId: 'agent-a', model: 'nemo' } })
+    const a = fresh.agents[0] as RoundtableAgentOption
+    fresh.agents[0] = { ...a, recent: [], others: [...a.recent, ...a.others] }
+    const { main, others } = menuEntries(fresh, [])
+    expect(main.map((e) => e.choice.model?.value ?? e.agentLabel)).toEqual(['nemo', 'Agent B'])
+    // Les autres, cochables, sous « Autres modèles… » (recherche comprise) : deux au moins.
+    expect(others.filter((e) => !e.disabled).length).toBeGreaterThanOrEqual(2)
+  })
+
   it('un agent sans choix de modèle qui arbitre : montré désactivé, même indisponible', () => {
     const opts = options({ arbiter: { profileId: 'agent-b' } })
     opts.agents[1] = { ...(opts.agents[1] as RoundtableAgentOption), available: false, reason: 'x' }
