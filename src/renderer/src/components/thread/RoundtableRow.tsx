@@ -237,13 +237,15 @@ function seatSide(
   if (seat.state === 'answered') {
     if (c.collecting)
       side.push(`${t('roundtable.state.answered')}${duration ? ` · ${duration}` : ''}`)
-    else if (c.digest?.confidence) side.push(t(CONFIDENCE_KEYS[c.digest.confidence]))
+    // Format non suivi (sans réponse courte lue, recette C3) : dit d'abord, la confiance seule
+    // ne suffit pas à résumer l'avis.
     else if (c.digest && !c.digest.followed)
       side.push(
         <span className="roundtable-format" data-testid="roundtable-format">
           {t('roundtable.formatNotFollowed')}
         </span>
       )
+    else if (c.digest?.confidence) side.push(t(CONFIDENCE_KEYS[c.digest.confidence]))
   }
   if (c.running && duration) side.push(duration)
   if (!c.running && seat.state !== 'answered' && !c.collecting && !c.actions.relaunch)

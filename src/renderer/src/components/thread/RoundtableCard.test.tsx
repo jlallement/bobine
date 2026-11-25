@@ -757,6 +757,18 @@ describe('gestes : un à la fois, refus dits', () => {
 })
 
 describe('réplique et décision', () => {
+  it('C3 (recette) : un avis sans réponse courte lue dit « format non suivi », même avec sa confiance', () => {
+    show(
+      synthesized(done(), SYNTHESIS).map((i) =>
+        i.kind === 'child-report' && i.childId === 'child-A'
+          ? { ...i, reply: '## Arguments\n- x\n## Confiance\nhaute', excerpt: '## Arguments' }
+          : i
+      )
+    )
+    fireEvent.click(screen.getByTestId('roundtable-head-toggle'))
+    expect(within(row('A')).getByTestId('roundtable-format')).toBeTruthy()
+  })
+
   it('réplique pas encore partie (le participant finit son travail) : « en attente », dit', () => {
     show(synthesized(done([{ type: 'rebuttal', at: T0 + 2 }]), SYNTHESIS))
     const rows = screen.getAllByTestId('roundtable-rebuttal-row')
