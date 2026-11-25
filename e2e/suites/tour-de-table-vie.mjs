@@ -315,9 +315,10 @@ async function arbiterWrites(scheme) {
         const arbiterRow = `[...document.querySelectorAll('[data-testid=roundtable-option]')].find((o) => o.title === ${JSON.stringify(L('roundtable.menu.arbiter'))})`
         await affirm(ui, '285-menu-arbitre', [
           probes.custom(
-            'le modèle de la conversation : désactivé, avec sa raison',
+            'le modèle de la conversation : désactivé, sa raison en clair, même hauteur que les autres',
             `const o = ${arbiterRow}
-            return { ok: !!o && o.getAttribute('aria-disabled') === 'true' && o.textContent.includes(${JSON.stringify(await ui.ev(`${ui.$('model-chip')}.textContent.trim()`))}), detail: o?.textContent }`
+            const others = [...document.querySelectorAll('[data-testid=roundtable-option]')].filter((x) => x !== o).map((x) => Math.round(x.getBoundingClientRect().height))
+            return { ok: !!o && o.querySelector('[data-testid=roundtable-option-reason]')?.textContent === ${JSON.stringify(L('roundtable.menu.arbiterShort'))} && others.every((h) => h === Math.round(o.getBoundingClientRect().height)) && o.getAttribute('aria-disabled') === 'true' && o.textContent.includes(${JSON.stringify(await ui.ev(`${ui.$('model-chip')}.textContent.trim()`))}), detail: o?.textContent }`
           )
         ])
         await ui.key('Escape')

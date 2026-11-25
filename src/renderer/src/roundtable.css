@@ -211,6 +211,14 @@
   font-size: 12.5px;
   flex-shrink: 0;
 }
+/* Raison de l'arbitre à la place de l'agent : une ligne, comme les autres (coupée au besoin). */
+.roundtable-option-reason {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .roundtable-others {
   display: flex;
   align-items: center;

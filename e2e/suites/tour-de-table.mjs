@@ -289,7 +289,7 @@ async function nominal(scheme) {
             // Seulement les agents de l'essai : ce qui est installé sur la machine (Bob, OpenCode)
             // ne change pas le résultat (un agent absent n'est pas proposé du tout).
             `const mine = [${JSON.stringify(L('profiles.mock.label'))}, ${JSON.stringify(PEER())}]
-            const opts = [...document.querySelectorAll('[data-testid=roundtable-option]')].filter((o) => mine.some((m) => o.textContent.includes(m)))
+            const opts = [...document.querySelectorAll('[data-testid=roundtable-option]')].filter((o) => mine.some((m) => o.textContent.includes(m)) || !!o.querySelector('[data-testid=roundtable-option-reason]'))
             const off = opts.filter((o) => o.getAttribute('aria-selected') !== 'true')
             return { ok: opts.filter((o) => o.getAttribute('aria-selected') === 'true').length === 5 && off.length > 0 && off.every((o) => o.getAttribute('aria-disabled') === 'true' && [${JSON.stringify(L('roundtable.menu.full'))}, ${JSON.stringify(L('roundtable.menu.arbiter'))}].includes(o.title)) && off.some((o) => o.title === ${JSON.stringify(L('roundtable.menu.arbiter'))}), detail: off.map((o) => o.textContent + ':' + o.getAttribute('aria-disabled')).join(', ') }`
           ),
