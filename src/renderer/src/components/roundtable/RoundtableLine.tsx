@@ -101,9 +101,14 @@ function ParticipantsTip({
                     : t('roundtable.line.by', { models: listText(g.models), agent: g.agent })}
               </span>
             ))}
-            <span className="roundtable-tip-sends">
-              {t(sendsKey(files, roundtable.options?.lastExchange === true))}
-            </span>
+            {/* « Chacun reçoit la question » : le pied du menu le dit déjà (simplification 8) ;
+                seuls les fichiers joints et le dernier échange sont dits ici. */}
+            {sendsKey(files, roundtable.options?.lastExchange === true) !==
+              'roundtable.line.sendsQuestion' && (
+              <span className="roundtable-tip-sends">
+                {t(sendsKey(files, roundtable.options?.lastExchange === true))}
+              </span>
+            )}
           </Tooltip.Content>
         </Tooltip.Portal>
       )}

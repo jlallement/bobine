@@ -157,7 +157,11 @@ function choiceDestination(
   const model = choice.model
     ? [...agent.recent, ...agent.others].find((m) => m.value === choice.model?.value)
     : undefined
-  return destinationName(model?.destination ?? agent.destination)
+  // Le fournisseur du modèle, sinon ce que l'on sait de l'agent : chaque agent dit où vont les
+  // données (M15), pas seulement le premier.
+  return (
+    (model ? destinationName(model.destination) : undefined) ?? destinationName(agent.destination)
+  )
 }
 
 /** Infobulle de « N participants » : un agent par ligne, dans l'ordre des participants. */

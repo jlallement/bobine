@@ -354,3 +354,21 @@ describe('modèle par défaut (contre-recette N2)', () => {
     expect(group && agentOnly(group)).toBe(true)
   })
 })
+
+describe('infobulle des participants (revue finale, M15)', () => {
+  it('chaque agent dit où vont les données, même quand son modèle ne le dit pas', () => {
+    const opts = options()
+    opts.agents[0] = {
+      ...(opts.agents[0] as RoundtableAgentOption),
+      destination: { kind: 'agent', text: 'service A' }
+    }
+    const groups = participantGroups(
+      [
+        { profileId: 'agent-a', model: { controlId: 'model', value: 'deep', name: 'DeepSeek' } },
+        { profileId: 'agent-b' }
+      ],
+      opts
+    )
+    expect(groups.map((g) => g.destinations)).toEqual([['service A'], ['service en ligne B']])
+  })
+})
