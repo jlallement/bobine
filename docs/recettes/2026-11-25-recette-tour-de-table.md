@@ -13,6 +13,9 @@ modifié. Captures : [2026-11-25-recette-tour-de-table/](2026-11-25-recette-tour
 
 ## En bref
 
+> **Contre-recette du 2026-11-25 (commit `8359fdcb`)** : S1, S2 et S3 corrigés et vérifiés
+> avec de vrais agents ; 3 gênants nouveaux. Voir la section « Contre-recette du 2026-11-25 ».
+
 - **Verdict : oui, prête à être essayée par l'utilisateur, avec réserves.** Rien de bloquant. Le
   parcours est complet avec de vrais agents : lancement en deux gestes, recueil en parallèle,
   synthèse automatique, réplique et décision, « Appliquer », arrêt, « Synthétiser sans attendre »,
@@ -516,6 +519,114 @@ seuil franchissement ou sortie », « Test sortie() article inconnu ») : rien n
 - **Forme étroite de la ligne, thème clair, `--lang en`, corbeille et archivage** : hors du
   périmètre demandé.
 
+## Contre-recette du 2026-11-25
+
+Branche `1.2` à `8359fdcb`, build du dépôt. Profil temporaire, verrou e2e pris puis rendu. Même
+dépôt jetable, remis propre. Journal en Trace, puis Détaillé. Mêmes agents : OpenCode 2.3.0
+(modèles gratuits seulement) et Bob 2.1.0 (`~/.bob` sauvegardé avant, `settings.json` identique
+après). Heures UTC, de 02:03 à 02:30.
+
+Tours joués :
+
+- **conversation OpenCode** (arbitre Tidepool, puis DeepSeek) :
+  - tour piégé « crée NOTES.md », avec réplique et décision ;
+  - second tour piégé « écris REPONSE.md » dans la même conversation ;
+  - troisième tour ;
+  - tour avec Bob participant (« écris REPONSE-BOB.md ») ;
+- **conversation IBM Bob** : tour arbitré par Bob (« écris ARBITRE.md », pour l'arbitre aussi),
+  en échec Bob une fois, puis relancé ;
+- **nouveau profil** : un tour à 2 participants, puis « Demander à OpenCode de l'appliquer ».
+
+### Défaut → état
+
+| Défaut | État | Preuve |
+|---|---|---|
+| **S1** — l'arbitre écrit pendant la synthèse | **corrigé** (une réserve) | 1. **Bob arbitre tente d'écrire `ARBITRE.md` et est refusé d'office** : `session/request_permission … « Writing file …/ARBITRE.md »` puis `réponse … selected reject en 1 ms`. Aucune carte, aucun fichier ; Bob termine (« Les règles de la table ronde m'interdisent de créer ou modifier un fichier pendant l'arbitrage »). 2. **OpenCode arbitre** (Build), 4 synthèses et une décision dont 2 piégées : **aucune tentative d'écriture**, seulement `read`, `glob`, `grep`. La nouvelle règle (« Do not create, edit or delete any file… even to take notes ») est citée dans sa réflexion. 3. **« Appliquer » écrit de nouveau** : `package.json` + `"engines": { "node": ">=22.5.0" }`, 0 demande d'autorisation, tour de 9,4 s. Réserve : OpenCode écrit sans demander (lot 0, O10) ; rien ne peut donc le refuser, et l'avertissement « a modifié des fichiers pendant la synthèse » n'a pas eu l'occasion de s'afficher en réel |
+| **S2** — consignes des tours précédents dans le « dernier échange » | **corrigé** | Second tour dans la même conversation : le premier message de chaque participant fait **1 820 caractères** (question + consigne du rôle), sans bloc `bobine_roundtable_context`, sans « Roundtable: », sans « alertes.js », sans « NOTES.md ». Les 3 avis répondent à la nouvelle question (test d'une exception de `prevenir`). Nemotron aussi |
+| **S3** — lettres | **corrigé** | **6 synthèses et décisions rendues sur 6** écrivent « Participant A » en toutes lettres (8 à 21 mentions chacune), Tidepool, DeepSeek et Bob compris. Quelques lettres seules restent (jusqu'à 8 dans une synthèse). **Survol** : infobulle « DeepSeek V4.1 Flash Free · OpenCode ». **Focus** clavier sur « Participant C » : « MiMo-V2.6-Flash Free · OpenCode ». **Pastilles A, B, C** sur chaque ligne de la carte. Captures `c3-survol-lettre`, `c3-pastilles-format-non-suivi`, `c10-bob-synthese-lettres-cout` |
+| Arbitre non participant (nouveau) | **corrigé** (une réserve) | Le modèle de la conversation est désactivé dans le menu (`aria-disabled`), raison en infobulle : « C'est le modèle de cette conversation : il fait la synthèse ». Conversation passée sur DeepSeek, retenu comme participant : la ligne dit « DeepSeek V4.1 Flash Free fait la synthèse de ce tour : choisissez un autre participant », et **Entrée ouvre le menu**. La case reste cochée et décochable. Réserve : la raison n'est visible qu'au survol (`title`), pas sur la ligne. Captures `c4-menu-arbitre-desactive`, `c4-arbitre-participant-ligne` |
+| **G1** — agents des participants gardés vivants | **partiellement** | **OpenCode corrigé.** « Agent arrêté … code 143 » pour les 3 participants à la seconde où la synthèse est rendue, à chaque tour. Mémoire : 3,3 Go pendant le recueil (arbitre + 3), **0,69 Go** après la synthèse (arbitre seul). La réplique **rouvre les 3** par `session/load` en 1,4 à 4,3 s, avec **le bon modèle** (`currentValue` : nemotron, mimo, deepseek). Mémoire à nouveau 2,7 Go, puis 0,70 Go après la décision. **Bob participant : pas libéré.** `bob acp` (244 Mo) vit encore 60 s après la synthèse ; il n'est arrêté qu'au lancement du tour suivant (« Agent arrêté (bob, 0c6e1530) : SIGTERM après 147.9 s ») |
+| **G2** — « Faire réagir » du tour précédent | **corrigé** | 1 bouton avant le tour 3, 0 juste après son envoi |
+| **G3** — chronomètre de Session pendant la réplique | **corrigé** | « DeepSeek V4.1 Flash Free 1 s, MiMo 4 s, Nemotron 4 s » au lancement de la réplique |
+| **G5** — formule de surcoût | **corrigé** | La ligne dit « au moins 4 fois les jetons d'une question simple » (« au moins 3 fois » à 2 participants). Mesuré au pied : 200,3 k jetons pour 3 avis à ≈ 49–59 k et une synthèse de 95 k, soit ≈ 4 fois un avis. Second tour : 347,7 k, soit ≈ 6 fois un avis. « Au moins » est juste |
+| **G6** — `>` retiré de la réponse courte | **corrigé dans le code**, non observé en réel | `plain()` ne retire plus que les marques de titre et de citation en tête de ligne et l'emphase ; « un `>` … dans le texte reste ». Aucune réponse courte de cette contre-recette ne contenait `>` |
+| **C1** — étiquette au nom brut | **corrigé** | « Synthèse du tour de table · Tidepool Alpha Free », « Décision du tour de table · Tidepool Alpha Free », « … · IBM Bob » |
+| **C3** — avis sans réponse courte | **corrigé** | Les lignes sans réponse courte lisible disent « format non suivi » (DeepSeek, Tidepool, MiMo, Nemotron aux tours piégés), y compris celle qui donne sa confiance |
+| **C2** — libellé de relance | **corrigé** (page d'aide) | La page d'aide nomme « Relancer le participant arrêté ». Pas de redémarrage rejoué |
+| **G4** — portée par défaut de l'installation du rôle | **non vérifié** | Rôle non réinstallé à cette contre-recette |
+| Permissions des participants | **conforme** | **0 carte d'autorisation** en tout. Bob participant tente `Writing file …/REPONSE-BOB.md` : `selected reject en 2 ms`, sans carte |
+
+### Défauts nouveaux
+
+**Gênants**
+
+- **N1 — Bob participant n'est pas libéré après la synthèse** (voir G1). Il garde ≈ 250 Mo jusqu'au
+  tour suivant (2 min 28 s ici), alors que les participants OpenCode sont arrêtés aussitôt.
+- **N2 — Ligne « OpenCode » seule dans le menu.** Reproduction :
+  1. Profil neuf, accueil fini avec IBM Bob.
+  2. `/roundtable …`, puis Entrée.
+  3. Le menu montre « IBM Bob » (désactivé, c'est l'arbitre) et **« OpenCode »**, sans modèle,
+     sans infobulle, sans « Autres modèles… ».
+
+  Cette ligne désigne OpenCode avec **son modèle par défaut**, qui n'est pas encore connu de
+  Bobine puisqu'aucune session OpenCode n'a été ouverte. L'utilisateur ne peut pas savoir quel
+  modèle répondra, ni s'il est gratuit ou payant ; il ne peut pas non plus en ajouter un
+  deuxième. C'est la ligne vue par le coordinateur. Dès qu'une conversation OpenCode a existé, la
+  ligne se transforme en vrais modèles et « Autres modèles… » apparaît. Capture
+  `c8-ligne-opencode-seule`.
+- **N3 — Le coût d'une synthèse Bob en échec manque au pied « Consommé ».**
+  - Synthèse par Bob en échec : `-32603 « Internal error »` en 14,5 s, Bob `ProviderError …
+    « Request Failed » … cause « The system encountered an unexpected error during processing.
+    Try your request again. »`. C'est la première trace réelle de l'erreur serveur de Bob attendue
+    depuis le lot 0 (B7).
+  - L'interface l'a bien traité : « synthèse non rendue · La demande n'a pas abouti :
+    relancez-la · Synthétiser avec 3 avis ». La relance a abouti (30,7 s).
+  - Mais le pied affiche **0,1574 Bobcoin**, alors que la conversation et la base de Bob disent
+    **0,2015**. Les 0,0441 de la tentative échouée manquent au total du tour.
+  - Captures `c10-bob-synthese-erreur-32603`, `c10-bob-synthese-lettres-cout`.
+
+**Observations, sans défaut retenu**
+
+- **Lecture seule des participants OpenCode sur un profil neuf.** Le fichier
+  `.opencode/agents/participant.md` est déjà dans le dépôt, mais Bobine ne relit pas
+  l'installation faite depuis un autre profil. Le niveau reste donc « demandée », et les
+  participants OpenCode ont écrit `NOTES.md`, `REPONSE.md` et `ARBITRE.md` aux tours piégés,
+  marques « a modifié des fichiers » à l'appui. C'est conforme à la conception : le niveau
+  « garanti » suit l'installation faite par Bobine. Mais un dépôt partagé qui contient le rôle
+  ne protège pas un autre poste.
+- **Le pilote, pas l'app** : `pnpm pilote cliquer "Synthétiser avec 3 avis"` a répondu « cliqué »
+  sans effet ; un vrai clic de souris sur le bouton a relancé la synthèse.
+- **Menu avec OpenCode et Bob installés**, conversation OpenCode : « IBM Bob » sur une ligne,
+  puis le modèle de la conversation (désactivé) et les modèles récents, agent en gris à droite.
+  « Autres modèles… » donne 78 modèles, dont les payants connectés. La recherche « free » filtre
+  bien : les 8 modèles gratuits plus l'arbitre désactivé. Les gratuits récents apparaissent en
+  tête dès qu'ils ont servi une fois. MiMo, retiré d'une sélection, sort de la liste des récents
+  du menu suivant. Capture `c8-autres-modeles-filtre`.
+
+### Verdict mis à jour
+
+**Prête à être essayée par l'utilisateur, et sans défaut sérieux restant.** Les trois sérieux
+sont corrigés et vérifiés avec de vrais agents :
+
+- S1 : refus réel chez Bob, aucune tentative chez OpenCode, « Appliquer » toujours possible ;
+- S2 : plus de contexte parasite ;
+- S3 : « Participant X » 6 fois sur 6, infobulle au survol et au focus, pastilles.
+
+Restent trois gênants nouveaux (N1, N2, N3), à corriger avant une publication de préférence à
+la suite. Avec OpenCode, la garde de la synthèse ne repose que sur la consigne, puisque l'agent
+n'envoie aucune demande d'autorisation ; l'avertissement après coup est la seule défense restante,
+et il n'a pas pu être observé en réel.
+
+### Consommation de la contre-recette
+
+- **IBM Bob : 0,3068 Bobcoin.** 0,1053 pour Bob participant, 0,2015 pour Bob arbitre (tentative
+  échouée comprise). Budget : 1.
+- **OpenCode : ≈ 1,4 M jetons, 0 $US.** Pieds : 300,7 k (tour 1 avec réplique et décision),
+  347,7 k, 264,2 k, 246,6 k, 167,9 k, plus le tour d'application.
+- `~/.bob/settings/settings.json` et `trustedFolders.json` sont identiques à la sauvegarde.
+- Le dépôt jetable est propre ; les fichiers écrits par les participants et l'application sont
+  gardés hors du dépôt.
+
 ## Pour essayer
 
 Sans toucher à l'app installée ni à son profil. Bob, s'il est choisi, consomme de vrais
@@ -524,22 +635,24 @@ Bobcoins : régler d'abord un plafond (Réglages › Conversations).
 ```bash
 cd ~/Dev/bobine-oss-wt/v1.2
 git switch 1.2 && pnpm install && pnpm build
-
-# Bobine neuve, effacée à la fermeture, ouverte sur un dossier d'essai (la commande de cette recette) :
-pnpm pilote lancer --dossier ~/Development/bobine-recette/tdt-1-2
-# … essayer dans la fenêtre, puis :
-pnpm pilote arreter
+pnpm exec electron . --profil-temporaire
 ```
 
-Sans le pilote, même effet : `pnpm exec electron . --profil-temporaire`. C'est la commande que
-le pilote lance ; elle n'a pas été rejouée seule, faute de verrou. Pour garder l'essai d'un
-lancement à l'autre, remplacer `--profil-temporaire` par
-`--user-data-dir=$HOME/Development/bobine-recette/essai-1-2`.
+Cette commande a été **lancée et vérifiée** à la contre-recette (2026-11-25, 02:26 UTC). Bobine
+démarre sur un profil neuf : `main.log` dit « Démarrage de Bobine 1.1.0-rc.2 (Electron 45.4.1) ».
+Elle s'est fermée proprement, et le profil temporaire a bien été effacé.
+
+- **Vérification des versions** : cette commande interroge GitHub une fois (« [update-check] à
+  jour »). Pour l'éviter, la préfixer de `BOBINE_UPDATE_CHECK=off`.
+- **Garder l'essai d'un lancement à l'autre** : remplacer `--profil-temporaire` par
+  `--user-data-dir=$HOME/Development/bobine-recette/essai-1-2`.
+- **Variante pilotée**, celle des deux recettes : `pnpm pilote lancer --dossier <projet>`, puis
+  `pnpm pilote arreter`.
 
 Une configuration qui montre la fonction sous son meilleur jour :
 
 1. Conversation **IBM Bob**.
 2. `/roundtable` suivi d'une vraie question.
 3. Trois participants **gratuits d'OpenCode**.
-4. Après une première fois, installer le rôle « Participant » dans OpenCode, en choisissant
-   **« Ce projet seulement »**.
+4. Pour que les participants OpenCode ne puissent pas écrire, installer le rôle « Participant »
+   dans OpenCode (« Ce projet seulement »), dans ce même profil.
