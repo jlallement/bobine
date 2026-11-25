@@ -194,3 +194,23 @@ reçu, défilement de 300 px ; `capturePage({ stayHidden })` d'une page masquée
   5. Échap, clavier dans la page puis dans l'onglet ; changer d'onglet ou de conversation et
      revenir : remarques gardées, « Annoter » les réaffiche.
   6. Envoyer avec Bob ou OpenCode : l'agent comprend quelle remarque est sur quelle capture.
+
+### 2026-11-25 — recette (1.2.0-beta.2) : bulles fermées par défaut
+
+- **Trace** (journal de recette, 18:49 et 20:18) : après ajout, toutes les bulles restaient ouvertes
+  et se chevauchaient ; un clic « bas dans la page » pour une nouvelle remarque a rouvert la
+  remarque 2 (sa bulle couvrait l'endroit), dont le texte a été remplacé ; la bulle d'édition
+  s'ouvrait sous l'épingle 2, pas sous le clic, avec « Enregistrer » au lieu d'« Ajouter » (d'où
+  « Ajouter introuvable », ⌘↩ marchant).
+- **Cause** : le script de la page affichait en permanence la bulle de chaque épingle (250 px de
+  large, cliquable : `open`).
+- **Correctif** : la bulle d'une épingle ne s'ouvre qu'au survol de l'épingle (ou de la bulle, avec
+  250 ms pour aller de l'une à l'autre), une seule à la fois ; le clic sur une épingle ou sa bulle
+  ouverte rouvre toujours la remarque. Point 4 de l'essai à la vraie souris : survoler d'abord.
+- **Essais** : `page-layer.test.ts` (bulles fermées, survol, refermée) ; e2e `browser-annotate` :
+  un clic là où était la bulle de la remarque 1 pose une remarque 2 (rouge avant : la 1 rouverte,
+  « Enregistrer »).
+- **Non reproduit** : la première épingle transmise 22 à 27 px plus haut (19:00, 20:18). Un clic
+  DevTools (`Input.dispatchMouseEvent` sur la page) juste après l'apparition du bandeau arrive au
+  bon point dans l'e2e, et la vue native suit bien la zone (bornes identiques). Piste ouverte :
+  ordre bandeau / clic de l'outil de recette, ou mise en page du jeu dépendant de la hauteur.

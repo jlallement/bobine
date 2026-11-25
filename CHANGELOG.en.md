@@ -6,6 +6,9 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixed
 
+- **Annotate the page**: the bubbles of placed notes stay closed; a pin’s bubble opens when you
+  hover it. They no longer hide the page, and a click for a new note no longer reopens a note
+  already placed (whose text could be replaced without you noticing).
 - **Roundtable**: the cost of “Ask to apply it” (and of any message that follows) is no longer
   added to the roundtable’s total; a zero cost from free models reads “free”, no longer “cost
   unknown”; an opinion without a readable short answer shows its start on its row; if the

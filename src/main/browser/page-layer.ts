@@ -43,6 +43,10 @@ export const LAYER_SCRIPT = `(() => {
   let pins = []
   let theme = { accent: '#c96442', surface: '#ffffff', text: '#1f1e1d', border: '#e3e0d6' }
   let host = null, box = null, outline = null, frame = 0, hover = null, started = false
+  // Bulle ouverte : celle de l'épingle survolée (ou de la bulle elle-même), une seule à la fois ;
+  // toutes ouvertes, elles se chevauchaient, cachaient la page et prenaient les clics destinés à
+  // une nouvelle remarque (recette du 2026-11-25).
+  let peek = null, unpeek = 0
   // Zoom de la page compensé : épingles et bulles gardent leur taille à l'écran (comme dans Figma).
   // Le zoom suit \`devicePixelRatio\`, calé sur le zoom connu du main (\`zoom(z)\`).
   let scale = 1, base = devicePixelRatio
@@ -163,6 +167,13 @@ export const LAYER_SCRIPT = `(() => {
         bubble.textContent = item.text
         bubble.addEventListener('click', open)
       }
+      const enter = () => { clearTimeout(unpeek); peek = item.id; redraw() }
+      // Le temps d'aller de l'épingle à sa bulle sans qu'elle se ferme.
+      const leave = () => { clearTimeout(unpeek); unpeek = setTimeout(() => { if (peek === item.id) { peek = null; redraw() } }, 250) }
+      for (const node of bubble ? [pin, bubble] : [pin]) {
+        node.addEventListener('mouseenter', enter)
+        node.addEventListener('mouseleave', leave)
+      }
       box.append(pin)
       if (bubble) box.append(bubble)
       nodes.set(item.id, { pin, bubble, item })
@@ -183,7 +194,7 @@ export const LAYER_SCRIPT = `(() => {
       const p = pointOf(item)
       const shown = p.x > -30 && p.y > -30 && p.x < innerWidth + 30 && p.y < innerHeight + 30
       pin.style.setProperty('display', shown ? 'block' : 'none')
-      if (bubble) bubble.style.setProperty('display', shown ? 'block' : 'none')
+      if (bubble) bubble.style.setProperty('display', shown && peek === item.id ? 'block' : 'none')
       if (!shown) continue
       const x = u(p.x), y = u(p.y)
       css(pin, { left: x + 'px', top: y + 'px' })
@@ -201,6 +212,7 @@ export const LAYER_SCRIPT = `(() => {
       }
     }
   }
+  const redraw = () => { if (started) { cancelAnimationFrame(frame); draw() } }
   globalThis.__bobineLayer = {
     start(next) {
       if (next) theme = next
@@ -230,14 +242,16 @@ export const LAYER_SCRIPT = `(() => {
       removeEventListener('mousemove', track, true)
       document.removeEventListener('mouseleave', leave)
       cancelAnimationFrame(frame)
+      clearTimeout(unpeek)
       hover = null
+      peek = null
       host.remove()
       return true
     },
     pins(list) {
       pins = list
       rebuild()
-      if (started) { cancelAnimationFrame(frame); draw() }
+      redraw()
       return true
     },
     zoom(z) {

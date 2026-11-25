@@ -115,6 +115,32 @@ describe('script de la page en mode Annoter (fiche 146)', () => {
     document.removeEventListener('click', onPage)
   })
 
+  // Recette du 2026-11-25 (18:49, 20:18) : toutes les bulles restaient ouvertes, se chevauchaient
+  // et cachaient la page ; un clic voulu pour une nouvelle remarque tombait sur la bulle d'une
+  // autre et rouvrait celle-ci, dont le texte était alors remplacé.
+  it('bulles fermées : seule celle de l’épingle survolée s’ouvre, et se referme ensuite', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    layer.pins([
+      { id: 'na1', n: 1, text: 'Trop petit', doc: { x: 300, y: 40 } },
+      { id: 'na2', n: 2, text: 'Trop serré', doc: { x: 320, y: 60 } }
+    ])
+    const root = shadows[0] as ShadowRoot
+    const [pin1] = [...root.querySelectorAll<HTMLElement>('.pin')]
+    const [bubble1, bubble2] = [...root.querySelectorAll<HTMLElement>('.bubble')]
+    expect([bubble1?.style.display, bubble2?.style.display]).toEqual(['none', 'none'])
+    pin1?.dispatchEvent(new MouseEvent('mouseenter'))
+    expect([bubble1?.style.display, bubble2?.style.display]).toEqual(['block', 'none'])
+    // De l'épingle à sa bulle : elle reste ouverte (on peut la cliquer pour modifier).
+    pin1?.dispatchEvent(new MouseEvent('mouseleave'))
+    bubble1?.dispatchEvent(new MouseEvent('mouseenter'))
+    vi.advanceTimersByTime(400)
+    expect(bubble1?.style.display).toBe('block')
+    bubble1?.dispatchEvent(new MouseEvent('mouseleave'))
+    vi.advanceTimersByTime(400)
+    expect([bubble1?.style.display, bubble2?.style.display]).toEqual(['none', 'none'])
+    vi.useRealTimers()
+  })
+
   it('curseur en croix sur toute la page, même contre un style de la page ; parti à l’arrêt', () => {
     const page = document.createElement('style')
     page.textContent = 'button { cursor: pointer } #cible { cursor: grab }'

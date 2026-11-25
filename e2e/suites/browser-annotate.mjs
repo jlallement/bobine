@@ -171,6 +171,22 @@ async function annotateChecks(ui, main) {
     `épingle dessinée dans la page (${await pixel(125, 131)} ≈ ${accent})`
   )
 
+  // Recette du 2026-11-25 : la bulle de la remarque 1 restait ouverte sur la page (sous son épingle,
+  // ici de (61, 155) à (311, ≈ 190) dans un panneau de 319 px) ; un clic là pour une nouvelle
+  // remarque rouvrait la 1, dont le texte était remplacé. Bulles fermées : c'est une remarque 2.
+  await clickPage(250, 178)
+  await ui.waitFor(`!!${ui.$('page-note-input')}`)
+  const second = await ui.ev(
+    `[${ui.$('page-pin')}.innerText, ${ui.$('page-note-input')}.value, ${ui.$('page-note-save')}.innerText]`
+  )
+  check(
+    second[0] === '2' && second[1] === '' && second[2].startsWith(L('diffNotes.add')),
+    `un clic sous l’épingle 1 pose une remarque 2, sans rouvrir la 1 (${JSON.stringify(second)})`
+  )
+  await ui.press('Escape')
+  await ui.waitFor(`!${ui.$('page-note-input')}`)
+  await until(viewShown)
+
   // Un clic suivi d'Échap : la bulle se ferme sans remarque, le mode continue.
   await clickPage(60, 330)
   await ui.waitFor(`!!${ui.$('page-note-input')}`)

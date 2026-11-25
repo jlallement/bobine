@@ -6,6 +6,9 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ### Corrigé
 
+- **Annoter la page** : les bulles des remarques posées restent fermées ; celle d’une épingle
+  s’ouvre à son survol. Elles ne cachent plus la page, et un clic pour une nouvelle remarque ne
+  rouvre plus une remarque déjà posée (dont le texte pouvait être remplacé sans qu’on le voie).
 - **Tour de table** : le coût de « Demander de l’appliquer » (et de tout message qui suit) n’est
   plus ajouté au total du tour ; un coût nul de modèles gratuits s’affiche « gratuit », plus
   « coût inconnu » ; un avis sans réponse courte lisible montre son début sur sa ligne ; si
