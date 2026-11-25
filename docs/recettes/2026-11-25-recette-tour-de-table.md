@@ -13,6 +13,10 @@ modifié. Captures : [2026-11-25-recette-tour-de-table/](2026-11-25-recette-tour
 
 ## En bref
 
+> **Recette de la 1.2.0-beta.1 packagée (2026-11-25)** : rien de bloquant, 1 sérieux (coût
+> d'« Appliquer » compté dans le tour), 4 gênants. Voir la section « Recette de la 1.2.0-beta.1
+> packagée ».
+>
 > **Contre-recette du 2026-11-25 (commit `8359fdcb`)** : S1, S2 et S3 corrigés et vérifiés
 > avec de vrais agents ; 3 gênants nouveaux. Voir la section « Contre-recette du 2026-11-25 ».
 
@@ -626,6 +630,155 @@ et il n'a pas pu être observé en réel.
 - `~/.bob/settings/settings.json` et `trustedFolders.json` sont identiques à la sauvegarde.
 - Le dépôt jetable est propre ; les fichiers écrits par les participants et l'application sont
   gardés hors du dépôt.
+
+## Recette de la 1.2.0-beta.1 packagée
+
+App **publiée et installée** : `/Applications/Bobine.app`, `CFBundleVersion` 1.2.0-beta.1. L'en-tête
+de journal dit « Démarrage de Bobine 1.2.0-beta.1 (Electron 45.4.1) ». Jouée le 2026-11-25, de
+11:35 à 12:14 UTC.
+
+**Lancement.** `pnpm pilote lancer --app /Applications/Bobine.app`, qui lance l'exécutable de
+l'app avec `--profil-temporaire` et un port de débogage local. C'est l'équivalent piloté de
+`open -n -a Bobine --args --profil-temporaire`.
+
+- Instance à part, identifiée par son pid et son port (9390), vérifiés avant l'arrêt brutal.
+- Aucune autre Bobine n'était ouverte. Pas de `--agents-neufs`.
+- Journal en Détaillé (`BOBINE_LOG=detailed`) dans le profil de la recette, jamais dans
+  `~/Library/Logs/Bobine`.
+
+**Cadre.**
+
+- Dépôt jetable `depot` dans le scratchpad (`petit-stock`, 4 fichiers et un test).
+- OpenCode 2.3.0, modèles gratuits seulement :
+  - arbitre Tidepool Alpha Free (modèle par défaut) ;
+  - participants DeepSeek V4.1 Flash Free, Nemotron 3.5 Lightning Free, MiMo-V2.6-Flash Free.
+- Bob 2.1.0, sans SSO demandé. `~/.bob` sauvegardé avant le lancement.
+
+Captures de cette recette : `beta1-*` dans
+[2026-11-25-recette-tour-de-table/](2026-11-25-recette-tour-de-table/).
+
+### Résultat par parcours
+
+| # | Parcours | Résultat | Relevés |
+|---|---|---|---|
+| 1 | Lancement, menu, ligne | **OK**, une remarque | Le bouton de la barre (« Tour de table : poser la question à plusieurs modèles ») et `/roundtable` posent l'étiquette. Premier usage : « Choisir les participants · 2 à 5 modèles », Entrée ouvre le menu. **L'arbitre n'est pas absent du menu** : il y figure, désactivé, avec « fait la synthèse de ce tour » en clair sur la ligne (comme le dit la page d'aide). Le dernier choix est retenu dans la conversation suivante, y compris une conversation Bob. Ligne : « 3 participants · + synthèse · au moins 4 fois les jetons d'une question simple ». `beta1-p1-menu-premier-usage-arbitre` |
+| 2 | Tour OpenCode seul | **OK**, avec G-B1 et G-B2 | 3 avis en 32 à 62 s ; **synthèse de 288,6 s** (Tidepool, très lente). Six rubriques présentes (avec une faute du modèle : « Disaccords »). Lettres : 11 « Participant X » avec infobulle, quelques lettres seules. Carte repliée, total « Consommé : 156,1 k jetons · **coût inconnu** » (G-B1). L'arbitre a lancé deux commandes `node -e` pendant la synthèse (G-B2). Aucun fichier changé. `beta1-p2-etat-final-carte-repliee` |
+| 3 | Bob arbitre, réplique, décision, « Appliquer » | **défaut** (S-B1) | Synthèse par Bob en 26,8 s, 0,1522 Bobcoin, 9 « Participant X », seulement des lectures, aucune carte. Réplique : 3 « maintient ». Décision en 14 s, 0,0612 Bobcoin, « Décision du tour de table · IBM Bob · 3 répliques ». **« Demander à IBM Bob de l'appliquer »** : 5 cartes d'autorisation de Bob (liste de tâches, 2 modifications, 1 commande, liste), acceptées une à une ; 2 fichiers +13 −1 ; **0,387 Bobcoin**. Ensuite, le pied du tour dit « **0,5336** Bobcoins » au lieu de 0,2134 (S-B1). `beta1-p3-decision-bob`, `beta1-p3-cout-decision-gonfle` |
+| 4a | Sans rôle installé, question qui pousse à écrire | **OK** (fix9 vérifié) | 1er essai (« crée NOTES.md ») : **personne n'a écrit**, aucun avis, aucune marque : la consigne a suffi. 2e essai (« le livrable est AVIS.md ») : seul DeepSeek appelle `write` ; Nemotron et MiMo font `read`, `glob`, `grep`. La carte montre **un seul avis** (« Le dossier a changé pendant le tour de table : AVIS.md. Vérifiez avant d'appliquer. »). **Seul DeepSeek** porte « fichiers modifiés ». `main.log` garde 3 lignes `WARN` (une par participant), invisibles pour l'utilisateur. `beta1-p4a-un-seul-avis-seul-auteur` |
+| 4b | Rôle « Participant » installé, portée projet | **OK**, avec G-B3 | Installé dans `depot/.opencode/agents/participant.md` ; rien dans `~/.config/opencode`. La boîte **propose encore la portée personnelle par défaut** (G-B3). Même question : « Lecture seule (rôle installé) », `mode installé participant posé` pour les 3. Personne n'écrit, dépôt propre. `beta1-p4b-installer-portee-defaut-personnelle`, `beta1-p4b-role-installe-personne-n-ecrit` |
+| 5 | Arrêt d'un participant, relance, arrêt du tour | **OK** | « Arrêter MiMo » : « Arrêté par vous · Relancer ». Relancé, son chronomètre repart (0:06). « Arrêter le tour de table » : « arrêté », 3 lignes « Arrêté avec le tour de table », en 1 s, et les 3 agents sont arrêtés (`code 143`). `beta1-p5-tour-arrete` |
+| 6 | Quitter pendant un tour, relancer | **OK**, rejoué sur une copie du profil | **Pas faisable sur le profil temporaire même** : il est effacé à la fermeture. Rejoué ainsi : arrêt brutal (`SIGKILL` au groupe de l'instance, pid vérifié) à 1 avis sur 3, copie du profil, relance de l'app packagée sur cette copie (`--user-data-dir`). Carte : « interrompu par le redémarrage de l'app », 2 lignes « Arrêté : redémarrage de l'app · Relancer », « Relancer les 2 participants arrêtés ». Rien n'est reparti seul. Puis vraie fermeture propre (`pnpm pilote arreter`) pendant la relance, et relance sur le même profil : même état, juste. « Relancer les 2 » : la synthèse part d'elle-même et aboutit. `beta1-p6-apres-quitter-proprement` |
+| 7 | Conversation longue (10 échanges avant le tour) | **OK** | Les participants ne reçoivent que le dernier échange (≈ 3 000 caractères en tout). Carte tenue ; « Consommé : 169,4 k jetons · coût inconnu ». Une ligne vide (G-B4). `beta1-p7-p8-conversation-longue-sombre` |
+| 8 | Clair et sombre | **OK** | Carte, pastilles, lettres soulignées et pied lisibles dans les deux thèmes. `beta1-p7-p8-conversation-longue-sombre`, `beta1-p8-conversation-longue-clair` |
+
+### Défauts, du point de vue de l'utilisateur
+
+**Bloquant** : aucun.
+
+**Sérieux**
+
+**S-B1 — Le coût de « Appliquer » est compté dans le tour de table.**
+
+- Après « Demander à IBM Bob de l'appliquer », le pied du tour passe à « Consommé en tout :
+  141,9 k jetons · coût inconnu + **0,5336** Bobcoins ».
+- Le tour a coûté 0,2134 : 0,1522 pour la synthèse, 0,0612 pour la décision (chiffres affichés
+  sous chaque réponse).
+- L'élément du tour enregistre pour la décision `cost 0,38136 bobcoins`, alors que la décision a
+  coûté 0,0612 et l'application 0,387. Le total de la conversation, 0,6003, et la base de Bob
+  sont justes.
+- L'utilisateur lit un tour de table 2,5 fois plus cher qu'il ne l'a été.
+- Reproduction : conversation Bob, tour, réplique, puis « Appliquer » ; rouvrir la conversation.
+- Capture `beta1-p3-cout-decision-gonfle`.
+
+**Gênants**
+
+- **G-B1 — « coût inconnu » pour des modèles gratuits.** Chaque tour OpenCode affiche
+  « Consommé : … jetons · coût inconnu ». Or OpenCode annonce `cost 0 USD` pour chaque place et
+  chaque synthèse, et la conversation dit « gratuit » ailleurs. La 1.2 en développement affichait
+  « ≈ 0,00 $US ». Pour un utilisateur, « coût inconnu » sur des modèles « Free » inquiète sans
+  raison. C'est sans doute voulu (« coût nul annoncé pour un modèle payant » = inconnu), mais le
+  libellé ne distingue pas le cas gratuit. Captures `beta1-p2-…`, `beta1-p8-…`.
+- **G-B2 — L'arbitre OpenCode lance des commandes pendant la synthèse**, sans avertissement :
+  `node -e "… require('node:sqlite') …"` et `node -e "const {DatabaseSync} = …"`. Rien n'a été
+  écrit dans le dépôt, mais la page d'aide dit que la conversation ne peut « ni écrire ni lancer
+  de commande » pendant la synthèse. OpenCode n'en demande pas l'autorisation, donc Bobine ne peut
+  pas refuser. Trace :
+
+  ```text
+  11:37:37.894Z [f5b35ea1 · opencode] ← tool_call_update …b65ebb42 « node -e "console.log(process.version); try { const s = require('node:sqlite'); c… » execute in_progress
+  11:38:55.868Z [f5b35ea1 · opencode] ← tool_call_update …8b34c1f3 « node -e "const {DatabaseSync} = require('node:sqlite'); const db = new DatabaseS… » execute in_progress
+  ```
+
+- **G-B3 — L'installation du rôle propose toujours « Pour vous, dans tous vos projets » par
+  défaut** (`~/.config/opencode/agents/participant.md`). G4 de la première recette, inchangé.
+  Capture `beta1-p4b-installer-portee-defaut-personnelle`.
+- **G-B4 — Ligne d'avis vide.** Quand un avis n'a pas de réponse courte lisible, sa ligne
+  repliée n'affiche que « format non suivi », sans aucun texte, alors que l'avis fait plus de
+  3 000 caractères : Nemotron au tour piégé, MiMo dans la conversation longue. On ne sait pas ce
+  que le participant a dit sans déplier. Captures `beta1-p4a-tour-piege-personne-n-ecrit`,
+  `beta1-p8-conversation-longue-clair` (ligne C).
+
+**Remarques, sans défaut retenu**
+
+- La synthèse de Tidepool, arbitre par défaut, prend de 2 à 5 minutes (288,6 s au tour 2,
+  ≈ 5 min aux tours piégés).
+- « Appliquer » avec Bob demande 5 autorisations au fil de l'eau (réglages par défaut de Bob).
+  C'est attendu, mais ce n'est pas annoncé sur le bouton.
+
+### Consommation réelle
+
+| Tour | Jetons (pied) | Dollars | Bobcoins |
+|---|---|---|---|
+| 2. OpenCode seul | 156,1 k (avis 30–34 k, synthèse 70 k) | 0 (`cost 0`) | — |
+| 3. Bob arbitre, avec réplique et décision | 141,9 k côté OpenCode | 0 | 0,1522 + 0,0612 = **0,2134** (pied après « Appliquer » : 0,5336, S-B1) |
+| 3. « Appliquer » (Bob) | — | — | **0,387** |
+| 4a. Piège 1 (« NOTES.md ») | 263,6 k | 0 | — |
+| 4a. Piège 2 (« AVIS.md ») | ≈ 411 k (synthèse 300 k) | 0 | — |
+| 4b. Rôle installé | ≈ 402 k (synthèse 334 k) | 0 | — |
+| 5. Tour arrêté | 70 k | 0 | — |
+| 7. Conversation longue | 169,4 k | 0 | — |
+| 6. Tour repris après redémarrage | 159,2 k | 0 | — |
+| **Total** | **≈ 1,77 M jetons** | **0 $US** | **0,6003** (base de Bob, tâche « Alertes.js seuil franchissement ou sortie ») |
+
+Budget Bob : 1 Bobcoin, atteint à 60 %. Bob n'a plus été sollicité après « Appliquer ».
+
+### État laissé
+
+- **`~/.bob/settings/settings.json`** : **identique** avant et après (SHA-256 `646f2f6a…`), rien à
+  restaurer. `trustedFolders.json` identique.
+- **OpenCode** : rien dans `~/.config/opencode` ; rôle installé en portée projet, dans le dépôt
+  jetable seulement.
+- **Instance** : arrêtée proprement par `pnpm pilote arreter`. Aucun processus de la recette ne
+  tourne. Le profil temporaire de départ a été copié puis supprimé (il était à nous).
+- **Dépôt jetable** : propre. `AVIS.md` et l'application de Bob ont été déplacés ou annulés.
+- **Verrou e2e** : rendu.
+
+### Non joué
+
+- **Quitter et relancer sur le même profil temporaire** : impossible par construction, le profil
+  est effacé à la fermeture. Joué sur une copie du profil (parcours 6).
+- **Modèle disparu du catalogue, plafond, corbeille** : hors du parcours demandé.
+- **Bob participant** : non rejoué, budget gardé pour Bob arbitre et « Appliquer ».
+
+### Verdict
+
+**La 1.2.0-beta.1 packagée peut être essayée par Jérôme.** Rien de bloquant. Le tour de table
+complet tient dans le .dmg publié :
+
+- lancement, recueil, synthèse en six rubriques, lettres ;
+- Bob arbitre, réplique, décision, « Appliquer » ;
+- arrêts, reprise après redémarrage ;
+- conversation longue, clair et sombre.
+
+La règle de fix9 est vérifiée avec de vrais agents : un seul avis, et seul l'auteur réel est
+désigné.
+
+Un sérieux à corriger avant la finale : **S-B1**, le coût d'« Appliquer » gonfle le total du tour.
+À lui dire avant son essai :
+
+- « coût inconnu » s'affiche pour les modèles gratuits ;
+- la synthèse de Tidepool est lente ;
+- choisir « Ce projet seulement » à l'installation du rôle.
 
 ## Pour essayer
 
