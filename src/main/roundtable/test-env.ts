@@ -32,6 +32,8 @@ export interface EnvOptions {
   lead?: string
   /** Options de plus pour la conversation qui arbitre. */
   leadArgs?: string[]
+  /** Champs de plus du profil de la conversation qui arbitre. */
+  leadProfile?: Partial<AgentProfile>
   /** Options de plus pour les participants `panel`. */
   panel?: string[]
   /** Autres profils (participants d'un autre agent). */
@@ -105,7 +107,12 @@ export async function roundtableEnv(options: EnvOptions = {}) {
   await toolServer.start()
   const manager = new ConversationManager({
     profiles: [
-      mock('lead', options.lead ?? 'synthese-tour-de-table', options.leadArgs ?? []),
+      mock(
+        'lead',
+        options.lead ?? 'synthese-tour-de-table',
+        options.leadArgs ?? [],
+        options.leadProfile
+      ),
       mock('panel', 'avis-participant', options.panel ?? []),
       ...(options.profiles?.(mock) ?? [])
     ],
@@ -113,6 +120,7 @@ export async function roundtableEnv(options: EnvOptions = {}) {
     toolModules: [childrenToolsModule(() => late.children)],
     keepLive: (id) => late.children?.keepLive(id) ?? false,
     settleLoaded: (id, items) => late.roundtables?.settleLoaded(id, items) ?? [],
+    roundtableStep: (id) => late.roundtables?.stepActive(id) ?? false,
     settingsFile: join(root, 'settings.json'),
     conversationsDir: join(root, 'conversations'),
     defaultWorkspace: repo,
@@ -132,7 +140,11 @@ export async function roundtableEnv(options: EnvOptions = {}) {
     providers: () => [],
     random: () => 0,
     dropHeld: (id, rt) =>
-      costCap.dropHeld(id, ({ from }) => from?.kind === 'roundtable' && from.id === rt)
+      costCap.dropHeld(
+        id,
+        ({ from, roundtableQuestion }) =>
+          (from?.kind === 'roundtable' && from.id === rt) || roundtableQuestion === rt
+      )
   })
   late.roundtables = roundtables
   const events: { conversationId: string; event: AgentEvent }[] = []

@@ -332,13 +332,46 @@ describe('mode natif pour Bobine (useInBobine)', () => {
   })
 })
 
+describe('régression e2e roles-export (fiche 223) : « lancer dans ce mode » reste reconnu', () => {
+  it('installation personnelle à jour, mode du même nom dans le projet : le mode installé est posé', () => {
+    const exports = service()
+    exports.install(role(), userTarget(), undefined, { useInBobine: true })
+    mkdirSync(join(project, '.bob'), { recursive: true })
+    writeFileSync(
+      bobProjectFile(),
+      'customModes:\n  - slug: code-reviewer\n    name: Le nôtre\n    roleDefinition: x\n    groups: [read]\n'
+    )
+    expect(exports.nativeMode('bob', 'code-reviewer', project)).toEqual({
+      id: 'code-reviewer',
+      readOnly: true
+    })
+    // Installation du projet par Bobine : reconnue aussi, après une mise à jour.
+    rmSync(bobProjectFile())
+    exports.install(role(), { profileId: 'bob', scope: 'project' }, project, { useInBobine: true })
+    exports.install(
+      role({ description: 'Autre.' }),
+      { profileId: 'bob', scope: 'project' },
+      project,
+      {
+        useInBobine: true
+      }
+    )
+    expect(exports.nativeMode('bob', 'code-reviewer', project)).toEqual({
+      id: 'code-reviewer',
+      readOnly: true
+    })
+  })
+})
+
 describe('mode natif vérifié sur le disque (revue sécurité, fiche 285)', () => {
   it('fichier modifié à la main, ou mode du même nom fourni par le projet : jamais un mode natif sûr', () => {
     const exports = service()
     exports.install(role(), { profileId: 'opencode', scope: 'user' }, undefined, {
       useInBobine: true
     })
-    expect(exports.nativeMode('opencode', 'code-reviewer', project)).toEqual({
+    expect(
+      exports.nativeMode('opencode', 'code-reviewer', project, undefined, { strict: true })
+    ).toEqual({
       id: 'code-reviewer',
       readOnly: true
     })
@@ -346,18 +379,92 @@ describe('mode natif vérifié sur le disque (revue sécurité, fiche 285)', () 
     const projectAgent = join(project, '.opencode', 'agents', 'code-reviewer.md')
     mkdirSync(join(project, '.opencode', 'agents'), { recursive: true })
     writeFileSync(projectAgent, '---\nmode: primary\npermission:\n  edit: allow\n---\nÉcris.\n')
-    expect(exports.nativeMode('opencode', 'code-reviewer', project)).toMatchObject({
+    expect(
+      exports.nativeMode('opencode', 'code-reviewer', project, undefined, { strict: true })
+    ).toMatchObject({
       stale: 'roleChanged'
     })
     rmSync(projectAgent)
     // Fichier de Bobine modifié depuis son installation : plus garanti.
     writeFileSync(openCodeFile(), `${readFileSync(openCodeFile(), 'utf8')}\nÉcris aussi.\n`)
-    expect(exports.nativeMode('opencode', 'code-reviewer', project)).toMatchObject({
+    expect(
+      exports.nativeMode('opencode', 'code-reviewer', project, undefined, { strict: true })
+    ).toMatchObject({
       stale: 'roleChanged'
     })
     rmSync(openCodeFile())
-    expect(exports.nativeMode('opencode', 'code-reviewer')).toMatchObject({ stale: 'roleChanged' })
+    expect(
+      exports.nativeMode('opencode', 'code-reviewer', undefined, undefined, { strict: true })
+    ).toMatchObject({ stale: 'roleChanged' })
   })
+})
+
+describe('mode natif : tous les emplacements d’OpenCode (contre-revue, fiche 285)', () => {
+  const install = (exports: RoleExports) =>
+    exports.install(role(), { profileId: 'opencode', scope: 'user' }, undefined, {
+      useInBobine: true
+    })
+  const intact = { id: 'code-reviewer', readOnly: true }
+  const cases: [string, () => string, string][] = [
+    [
+      'opencode.json du projet',
+      () => join(project, 'opencode.json'),
+      '{ "agents": { "code-reviewer": {} } }'
+    ],
+    [
+      'opencode.jsonc du projet, clé `agent`',
+      () => join(project, 'opencode.jsonc'),
+      '// x\n{ "agent": { "code-reviewer": { "mode": "primary" } } }'
+    ],
+    [
+      '.opencode/opencode.json',
+      () => join(project, '.opencode', 'opencode.json'),
+      '{"agents":{"code-reviewer":{}}}'
+    ],
+    [
+      '.opencode/agent/ (singulier)',
+      () => join(project, '.opencode', 'agent', 'code-reviewer.md'),
+      '---\nmode: primary\n---\nÉcris.\n'
+    ],
+    [
+      '.opencode/agents/ d’un dossier parent',
+      () => join(project, '..', '.opencode', 'agents', 'code-reviewer.md'),
+      'x'
+    ],
+    [
+      'opencode.json global',
+      () => join(home, '.config', 'opencode', 'opencode.json'),
+      '{"agents":{"code-reviewer":{}}}'
+    ],
+    ['agent/ global', () => join(home, '.config', 'opencode', 'agent', 'code-reviewer.md'), 'x'],
+    [
+      'réglages du système',
+      () => join(root, 'systeme', 'opencode', 'opencode.json'),
+      '{"agents":{"code-reviewer":{}}}'
+    ]
+  ]
+  for (const [name, file, text] of cases) {
+    it(`redéfini par ${name} : plus garanti`, () => {
+      const exports = new RoleExports({
+        profiles: () => PROFILES,
+        locations: { home, systemConfig: join(root, 'systeme') },
+        registry: new RoleExportRegistry(join(data, 'role-exports.json')),
+        backupDir: join(data, 'backups')
+      })
+      install(exports)
+      expect(
+        exports.nativeMode('opencode', 'code-reviewer', project, undefined, { strict: true })
+      ).toEqual(intact)
+      mkdirSync(join(file(), '..'), { recursive: true })
+      writeFileSync(file(), text)
+      expect(
+        exports.nativeMode('opencode', 'code-reviewer', project, undefined, { strict: true })
+      ).toMatchObject({
+        stale: 'roleChanged'
+      })
+      rmSync(file())
+    })
+  }
 })
 
 describe('installations sans rôle (renommé, supprimé)', () => {

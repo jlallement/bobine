@@ -18,11 +18,13 @@ import type { AgentEvent, ConversationsState, ConversationView } from '@shared/a
 import type { AttentionState } from '@shared/attention'
 import type { MessageOrigin } from '@shared/children'
 import { messageOf } from '@shared/errors'
+import { shortModelName } from '@shared/models'
 import type { Roundtable, RoundtableEvent, RoundtableStepKind } from '@shared/roundtable'
 import { synthesisRequest, verdictRequest } from '@shared/roundtable-prompts'
 import type { ConversationManager } from '../conversations/manager'
 import { log } from '../log'
 import { lastTurnDigest, opinionInputs, rebuttalInputs } from './readings'
+import type { FolderBaseline, StepFolder } from './step-folder'
 
 /** Titre d'une demande du tour dans le fil (la question, coupée). */
 const TITLE_CHARS = 80
@@ -52,6 +54,10 @@ export interface StepsHost {
   gone: (childId: string | undefined) => boolean
   /** Vérifications de lecture seule des participants finies (l'avertissement part avec l'avis). */
   watchesSettled: (rt: Roundtable) => Promise<void>
+  /** L'arbitre est devenu l'un des participants (modèle changé depuis le lancement). */
+  arbiterClash?: (motherId: string, rt: Roundtable) => boolean
+  /** Empreinte du dossier autour du tour de l'étape (S1) ; absent : rien n'est surveillé. */
+  folder?: StepFolder
   now: () => number
 }
 
@@ -83,6 +89,10 @@ export class MotherSteps {
   /** Envois refusés d'affilée parce que l'agent préparait une réponse : réessai espacé. */
   private readonly retries = new Map<string, number>()
   private readonly checking = new Set<string>()
+  /** État du dossier avant le tour de l'étape en cours, par conversation (S1). */
+  private readonly baselines = new Map<string, Promise<FolderBaseline | undefined>>()
+  /** Comparaisons de fin d'étape en cours (essais). */
+  private readonly comparing = new Map<string, Promise<void>>()
 
   constructor(host: StepsHost) {
     this.host = host
@@ -93,6 +103,11 @@ export class MotherSteps {
     return this.sending.has(motherId) || this.answering.has(motherId)
   }
 
+  /** Une demande du tour est en route ou en cours de réponse ici : son tour est en lecture seule. */
+  stepActive(motherId: string): boolean {
+    return this.holds(motherId)
+  }
+
   /** Évènements de cette conversation encore attendus (demande en cours, coût après coup). */
   watches(motherId: string): boolean {
     return this.holds(motherId) || this.costWatch.has(motherId)
@@ -100,14 +115,18 @@ export class MotherSteps {
 
   /** La conversation a une demande de ce tour en cours de réponse. */
   answeringFor(motherId: string, roundtableId: string): boolean {
-    // En route aussi (avant son `user-message`) : un arrêt doit la couper.
-    return (
-      this.answering.get(motherId)?.roundtableId === roundtableId ||
-      this.sending.get(motherId)?.roundtableId === roundtableId
-    )
+    // Une demande encore en route n'a pas besoin d'être coupée ici : arrivée après l'arrêt, elle
+    // est annulée à son départ (`sent`).
+    return this.answering.get(motherId)?.roundtableId === roundtableId
+  }
+
+  /** Comparaison du dossier de la fin d'étape finie (essais). */
+  folderChecked(motherId: string): Promise<void> {
+    return this.comparing.get(motherId) ?? Promise.resolve()
   }
 
   forget(motherId: string): void {
+    this.baselines.delete(motherId)
     this.retries.delete(motherId)
     this.sending.delete(motherId)
     this.answering.delete(motherId)
@@ -133,6 +152,8 @@ export class MotherSteps {
         const ref = this.sending.get(motherId)
         if (!ref || event.reached.held === undefined) return
         this.sending.delete(motherId)
+        // Empreinte reprise au départ (« Continuer ») : d'ici là, le dossier peut changer.
+        this.baselines.delete(motherId)
         this.host.apply(motherId, ref.roundtableId, { type: 'step-held', step: ref.step })
         return
       }
@@ -155,6 +176,7 @@ export class MotherSteps {
   private sent(motherId: string, from: MessageOrigin | undefined, model?: string): void {
     this.costWatch.delete(motherId)
     // La réplique va aux participants, pas à cette conversation (`seat-events.ts`).
+    // La réplique va aux participants, pas à cette conversation.
     if (from?.kind !== 'roundtable' || from.step === 'rebuttal') return
     const ref = { roundtableId: from.id, step: from.step }
     this.retries.delete(motherId)
@@ -167,6 +189,8 @@ export class MotherSteps {
       return
     }
     this.answering.set(motherId, ref)
+    // Demande retenue puis « Continuer » : empreinte prise au départ, avec l'agent (plus lent).
+    if (!this.baselines.has(motherId)) void this.prepareFolder(motherId)
     // Qui rédige vraiment : l'agent et le modèle de la conversation au départ de la demande.
     const summary = this.host.conversations.state().conversations.find((c) => c.id === motherId)
     this.host.apply(motherId, ref.roundtableId, {
@@ -178,7 +202,8 @@ export class MotherSteps {
             by: {
               profileId: summary.profileId,
               label: summary.profileLabel,
-              ...(model ? { model } : {})
+              // Nom court et lisible (« Tidepool Alpha Free », pas « opencode/… », C1).
+              ...(model ? { model: shortModelName(model) } : {})
             }
           }
         : {})
@@ -189,6 +214,7 @@ export class MotherSteps {
     const ref = this.answering.get(motherId)
     if (!ref) return
     this.answering.delete(motherId)
+    this.compareFolder(motherId, ref)
     const { roundtableId, step } = ref
     if (event.type === 'turn-error') {
       this.host.apply(motherId, roundtableId, { type: 'step-failed', step, detail: event.message })
@@ -244,6 +270,19 @@ export class MotherSteps {
   }
 
   private send(motherId: string, rt: Roundtable, step: RoundtableStepKind): void {
+    if (this.host.arbiterClash?.(motherId, rt)) {
+      // L'arbitre jugerait son propre avis : rien ne part, la carte le dit et propose de reprendre
+      // (« Synthétiser… » une fois le modèle de la conversation changé).
+      log.info(
+        `Tour de table ${rt.roundtableId.slice(0, 8)} : ${step} refusée (arbitre participant)`
+      )
+      this.host.apply(motherId, rt.roundtableId, {
+        type: 'step-failed',
+        step,
+        detail: t('roundtable.error.arbiter')
+      })
+      return
+    }
     const request =
       step === 'synthesis'
         ? synthesisRequest(
@@ -269,16 +308,65 @@ export class MotherSteps {
       step
     }
     const ref = { roundtableId: rt.roundtableId, step }
-    // Posé avant l'appel : le plafond retient le message pendant l'appel (`step-held`).
+    // Posé avant l'empreinte et l'appel : le plafond retient le message pendant l'appel
+    // (`step-held`), et rien d'autre ne part entre-temps.
     this.sending.set(motherId, ref)
-    log.info(`Tour de table ${rt.roundtableId.slice(0, 8)} : ${step} demandée`)
-    this.host.conversations
-      .prompt(motherId, request.prompt, [], { from, context: request.context })
-      .catch((error: unknown) => this.notSent(motherId, ref, error))
+    void this.prepareFolder(motherId).then(() => {
+      if (this.sending.get(motherId) !== ref) return
+      // Tour arrêté pendant l'empreinte : la demande ne part pas.
+      const now = this.host.tours(motherId).find((r) => r.roundtableId === ref.roundtableId)
+      if (!now || waitingStep(now) !== step) {
+        this.sending.delete(motherId)
+        this.baselines.delete(motherId)
+        return
+      }
+      log.info(`Tour de table ${rt.roundtableId.slice(0, 8)} : ${step} demandée`)
+      this.host.conversations
+        .prompt(motherId, request.prompt, [], { from, context: request.context })
+        .catch((error: unknown) => this.notSent(motherId, ref, error))
+    })
+  }
+
+  /** Empreinte du dossier avant le tour de l'étape ; ne lève jamais. */
+  private async prepareFolder(motherId: string): Promise<void> {
+    const folder = this.host.folder
+    const workspace = this.host.conversations
+      .state()
+      .conversations.find((c) => c.id === motherId)?.workspace
+    if (!folder || !workspace) return
+    const baseline = folder.baseline(workspace)
+    this.baselines.set(motherId, baseline)
+    await baseline
+  }
+
+  /** Fin du tour de l'étape : le dossier a-t-il changé (agent qui écrit sans demander) ? */
+  private compareFolder(motherId: string, ref: StepRef): void {
+    const baseline = this.baselines.get(motherId)
+    this.baselines.delete(motherId)
+    const folder = this.host.folder
+    if (!baseline || !folder) return
+    const done = baseline
+      .then((before) => (before ? folder.changes(before) : undefined))
+      .then((files) => {
+        if (!files) return
+        log.warn(
+          `Tour de table ${ref.roundtableId.slice(0, 8)} : le dossier a changé (${ref.step})`
+        )
+        this.host.apply(motherId, ref.roundtableId, {
+          type: 'step-changed-folder',
+          step: ref.step,
+          files
+        })
+      })
+    this.comparing.set(motherId, done)
+    void done.finally(() => {
+      if (this.comparing.get(motherId) === done) this.comparing.delete(motherId)
+    })
   }
 
   /** L'envoi a échoué : l'agent répondait (réessai au prochain repos), ou une vraie erreur. */
   private notSent(motherId: string, ref: StepRef, error: unknown): void {
+    this.baselines.delete(motherId)
     if (this.sending.get(motherId)?.roundtableId === ref.roundtableId) this.sending.delete(motherId)
     const rt = this.host.tours(motherId).find((r) => r.roundtableId === ref.roundtableId)
     if (!rt || waitingStep(rt) !== ref.step) return

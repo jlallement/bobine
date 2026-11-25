@@ -54,6 +54,8 @@ export interface ChildRequest {
   reserved?: true
   /** Juste avant l'envoi du premier message : `false` l'abandonne, sans erreur (tour arrêté). */
   proceed?: () => boolean
+  /** Tour de table (fiche 285) : le premier message est la question de ce tour (son identifiant). */
+  roundtableQuestion?: string
   /** Participant d'un tour de table (fiche 285) : l'identifiant du tour, retenu dans sa fiche. */
   roundtable?: string
   /** Le premier message n'a pas pu partir (modèle strict, agent qui ne démarre pas…). */
@@ -63,7 +65,7 @@ export interface ChildRequest {
 /** Ce qu'un lancement reprend de la demande (`launch`). */
 export type LaunchExtras = Pick<
   ChildRequest,
-  'attachments' | 'strictModel' | 'proceed' | 'launchFailed'
+  'attachments' | 'strictModel' | 'proceed' | 'launchFailed' | 'roundtableQuestion'
 >
 
 /**

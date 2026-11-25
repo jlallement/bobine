@@ -92,9 +92,8 @@ export function opinionInputs(
 ): OpinionInput[] {
   return rt.seats.map((seat): OpinionInput => {
     const base = { letter: seat.letter, ...(seat.changedFolder ? { changedFolder: true } : {}) }
-    if (seat.state === 'answered' && (seat.removed || gone(seat.childId))) {
-      return { ...base, stopped: 'removed' }
-    }
+    // Conversation absente au moment de la synthèse (corbeille, effacée) : constaté maintenant.
+    if (seat.removed || gone(seat.childId)) return { ...base, stopped: 'removed' }
     if (seat.state === 'answered') {
       const opinion = text(seat)?.trim()
       return opinion ? { ...base, text: opinion } : { ...base, error: 'agent-error' as const }

@@ -15,6 +15,7 @@ import {
   ROUNDTABLE_LETTERS,
   ROUNDTABLE_MAX_SEATS,
   choiceKey,
+  type RoundtableArbiter,
   type RoundtableChoice,
   type RoundtableLetter,
   type RoundtableReadOnly,
@@ -94,6 +95,11 @@ export interface RoundtableOptions {
   lastExchange: boolean
   /** Le tour ne peut pas partir d'ici, quelle que soit la sélection. */
   refused?: Exclude<RoundtableStartError, 'selection' | 'slots' | 'question'>
+  /**
+   * L'arbitre (agent et modèle de cette conversation) : jamais participant (problème `arbiter`).
+   * Un agent sans choix de modèle qui arbitre est aussi rendu indisponible, avec sa raison.
+   */
+  arbiter?: RoundtableArbiter
 }
 
 export interface RoundtableIpcContract {

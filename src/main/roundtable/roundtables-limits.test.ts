@@ -387,7 +387,7 @@ describe('lecture seule (décision C3)', () => {
     )
   })
 
-  it('deux participants qui lisent par le shell, l’un écrit : le changement est dit à tous ceux qui se chevauchent', async () => {
+  it('deux participants qui lisent par le shell, l’un écrit : chacun dont le tour couvre l’écriture la voit', async () => {
     const lock = lockFile()
     const { env, mother } = await setup({
       profiles: (mock) => [
@@ -507,7 +507,7 @@ describe('corbeille, archivage, plafond, redémarrage (lot 4)', () => {
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
     // Rien de figé : la place est arrêtée, l'interface lit l'existence de sa conversation.
     const removed = env.rt(mother).seats.find((s) => s.letter === slow?.letter)
-    expect(removed).toMatchObject({ state: 'stopped', stopped: 'removed' })
+    expect(removed).toMatchObject({ state: 'stopped', stopped: 'user' })
     expect(removed?.removed).toBeUndefined()
     expect(env.replies(mother).at(-1)).toContain('its conversation was deleted')
     rmSync(lock)

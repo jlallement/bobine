@@ -611,6 +611,7 @@ async function start(): Promise<void> {
     roles: roles.library,
     keepLive: (id) => children?.keepLive(id) ?? false,
     settleLoaded: (id, items) => roundtables?.settleLoaded(id, items) ?? [],
+    roundtableStep: (id) => roundtables?.stepActive(id) ?? false,
     // Agents vivants au plus : le réglage, sauf `BOBINE_MAX_LIVE` (essais, e2e `filles`, fiche 102).
     maxLive: imposedLiveLimit(process.env),
     ...conversationRelease({ terminals, browser, browserTools }),
@@ -708,7 +709,11 @@ async function start(): Promise<void> {
     providers: () => providers.list(),
     nativeRoleMode: roles.forChildren.nativeRoleMode,
     dropHeld: (id, rt) =>
-      costCap.dropHeld(id, ({ from }) => from?.kind === 'roundtable' && from.id === rt)
+      costCap.dropHeld(
+        id,
+        ({ from, roundtableQuestion }) =>
+          (from?.kind === 'roundtable' && from.id === rt) || roundtableQuestion === rt
+      )
   })
   // Tâches planifiées (fiche 178, ADR-0039) : lancées tant que l'app est ouverte.
   // Ce que la lecture a mis de côté ou retrouvé (fiche 196, 197) : dit une fois.

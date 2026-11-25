@@ -14,7 +14,14 @@ export interface AppAgents {
   /** `BOBINE_CONFIG_HOME`, s'il est posé. */
   configHome: string | undefined
   /** Dossier personnel des fichiers des agents (et `XDG_CONFIG_HOME` hors essais). */
-  agentFiles: { home: string; xdgConfigHome?: string }
+  agentFiles: { home: string; xdgConfigHome?: string; systemConfig?: string }
+}
+
+/** Dossier des réglages du système, où un agent peut aussi être défini (revue sécurité, fiche 285). */
+function systemConfig(env: NodeJS.ProcessEnv): string | undefined {
+  if (process.platform === 'darwin') return '/Library/Application Support'
+  if (process.platform === 'win32') return env['ProgramData']
+  return '/etc'
 }
 
 export function appAgents(env: NodeJS.ProcessEnv = process.env): AppAgents {
@@ -32,7 +39,9 @@ export function appAgents(env: NodeJS.ProcessEnv = process.env): AppAgents {
     configHome,
     agentFiles: {
       home: configHome ?? homedir(),
-      ...(configHome || !xdg ? {} : { xdgConfigHome: xdg })
+      ...(configHome || !xdg ? {} : { xdgConfigHome: xdg }),
+      // Essais (`BOBINE_CONFIG_HOME`) : jamais les réglages du système.
+      ...(configHome || !systemConfig(env) ? {} : { systemConfig: systemConfig(env) })
     }
   }
 }

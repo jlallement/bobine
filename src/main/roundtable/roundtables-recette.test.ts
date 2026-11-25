@@ -3,9 +3,10 @@
  * l'agent factice : arrêt cohérent, fiches des participants, corbeille, étiquette de la synthèse,
  * erreurs typées, durée après « Relancer », titres lisibles.
  */
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { t } from 'i18next'
 import { afterEach, describe, expect, it } from 'vitest'
 import { bobDbCosts } from '../agent/bob-costs'
 import { deleteConversation } from '../conversations/family-delete'
@@ -96,6 +97,7 @@ describe('fiches des participants (M7, B5b)', () => {
     const refused = () => env.rt(mother).seats.find((s) => s.model?.value === 'factice-precis')
     await env.waitFor(() => refused()?.state === 'error', 'modèle refusé')
     expect(summaryOf(env, refused()?.childId)?.roundtable).toEqual({
+      since: expect.any(Number),
       id,
       active: true,
       state: 'error'
@@ -103,6 +105,7 @@ describe('fiches des participants (M7, B5b)', () => {
     await env.waitFor(() => env.rt(mother).phase === 'insufficient', 'un seul avis')
     // Recueil fini : la barre latérale peut le ranger ; l'état d'erreur reste.
     expect(summaryOf(env, refused()?.childId)?.roundtable).toEqual({
+      since: expect.any(Number),
       id,
       active: false,
       state: 'error'
@@ -280,5 +283,327 @@ describe('plafond de la conversation d’un participant (S5)', () => {
     await env.waitFor(() => env.rt(mother).synthesis?.state === 'held', 'synthèse retenue')
     const card = env.items(mother).findLast((i) => i.kind === 'cost-cap')
     expect(card?.kind === 'cost-cap' && card.held).toBe('Demande de synthèse du tour de table')
+  })
+})
+
+describe('contre-revue : question retenue puis arrêt (N1, N12)', () => {
+  it('question retenue, place arrêtée : « Continuer » ne l’envoie plus ; un message tapé garde son texte sur la carte', async () => {
+    const lock = lockFile()
+    const { env, mother } = await setup({
+      profiles: (mock) => [
+        mock('lent', 'avis-participant', ['--verrou-fin-de-tour', lock]),
+        mock('demarre', 'avis-participant', ['--demarrage-lent', '600'])
+      ]
+    })
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [choice('lent', 'factice-rapide'), choice('demarre', 'factice-rapide')]
+    })
+    const id = env.rt(mother).roundtableId
+    const seat = () => env.rt(mother).seats.find((s) => s.profileId === 'demarre')
+    await env.roundtables.stop(mother, id, seat()?.letter)
+    const childId = seat()?.childId ?? ''
+    env.manager.post(childId, { type: 'usage-report', cost: { amount: 1, currency: 'USD' } })
+    env.costCap.setCap(childId, { limit: 0.01, unit: 'USD' })
+    await env.roundtables.relaunch(mother, id, seat()?.letter ?? 'A')
+    await env.waitFor(() => seat()?.held === true, 'question retenue')
+    const card = env.items(childId).findLast((i) => i.kind === 'cost-cap')
+    // La place est arrêtée pendant que sa question attend « Continuer ».
+    await env.roundtables.stop(mother, id, seat()?.letter)
+    env.costCap.answer(childId, card?.id ?? 0, 'continue')
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(env.users(childId)).toEqual([])
+    expect(seat()?.state).toBe('stopped')
+    // Un message tapé par l'utilisateur dans cette conversation, retenu : son texte, pas un libellé.
+    env.costCap.setCap(childId, { limit: 0.01, unit: 'USD' })
+    void env.manager.prompt(childId, 'Ma propre question')
+    await env.waitFor(
+      () => env.items(childId).filter((i) => i.kind === 'cost-cap').length === 2,
+      'message tapé retenu'
+    )
+    const typed = env.items(childId).findLast((i) => i.kind === 'cost-cap')
+    expect(typed?.kind === 'cost-cap' && typed.held).toBe('Ma propre question')
+    rmSync(lock)
+  })
+})
+
+describe('contre-revue : tests qui prouvent', () => {
+  it('jeton : un ancien lancement qui échoue après son départ ne met pas en erreur la relance', async () => {
+    const lock = lockFile()
+    const { env, mother } = await setup({
+      profiles: (mock) => [mock('lent', 'avis-participant', ['--verrou-fin-de-tour', lock])]
+    })
+    const failures: ((error: unknown) => void)[] = []
+    const start = env.children.start.bind(env.children)
+    env.children.start = async (motherId, request, by) => {
+      if (request.launchFailed) failures.push(request.launchFailed)
+      return start(motherId, request, by)
+    }
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [choice('lent', 'factice-rapide'), choice('lent', 'factice-precis')]
+    })
+    const id = env.rt(mother).roundtableId
+    const first = env.rt(mother).seats[0]
+    await env.waitFor(() => env.rt(mother).seats[0]?.state === 'working', 'question partie')
+    await env.roundtables.stop(mother, id, first?.letter)
+    await env.roundtables.relaunch(mother, id, first?.letter ?? 'A')
+    expect(env.rt(mother).seats[0]?.state).toBe('waiting')
+    // L'ancien lancement (le premier) échoue maintenant, pendant la relance.
+    failures[0]?.(new Error('ancien tour en échec'))
+    expect(env.rt(mother).seats[0]?.state).not.toBe('error')
+    rmSync(lock)
+  })
+
+  it('modèle relu au départ de la question : un écart met la place en erreur, sa question n’est pas suivie', async () => {
+    const { env, mother } = await setup({
+      profiles: (mock) => [mock('demarre', 'avis-participant', ['--demarrage-lent', '600'])]
+    })
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [FAST, choice('demarre', 'factice-rapide')]
+    })
+    const seat = () => env.rt(mother).seats.find((s) => s.profileId === 'demarre')
+    expect(seat()?.state).toBe('waiting')
+    // Ce que pose l'hôte si la question part avec un autre modèle que celui vérifié.
+    env.manager.post(seat()?.childId ?? '', {
+      type: 'user-message',
+      text: QUESTION,
+      model: { id: 'factice-precis', name: 'Factice précis' }
+    })
+    expect(seat()).toMatchObject({ state: 'error', error: 'model-not-applied' })
+  })
+
+  it('participant mis à la corbeille pendant le recueil puis restauré : la synthèse ne le dit pas supprimé', async () => {
+    const lock = lockFile()
+    const { env, mother } = await setup({
+      lead: 'echo',
+      profiles: (mock) => [mock('lent', 'avis-participant', ['--verrou-fin-de-tour', lock])]
+    })
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [FAST, PRECISE, choice('lent', 'factice-rapide')]
+    })
+    const slow = () => env.rt(mother).seats.find((s) => s.profileId === 'lent')
+    await env.waitFor(() => slow()?.state === 'working', 'participant lent au travail')
+    const childId = slow()?.childId ?? ''
+    await env.manager.delete(childId, { fromAgent: false })
+    env.manager.restoreFromTrash(childId)
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    const received = env.replies(mother).at(-1) ?? ''
+    expect(received).not.toContain('its conversation was deleted')
+    expect(received).toContain('stopped by the user')
+    rmSync(lock)
+  })
+})
+
+describe('recette réelle : arbitre en lecture seule pendant l’étape (S1)', () => {
+  it('demande d’écriture pendant la synthèse : refusée d’office ; après, une carte ordinaire', async () => {
+    const { env, mother } = await setup({ lead: 'arbitre-demande-ecrire' })
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    expect(env.replies(mother).at(-1)).toContain('Écriture refusée.')
+    expect(existsSync(join(env.repo, 'notes-arbitre.md'))).toBe(false)
+    expect(env.roundtables.stepActive(mother)).toBe(false)
+    // Hors de l'étape, la conversation redevient normale : la demande attend l'utilisateur.
+    void env.manager.prompt(mother, 'Prends des notes')
+    await env.waitFor(
+      () =>
+        env.events.some(
+          (e) => e.conversationId === mother && e.event.type === 'permission-request'
+        ),
+      'carte d’autorisation ordinaire'
+    )
+    const request = env.events.findLast(
+      (e) => e.conversationId === mother && e.event.type === 'permission-request'
+    )?.event
+    if (request?.type !== 'permission-request') throw new Error('pas de demande')
+    env.manager.respondPermission(mother, request.requestId, 'allow')
+    await env.waitFor(
+      () => env.replies(mother).at(-1)?.includes('Écriture acceptée.') ?? false,
+      'écriture acceptée hors étape'
+    )
+  })
+
+  it('écriture sans demander pendant la synthèse : l’étape dit le dossier changé et le fichier', async () => {
+    const { env, mother } = await setup({ lead: 'arbitre-ecrit' })
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    await env.roundtables.stepFolderChecked(mother)
+    await env.waitFor(() => !!env.rt(mother).synthesis?.changedFolder, 'dossier changé dit')
+    expect(env.rt(mother).synthesis).toMatchObject({
+      state: 'answered',
+      changedFolder: true,
+      changedFiles: ['notes-arbitre.md']
+    })
+  })
+
+  it('synthèse sans écriture : rien n’est signalé', async () => {
+    const { env, mother } = await setup()
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    await env.roundtables.stepFolderChecked(mother)
+    expect(env.rt(mother).synthesis?.changedFolder).toBeUndefined()
+  })
+})
+
+describe('recette réelle : l’arbitre n’est jamais participant', () => {
+  it('lancement refusé, options qui le disent, et contrôle au départ de la synthèse', async () => {
+    const { env, mother } = await setup()
+    const handlers = roundtableHandlers(env.roundtables)
+    const options = await handlers['roundtable:options'](mother)
+    expect(options.arbiter).toEqual({ profileId: 'lead', model: 'factice-rapide' })
+    expect(
+      await env.roundtables.start(mother, {
+        question: QUESTION,
+        participants: [FAST, choice('lead', 'factice-rapide')]
+      })
+    ).toEqual({ ok: false, error: 'selection', problem: 'arbiter' })
+    // Un autre modèle du même agent participe ; puis la conversation passe à ce modèle.
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [FAST, choice('lead', 'factice-precis')]
+    })
+    await env.manager.setControl(mother, 'model', 'factice-precis')
+    await env.waitFor(() => env.rt(mother).phase === 'interrupted', 'synthèse refusée')
+    expect(env.rt(mother).synthesis).toMatchObject({
+      state: 'failed',
+      detail: t('roundtable.error.arbiter')
+    })
+    expect(env.users(mother).some((u) => u.from?.kind === 'roundtable')).toBe(false)
+  })
+})
+
+describe('recette réelle : arbitre sans choix de modèle', () => {
+  it('l’agent est indisponible dans le menu, avec sa raison, et refusé au lancement', async () => {
+    const { env, mother } = await setup({ leadProfile: { childModelChoice: undefined } })
+    const options = await roundtableHandlers(env.roundtables)['roundtable:options'](mother)
+    expect(options.agents.find((a) => a.profileId === 'lead')).toMatchObject({
+      available: false,
+      reason: t('roundtable.error.selection.arbiter')
+    })
+    expect(options.agents.find((a) => a.profileId === 'panel')?.available).toBe(true)
+    expect(
+      await env.roundtables.start(mother, {
+        question: QUESTION,
+        participants: [FAST, choice('lead')]
+      })
+    ).toEqual({ ok: false, error: 'selection', problem: 'arbiter' })
+  })
+})
+
+describe('recette réelle : agents des participants libérés (G1)', () => {
+  it('arrêtés à la synthèse, rouverts pour la réplique avec leur modèle, arrêtés à la décision', async () => {
+    const { env, mother } = await setup()
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    const children = env.rt(mother).seats.map((s) => s.childId ?? '')
+    const released = () => children.every((id) => env.manager.view(id).snapshot === null)
+    await env.waitFor(released, 'agents libérés après la synthèse')
+    env.roundtables.rebuttal(mother, env.rt(mother).roundtableId)
+    await env.waitFor(() => env.rt(mother).phase === 'decided', 'décision rendue', 20_000)
+    // Réplique rendue par la session reprise, avec le modèle affiché (relu à son départ).
+    for (const seat of env.rt(mother).seats)
+      expect(seat.rebuttal).toMatchObject({ state: 'answered', stance: 'maintains' })
+    await env.waitFor(released, 'agents libérés après la décision')
+  })
+
+  it('tour arrêté : les agents des participants sont libérés aussi', async () => {
+    const lock = lockFile()
+    const { env, mother } = await setup({
+      profiles: (mock) => [mock('lent', 'avis-participant', ['--verrou-fin-de-tour', lock])]
+    })
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [choice('lent', 'factice-rapide'), choice('lent', 'factice-precis')]
+    })
+    await env.waitFor(
+      () => env.rt(mother).seats.every((s) => s.state === 'working'),
+      'participants au travail'
+    )
+    await env.roundtables.stop(mother, env.rt(mother).roundtableId)
+    const children = env.rt(mother).seats.map((s) => s.childId ?? '')
+    await env.waitFor(
+      () => children.every((id) => env.manager.view(id).snapshot === null),
+      'agents libérés après l’arrêt'
+    )
+  })
+})
+
+describe('recette réelle : étiquettes lisibles (C1)', () => {
+  it('nom de modèle court sur l’arbitre et l’étiquette de la synthèse, sans préfixe de fournisseur', async () => {
+    const { env, mother } = await setup({ leadProfile: { env: { MOCK_MODELS: 'long' } } })
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    expect(env.rt(mother).synthesizer.model).toBe('Factice rapide')
+    expect(env.rt(mother).synthesis?.by).toEqual({
+      profileId: 'lead',
+      label: 'Factice lead',
+      model: 'Factice rapide'
+    })
+  })
+})
+
+describe('recette réelle : chronomètre de la réplique (G3)', () => {
+  it('la fiche du participant dit le début de la réplique, pas celui de son avis', async () => {
+    const lock = join(mkdtempSync(join(tmpdir(), 'tour-verrou-')), 'verrou')
+    const { env, mother } = await setup({
+      profiles: (mock) => [mock('lent', 'avis-participant', ['--verrou-fin-de-tour', lock])]
+    })
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [choice('lent', 'factice-rapide'), choice('lent', 'factice-precis')]
+    })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    const childId = env.seatChild(mother, 'A')
+    const opinionStart = env.rt(mother).seats.find((s) => s.letter === 'A')?.startedAt
+    expect(summaryOf(env, childId)?.roundtable?.since).toBe(opinionStart)
+    writeFileSync(lock, '')
+    env.roundtables.rebuttal(mother, env.rt(mother).roundtableId)
+    await env.waitFor(
+      () => env.rt(mother).seats.every((s) => s.rebuttal?.state === 'working'),
+      'répliques au travail'
+    )
+    const askedAt = env.rt(mother).seats.find((s) => s.letter === 'A')?.rebuttal?.askedAt
+    expect(askedAt).toBeGreaterThan(opinionStart ?? Infinity)
+    expect(summaryOf(env, childId)?.roundtable?.since).toBe(askedAt)
+    rmSync(lock)
+    await env.waitFor(() => env.rt(mother).phase === 'decided', 'décision rendue', 20_000)
+  })
+})
+
+describe('contre-revue : réplique envoyée au repos (N7)', () => {
+  it('participant occupé à la demande de réplique : empreinte avant l’envoi, l’écriture est vue', async () => {
+    const lock = join(mkdtempSync(join(tmpdir(), 'tour-verrou-')), 'verrou')
+    const { env, mother } = await setup({
+      profiles: (mock) => [
+        mock('ecrit', 'participant-ecrit-replique', ['--verrou-fin-de-tour', lock], {
+          writesWithoutAsking: true
+        })
+      ]
+    })
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [choice('ecrit', 'factice-rapide'), FAST]
+    })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    const letter = env.rt(mother).seats.find((s) => s.profileId === 'ecrit')?.letter ?? 'A'
+    const childId = env.seatChild(mother, letter)
+    // Le participant qui écrit travaille (message tapé par l'utilisateur) quand la réplique est demandée.
+    writeFileSync(lock, '')
+    void env.manager.prompt(childId, 'Et une autre piste ?')
+    await env.waitFor(() => summaryOf(env, childId)?.status === 'busy', 'participant occupé')
+    env.roundtables.rebuttal(mother, env.rt(mother).roundtableId)
+    // Pas en file d'attente : la réplique attend son repos (l'empreinte se prendra avant l'envoi).
+    // Absence d'une file : aucun évènement à attendre, une courte pause laisse partir un envoi.
+    // eslint-disable-next-line no-restricted-syntax -- vérifier qu'aucun message n'est mis en file
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    expect(env.manager.view(childId).snapshot?.queued ?? []).toHaveLength(0)
+    expect(env.rt(mother).seats.find((s) => s.letter === letter)?.rebuttal?.state).toBe('waiting')
+    rmSync(lock)
+    await env.waitFor(() => env.rt(mother).phase === 'decided', 'décision rendue', 20_000)
+    await env.children.watchSettled(childId)
+    const seat = env.rt(mother).seats.find((s) => s.letter === letter)
+    expect(seat?.rebuttal).toMatchObject({ state: 'answered', changedFolder: true })
   })
 })

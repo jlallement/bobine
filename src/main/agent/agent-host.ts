@@ -153,6 +153,8 @@ export interface AgentHostOptions {
    * `participant` (tour de table, fiche 285) : les commandes aussi.
    */
   readOnly?: boolean | 'participant'
+  /** Tour d'une étape du tour de table en cours (synthèse, décision, fiche 285) : relu à chaque demande. */
+  stepReadOnly?: () => boolean
   /** Discussion (fiche 224) : écritures accordées dans ce dossier, refusées ailleurs. */
   writeArea?: string
   /** Délais de démarrage et d'arrêt (remplaçables pour les tests) ; voir `TIMEOUTS`. */
@@ -236,6 +238,11 @@ export interface PromptOptions {
   askChildren?: boolean
   /** Travail visé par ce message (fiche 263) : marqué dans le contexte joint (`extraContext`). */
   about?: string
+  /**
+   * Question d'un participant de tour de table (fiche 285) : lue seulement par la garde du plafond,
+   * pour l'oublier si elle est retenue puis le tour arrêté, et la nommer sur la carte.
+   */
+  roundtableQuestion?: string
 }
 
 /** Session à rouvrir (option `reopen`). */

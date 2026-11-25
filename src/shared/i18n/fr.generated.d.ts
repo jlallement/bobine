@@ -6526,12 +6526,14 @@ export type FrResources = {
         readonly 'model-not-allowed': 'Cet agent ne permet pas de choisir son modèle.'
         readonly 'unknown-agent': 'Cet agent n’existe plus.'
         readonly unavailable: 'Cet agent est indisponible.'
+        readonly arbiter: 'L’agent et le modèle de cette conversation arbitrent le tour : ils ne peuvent pas aussi participer.'
       }
       readonly unavailable: 'Le tour de table n’est pas encore disponible dans cette version.'
       readonly unknown: 'Ce tour de table n’existe pas dans cette conversation.'
       readonly attachmentsLost: 'Les pièces jointes de ce tour ne sont plus disponibles depuis le redémarrage de l’app : lancez un nouveau tour de table.'
       readonly question: 'La question dépasse 8 000 caractères : raccourcissez-la, ou joignez le détail en fichier.'
       readonly archivedGesture: 'Cette conversation est archivée : désarchivez-la pour continuer son tour de table.'
+      readonly arbiter: 'L’agent et le modèle de cette conversation sont aussi ceux d’un participant : changez de modèle, puis relancez la synthèse.'
     }
     readonly export_one: 'Tour de table à {{count}} participant'
     readonly export_many: 'Tour de table à {{count}} participants'

@@ -50,9 +50,8 @@ interface Turn {
   baseline: Promise<string | undefined>
   /** Une autre conversation du dossier a lancé un outil qui peut écrire pendant le tour. */
   shared: boolean
-  /** Groupe de la conversation (`group`), et les tours du même groupe qui ont chevauché celui-ci. */
+  /** Groupe de la conversation (`group`) : ses outils ne rendent pas « partagés » les autres. */
   group?: string
-  overlaps: Set<string>
 }
 
 /** Fille en lecture seule suivie ici : un rôle de conseil, ou le Code reviewer (fiche 265). */
@@ -165,24 +164,13 @@ export class ReadOnlyWatch {
     )
   }
 
-  /** Tour suivi ; les tours en cours du même groupe se chevauchent avec lui. */
+  /**
+   * Tour suivi. Chaque participant d'un groupe juge seul son propre tour (empreinte de début et de
+   * fin) : un changement pendant son tour le concerne ; en dehors, il ne le concerne pas.
+   */
   private begin(id: string, workspace: string, baseline: Promise<string | undefined>): void {
     const group = this.deps.group?.(id)
-    const turn: Turn = {
-      workspace,
-      baseline,
-      shared: false,
-      overlaps: new Set(),
-      ...(group ? { group } : {})
-    }
-    if (group) {
-      for (const [otherId, other] of this.turns) {
-        if (other.group !== group) continue
-        other.overlaps.add(id)
-        turn.overlaps.add(otherId)
-      }
-    }
-    this.turns.set(id, turn)
+    this.turns.set(id, { workspace, baseline, shared: false, ...(group ? { group } : {}) })
   }
 
   private noteTool(id: string, update: { sessionUpdate: string; kind?: string | null }): void {
@@ -226,8 +214,6 @@ export class ReadOnlyWatch {
     if (after === before) return
     log.warn(`Rôle en lecture seule (${id.slice(0, 8)}) : le dossier a changé pendant son tour`)
     this.deps.changed?.(id)
-    // Sans savoir lequel a écrit : chaque tour du groupe qui a chevauché celui-ci le dit aussi.
-    for (const other of turn.overlaps) this.deps.changed?.(other)
     this.deps.conversations.post(id, {
       type: 'notice',
       level: 'warning',

@@ -70,15 +70,16 @@ function watched(event: AgentEvent): boolean {
 
 /**
  * Aperçu du message retenu sur la carte du plafond : jamais une consigne interne de l'app (fiche
- * 285, recette). Demande d'un tour de table : son libellé ; message d'un participant sans
- * provenance (sa question, avec le bloc de son rôle) : « Question du tour de table » ; tout autre
- * message, coupé avant le premier bloc de l'app.
+ * 285). Message d'un tour de table (question, réplique, synthèse, décision), reconnu par sa
+ * provenance : son libellé ; message d'une autre conversation : coupé avant le premier bloc de
+ * l'app ; message tapé par l'utilisateur : tel quel.
  */
-export function heldPreview(message: Held, participant: boolean): string {
+export function heldPreview(message: Held): string {
   const from = message.options.from
   if (from?.kind === 'roundtable') return t(`roundtable.held.${from.step}`)
-  if (participant) return t('roundtable.held.question')
-  const text = stripAppContext(message.text) ?? ''
+  if (message.options.roundtableQuestion) return t('roundtable.held.question')
+  // Message venu de l'app (autre conversation) : sans ses blocs ; tapé par l'utilisateur : tel quel.
+  const text = from ? (stripAppContext(message.text) ?? '') : message.text.trim()
   return text || message.attachments.map(attachmentName).join(', ')
 }
 
@@ -175,7 +176,7 @@ export class CostCapGuard {
     const reached = capReached(view.transcript, prefs)
     if (!reached) return false
     this.held.set(id, message)
-    const preview = heldPreview(message, view.summary.roundtable !== undefined)
+    const preview = heldPreview(message)
     this.post(id, reached.cap, reached.spent, prefs, false, preview.slice(0, HELD_PREVIEW))
     return true
   }

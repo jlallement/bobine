@@ -6451,13 +6451,15 @@
         "single-seat": "This agent takes part once, with no model choice.",
         "model-not-allowed": "This agent does not let you choose its model.",
         "unknown-agent": "This agent no longer exists.",
-        "unavailable": "This agent is unavailable."
+        "unavailable": "This agent is unavailable.",
+        "arbiter": "This conversation’s agent and model arbitrate the roundtable: they cannot also take part."
       },
       "unavailable": "The roundtable is not available yet in this version.",
       "unknown": "This roundtable does not exist in this conversation.",
       "attachmentsLost": "The attachments of this roundtable are no longer available since the app restarted: start a new roundtable.",
       "question": "The question is longer than 8,000 characters: shorten it, or attach the details as a file.",
-      "archivedGesture": "This conversation is archived: unarchive it to continue its roundtable."
+      "archivedGesture": "This conversation is archived: unarchive it to continue its roundtable.",
+      "arbiter": "This conversation’s agent and model are also a participant’s: change the model, then run the synthesis again."
     },
     "export_one": "Roundtable with {{count}} participant",
     "export_other": "Roundtable with {{count}} participants",

@@ -5,7 +5,9 @@
  */
 import type { ConversationManager } from '../conversations/manager'
 import type { ChildOptions } from '../conversations/children'
+import { gitRun } from '../git/git-queue'
 import { participantRole } from './participant-role'
+import { stepFolder } from './step-folder'
 import { Roundtables, type RoundtableManager, type RoundtablesDeps } from './roundtables'
 
 export function setupRoundtables(
@@ -17,6 +19,7 @@ export function setupRoundtables(
 ): Roundtables {
   const { nativeRoleMode, ...rest } = deps
   const roundtables = new Roundtables({
+    folder: stepFolder(gitRun),
     ...rest,
     conversations,
     ...(nativeRoleMode

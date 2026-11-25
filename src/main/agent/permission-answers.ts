@@ -14,6 +14,7 @@ import type {
   RequestPermissionResponse,
   ToolCallLocation
 } from '../../shared/acp-sdk.mts'
+import { resolve, sep } from 'node:path'
 import type { AgentEvent } from '@shared/agent'
 import { rememberableTool } from '@shared/permissions'
 import { permissionRisks, type RiskContext } from './permission-risk'
@@ -42,6 +43,11 @@ export interface PermissionRules {
   writeArea?: string | undefined
   /** Emplacements du `tool_call` d'une demande qui n'en porte pas (`ProfileUpdates`). */
   knownLocations?: ToolCallLocation[] | undefined
+  /**
+   * Tour d'une étape du tour de table en cours dans cette conversation (synthèse, décision, fiche
+   * 285) : écritures, déplacements, suppressions, commandes et changements de mode refusés.
+   */
+  stepReadOnly?: boolean
 }
 
 /** Règles tirées des options d'un hôte d'agent (lecture seule, documents, accords retenus). */
@@ -51,12 +57,18 @@ export function hostRules(
     readOnly?: boolean | 'participant' | undefined
     writeArea?: string | undefined
     emit: (event: AgentEvent) => void
+    stepReadOnly?: (() => boolean) | undefined
   },
   knownLocations?: ToolCallLocation[]
-): Pick<PermissionRules, 'remembered' | 'readOnly' | 'writeArea' | 'notify' | 'knownLocations'> {
+): Pick<
+  PermissionRules,
+  'remembered' | 'readOnly' | 'writeArea' | 'notify' | 'knownLocations' | 'stepReadOnly'
+> {
   return {
     remembered: options.rememberedTools,
     readOnly: options.readOnly,
+    // Relu à chaque demande : seulement pendant le tour de l'étape.
+    ...(options.stepReadOnly?.() ? { stepReadOnly: true } : {}),
     writeArea: options.writeArea,
     notify: options.emit,
     knownLocations
@@ -147,8 +159,9 @@ export function automaticAnswer(
   params: RequestPermissionRequest,
   rules: PermissionRules
 ): RequestPermissionResponse | undefined {
-  const refused = rules.readOnly === 'participant' ? PARTICIPANT_REFUSED : READ_ONLY_REFUSED
-  if (rules.readOnly && refused.has(params.toolCall.kind ?? '')) {
+  if (rules.readOnly === 'participant') return participantAnswer(params, rules)
+  const refused = rules.stepReadOnly ? PARTICIPANT_REFUSED : READ_ONLY_REFUSED
+  if ((rules.readOnly || rules.stepReadOnly) && refused.has(params.toolCall.kind ?? '')) {
     const reject =
       params.options.find((o) => o.kind === 'reject_once') ??
       params.options.find((o) => o.kind === 'reject_always')
@@ -170,6 +183,46 @@ export function automaticAnswer(
     if (always) return selected(always.optionId)
   }
   return undefined
+}
+
+/** Genres d'une demande accordée d'office à un participant, sur une cible dans son dossier. */
+const PARTICIPANT_ALLOWED: ReadonlySet<string> = new Set(['read', 'search'])
+
+/** La demande ne vise que des chemins du dossier de la conversation (au moins un). */
+function inside(toolCall: RequestPermissionRequest['toolCall'], workspace: string): boolean {
+  const paths = (toolCall.locations ?? []).map((l) => l.path).filter(Boolean)
+  if (paths.length === 0) return false
+  const root = resolve(workspace)
+  return paths.every((p) => {
+    const full = resolve(root, p)
+    return full === root || full.startsWith(`${root}${sep}`)
+  })
+}
+
+/**
+ * Participant d'un tour de table (fiche 285, décision du tech lead) : aucune carte d'autorisation
+ * pendant un tour. Seules une lecture ou une recherche dont toutes les cibles sont dans le dossier
+ * de la conversation sont accordées d'office ; tout le reste (écriture, commande, réseau, `other`,
+ * sans genre, cible hors du dossier ou inconnue) est refusé, et dit dans son fil.
+ */
+function participantAnswer(
+  params: RequestPermissionRequest,
+  rules: PermissionRules
+): RequestPermissionResponse {
+  const toolCall = withKnownLocations(params.toolCall, rules.knownLocations)
+  const allow = params.options.find((o) => o.kind === 'allow_once')
+  if (
+    allow &&
+    PARTICIPANT_ALLOWED.has(toolCall.kind ?? '') &&
+    rules.place.workspace !== undefined &&
+    inside(toolCall, rules.place.workspace)
+  )
+    return selected(allow.optionId)
+  const reject =
+    params.options.find((o) => o.kind === 'reject_once') ??
+    params.options.find((o) => o.kind === 'reject_always')
+  rules.notify?.(readOnlyRefusal(params.toolCall))
+  return reject ? selected(reject.optionId) : { outcome: { outcome: 'cancelled' } }
 }
 
 /** Option « une fois » qui répond à la place d'une option « toujours » de même sens. */

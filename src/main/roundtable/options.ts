@@ -8,7 +8,15 @@
  */
 import type { ConversationSummary, ProfileSummary, SessionControl } from '@shared/agent'
 import type { HandoverModel } from '@shared/handover'
-import { lastRoundtable, roundtableRunning, type RoundtableReadOnly } from '@shared/roundtable'
+import { t } from 'i18next'
+import {
+  lastRoundtable,
+  roundtableRunning,
+  isArbiter,
+  type Roundtable,
+  type RoundtableArbiter,
+  type RoundtableReadOnly
+} from '@shared/roundtable'
 import type {
   RoundtableAgentOption,
   RoundtableOptions,
@@ -46,6 +54,65 @@ export function refusalOf(
   return last && roundtableRunning(last) ? 'running' : undefined
 }
 
+/**
+ * Arbitre de la conversation : son agent, et le modèle de sa session si l'agent se choisit un
+ * modèle (`childModel`) ; un modèle inconnu reste absent (rien n'est deviné).
+ */
+export function arbiterOf(
+  profileId: string,
+  controls: readonly SessionControl[],
+  profiles: readonly Pick<ProfileSummary, 'id' | 'childModel'>[]
+): RoundtableArbiter {
+  const modelChoice = !!profiles.find((p) => p.id === profileId)?.childModel
+  const current = modelChoice ? modelControl(controls)?.currentValue : undefined
+  const model = typeof current === 'string' ? current : undefined
+  return { profileId, ...(model ? { model } : {}) }
+}
+
+/** L'agent et le modèle de la conversation sont ceux d'un participant du tour (modèle changé). */
+export function arbiterInSeats(
+  conversations: Pick<ConversationManager, 'view' | 'settingsView'>,
+  profileId: string,
+  motherId: string,
+  rt: Pick<Roundtable, 'seats'>
+): boolean {
+  const profiles = conversations.settingsView().profiles
+  const arbiter = arbiterOf(
+    profileId,
+    conversations.view(motherId).snapshot?.controls ?? [],
+    profiles
+  )
+  return rt.seats.some((seat) =>
+    isArbiter(seat, arbiter, !!profiles.find((p) => p.id === seat.profileId)?.childModel)
+  )
+}
+
+/**
+ * Agents des participants arrêtés une fois au repos (recette réelle, G1) : rien ne les garde
+ * vivants après leur avis. `release` revérifie le tour (une réplique repartie ne lâche rien) ;
+ * une conversation affichée garde son agent (`releaseIdle`).
+ */
+export function releaseWhenIdle(
+  rt: Pick<Roundtable, 'seats'>,
+  idle: (childId: string) => Promise<void>,
+  release: (childId: string) => void,
+  lateCost: (childId: string) => boolean
+): void {
+  for (const seat of rt.seats) {
+    const childId = seat.childId
+    if (!childId || seat.removed) continue
+    void idle(childId).then(() => {
+      // Coût lu hors protocole après la réponse (`costSource`, Bob) : l'agent attend la fin de sa
+      // relecture, sinon le plafond de la réplique ne le verrait qu'après son envoi.
+      if (!lateCost(childId)) return release(childId)
+      setTimeout(() => release(childId), LATE_COST_MS).unref()
+    })
+  }
+}
+
+/** Fin de la relecture du coût après un tour (`session-cost.ts` : une minute au plus), et un peu. */
+const LATE_COST_MS = 65_000
+
 /** Le dossier de la conversation est dans un dépôt git (empreinte de la lecture seule possible). */
 export const folderInGit = (workspace: string): boolean =>
   hasFolder(workspace) && inGitRepo(workspace)
@@ -63,8 +130,10 @@ export function expectedReadOnly(
   // Profil introuvable : rien ne dit comment l'agent écrit, rien n'est promis.
   if (!profile) return 'unverified'
   if (!profile.writesWithoutAsking) return 'enforced'
+  // Hors dépôt git, rien n'est vérifiable : jamais promis, même avec le rôle installé.
+  if (!inGit) return 'unverified'
   if (installed?.readOnly && !installed.stale) return 'native'
-  return inGit ? 'requested' : 'unverified'
+  return 'requested'
 }
 
 /**
@@ -139,11 +208,22 @@ export function roundtableOptions(deps: OptionsDeps, conversationId: string): Ro
   const memory = deps.conversations.settings.current.models ?? {}
   const providers = deps.providers()
   const ownSession = modelControl(view.snapshot?.controls ?? [])
-  const agents = deps.conversations.settingsView().profiles.map((profile) => {
+  const profiles = deps.conversations.settingsView().profiles
+  const arbiter = arbiterOf(summary.profileId, view.snapshot?.controls ?? [], profiles)
+  const agents = profiles.map((profile) => {
     const session = profile.id === summary.profileId ? ownSession : undefined
     const installed = deps.participantMode?.(profile.id, conversationId)
     const readOnly = expectedReadOnly(profile, inGit, installed)
-    return agentOption(profile, modelSource(memory[profile.id], session), providers, readOnly)
+    const option = agentOption(
+      profile,
+      modelSource(memory[profile.id], session),
+      providers,
+      readOnly
+    )
+    // Agent sans choix de modèle qui arbitre : il ne peut pas participer.
+    return !option.modelChoice && profile.id === arbiter.profileId
+      ? { ...option, available: false, reason: t('roundtable.error.selection.arbiter') }
+      : option
   })
   const refused = refusalOf(summary, items)
   return {
@@ -151,6 +231,7 @@ export function roundtableOptions(deps: OptionsDeps, conversationId: string): Ro
     freeSlots: Math.max(0, max - active),
     inGit,
     lastExchange: lastExchangeText(items) !== undefined,
+    arbiter,
     ...(refused ? { refused } : {})
   }
 }

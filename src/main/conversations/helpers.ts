@@ -233,7 +233,10 @@ export function summaryOf(
           roundtable: {
             id: record.roundtable,
             active: record.roundtableSeat?.active ?? false,
-            ...(record.roundtableSeat ? { state: record.roundtableSeat.state } : {})
+            ...(record.roundtableSeat ? { state: record.roundtableSeat.state } : {}),
+            ...(record.roundtableSeat?.since !== undefined
+              ? { since: record.roundtableSeat.since }
+              : {})
           }
         }
       : {})
@@ -607,4 +610,11 @@ export async function dropAllDraftSessions(
   }
   const pending = Promise.all([...dropping])
   await Promise.all([...drops, withTimeout(pending, timeoutMs).catch(() => {})])
+}
+
+/** Commande d'une étape du profil (connexion, licence) ; lève si l'étape n'existe pas. */
+export function stepCommandOf(profile: AgentProfile | undefined, stepId: string): string {
+  const step = profile?.terminalSteps?.[stepId]
+  if (!step) throw new Error(t('conversations.error.unknownStep', { step: stepId }))
+  return step.command
 }

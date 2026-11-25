@@ -27,9 +27,7 @@ export const APP_CONTEXT_OPENINGS = {
   /** Où se passe une discussion (fiche 224) : ses documents, et rien d'écrit ailleurs. */
   discussion: '<bobine_discussion>',
   /** Tour de table (fiche 285) : avis, synthèse ou dernier échange joints par l'app. */
-  roundtable: '<bobine_roundtable',
-  /** Tour de table : phrase qui annonce le dernier échange joint à la question d'un participant. */
-  roundtableContext: 'For context only, the last exchange of the conversation'
+  roundtable: '<bobine_roundtable'
 } as const
 
 /**
