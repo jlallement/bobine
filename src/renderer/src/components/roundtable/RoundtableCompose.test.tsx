@@ -695,7 +695,7 @@ describe('barre de saisie repliée (GitHub, Linux à 760 px)', () => {
 
   it('le CSS cache le bouton à sa place aux niveaux 4 et 5, comme les réglages de la session', () => {
     expect(styles).toMatch(
-      /:is\(\[data-fold='4'\], \[data-fold='5'\]\) > \.roundtable-toggle-slot\s*\{\s*display: none;/
+      /:is\(\[data-fold='4'\], \[data-fold='5'\]\)\s*>\s*\.roundtable-toggle-slot\s*\{\s*display: none;/
     )
   })
 })
