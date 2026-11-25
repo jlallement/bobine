@@ -11,17 +11,18 @@ import { currentLocale } from '@shared/i18n/format'
 import { shortModelName } from '@shared/models'
 import {
   choiceKey,
+  isArbiter,
   lastRoundtable,
   roundtableRunning,
   missingSlots,
   ROUNDTABLE_MAX_SEATS,
   ROUNDTABLE_MIN_SEATS,
   tokenMultiplier,
+  type RoundtableArbiter,
   type RoundtableChoice,
   type RoundtableSeat,
   type RoundtableTotal
 } from '@shared/roundtable'
-import { isArbiter, type RoundtableArbiter } from '@shared/roundtable'
 import type { RoundtableAgentOption, RoundtableOptions } from '@shared/roundtable-ipc'
 import { QUESTION_CHARS } from '@shared/roundtable-prompts'
 import type { DataDestination, HandoverModel } from '@shared/handover'
