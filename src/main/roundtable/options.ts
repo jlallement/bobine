@@ -31,6 +31,7 @@ import { destinationOf, type ProvidersList } from '../conversations/handover'
 import { inGitRepo } from '../conversations/helpers'
 import type { ConversationManager } from '../conversations/manager'
 import type { InstalledMode } from '../roles/launch'
+import type { AgentModels } from './agent-models'
 
 /** Mode installé pour le rôle « Participant » dans cet agent, pour ce dossier (décision C3). */
 export type ParticipantMode = (profileId: string, motherId: string) => InstalledMode | undefined
@@ -40,6 +41,8 @@ export interface OptionsDeps {
   children: Pick<ChildConversations, 'capacity'>
   providers: ProvidersList
   participantMode?: ParticipantMode
+  /** Modèles d'un agent sans session, demandés à l'agent (`agent-models.ts`). */
+  models?: Pick<AgentModels, 'ensure'>
 }
 
 /** Pourquoi aucun tour ne peut partir de cette conversation, quelle que soit la sélection. */
@@ -172,6 +175,16 @@ function agentOption(
   }
 }
 
+/** Agent disponible à choix de modèle, sans modèle connu : demandés à l'agent (N2). */
+function withModelsState(
+  option: RoundtableAgentOption,
+  models: OptionsDeps['models']
+): RoundtableAgentOption {
+  if (!option.available || !option.modelChoice || !models) return option
+  if (option.recent.length || option.others.length) return option
+  return { ...option, modelsState: models.ensure(option.profileId) }
+}
+
 /** `roundtable:options` pour la conversation `conversationId` (vérifiée par `view`, qui lève). */
 export function roundtableOptions(deps: OptionsDeps, conversationId: string): RoundtableOptions {
   const view = deps.conversations.view(conversationId)
@@ -188,12 +201,8 @@ export function roundtableOptions(deps: OptionsDeps, conversationId: string): Ro
     const session = profile.id === summary.profileId ? ownSession : undefined
     const installed = deps.participantMode?.(profile.id, conversationId)
     const readOnly = expectedReadOnly(profile, inGit, installed)
-    const option = agentOption(
-      profile,
-      modelSource(memory[profile.id], session),
-      providers,
-      readOnly
-    )
+    const source = modelSource(memory[profile.id], session)
+    const option = withModelsState(agentOption(profile, source, providers, readOnly), deps.models)
     // Agent sans choix de modèle qui arbitre : il ne peut pas participer.
     return !option.modelChoice && profile.id === arbiter.profileId
       ? { ...option, available: false, reason: t('roundtable.error.selection.arbiter') }

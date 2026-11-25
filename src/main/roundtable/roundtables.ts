@@ -66,6 +66,7 @@ import { participantRole } from './participant-role'
 import { reportReply, stepReply, turnReply } from './readings'
 import { SeatEvents, type SeatRef } from './seat-events'
 import type { StepFolder } from './step-folder'
+import type { AgentModels } from './agent-models'
 import { newRoundtable } from './new-roundtable'
 import { MotherSteps, titleOf } from './steps'
 import { IdleWaiters } from './idle-waiters'
@@ -112,6 +113,8 @@ export interface RoundtablesDeps {
   participantMode?: ParticipantMode
   /** Empreinte du dossier autour de la synthèse et de la décision (S1) ; absent : aucune. */
   folder?: StepFolder
+  /** Modèles d'un agent qu'aucune session n'a annoncés (N2). */
+  models?: Pick<AgentModels, 'ensure'>
   /** Attente de la relecture du coût avant de libérer un agent au coût lu après coup (essais). */
   lateCostMs?: number
   /** Aléa du tirage des lettres (`Math.random` en vrai). */
@@ -596,7 +599,8 @@ export class Roundtables implements RoundtableService {
         conversations: this.deps.conversations,
         children: this.deps.children,
         providers: this.deps.providers ?? (() => []),
-        ...(this.deps.participantMode ? { participantMode: this.deps.participantMode } : {})
+        ...(this.deps.participantMode ? { participantMode: this.deps.participantMode } : {}),
+        ...(this.deps.models ? { models: this.deps.models } : {})
       },
       conversationId
     )

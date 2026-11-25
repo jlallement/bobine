@@ -8,6 +8,7 @@ import type { ChildOptions } from '../conversations/children'
 import { gitRun } from '../git/git-queue'
 import { participantRole } from './participant-role'
 import { stepFolder } from './step-folder'
+import { AgentModels, type AgentModelsDeps } from './agent-models'
 import { Roundtables, type RoundtableManager, type RoundtablesDeps } from './roundtables'
 
 export function setupRoundtables(
@@ -15,11 +16,20 @@ export function setupRoundtables(
   deps: Omit<RoundtablesDeps, 'conversations' | 'participantMode'> & {
     /** Mode installé d'un rôle dans un agent (`nativeRoleMode` des filles, fiche 223). */
     nativeRoleMode?: ChildOptions['nativeRoleMode']
+    /** Essai d'un agent hors conversation : réglages de sa session (`ConversationManager.checkAgent`). */
+    checkModels?: AgentModelsDeps['check']
   }
 ): Roundtables {
-  const { nativeRoleMode, ...rest } = deps
+  const { nativeRoleMode, checkModels, ...rest } = deps
+  const models = checkModels
+    ? new AgentModels({
+        check: checkModels,
+        note: (id, controls) => conversations.settings.noteModels(id, controls)
+      })
+    : undefined
   const roundtables = new Roundtables({
     folder: stepFolder(gitRun),
+    ...(models ? { models } : {}),
     ...rest,
     conversations,
     ...(nativeRoleMode
