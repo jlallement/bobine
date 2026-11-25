@@ -478,6 +478,31 @@ describe('AgentHost', () => {
     })
   })
 
+  it('tour en échec : le coût que l’agent a compté est relu aussi (Bob 2.1.0, fiche 285)', async () => {
+    const bobDb = join(mkdtempSync(join(tmpdir(), 'bob-db-')), 'bob.db')
+    const events: AgentEvent[] = []
+    const host = new AgentHost({
+      profile: { ...mockProfile('avis-erreur'), costSource: bobDbCosts(bobDb) },
+      workspace: process.cwd(),
+      emit: (e) => events.push(e)
+    })
+    await host.start()
+    const db = new DatabaseSync(bobDb)
+    db.exec('CREATE TABLE tasks (id TEXT PRIMARY KEY, costs TEXT)')
+    db.prepare('INSERT INTO tasks VALUES (?, ?)').run(
+      host.currentSessionId ?? '',
+      JSON.stringify({ cost: 0.0441, contextTokens: 100 })
+    )
+    db.close()
+    await host.prompt('Synthèse').catch(() => {})
+    host.stop()
+    expect(events.some((e) => e.type === 'turn-error')).toBe(true)
+    expect(events).toContainEqual({
+      type: 'usage-report',
+      cost: { amount: 0.0441, currency: 'bobcoins' }
+    })
+  })
+
   it('agent factice « comme Bob » (fiche 109) : rien par ACP, coût relu après chaque tour', async () => {
     const bobDb = join(mkdtempSync(join(tmpdir(), 'bob-db-')), 'bob.db')
     const events: AgentEvent[] = []

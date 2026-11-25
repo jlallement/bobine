@@ -1244,3 +1244,6 @@ le main n'a pas livré l'étape 1) :
   - N3 (coût d'une synthèse en échec) : le total d'une étape additionne toutes ses tentatives,
     en erreur ou arrêtées comprises, coût lu après coup compris (`RoundtableStep.spent`, interne).
     Trace de Bob 2.1.0 gardée : scénario `synthese-erreur-serveur`, `docs/acp.md`.
+    Cause trouvée en chemin : l'hôte ne relisait pas le coût hors protocole après un tour en échec
+    (seulement après un tour répondu) ; il le relit désormais aussi (`agent-host.ts`), sinon il
+    n'arrivait qu'au tour suivant.
