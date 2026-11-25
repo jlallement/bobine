@@ -179,6 +179,34 @@ export const roundtableScenarios: Record<string, Scenario> = {
     description: 'Tour de table : avis libre, sans les cinq rubriques (« format non suivi »)',
     steps: participant(() => [{ kind: 'text', text: 'Je pense que oui, mais je ne détaille pas.' }])
   },
+  'avis-long-sans-reponse-courte': {
+    description:
+      'Tour de table : avis de plus de 3 000 caractères, comme Nemotron à la recette de la 1.2.0-beta.1 (G-B4) : préambule, « ## Analyse du risque principal », des arguments, « Assumptions », « Confidence: medium », mais aucune réponse courte : la ligne montre le début de l’avis',
+    steps: participant(() => [
+      {
+        kind: 'text',
+        text: [
+          'Let me first explore the repository and the file in question.',
+          '',
+          '## Analyse du risque principal',
+          '',
+          ...Array.from(
+            { length: 30 },
+            (_, i) =>
+              `Point ${i + 1} : la moyenne de calc.js divise par la longueur sans garde, ce qui donne NaN sur une liste vide.`
+          ),
+          '',
+          '## Arguments (5 points max)',
+          '1. **Liste vide** : `xs.length` vaut 0.',
+          '## Assumptions',
+          '- Les appelants passent parfois une liste vide.',
+          '## What would change my mind',
+          '- Un test qui montre une garde ailleurs.',
+          '## Confidence: medium'
+        ].join('\n')
+      }
+    ])
+  },
   'avis-lent': {
     description:
       'Tour de table : participant lent (100 pas de `--delay`, 4 s par défaut, annulable), puis avis au format. Dans les essais, le verrou de fin de tour (`--verrou-fin-de-tour`) tient le tour aussi longtemps que voulu',

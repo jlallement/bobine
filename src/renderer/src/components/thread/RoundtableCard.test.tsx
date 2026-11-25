@@ -306,6 +306,18 @@ describe('avis rendus et synthèse en cours', () => {
     expect(within(row('A')).getByTestId('roundtable-format').textContent).toBe('format non suivi')
   })
 
+  it('G-B4 (recette de la 1.2.0-beta.1) : un long avis sans réponse courte montre son début sur sa ligne', () => {
+    const long = [
+      'Let me first explore the repository.',
+      '## Analyse du risque principal',
+      ...Array.from({ length: 50 }, (_, i) => `Détail ${i} : ${'x'.repeat(60)}`),
+      '## Confidence: medium'
+    ].join('\n')
+    show(thread(synthesizing(), { A: [long], B: OPINIONS.B }))
+    expect(within(row('A')).getByTestId('roundtable-format').textContent).toBe('format non suivi')
+    expect(row('A').textContent).toContain('Let me first explore the repository.')
+  })
+
   it('synthèse retenue par le plafond de la conversation : dit dans l’en-tête', () => {
     show(thread(synthesizing([{ type: 'step-held', step: 'synthesis' }]), OPINIONS))
     expect(plain(screen.getByTestId('roundtable-progress').textContent)).toBe(

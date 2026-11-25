@@ -10,6 +10,7 @@ import { t } from 'i18next'
 import { afterEach, describe, expect, it } from 'vitest'
 import { bobDbCosts } from '../agent/bob-costs'
 import { deleteConversation } from '../conversations/family-delete'
+import { opinionDigest } from '@shared/roundtable-prompts'
 import { roundtableHandlers } from './ipc'
 import {
   FAST,
@@ -819,4 +820,20 @@ describe('recette de la 1.2.0-beta.1 : le coût d’« Appliquer » reste hors d
     await env.waitFor(() => cost(env, mother) === 0.3375, 'coût du message relu', 15_000)
     expect(env.rt(mother).synthesis?.usage?.cost?.amount).toBe(0.0125)
   }, 45_000)
+})
+
+describe('recette de la 1.2.0-beta.1 : avis long sans réponse courte (G-B4)', () => {
+  it('l’avis réel compte et donne le début de son texte à sa ligne', async () => {
+    const { env, mother } = await setup({
+      panel: ['--scenario-par-modele', 'factice-precis=avis-long-sans-reponse-courte']
+    })
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    const seat = env.rt(mother).seats.find((s) => s.model?.value === 'factice-precis')
+    const reply = env.replies(seat?.childId ?? '').join('\n')
+    expect(reply.length).toBeGreaterThan(3000)
+    const digest = opinionDigest(reply)
+    expect(digest).toMatchObject({ followed: false })
+    expect(digest.excerpt?.startsWith('Let me first explore')).toBe(true)
+  })
 })

@@ -317,6 +317,7 @@ profil factice déclare alors `roleExport` comme Bob ou OpenCode et passe ces op
 | `participant-lit-shell` | Tour de table : lit par le shell (`tool_call` `kind: execute`), puis son avis |
 | `participant-outils` | Tour de table : liste les outils de l'app reçus (`tools/list`), puis demande une commande (`kind: execute`) : aucun outil, commande refusée d'office |
 | `avis-hors-format` | Tour de table : avis libre, sans les rubriques (« format non suivi ») |
+| `avis-long-sans-reponse-courte` | Tour de table : avis de plus de 3 000 caractères sans réponse courte (préambule, « Analyse du risque principal », « Assumptions », « Confidence: medium »), comme Nemotron à la recette de la 1.2.0-beta.1 : sa ligne montre le début de l'avis (G-B4) |
 | `avis-lent` | Tour de table : 100 pas de `--delay` (4 s par défaut, annulable), puis l'avis. Dans les essais, préférer `--verrou-fin-de-tour` |
 | `avis-erreur` | Tour de table : le tour du participant échoue (`-32603` « Model unavailable ») |
 | `participant-ecrit` | Tour de table : écrit `note-participant.md` sans rien demander, par son outil `write` (`tool_call` `kind: edit`, comme OpenCode par défaut), puis son avis ; avec un profil `writesWithoutAsking`, la lecture seule n'est que demandée : le tour dit le dossier changé et l'écart est attribuable à ce participant |
