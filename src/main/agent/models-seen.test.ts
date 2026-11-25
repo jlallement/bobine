@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SessionControl } from '@shared/agent'
-import { MAX_RECENT_MODELS, noteModels, parseModelsSeen } from './models-seen'
+import { MAX_RECENT_MODELS, noteModels, noteUsedModel, parseModelsSeen } from './models-seen'
 
 const control = (current: string): SessionControl => ({
   id: 'model',
@@ -15,7 +15,7 @@ const control = (current: string): SessionControl => ({
 })
 
 describe('modèles retenus par agent (fiche 108)', () => {
-  it('liste et modèle en cours retenus ; rien si rien ne change ou sans réglage de modèle', () => {
+  it('liste retenue à chaque instantané ; le modèle en cours n’entre pas dans les récents (E7)', () => {
     const first = noteModels(undefined, [control('a/un')])
     expect(first).toEqual({
       controlId: 'model',
@@ -23,17 +23,27 @@ describe('modèles retenus par agent (fiche 108)', () => {
         { value: 'a/un', name: 'A/Un' },
         { value: 'a/deux', name: 'A/Deux' }
       ],
-      recent: ['a/un']
+      recent: []
     })
     expect(noteModels(first, [control('a/un')])).toBeUndefined()
     expect(noteModels(first, [])).toBeUndefined()
-    expect(noteModels(first, [control('a/deux')])?.recent).toEqual(['a/deux', 'a/un'])
+    // Choisi dans la puce, ou refusé au premier message : pas un modèle « récent ».
+    expect(noteModels(first, [control('a/deux')])).toBeUndefined()
+  })
+
+  it('un modèle entre dans les récents quand un tour a réussi avec lui (E7)', () => {
+    const answered = noteUsedModel(undefined, [control('a/un')])
+    expect(answered?.recent).toEqual(['a/un'])
+    expect(noteUsedModel(answered, [control('a/un')])).toBeUndefined()
+    expect(noteUsedModel(answered, [control('a/deux')])?.recent).toEqual(['a/deux', 'a/un'])
+    // Un instantané ensuite garde les récents.
+    expect(noteModels(answered, [control('a/deux')])).toBeUndefined()
   })
 
   it('derniers modèles bornés, le plus récent d’abord, sans doublon', () => {
-    let seen = noteModels(undefined, [control('m1')])
+    let seen = noteUsedModel(undefined, [control('m1')])
     for (const value of ['m2', 'm3', 'm4', 'm2']) {
-      seen = noteModels(seen, [control(value)]) ?? seen
+      seen = noteUsedModel(seen, [control(value)]) ?? seen
     }
     expect(seen?.recent).toEqual(['m2', 'm4', 'm3'])
     expect(seen?.recent).toHaveLength(MAX_RECENT_MODELS)

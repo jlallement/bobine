@@ -30,12 +30,32 @@ export function modelControl(controls: readonly SessionControl[]): SessionContro
 }
 
 /**
- * Ce qu'il faut retenir après un instantané de l'agent : `undefined` si rien n'a changé (pas de
- * réglage de modèle, même liste, même modèle en tête des récents).
+ * Ce qu'il faut retenir après un instantané de l'agent : sa liste de modèles, les récents tels
+ * quels (un modèle choisi, ou refusé au premier message, n'en est pas un : E7, évaluation du
+ * 2026-11-25). `undefined` si rien n'a changé ou sans réglage de modèle.
  */
 export function noteModels(
   previous: ModelsSeen | undefined,
   controls: readonly SessionControl[]
+): ModelsSeen | undefined {
+  return remember(previous, controls, false)
+}
+
+/**
+ * Fin d'un tour réussi : la liste, et le modèle en cours en tête des récents (E7). `undefined` si
+ * rien n'a changé ou sans réglage de modèle.
+ */
+export function noteUsedModel(
+  previous: ModelsSeen | undefined,
+  controls: readonly SessionControl[]
+): ModelsSeen | undefined {
+  return remember(previous, controls, true)
+}
+
+function remember(
+  previous: ModelsSeen | undefined,
+  controls: readonly SessionControl[],
+  used: boolean
 ): ModelsSeen | undefined {
   const control = modelControl(controls)
   if (!control) return undefined
@@ -43,12 +63,13 @@ export function noteModels(
     .slice(0, MAX_MODELS)
     .map((o) => ({ value: o.value, name: o.name }))
   const current = typeof control.currentValue === 'string' ? control.currentValue : undefined
-  const recent = current
-    ? [current, ...(previous?.recent ?? []).filter((v) => v !== current)].slice(
-        0,
-        MAX_RECENT_MODELS
-      )
-    : (previous?.recent ?? [])
+  const recent =
+    used && current
+      ? [current, ...(previous?.recent ?? []).filter((v) => v !== current)].slice(
+          0,
+          MAX_RECENT_MODELS
+        )
+      : (previous?.recent ?? [])
   const next = { controlId: control.id, options, recent }
   return JSON.stringify(next) === JSON.stringify(previous) ? undefined : next
 }

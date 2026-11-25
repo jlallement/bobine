@@ -162,3 +162,17 @@ Pas de nouvelle dépendance.
   e2e, puis choix souris, pour éviter que le relâchement CDP du clic d’ouverture sélectionne une
   destination arrivée sous le pointeur. Mêmes contrôles de destination, confirmation, fil, titre
   et contexte transmis une fois ; aucun changement du menu du produit.
+
+- 2026-11-25 (évaluation réelle de la 1.2.0-beta.1, E7, fix17) : un modèle entrait dans les
+  « récents » du profil à chaque instantané de session où il était le modèle en cours (`noteModels`
+  sur chaque `status`), donc au seul choix dans la puce ou refusé au premier message (le menu des
+  participants du tour de table proposait « GPT-5.5 (récents) », refusé par le compte). Désormais
+  la liste des modèles suit toujours les instantanés, mais un modèle n'entre dans les récents qu'à la
+  fin d'un tour réussi sur lui (`turn-end` non arrêté ; jamais sur un refus, une erreur ou un
+  choix), `noteUsedModel`. Lecteurs touchés : « Continuer avec un autre agent » (`handover.ts`) et
+  les participants du tour de table (`roundtable/options.ts`) : moins de récents, seulement des
+  modèles qui ont répondu ; un profil neuf n'en a aucun avant son premier tour réussi ; l'essai d'un
+  agent hors conversation (tour de table) n'en ajoute plus. Le sélecteur de modèle de la saisie ne
+  lit pas les récents. Récents déjà enregistrés gardés tels quels (pas de migration cette nuit).
+  Essais : `models-seen.test.ts`, `manager.test.ts` (modèle choisi sans réponse : absent ; après un
+  tour : en tête ; rouge avant).

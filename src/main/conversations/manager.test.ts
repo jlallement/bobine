@@ -1640,6 +1640,26 @@ describe('ConversationManager', () => {
     app.manager.stopAll()
   })
 
+  it('récents du profil : un modèle n’y entre qu’après un tour réussi, jamais au seul choix (E7)', async () => {
+    const env = environment()
+    const { manager } = env.launch()
+    const id = manager.state().activeId
+    await manager.startActive()
+    const model = () => manager.view(id).snapshot?.controls.find((c) => c.category === 'model')
+    const before = model()
+    const other = before?.options.find((o) => o.value !== before.currentValue)?.value ?? ''
+    expect(other).not.toBe('')
+    const profileId = manager.view(id).summary.profileId
+    const recent = () => manager.settings.current.models?.[profileId]?.recent ?? []
+    // Choisi dans la puce (ou refusé ensuite) : pas encore un modèle « récent ».
+    await manager.setControl(id, before?.id ?? 'model', other)
+    expect(model()?.currentValue).toBe(other)
+    expect(recent()).not.toContain(other)
+    await manager.prompt(id, 'Bonjour')
+    expect(recent()[0]).toBe(other)
+    manager.stopAll()
+  })
+
   it('réglage choisi : mémorisé pour le profil et appliqué aux nouvelles conversations', async () => {
     const env = environment()
     const { manager, ready } = env.launch()

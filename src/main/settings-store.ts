@@ -39,7 +39,7 @@ import { translate } from '@shared/i18n/message'
 import type { ApiKeySpec, ApiKeyStore, EnvChanges } from './agent-config/api-keys'
 import { networkEnvChanges, parseNetworkSettings } from './agent-config/network-env'
 import { sameAnnouncement, type AgentAnnouncement } from './agent/capabilities'
-import { noteModels } from './agent/models-seen'
+import { noteModels, noteUsedModel } from './agent/models-seen'
 import { isDirectory } from './agent/process-utils'
 import { applyCustomProfiles } from './agent/custom-profiles'
 import type { AgentProfile } from './agent/profiles'
@@ -395,8 +395,8 @@ export class SettingsStore {
    * Modèles de l'agent d'après un instantané de sa session (fiche 108) : retenus s'ils ont changé,
    * sans prévenir les abonnés (seul « Continuer avec … » les lit, à la demande).
    */
-  noteModels(profileId: string, controls: readonly SessionControl[]): void {
-    const next = noteModels(this.settings.models?.[profileId], controls)
+  noteModels(profileId: string, controls: readonly SessionControl[], used = false): void {
+    const next = (used ? noteUsedModel : noteModels)(this.settings.models?.[profileId], controls)
     if (!next) return
     this.settings = { ...this.settings, models: { ...this.settings.models, [profileId]: next } }
     this.save()

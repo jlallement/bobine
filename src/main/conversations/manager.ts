@@ -534,9 +534,7 @@ export class ConversationManager {
   }
 
   /** Démarre l'agent d'une conversation s'il le faut, et attend qu'il soit prêt (filles). */
-  ready(id: string): Promise<void> {
-    return this.ensureLive(this.get(id)).start()
-  }
+  ready = (id: string): Promise<void> => this.ensureLive(this.get(id)).start()
 
   /**
    * Continuer avec un autre agent (fiche 108, ADR-0024, orchestré par `handover.ts`) : même
@@ -1415,6 +1413,9 @@ export class ConversationManager {
       listChanged = before !== event.snapshot.status
       if (listChanged) warnIfStopped(conversation.record, event.snapshot)
     }
+    // Tour réussi : son modèle entre dans les récents du profil, jamais au seul choix (E7).
+    if (event.type === 'turn-end' && event.stopReason !== 'cancelled' && conversation.snapshot)
+      this.settings.noteModels(conversation.record.profileId, conversation.snapshot.controls, true)
     if (event.type === 'turn-error')
       log.warn('Tour en échec :', conversation.record.id, event.message)
     // Cartes de mémoire en attente ; tour arrêté par ■, gardé au redémarrage (fiches 182, 258).

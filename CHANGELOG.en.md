@@ -26,6 +26,8 @@ What changes for you, version by version. Shown in Settings › About.
   another model”, no longer the raw error.
 - **Cleaning up an open child task** brings you back to its original conversation, instead of
   opening an empty one.
+- **Recent models**: a model no longer enters them just by being picked or when it was refused,
+  only after it answered (roundtable participants menu, “Continue with another agent”).
 
 ## 1.2.0-beta.1 — November 25, 2026
 

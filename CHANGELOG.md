@@ -28,6 +28,8 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   « Choisir un autre modèle », plus l’erreur brute.
 - **Nettoyer une tâche fille** ouverte ramène à sa conversation d’origine, au lieu d’ouvrir une
   conversation vide.
+- **Modèles récents** : un modèle n’y entre plus au seul choix ou s’il a été refusé, seulement après
+  avoir répondu (menu des participants du tour de table, « Continuer avec un autre agent »).
 
 ## 1.2.0-beta.1 — 25 novembre 2026
 
