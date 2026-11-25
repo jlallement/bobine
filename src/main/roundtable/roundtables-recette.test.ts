@@ -839,11 +839,24 @@ describe('recette de la 1.2.0-beta.1 : avis long sans réponse courte (G-B4)', (
 })
 
 describe('recette de la 1.2.0-beta.1 : commande lancée par l’arbitre pendant la synthèse (G-B2)', () => {
-  it('lancée sans demander : l’étape le dit ; refusée ou absente : rien', async () => {
+  it('lancée sans demander : l’étape le dit ; demandée puis refusée, ou absente : rien', async () => {
     const { env, mother } = await setup({ lead: 'arbitre-commande' })
     await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
     await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
     expect(env.rt(mother).synthesis?.ranCommand).toBe(true)
+    // Demandée puis refusée d'office (agent qui demande, comme Bob) : jamais partie, rien n'est dit.
+    const asked = await setup({ lead: 'arbitre-demande-commande' })
+    await asked.env.roundtables.start(asked.mother, {
+      question: QUESTION,
+      participants: [FAST, PRECISE]
+    })
+    await asked.env.waitFor(() => asked.env.rt(asked.mother).phase === 'synthesized', 'synthèse')
+    expect(asked.env.replies(asked.mother).at(-1)).toContain('Avis reçus')
+    const refused = asked.env
+      .items(asked.mother)
+      .find((i) => i.kind === 'tool' && i.title === 'npm test')
+    expect(refused?.kind === 'tool' && refused.status).toBe('failed')
+    expect(asked.env.rt(asked.mother).synthesis?.ranCommand).toBeUndefined()
     // Une commande hors de l'étape n'est pas l'affaire du tour.
     const quiet = await setup()
     await quiet.env.roundtables.start(quiet.mother, {

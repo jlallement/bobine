@@ -1345,7 +1345,9 @@ le main n'a pas livré l'étape 1) :
     décision restait ouvert pendant le message suivant (« ce qui arrive pendant son tour revient à
     la tentative », fix6). Il se ferme désormais dès qu'un autre message part ; seule une nouvelle
     tentative de la même étape le garde. Coûts des tentatives arrondis (0,3813599999…). Scénario
-    `arbitre-applique-comme-bob`.
+    `arbitre-applique-comme-bob`. **Limite acceptée** : si « Appliquer » (ou un autre message)
+    part avant que Bob ait écrit le coût de la décision, ce reste n'est pas compté dans le tour ;
+    le total est alors un peu en dessous, jamais gonflé (le total de la conversation reste juste).
   - G-B1 : « coût inconnu » pour 0 $ de modèles gratuits. Régression de la revue finale de
     l'interface (`costText(c, false)` au pied) ; le total porte maintenant, par unité, si tout vient
     de modèles gratuits (`RoundtableTotal.costs[].free`, `free` des étapes).
@@ -1353,9 +1355,14 @@ le main n'a pas livré l'étape 1) :
     (« Réponse brève », « Suppositions ») et avis sans réponse courte (Nemotron) ; le résumé de la
     ligne prend le début de l'avis (`OpinionDigest.excerpt`). Scénario
     `avis-long-sans-reponse-courte`.
+  - G-B1 prouvé de bout en bout (`roundtables-cost.test.ts`, agent factice `--cout-nul`, modèles
+    « … Free ») : tour gratuit → « gratuit » ; arbitre en Bobcoins → « gratuit + … Bobcoins » ;
+    0 $ d'un modèle qui ne se dit pas gratuit → « coût inconnu ». La gratuité d'une place vient du
+    résumé de sa conversation (`usageDigest` : `freeModels`), celle d'une étape de `steps.ts`.
   - G-B2 : l'arbitre OpenCode lance des commandes pendant la synthèse. Aucun mode plus restrictif
     observé chez OpenCode pour l'arbitre (`plan` écrit par le shell, lot 0 O8 ; le mode
     « participant » porte la consigne d'un participant) : rien n'est posé. La lecture seule de
     l'étape reste garantie pour un agent qui demande (refus d'office), demandée sinon ; une
-    commande partie pendant l'étape pose `RoundtableStep.ranCommand`, dit en une ligne. Page
-    d'aide corrigée (garanti / demandé). Scénario `arbitre-commande`.
+    commande partie pendant l'étape pose `RoundtableStep.ranCommand`, dit en une ligne ; une commande
+    demandée puis refusée d'office ne l'est pas (scénario `arbitre-demande-commande`). Page d'aide
+    corrigée (garanti / demandé). Scénario `arbitre-commande`.

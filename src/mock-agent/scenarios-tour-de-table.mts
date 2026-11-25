@@ -479,6 +479,70 @@ export const roundtableScenarios: Record<string, Scenario> = {
       }
     ]
   },
+  'arbitre-demande-commande': {
+    description:
+      'Conversation qui arbitre et demande l’autorisation de lancer une commande (`execute`, comme Bob) pendant la synthèse ou la décision : refusée d’office, l’outil finit en échec sans partir, puis répond comme `synthese-tour-de-table` (G-B2 : rien n’est dit)',
+    steps: [
+      {
+        kind: 'computed',
+        build: ({ text }) =>
+          isStep(text)
+            ? [
+                {
+                  kind: 'update',
+                  update: {
+                    sessionUpdate: 'tool_call',
+                    toolCallId: 'arbiter_cmd_ask',
+                    title: 'npm test',
+                    kind: 'execute',
+                    status: 'pending'
+                  }
+                },
+                {
+                  kind: 'permission',
+                  toolCall: { toolCallId: 'arbiter_cmd_ask', title: 'npm test', kind: 'execute' },
+                  options: [
+                    { optionId: 'allow', name: 'Allow once', kind: 'allow_once' },
+                    { optionId: 'reject', name: 'Reject', kind: 'reject_once' }
+                  ],
+                  branches: {
+                    allow: [
+                      {
+                        kind: 'update',
+                        update: {
+                          sessionUpdate: 'tool_call_update',
+                          toolCallId: 'arbiter_cmd_ask',
+                          status: 'in_progress'
+                        }
+                      },
+                      {
+                        kind: 'update',
+                        update: {
+                          sessionUpdate: 'tool_call_update',
+                          toolCallId: 'arbiter_cmd_ask',
+                          status: 'completed'
+                        }
+                      },
+                      ...arbiter(text)
+                    ],
+                    reject: [
+                      {
+                        kind: 'update',
+                        update: {
+                          sessionUpdate: 'tool_call_update',
+                          toolCallId: 'arbiter_cmd_ask',
+                          status: 'failed'
+                        }
+                      },
+                      ...arbiter(text)
+                    ]
+                  }
+                }
+              ]
+            : arbiter(text)
+      }
+    ]
+  },
   'arbitre-ecrit': {
     description:
       'Conversation qui arbitre et écrit sans demander (comme OpenCode par défaut) : à la demande de synthèse ou de décision, écrit `notes-arbitre.md`, puis répond comme `synthese-tour-de-table` ; le garde-fou de l’étape voit le dossier changé (fiche 285, S1)',
