@@ -489,3 +489,41 @@ describe('recette réelle : arbitre sans choix de modèle', () => {
     ).toEqual({ ok: false, error: 'selection', problem: 'arbiter' })
   })
 })
+
+describe('recette réelle : agents des participants libérés (G1)', () => {
+  it('arrêtés à la synthèse, rouverts pour la réplique avec leur modèle, arrêtés à la décision', async () => {
+    const { env, mother } = await setup()
+    await env.roundtables.start(mother, { question: QUESTION, participants: [FAST, PRECISE] })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    const children = env.rt(mother).seats.map((s) => s.childId ?? '')
+    const released = () => children.every((id) => env.manager.view(id).snapshot === null)
+    await env.waitFor(released, 'agents libérés après la synthèse')
+    env.roundtables.rebuttal(mother, env.rt(mother).roundtableId)
+    await env.waitFor(() => env.rt(mother).phase === 'decided', 'décision rendue', 20_000)
+    // Réplique rendue par la session reprise, avec le modèle affiché (relu à son départ).
+    for (const seat of env.rt(mother).seats)
+      expect(seat.rebuttal).toMatchObject({ state: 'answered', stance: 'maintains' })
+    await env.waitFor(released, 'agents libérés après la décision')
+  })
+
+  it('tour arrêté : les agents des participants sont libérés aussi', async () => {
+    const lock = lockFile()
+    const { env, mother } = await setup({
+      profiles: (mock) => [mock('lent', 'avis-participant', ['--verrou-fin-de-tour', lock])]
+    })
+    await env.roundtables.start(mother, {
+      question: QUESTION,
+      participants: [choice('lent', 'factice-rapide'), choice('lent', 'factice-precis')]
+    })
+    await env.waitFor(
+      () => env.rt(mother).seats.every((s) => s.state === 'working'),
+      'participants au travail'
+    )
+    await env.roundtables.stop(mother, env.rt(mother).roundtableId)
+    const children = env.rt(mother).seats.map((s) => s.childId ?? '')
+    await env.waitFor(
+      () => children.every((id) => env.manager.view(id).snapshot === null),
+      'agents libérés après l’arrêt'
+    )
+  })
+})

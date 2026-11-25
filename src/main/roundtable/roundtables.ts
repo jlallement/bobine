@@ -16,10 +16,9 @@
  * seulement depuis la conversation dont le fil le porte, et une place doit exister.
  */
 import { shortModelName } from '@shared/models'
-import { randomUUID } from 'node:crypto'
 import { t } from 'i18next'
 import type { AgentEvent, ConversationEvent, ConversationSummary } from '@shared/agent'
-import { attachmentName, type PromptAttachment } from '@shared/attachments'
+import type { PromptAttachment } from '@shared/attachments'
 import type { AttentionState } from '@shared/attention'
 import { messageOf } from '@shared/errors'
 import {
@@ -27,11 +26,9 @@ import {
   canRelaunch,
   findRoundtable,
   hasQuorum,
-  newSeats,
   reduceRoundtable,
   roundtableRunning,
   seatFinished,
-  isArbiter,
   selectionProblem,
   settleRoundtable,
   usableSeats,
@@ -39,7 +36,6 @@ import {
   type RoundtableEvent,
   type RoundtableItem,
   type RoundtableLetter,
-  type RoundtableParticipant,
   type RoundtableSeat
 } from '@shared/roundtable'
 import type {
@@ -54,17 +50,24 @@ import {
   rebuttalMessage
 } from '@shared/roundtable-prompts'
 import type { TranscriptItem } from '@shared/transcript'
-import { modelControl } from '../agent/models-seen'
 import type { ChildConversations } from '../conversations/children'
 import type { ProvidersList } from '../conversations/handover'
 import type { ConversationManager } from '../conversations/manager'
 import { log } from '../log'
 import type { RoundtableService } from './ipc'
-import { arbiterOf, refusalOf, roundtableOptions, type ParticipantMode } from './options'
+import {
+  arbiterInSeats,
+  arbiterOf,
+  refusalOf,
+  releaseWhenIdle,
+  roundtableOptions,
+  type ParticipantMode
+} from './options'
 import { participantRole } from './participant-role'
 import { reportReply, stepReply, turnReply } from './readings'
 import { SeatEvents, type SeatRef } from './seat-events'
 import type { StepFolder } from './step-folder'
+import { newRoundtable } from './new-roundtable'
 import { MotherSteps, titleOf } from './steps'
 import { IdleWaiters } from './idle-waiters'
 
@@ -82,6 +85,7 @@ export type RoundtableManager = Pick<
   | 'unqueue'
   | 'rename'
   | 'updateRecord'
+  | 'releaseIdle'
 >
 
 export interface RoundtablesDeps {
@@ -155,6 +159,17 @@ const FINISHED_PHASES: ReadonlySet<Roundtable['phase']> = new Set([
   'stopped'
 ])
 
+/**
+ * Phases où les participants n'ont plus rien à faire (recette réelle, G1) : leurs agents sont
+ * arrêtés proprement. « Faire réagir les participants » les rouvre (reprise de session).
+ */
+const AGENTS_RELEASED: ReadonlySet<Roundtable['phase']> = new Set([
+  'synthesized',
+  'decided',
+  'insufficient',
+  'stopped'
+])
+
 /** Arrêts décidés ici : la conversation du participant est arrêtée aussi. */
 const STOPS_HERE = new Set(['user', 'early-synthesis', 'roundtable-stopped'])
 
@@ -187,7 +202,8 @@ export class Roundtables implements RoundtableService {
       textOf: (rt, kind, letter) => this.textOf(rt, kind, letter as RoundtableLetter),
       watchesSettled: (rt) => this.watchesSettled(rt),
       ...(deps.folder ? { folder: deps.folder } : {}),
-      arbiterClash: (motherId, rt) => this.arbiterClash(motherId, rt),
+      arbiterClash: (motherId, rt) =>
+        arbiterInSeats(this.deps.conversations, this.summary(motherId).profileId, motherId, rt),
       gone: (childId) => !!childId && !this.exists(childId),
       now: () => this.now()
     })
@@ -225,19 +241,6 @@ export class Roundtables implements RoundtableService {
   /** Synthèse ou décision en cours dans cette conversation (son tour est en lecture seule). */
   stepActive(motherId: string): boolean {
     return this.steps.stepActive(motherId)
-  }
-
-  /** L'agent et le modèle de la conversation sont ceux d'un participant du tour. */
-  private arbiterClash(motherId: string, rt: Roundtable): boolean {
-    const profiles = this.deps.conversations.settingsView().profiles
-    const arbiter = arbiterOf(
-      this.summary(motherId).profileId,
-      this.deps.conversations.view(motherId).snapshot?.controls ?? [],
-      profiles
-    )
-    return rt.seats.some((seat) =>
-      isArbiter(seat, arbiter, !!profiles.find((p) => p.id === seat.profileId)?.childModel)
-    )
   }
 
   /** Comparaison du dossier de la dernière étape finie (essais). */
@@ -349,6 +352,17 @@ export class Roundtables implements RoundtableService {
       if (tour) tour.attachments = []
     }
     if (after.phase === 'synthesizing' || after.phase === 'deciding') this.steps.schedule(motherId)
+    if (AGENTS_RELEASED.has(after.phase) && before.phase !== after.phase) {
+      releaseWhenIdle(
+        after,
+        (childId) => this.idle.wait(childId, STOP_WAIT_MS),
+        (childId) => {
+          const now = this.read(motherId, after.roundtableId)
+          if (now && AGENTS_RELEASED.has(now.phase) && this.exists(childId))
+            this.deps.conversations.releaseIdle(childId)
+        }
+      )
+    }
     if (FINISHED_PHASES.has(after.phase)) this.release(after.roundtableId)
   }
 
@@ -619,7 +633,15 @@ export class Roundtables implements RoundtableService {
     if ('missing' in reservation) return { ok: false, error: 'slots', missing: reservation.missing }
     this.starting.add(motherId)
     try {
-      const rt = this.newRoundtable(summary, request)
+      const rt = newRoundtable(
+        {
+          conversations: this.deps.conversations,
+          random: this.deps.random ?? Math.random,
+          now: this.now()
+        },
+        summary,
+        request
+      )
       if (summary.draft) this.deps.conversations.keepDraft(motherId, request.question)
       const exchange = lastExchangeText(items)
       if (exchange) rt.withLastExchange = true
@@ -636,41 +658,6 @@ export class Roundtables implements RoundtableService {
     } finally {
       reservation.release()
       this.starting.delete(motherId)
-    }
-  }
-
-  private newRoundtable(summary: ConversationSummary, request: RoundtableStartRequest): Roundtable {
-    const profiles = this.deps.conversations.settingsView().profiles
-    const control = modelControl(this.deps.conversations.view(summary.id).snapshot?.controls ?? [])
-    const seen = this.deps.conversations.settings.current.models ?? {}
-    // Nom du modèle d'après ce que l'agent a annoncé (session de la conversation, sinon modèles
-    // vus), jamais d'après le renderer ; inconnu : son identifiant.
-    const nameOf = (profileId: string, value: string) =>
-      (profileId === summary.profileId
-        ? control?.options.find((o) => o.value === value)?.name
-        : undefined) ??
-      seen[profileId]?.options.find((o) => o.value === value)?.name ??
-      value
-    const participants: RoundtableParticipant[] = request.participants.map((choice) => {
-      const agentLabel = profiles.find((p) => p.id === choice.profileId)?.label ?? choice.profileId
-      if (!choice.model) return { ...choice, label: agentLabel, agentLabel }
-      const name = nameOf(choice.profileId, choice.model.value)
-      return { ...choice, model: { ...choice.model, name }, label: name, agentLabel }
-    })
-    const model = control?.options.find((o) => o.value === control.currentValue)?.name
-    const names = (request.attachments ?? []).map(attachmentName)
-    return {
-      roundtableId: randomUUID(),
-      question: request.question,
-      ...(names.length ? { attachments: names } : {}),
-      synthesizer: {
-        profileId: summary.profileId,
-        label: summary.profileLabel,
-        ...(model ? { model } : {})
-      },
-      seats: newSeats(participants, this.deps.random ?? Math.random),
-      phase: 'collecting',
-      at: this.now()
     }
   }
 

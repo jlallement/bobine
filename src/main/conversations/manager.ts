@@ -92,6 +92,7 @@ import {
   noteSession,
   draftSessionsOpen,
   dropAllDraftSessions,
+  stepCommandOf,
   type ChildLink,
   type DetachedRequest,
   type Origin
@@ -369,9 +370,7 @@ export class ConversationManager {
 
   /** Commande d'une étape du profil (connexion, licence), à lancer dans le terminal de l'app. */
   stepCommand(id: string, stepId: string): string {
-    const step = this.profileOf(id)?.terminalSteps?.[stepId]
-    if (!step) throw new Error(t('conversations.error.unknownStep', { step: stepId }))
-    return step.command
+    return stepCommandOf(this.profileOf(id), stepId)
   }
 
   /* ---------- Navigation ---------- */
@@ -603,6 +602,11 @@ export class ConversationManager {
     const view = this.view(id)
     this.releaseTranscripts()
     return view
+  }
+
+  /** Agent au repos d'un participant d'un tour fini, arrêté proprement (fiche 285, G1). */
+  releaseIdle(id: string): void {
+    if (this.evict(undefined, id)) this.emitList()
   }
 
   /** Conversation d'à côté refermée. */
@@ -952,8 +956,7 @@ export class ConversationManager {
 
   /** Profil d'agent d'une conversation (absent si la conversation ou le profil n'existe plus). */
   profileOf(id: string): AgentProfile | undefined {
-    const profileId = this.conversations.get(id)?.record.profileId
-    return this.options.profiles.find((p) => p.id === profileId)
+    return this.options.profiles.find((p) => p.id === this.conversations.get(id)?.record.profileId)
   }
 
   /**
@@ -1356,12 +1359,16 @@ export class ConversationManager {
     return this.options.maxLive ?? this.settings.preferences().maxLive
   }
 
-  /** Met en veille les agents en trop (fiche 043), jamais une conversation gardée ; rend s'il y en a. */
-  private evict(starting?: Conversation): boolean {
+  /**
+   * Met en veille les agents en trop (fiche 043), jamais une conversation gardée ; rend s'il y en a.
+   * `only` : l'agent de cette conversation seulement, s'il n'est pas gardé (`releaseIdle`).
+   */
+  private evict(starting?: Conversation, only?: string): boolean {
     const live = [...this.conversations.values()].filter((c) => c.host)
-    const stopped = agentsToStop(live, this.liveLimit(), (conversation) => {
+    const max = only ? live.length - 1 : this.liveLimit()
+    const stopped = agentsToStop(live, max, (conversation) => {
       const id = conversation.record.id
-      if (id === this.activeId || this.beside.has(id)) return true
+      if (id === this.activeId || this.beside.has(id) || (only && id !== only)) return true
       if (conversation.snapshot?.status === 'busy' || conversation === starting) return true
       return this.options.keepLive?.(id) ?? false
     })
@@ -1406,9 +1413,8 @@ export class ConversationManager {
       listChanged = before !== event.snapshot.status
       if (listChanged) warnIfStopped(conversation.record, event.snapshot)
     }
-    if (event.type === 'turn-error') {
-      log.warn(`Tour en échec (${conversation.record.id}) :`, event.message)
-    }
+    if (event.type === 'turn-error')
+      log.warn('Tour en échec :', conversation.record.id, event.message)
     // Cartes de mémoire en attente ; tour arrêté par ■, gardé au redémarrage (fiches 182, 258).
     if (noteRecordChanges(conversation, event)) {
       listChanged = true

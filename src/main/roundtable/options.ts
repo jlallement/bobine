@@ -12,6 +12,8 @@ import { t } from 'i18next'
 import {
   lastRoundtable,
   roundtableRunning,
+  isArbiter,
+  type Roundtable,
   type RoundtableArbiter,
   type RoundtableReadOnly
 } from '@shared/roundtable'
@@ -65,6 +67,40 @@ export function arbiterOf(
   const current = modelChoice ? modelControl(controls)?.currentValue : undefined
   const model = typeof current === 'string' ? current : undefined
   return { profileId, ...(model ? { model } : {}) }
+}
+
+/** L'agent et le modèle de la conversation sont ceux d'un participant du tour (modèle changé). */
+export function arbiterInSeats(
+  conversations: Pick<ConversationManager, 'view' | 'settingsView'>,
+  profileId: string,
+  motherId: string,
+  rt: Pick<Roundtable, 'seats'>
+): boolean {
+  const profiles = conversations.settingsView().profiles
+  const arbiter = arbiterOf(
+    profileId,
+    conversations.view(motherId).snapshot?.controls ?? [],
+    profiles
+  )
+  return rt.seats.some((seat) =>
+    isArbiter(seat, arbiter, !!profiles.find((p) => p.id === seat.profileId)?.childModel)
+  )
+}
+
+/**
+ * Agents des participants arrêtés une fois au repos (recette réelle, G1) : rien ne les garde
+ * vivants après leur avis. `release` revérifie le tour (une réplique repartie ne lâche rien) ;
+ * une conversation affichée garde son agent (`releaseIdle`).
+ */
+export function releaseWhenIdle(
+  rt: Pick<Roundtable, 'seats'>,
+  idle: (childId: string) => Promise<void>,
+  release: (childId: string) => void
+): void {
+  for (const seat of rt.seats) {
+    const childId = seat.childId
+    if (childId && !seat.removed) void idle(childId).then(() => release(childId))
+  }
 }
 
 /** Le dossier de la conversation est dans un dépôt git (empreinte de la lecture seule possible). */
