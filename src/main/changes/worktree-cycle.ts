@@ -38,7 +38,7 @@ import {
 import { insideWorkspace, parseStatus, statusOf } from './git'
 import { gitError, gitErrorLine } from './git-errors'
 import { nativeGitPath, samePathIn } from '../git/git-platform'
-import { WORKTREES_DIR, type WorktreeInfo } from './worktrees'
+import { lostRevisions, WORKTREES_DIR, type WorktreeInfo } from './worktrees'
 
 /**
  * Chemin relatif tel que git l'écrit (`docs/new.md`) : sous Windows, `relative` rend des `\`, que
@@ -206,8 +206,8 @@ export class WorktreeCycle {
     return result.code === 0 ? text(result.stdout) || undefined : undefined
   }
 
-  private async count(cwd: string, range: string): Promise<number> {
-    const result = await this.gitRun(cwd, ['rev-list', '--count', range])
+  private async count(cwd: string, ...revisions: string[]): Promise<number> {
+    const result = await this.gitRun(cwd, ['rev-list', '--count', ...revisions])
     const n = Number(text(result.stdout))
     return result.code === 0 && Number.isFinite(n) ? n : 0
   }
@@ -962,7 +962,7 @@ export class WorktreeCycle {
           path: entry.path,
           branch,
           dirty: porcelain.code === 0 ? lines(porcelain.stdout).length : 0,
-          ahead: branch ? await this.count(repo, `HEAD..${branch}`) : 0
+          ahead: branch ? await this.count(repo, ...lostRevisions(branch)) : 0
         })
       }
     }

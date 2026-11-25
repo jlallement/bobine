@@ -68,14 +68,14 @@ describe('menu ☰ de Bobine (fiche 145)', () => {
   afterEach(() => {
     window.api = original
   })
-  const show = () => {
+  const show = (menu: () => Promise<AppMenuItem[]> = async () => MODEL) => {
     const menuInvoke = vi.fn(async () => undefined)
     window.api = {
       ...original,
       app: {
         ...original.app,
         features: { ...original.app?.features, commandKey: false },
-        menu: async () => MODEL,
+        menu,
         menuInvoke
       }
     } as unknown as Window['api']
@@ -109,5 +109,33 @@ describe('menu ☰ de Bobine (fiche 145)', () => {
     fireEvent.keyDown(menu, { key: 'Escape' })
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
     expect(document.activeElement).toBe(button)
+  })
+
+  // Fiche 250 (e2e `settings` sous Linux) : Radix rend le focus au bouton après coup (minuterie) ;
+  // arrivé après la réouverture par Alt, ce focus hors du menu le refermait aussitôt.
+  it('Alt aussitôt après Échap : le menu rouvert reste ouvert', async () => {
+    show()
+    const button = screen.getByTestId('app-menu')
+    button.focus()
+    fireEvent.keyDown(button, { key: 'Enter' })
+    const menu = await screen.findByRole('menu')
+    fireEvent.keyDown(menu, { key: 'Escape' })
+    key('keydown', 'Alt', { altKey: true })
+    key('keyup', 'Alt')
+    await screen.findByRole('menu')
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)))
+    expect(screen.queryByRole('menu')).not.toBeNull()
+  })
+
+  it('Alt pressé deux fois avant la lecture du modèle : menu fermé', async () => {
+    let resolve: (model: AppMenuItem[]) => void = () => undefined
+    show(() => new Promise((r) => (resolve = r)))
+    key('keydown', 'Alt', { altKey: true })
+    key('keyup', 'Alt')
+    key('keydown', 'Alt', { altKey: true })
+    key('keyup', 'Alt')
+    await act(async () => resolve(MODEL))
+    await act(() => new Promise((r) => setTimeout(r, 20)))
+    expect(screen.queryByRole('menu')).toBeNull()
   })
 })

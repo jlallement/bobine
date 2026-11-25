@@ -578,7 +578,7 @@
         "quotaHint": "D’après le serveur de {{agent}}, toutes machines confondues, travail hors Bobine compris.",
         "quotaValue": "{{used}} sur {{limit}} · {{percent}} %",
         "spend": "Dépense sur ce Mac",
-        "spendHint": "D’après la base de {{agent}} sur ce Mac, Bobine et terminal compris. Une conversation utilisée dans la période compte en entier."
+        "spendHint": "D’après la base de {{agent}} sur ce Mac, Bobine et terminal compris. Une conversation utilisée dans la période compte en entier. Les sessions que Bobine a supprimées chez {{agent}} (message de commit rédigé, apartés, conversations supprimées avec leur session) n’y sont plus : Mon activité les compte, cette ligne non."
       },
       "reset": {
         "title": "Historique",
@@ -3438,7 +3438,7 @@
     },
     "quotaBobStatus": {
       "label": "Quota de Bobcoins",
-      "detail": "Plafond et consommation du mois selon le serveur de Bob, toutes machines confondues : lus au démarrage par la commande `/status` de Bob Shell (`bob chat` en tâche de fond, 0 Bobcoin), la tâche vide qu’elle crée étant aussitôt supprimée. Bob ne l’envoie pas par ACP."
+      "detail": "Plafond et consommation du mois selon le serveur de Bob, toutes machines confondues : lus dès que Bob est prêt par la commande `/status` de Bob Shell (`bob chat` en tâche de fond, 0 Bobcoin), la tâche vide qu’elle crée étant aussitôt supprimée ; le dernier relevé du mois s’affiche dès le lancement, avec son heure. Bob ne l’envoie pas par ACP."
     },
     "costBobDb": {
       "label": "Consommation en Bobcoins",
@@ -3760,6 +3760,7 @@
     "left": "Reste",
     "over": "Dépassé de",
     "source": "Selon le serveur de {{agent}}, toutes machines confondues · lu à {{time}}",
+    "sourceEarlier": "Selon le serveur de {{agent}}, toutes machines confondues · lu le {{date}} à {{time}}",
     "refresh": "Actualiser",
     "reading": "Lecture…"
   },
@@ -6077,7 +6078,7 @@
           "account": {
             "title": "{{agent}} sur cet ordinateur",
             "spend": "Dépense sur cet ordinateur",
-            "spendHint": "D’après la base de {{agent}} sur cet ordinateur, Bobine et terminal compris. Une conversation utilisée dans la période compte en entier."
+            "spendHint": "D’après la base de {{agent}} sur cet ordinateur, Bobine et terminal compris. Une conversation utilisée dans la période compte en entier. Les sessions que Bobine a supprimées chez {{agent}} (message de commit rédigé, apartés, conversations supprimées avec leur session) n’y sont plus : Mon activité les compte, cette ligne non."
           }
         }
       },

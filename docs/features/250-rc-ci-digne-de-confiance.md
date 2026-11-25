@@ -167,6 +167,22 @@ Dependabot comme les autres.
   rouge 3/3 sans le correctif, vert 3/3 avec. Les autres écritures vers un enfant
   (`mcp-probe.ts`) avaient déjà leur écouteur.
 
+- 2026-11-24 — `settings` sous Linux (CI `main`, run 45412768605) : « délai dépassé :
+  !…app-menu-content », le menu ☰ ne se refermait pas après Alt. **Pas les lots de vitesse** : même
+  échec avant eux (run 45373764336, `482405f4`), intermittent (vert sur `b83c6f64`). **Défaut de
+  l'app** (`AppMenu.tsx`), rejoué sur Mac avec `BOBINE_PLATFORM=linux` : quand Alt rouvre le menu
+  juste après Échap, Radix rend le focus au bouton ☰ *après coup* (minuterie du `FocusScope`) ; ce
+  focus, hors du menu non modal rouvert, le refermait aussitôt (relevé 2 fois sur 3 sans animation).
+  Capture de la CI conforme : menu affiché, focus et infobulle sur ☰, aucune entrée active — le menu
+  refermé encore à l'écran (sortie de `Presence`), puis l'Alt suivant le rouvrait d'après un état
+  périmé. Corrigé à la cause : état demandé tenu dans une référence (`wanted`) à jour dès l'appel —
+  Alt bascule d'après lui, le modèle lu après une fermeture n'ouvre plus rien, et le focus rendu par
+  une fermeture est ignoré si le menu a été rouvert entre-temps. Essais unitaires `AppMenu.test.tsx`
+  (Alt aussitôt après Échap ; Alt deux fois avant la lecture du modèle), rouges sans le correctif.
+  `settings` (`BOBINE_PLATFORM=linux`, 4 × 2 passages) : fermetures, sous-menus, Aurore nuit verts ;
+  seules restent les vérifications de la barre d'Electron, propres au Mac. À relancer : `settings`
+  sur GitHub Linux.
+
 ## Reste à vérifier sur GitHub (après la poussée)
 
 1. `e2e.yml` lancé à la main sur la branche, `systeme: linux`, trois fois. Chaque passage doit
@@ -656,3 +672,15 @@ Dependabot comme les autres.
   20 s ; entrées de l'agent retenues jusqu'à la première peinture, ciblé à l'agent). Restent ouverts,
   à traiter à côté : (1) « branche : le navigateur reprend la page de l'originale » (`BrowserManager.inherit`
   avale ses erreurs ; cause inconnue) ; (2) tour de l'agent > 15 s sur la VM, sans cause établie.
+
+- 2026-11-24 — Recette Bob avant la 1.0.0, jouée avec un vrai IBM Bob 2.1.0 sur `f34c56ef`
+  ([rapport](../recettes/2026-11-24-recette-bob-1-0.md)). **Verdict 1.0.0 : oui.** 0 bloquant,
+  0 sérieux, aucune régression par rapport à la rc1 ; 1 gênant (la boîte « Supprimer » annonce
+  « perdus : 3 commits » pour une branche fille déjà fusionnée, parce que le compte part de la base
+  du worktree au lieu de `main`) et 2 cosmétiques. D1 et D2 de la rc1 sont corrigés et vérifiés
+  avec Bob : la rédaction du commit est comptée, et « Envoyer » reste inactif sur la carte
+  « Site web ». Le travail délégué (2 filles en worktree, puis fusion), la corbeille et la
+  restauration (`session/load`, mémoire gardée) marchent. **Point ouvert tranché** : sous
+  « Toujours dans cette conversation » (modifications), Bob crée un nouveau fichier sans
+  `session/request_permission`, et Bobine le compte quand même dans Modifications. 2,14 Bobcoins
+  dépensés, `~/.bob/settings/settings.json` inchangé.

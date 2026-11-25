@@ -9,10 +9,12 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 - **Tour de table** (`/roundtable`, ou le bouton de la barre de saisie) : la même question part à
   deux à cinq modèles, sans qu’aucun voie les autres, puis la conversation compare les avis et rend
   une synthèse qui tranche. Les participants se cochent dans un menu (le dernier choix est
-  retenu), en lecture seule ; une ligne dit avant l’envoi combien de fois plus de jetons cela
-  consomme. Une carte suit chaque avis ; la synthèse montre le vrai nom derrière « Participant
-  A, B… » ; « Demander de l’appliquer » et, une fois, « Faire réagir les participants ». Voir
-  l’aide : Tour de table.
+  retenu), en lecture seule ; le modèle de la conversation, qui fait la synthèse, n’en fait pas
+  partie. Une ligne dit avant l’envoi le minimum de jetons consommés (« au moins 4 fois les jetons
+  d’une question simple »). Une carte suit chaque avis, avec la lettre de chacun ; la synthèse se
+  fait elle aussi en lecture seule, et la carte le dit si l’agent écrit quand même ; elle montre
+  le vrai nom derrière « Participant A, B… » ; « Demander de l’appliquer » et, une fois, « Faire
+  réagir les participants ». Voir l’aide : Tour de table.
 
 ## 1.1.0-rc.2 — 24 novembre 2026
 
@@ -42,6 +44,31 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   sans avis rouge dans le fil ; si le fichier revient, le lien aussi.
 - Simulateur iOS : l’agent voit aussi les champs de saisie vides et sans nom (« TextField
   (vide) »), et peut les toucher pour y écrire.
+
+## 1.0.1 — 24 novembre 2026
+
+### Corrections
+
+- La boîte « Supprimer » d’une conversation fille dont la branche est déjà fusionnée n’annonce
+  plus de commits perdus ; seuls comptent ceux qu’aucune autre branche ne garde. Même correction
+  dans Réglages › Données › Worktrees orphelins.
+- Le titre donné par l’agent à une conversation ne reprend plus ce que Bobine joint à votre
+  premier message (« Résumer le projet bobine_capabilities ») : la conversation garde alors le
+  titre tiré de votre message.
+- IBM Bob : le quota de Bobcoins s’affiche en bas à gauche dès le lancement — le dernier relevé
+  du mois, avec son heure de lecture dans le détail —, puis se met à jour quelques secondes après
+  que Bob est prêt. Il n’apparaissait qu’une fois sa lecture finie.
+- Mon activité › IBM Bob sur ce Mac : l’aide de « Dépense sur ce Mac » dit pourquoi ce total peut
+  être plus bas que celui de la page : les sessions que Bobine supprime chez Bob (message de commit
+  rédigé, apartés…) n’y sont plus.
+
+## 1.0.0 — 24 novembre 2026
+
+### Corrections
+
+- Linux et Windows : le menu ☰ rouvert par Alt juste après l’avoir fermé reste ouvert ; il se
+  refermait aussitôt, ou restait affiché après un nouvel appui sur Alt.
+
 ## 1.0.0-rc.5 — 24 novembre 2026
 
 ### Corrections

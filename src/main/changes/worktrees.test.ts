@@ -73,6 +73,52 @@ describe('worktrees', () => {
     ).toHaveLength(1)
   })
 
+  it('commits perdus : seulement ceux qu’aucune autre branche ne garde (D1 recette 1.0.0, fiche 280)', async () => {
+    const root = repo()
+    const worktrees = new Worktrees(gitCommand)
+    const commit = (cwd: string, file: string) => {
+      writeFileSync(join(cwd, file), `${file}\n`)
+      git(cwd, 'add', '.')
+      git(cwd, 'commit', '-q', '-m', file)
+    }
+
+    // Fille fusionnée dans `main` (vraie fusion, pas d'avance rapide) : rien n'est perdu.
+    const merged = await worktrees.create(root)
+    for (const file of ['a.txt', 'b.txt', 'c.txt']) commit(merged.path, file)
+    commit(root, 'main.txt')
+    expect(await worktrees.status(merged)).toMatchObject({ ahead: 3 })
+    git(root, 'merge', '-q', '--no-edit', merged.branch)
+    expect(await worktrees.status(merged)).toMatchObject({ dirty: 0, ahead: 0 })
+
+    // Fille non fusionnée : ses 3 commits restent annoncés, le départ et `main` ne comptent pas.
+    const pending = await worktrees.create(root)
+    commit(root, 'main2.txt')
+    for (const file of ['d.txt', 'e.txt', 'f.txt']) commit(pending.path, file)
+    expect(await worktrees.status(pending)).toMatchObject({ dirty: 0, ahead: 3 })
+    // Fusionnée en partie (2 sur 3 en avance rapide dans une autre branche) : il en reste 1.
+    git(root, 'branch', 'partiel', `${pending.branch}~1`)
+    expect(await worktrees.status(pending)).toMatchObject({ ahead: 1 })
+
+    // Fusionnée dans la branche de la mère, pas dans `main`, et `main` toujours en tête du dépôt.
+    git(root, 'branch', 'mere')
+    const child = await worktrees.create(root)
+    commit(child.path, 'g.txt')
+    commit(child.path, 'h.txt')
+    git(root, 'branch', '-f', 'mere', child.branch)
+    expect(git(root, 'rev-parse', '--abbrev-ref', 'HEAD')).toBe('main')
+    expect(await worktrees.status(child)).toMatchObject({ ahead: 0 })
+
+    // Commits gardés par une branche distante ou une étiquette : pas perdus non plus.
+    const tagged = await worktrees.create(root)
+    commit(tagged.path, 'i.txt')
+    git(root, 'tag', 'v-essai', tagged.branch)
+    expect(await worktrees.status(tagged)).toMatchObject({ ahead: 0 })
+    const pushed = await worktrees.create(root)
+    commit(pushed.path, 'j.txt')
+    git(root, 'update-ref', 'refs/remotes/origin/essai', pushed.branch)
+    expect(await worktrees.status(pushed)).toMatchObject({ ahead: 0 })
+  })
+
   it('worktree créé avant la fiche 096 (branche bob/…) : toujours supprimé avec sa branche', async () => {
     const root = repo()
     const branch = 'bob/20261001-1200-abcd'

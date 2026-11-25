@@ -9,9 +9,11 @@ What changes for you, version by version. Shown in Settings › About.
 - **Roundtable** (`/roundtable`, or the composer bar button): the same question goes to two to
   five models, none seeing the others, then the conversation compares the opinions and gives a
   synthesis that decides. Participants are checked in a menu (the last choice is kept), read-only;
-  a line says before sending how many times more tokens it uses. A card follows each opinion; the
-  synthesis shows the real name behind “Participant A, B…”; “Ask to apply it” and, once, “Ask
-  participants to respond”. See the help: Roundtable.
+  the conversation’s model, which writes the synthesis, is not one of them. A line says before
+  sending the minimum tokens used (“at least 4× the tokens of a plain question”). A card follows
+  each opinion, with each one’s letter; the synthesis is read-only too, and the card says so if the
+  agent writes anyway; it shows the real name behind “Participant A, B…”; “Ask to apply it” and,
+  once, “Ask participants to respond”. See the help: Roundtable.
 
 ## 1.1.0-rc.2 — November 24, 2026
 
@@ -39,6 +41,31 @@ What changes for you, version by version. Shown in Settings › About.
   code, a “File not found” bubble shows under it for a few seconds (hovering says it again), with
   no red notice in the conversation; if the file comes back, so does the link.
 - iOS Simulator: the agent also sees empty, unnamed text fields and can tap them to type.
+
+## 1.0.1 — November 24, 2026
+
+### Fixes
+
+- The “Delete” dialog of a child conversation whose branch is already merged no longer reports
+  lost commits; only commits that no other branch keeps are counted. Same fix in Settings › Data ›
+  Orphan worktrees.
+- The title the agent gives a conversation no longer comes from what Bobine adds to your first
+  message (“Summarize the bobine_capabilities project”): the conversation then keeps the title
+  taken from your message.
+- IBM Bob: the Bobcoin quota shows at the bottom left from launch — the month’s last reading,
+  with its reading time in the details — then updates a few seconds after Bob is ready. It only
+  appeared once its reading was done.
+- My activity › IBM Bob on this Mac: the help for “Spend on this Mac” explains why this total can
+  be lower than the page’s: sessions Bobine deletes from Bob (drafted commit messages, asides…)
+  are no longer there.
+
+## 1.0.0 — November 24, 2026
+
+### Fixes
+
+- Linux and Windows: the ☰ menu reopened with Alt right after closing it stays open; it closed
+  again at once, or stayed on screen after the next Alt press.
+
 ## 1.0.0-rc.5 — November 24, 2026
 
 ### Fixes

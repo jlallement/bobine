@@ -69,3 +69,34 @@ export function stripAppContext(text: string): string | undefined {
   const result = head.trim()
   return result || undefined
 }
+
+/**
+ * Mots propres à ce que l'app joint (fiche 254) : son nom, que ses contextes citent (« (Bobine) »,
+ * serveur d'outils `bobine`), et le nom de ses balises sans chevrons (`bobine_capabilities`,
+ * `child_conversations`…). Comparés en minuscules.
+ */
+const APP_TAG_NAMES: ReadonlySet<string> = new Set(
+  Object.values(APP_CONTEXT_OPENINGS)
+    .filter((opening) => opening.startsWith('<'))
+    .map((opening) => opening.replace(/[<>]/g, '').toLowerCase())
+)
+
+const isAppWord = (word: string) =>
+  word === 'bobine' || word.startsWith('bobine_') || APP_TAG_NAMES.has(word)
+
+/** Mots d'un texte (lettres, chiffres et `_`), en minuscules. */
+const wordsOf = (text: string) => text.toLowerCase().match(/[\p{L}\p{N}_]+/gu) ?? []
+
+/**
+ * Le titre proposé par l'agent tient-il son sujet de ce que l'app a joint au message, et non de
+ * l'utilisateur (fiche 254) ? Vrai s'il contient un mot propre à l'app (son nom, une de ses balises)
+ * que les messages de l'utilisateur n'emploient pas : « Résumer le projet bobine_capabilities »
+ * pour « Lis ce petit projet et résume-le ». Générique : ne suppose rien de la façon dont l'agent
+ * choisit son titre ; un utilisateur qui parle lui-même de Bobine garde le titre de l'agent.
+ */
+export function borrowsAppWords(title: string, userTexts: readonly string[]): boolean {
+  const borrowed = wordsOf(title).filter(isAppWord)
+  if (!borrowed.length) return false
+  const own = new Set(userTexts.flatMap((text) => wordsOf(stripAppContext(text) ?? '')))
+  return borrowed.some((word) => !own.has(word))
+}

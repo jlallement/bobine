@@ -8,7 +8,7 @@ import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { t } from 'i18next'
-import { stripAppContext } from '@shared/app-context'
+import { borrowsAppWords, stripAppContext } from '@shared/app-context'
 import type {
   AgentEvent,
   AgentSessionView,
@@ -76,26 +76,34 @@ export function titleFrom(text: string): string {
  * Titre proposé par l'agent (`session_info_update`), ou `undefined` pour garder l'actuel (fiche
  * 125) : un renommage, ou le titre posé par l'app (branche, bascule), ne sont pas remplacés ; ce que
  * l'app a joint au message (Bob titre d'après le début du premier message) est retiré, et s'il ne
- * reste rien, le titre ne change pas.
+ * reste rien, le titre ne change pas. Un titre dont le sujet vient de ce que l'app a joint (un mot
+ * propre à l'app absent des messages de l'utilisateur, `userTexts`) n'est pas pris non plus (fiche
+ * 254 : « Résumer le projet bobine_capabilities »).
  */
 export function agentTitle(
   record: Pick<ConversationRecord, 'titleSource'>,
-  proposed: string
+  proposed: string,
+  userTexts: readonly string[] = []
 ): string | undefined {
   if (record.titleSource === 'user' || record.titleSource === 'app') return undefined
   const clean = stripAppContext(proposed)
-  return clean ? titleFrom(clean) : undefined
+  if (!clean || borrowsAppWords(clean, userTexts)) return undefined
+  return titleFrom(clean)
 }
 
-/** Titre proposé par l'agent dans un évènement (`session_info_update`), s'il est à prendre. */
+/**
+ * Titre proposé par l'agent dans un évènement (`session_info_update`), s'il est à prendre, d'après
+ * les messages de l'utilisateur du fil (`transcript`, lus seulement quand un titre arrive).
+ */
 export function proposedTitle(
   record: Pick<ConversationRecord, 'titleSource'>,
-  event: AgentEvent
+  event: AgentEvent,
+  transcript?: Pick<TranscriptState, 'items'>
 ): string | undefined {
   const update = event.type === 'update' ? event.update : undefined
-  return update?.sessionUpdate === 'session_info_update' && update.title
-    ? agentTitle(record, update.title)
-    : undefined
+  if (update?.sessionUpdate !== 'session_info_update' || !update.title) return undefined
+  const userTexts = (transcript?.items ?? []).flatMap((i) => (i.kind === 'user' ? [i.text] : []))
+  return agentTitle(record, update.title, userTexts)
 }
 
 /** Agent sorti ou en erreur : noté au journal (le statut vient de changer). */

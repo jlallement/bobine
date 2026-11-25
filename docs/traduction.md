@@ -175,6 +175,9 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | modèle introuvable ; modèle non appliqué | model not found ; model not applied | Jamais de repli silencieux sur un autre modèle. |
 | arrêté : plafond de la conversation atteint | stopped: conversation cost cap reached | Reprend « plafond par conversation ». |
 | lecture seule demandée, non vérifiée (dossier hors git) | read-only requested, not verified (folder outside git) | |
+| arbitre ; C’est le modèle de cette conversation : il fait la synthèse | arbiter ; It is this conversation’s model: it writes the synthesis | La conversation qui fait la synthèse ; jamais participante. |
+| <agent> a modifié des fichiers pendant la synthèse | <agent> changed files during the synthesis | Synthèse et décision en lecture seule ; dit si l’agent écrit quand même. |
+| synthèse non rendue ; décision non rendue | synthesis not given ; decision not given | Étape qui n’a pas pu partir (arbitre devenu participant…). |
 | arrêt en cours | stopping | Arrêt du tour demandé, les participants s'arrêtent d'abord. |
 | retenu par le plafond de sa conversation | held by its conversation cost cap | Question d'un participant retenue ; « Continuer » se donne dans sa conversation. |
 | conversation à la corbeille ; conversation supprimée | conversation in the trash ; conversation deleted | Ligne d'un participant, lue de l'existence de sa conversation. |

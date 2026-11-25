@@ -30,7 +30,28 @@ describe('quota de l’agent sous son nom (fiche 091)', () => {
     expect(text('quota-value')).toBe('812,5 / 1 000 Bobcoins')
     expect(text('quota-left')).toBe('187,5 Bobcoins')
     expect(text('quota-details')).toContain('Selon le serveur de Bob')
-    expect(text('quota-details')).toContain('lu à 17:13')
+  })
+
+  it('quota gardé d’un autre jour (fiche 282) : la date de la lecture est dite', () => {
+    render(<AgentQuotaStatus quota={quota()} status="Prêt" agentLabel="Bob" onRefresh={vi.fn()} />)
+    fireEvent.click(screen.getByTestId('agent-quota'))
+    expect(text('quota-details')).toContain('lu le 20 octobre à 17:13')
+  })
+
+  it('lu aujourd’hui : l’heure seule', () => {
+    const today = new Date()
+    today.setHours(9, 5, 0, 0)
+    render(
+      <AgentQuotaStatus
+        quota={quota({ readAt: today.getTime() })}
+        status="Prêt"
+        agentLabel="Bob"
+        onRefresh={vi.fn()}
+      />
+    )
+    fireEvent.click(screen.getByTestId('agent-quota'))
+    expect(text('quota-details')).toContain('lu à 09:05')
+    expect(text('quota-details')).not.toContain('lu le')
   })
 
   it('dépassé, puis illimité : pas de pourcentage, plafond « Illimité »', () => {

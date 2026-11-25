@@ -33,6 +33,24 @@ describe('agentTitle : titre proposé par l’agent (fiche 125)', () => {
     expect(agentTitle({ titleSource: 'agent' }, 'Explique le projet')).toBe('Explique le projet')
   })
 
+  it('un titre tiré de ce que l’app joint n’est pas pris, sauf si l’utilisateur en parle (fiche 254)', () => {
+    const asked = ['Lis ce petit projet et résume-le en trois lignes.']
+    expect(
+      agentTitle({ titleSource: 'message' }, 'Résumer le projet bobine_capabilities', asked)
+    ).toBeUndefined()
+    expect(
+      agentTitle({ titleSource: 'agent' }, 'Résumé du projet Bobine en trois lignes', asked)
+    ).toBeUndefined()
+    expect(agentTitle({ titleSource: 'message' }, 'Résumer le projet petit-stock', asked)).toBe(
+      'Résumer le projet petit-stock'
+    )
+    expect(
+      agentTitle({ titleSource: 'message' }, 'Corriger le menu de Bobine', [
+        'Corrige le menu de Bobine'
+      ])
+    ).toBe('Corriger le menu de Bobine')
+  })
+
   it('un renommage ou un titre posé par l’app (branche, bascule) ne sont pas remplacés', () => {
     expect(agentTitle({ titleSource: 'user' }, 'Autre chose')).toBeUndefined()
     expect(agentTitle({ titleSource: 'app' }, 'Autre chose')).toBeUndefined()
@@ -49,6 +67,11 @@ describe('proposedTitle : titre lu dans un évènement de l’agent', () => {
       'Explique le projet'
     )
     expect(proposedTitle({ titleSource: 'user' }, info('Autre'))).toBeUndefined()
+    expect(
+      proposedTitle({ titleSource: 'message' }, info('Résumer le projet bobine_capabilities'), {
+        items: [{ kind: 'user', id: 1, text: 'Résume le projet' }]
+      })
+    ).toBeUndefined()
     expect(proposedTitle({ titleSource: 'message' }, { type: 'turn-error', message: 'x' })).toBe(
       undefined
     )
