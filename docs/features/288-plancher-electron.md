@@ -1,6 +1,6 @@
 # 288 — Plancher d'Electron : construire avec une archive un peu plus ancienne
 
-- **Statut** : en cours (1.2)
+- **Statut** : fait (1.2) — nuit sur `1.2` à décider
 - **Dépend de** : 065, 217, ADR-0057
 - **Agents** : aucun (installation et construction de l'app)
 
@@ -19,30 +19,30 @@ fumée de nuit rejouée sur ce plancher. Pas de version de Bobine ni de `.dmg` �
 
 ## Critères d'acceptation
 
-- [ ] Une seule source pour le plancher (`scripts/electron-floor.json` : version et empreintes
+- [x] Une seule source pour le plancher (`scripts/electron-floor.json` : version et empreintes
       SHA-256 officielles des archives macOS), lue par les scripts et par la CI. Deux versions
       acceptées, pas une plage : celle du projet (comportement inchangé) et le plancher.
-- [ ] `pnpm electron-local <archive>` accepte l'archive du plancher, empreinte vérifiée hors ligne
+- [x] `pnpm electron-local <archive>` accepte l'archive du plancher, empreinte vérifiée hors ligne
       contre celles du dépôt ; refuse, avec la raison, une autre version, une autre majeure, une
       empreinte fausse. Un `Electron.app` nu du plancher : accepté sur sa version, avec
       l'avertissement d'aujourd'hui.
-- [ ] Construire sur le plancher ne salit pas le dépôt (`git status` propre : ni `package.json`,
+- [x] Construire sur le plancher ne salit pas le dépôt (`git status` propre : ni `package.json`,
       ni lockfile, ni `THIRD-PARTY-NOTICES.md`) et ne télécharge rien de plus qu'une construction
       normale.
-- [ ] L'app construite sur le plancher embarque des avis de licence qui nomment l'Electron
+- [x] L'app construite sur le plancher embarque des avis de licence qui nomment l'Electron
       réellement livré ; `third-party-notices --check` reste strict pour la version fixée.
-- [ ] `check-electron` et `pnpm package` disent que l'Electron installé est le plancher et qu'une
+- [x] `check-electron` et `pnpm package` disent que l'Electron installé est le plancher et qu'une
       app construite dessus n'a pas les correctifs de sécurité de la version fixée.
-- [ ] Fumée sur le plancher sur un Mac de GitHub (`electron-floor.yml`, lançable à la main) :
+- [ ] (écrite, lançable à la main ; pas encore jouée sur GitHub) Fumée sur le plancher sur un Mac de GitHub (`electron-floor.yml`, lançable à la main) :
       plancher installé par la commande de l'utilisateur, journées `parcours-*` (fumée, ADR-0069),
       `pnpm package --dir`, `pnpm e2e:packaged`. Rien d'ajouté à la CI des pull requests.
-- [ ] Essais : `scripts/electron-local.test.ts` (plancher accepté, sous le plancher refusé, autre
+- [x] Essais : `scripts/electron-local.test.ts` (plancher accepté, sous le plancher refusé, autre
       majeure refusée, empreinte fausse refusée, version fixée inchangée), cohérence du plancher
       avec `package.json`, avis de licence du plancher, configuration de construction.
-- [ ] Essai réel du parcours de l'utilisateur dans une copie des sources avec la vraie archive
+- [x] Essai réel du parcours de l'utilisateur dans une copie des sources avec la vraie archive
       45.2.3 : `pnpm package --dir`, `pnpm e2e:packaged` vert, framework en 45.2.3, `git status`
       propre. Construction normale (45.4.1) inchangée : `pnpm package --dir` + `pnpm e2e:packaged`.
-- [ ] Docs : ADR-0074, `docs/installation.md`, `AGENTS.md`, nouveautés.
+- [x] Docs : ADR-0074, `docs/installation.md`, `AGENTS.md`, nouveautés.
 
 ## Plan
 
@@ -82,3 +82,54 @@ Pas de nouvelle dépendance (`yaml`, déjà là, pour la configuration temporair
 ## Journal
 
 - 2026-11-26 — Fiche et plan.
+- 2026-11-26 — Fait (branche `1.2-electron-plancher`).
+  - **Paquet npm 45.4.1 + `dist/` 45.2.3 : sain, vérifié.** electron-builder lit la version dans
+    `node_modules/electron/package.json` (sauf `electronVersion` de la configuration) ; sous macOS,
+    avec `electronDist` et `npmRebuild: false`, elle ne sert qu'aux journaux (pas de téléchargement,
+    pas de recompilation, fuses posés sur le binaire quelle que soit la version). On passe quand
+    même `-c.electronVersion=45.2.3` : le journal dit `electron=45.2.3`. App construite :
+    framework `CFBundleVersion` 45.2.3, `CFBundleShortVersionString` de l'app inchangé (1.2.0),
+    fuses lus sur l'app identiques à ceux d'une construction normale, `codesign --verify --deep
+    --strict` ok. L'archive ne contient pas `electron.d.ts` : les typages restent ceux de 45.4.1
+    (réserve écrite dans l'ADR-0074 : une API apparue après 45.2.3 passerait `typecheck`, seule la
+    fumée sur le plancher la verrait).
+  - **Rien de plus téléchargé** : dans la copie d'essai, `pnpm install --frozen-lockfile
+    --offline` passe ; `electron-local` lit l'archive locale ; `pnpm package` prend Electron dans
+    `node_modules` (« using custom unpacked Electron distribution ») et AXe dans
+    `vendor/archives/`.
+  - **Avis de licence** : `noticesFor(root, inventaire, electronLivré)` ; même texte MIT (celui
+    du paquet npm, identique octet pour octet au `LICENSE` de l'archive 45.2.3), version de
+    l'Electron livré. `pnpm package` sur le plancher les écrit dans un dossier temporaire et passe
+    à electron-builder une configuration temporaire (celle du dépôt, seule l'entrée
+    `THIRD-PARTY-NOTICES.md` changée) ; `--check` tourne toujours, contre la version fixée.
+    `e2e/packaged.mjs` vérifie désormais dans tous les cas que l'avis livré nomme l'Electron du
+    framework de l'app, puis : version fixée → fichier du dépôt (inchangé) ; plancher → avis
+    régénérés pour le plancher ; autre → échec.
+  - **Écarts au plan** : empreintes du plancher pour `darwin-arm64` et `darwin-x64` seulement
+    (`electron-local` est propre à macOS ; Windows prend ses archives par `package-win.mts`, Linux
+    n'a pas de chemin hors ligne). `check-electron` refuse maintenant un `dist/` d'une troisième
+    version (avant : accepté sans rien dire) ; la version du projet, et un `dist/` sans fichier
+    `version`, passent comme avant. Fumée de la CI : `startup`, `about` et les journées
+    `parcours-*` sauf `parcours-outils` (navigateur intégré instable sur la VM Mac, indicative
+    dans `e2e.yml`).
+  - **Preuves** (2026-11-26) : `./scripts/verify` 0 ; `pnpm build && pnpm e2e --changed` 0
+    (237 tâches, suite complète clair et sombre, 10 min) ; normal : `pnpm package --dir` 0,
+    framework 45.4.1, avis livrés = fichier du dépôt, `pnpm e2e:packaged` 0. Copie `git archive`
+    (dépôt git initialisé) avec l'archive 45.2.3 du cache (sha256 `4d7c4290…f55f`, celle du
+    `SHASUMS256.txt` officiel) : `pnpm install --frozen-lockfile --offline` 0,
+    `pnpm electron-local` 0, `pnpm package --dir` 0, framework 45.2.3, `pnpm e2e:packaged` 0,
+    fumée de la CI (`startup about parcours-*` sauf outils) 9/9, `pnpm package` (.dmg) 0,
+    `git status --porcelain` vide après tout cela. Archives réelles 45.3.4 et 45.0.0 refusées.
+  - **Nuit** : `schedule` ne part que de la branche par défaut (`main`) ; aujourd'hui la ligne `1.2`
+    n'a **aucune** suite de nuit (`e2e.yml` de nuit joue `main`). `electron-floor.yml` est
+    lançable à la main sur `1.2`. Choix restant (Jérôme) : voir « Reste à faire ».
+
+## Reste à faire
+
+- **Nuit sur `1.2`** (choix de Jérôme) : le plus simple est un petit workflow sur `main`
+  (`schedule`, `permissions: actions: write`) qui lance `gh workflow run electron-floor.yml --ref
+  1.2` (et, s'il le veut, `e2e.yml --ref 1.2`) : la logique reste sur `1.2`, `main` ne porte qu'un
+  déclencheur. Alternative : un `schedule` dans un workflow de `main` qui fait `actions/checkout`
+  avec `ref: 1.2` (couple le workflow de `main` au contenu de `1.2`).
+- Lancer `electron-floor.yml` une première fois sur GitHub après la poussée de la branche.
+
