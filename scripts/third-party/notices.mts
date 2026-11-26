@@ -127,14 +127,25 @@ export function fontNotices(root: string): NoticesInput['font'] {
   }
 }
 
-/** Texte complet des avis pour cet inventaire. */
-export function noticesFor(root: string, inventory: StoredInventory): string {
+/**
+ * Texte complet des avis pour cet inventaire. `electronRuntime` : l'Electron réellement livré
+ * quand ce n'est pas celui du paquet npm (plancher, fiche 288) ; même texte de licence (MIT, celui
+ * du paquet, identique à celui de l'archive), version de l'Electron livré.
+ */
+export function noticesFor(
+  root: string,
+  inventory: StoredInventory,
+  electronRuntime = inventory.electron
+): string {
   return renderNotices({
     packages: shippedPackages(inventory).map((p) => ({
       ...packageLicense(root, p),
       where: p.where
     })),
-    electron: packageLicense(root, { name: 'electron', version: inventory.electron }),
+    electron: {
+      ...packageLicense(root, { name: 'electron', version: inventory.electron }),
+      version: electronRuntime
+    },
     axeVersion: axeVersion(root),
     font: fontNotices(root)
   })

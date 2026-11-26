@@ -398,6 +398,25 @@ function bundledFonts() {
   )
 }
 
+/** Version de l'Electron livré dans l'app (Info.plist de son framework). */
+function electronOfApp() {
+  const plist = join(
+    app,
+    'Contents',
+    'Frameworks',
+    'Electron Framework.framework',
+    'Resources',
+    'Info.plist'
+  )
+  try {
+    return execFileSync('/usr/libexec/PlistBuddy', ['-c', 'Print :CFBundleVersion', plist], {
+      encoding: 'utf8'
+    }).trim()
+  } catch {
+    return 'inconnue'
+  }
+}
+
 /**
  * Textes de licence livrés avec l'app (fiche 217) : ceux de Bobine, les avis des composants tiers
  * (identiques à ceux du dépôt), Electron et Chromium, la police.
@@ -419,14 +438,53 @@ function licenses() {
     check(read(file).length > 0, `${file} livré`)
   }
   const notices = read('THIRD-PARTY-NOTICES.md')
-  // BOBINE_PACKAGED_APP : une app d'une autre version peut avoir d'autres avis que le dépôt.
-  const expected = process.env['BOBINE_PACKAGED_APP']
-    ? notices
-    : readFileSync(join(root, 'THIRD-PARTY-NOTICES.md'), 'utf8')
+  // Electron réellement livré (fiche 288) : version du projet, ou plancher (ADR-0074).
+  const electron = electronOfApp()
+  const project = () =>
+    JSON.parse(readFileSync(join(root, 'node_modules', 'electron', 'package.json'), 'utf8')).version
   check(
-    notices.includes('**EPL-2.0**') && notices === expected,
-    'THIRD-PARTY-NOTICES.md livré (celui du dépôt, choix de licence d’elkjs compris)'
+    notices.includes(`runs on [Electron](https://www.electronjs.org) ${electron} `),
+    `THIRD-PARTY-NOTICES.md nomme l'Electron livré (${electron})`
   )
+  // BOBINE_PACKAGED_APP : une app d'une autre version peut avoir d'autres avis que le dépôt.
+  if (process.env['BOBINE_PACKAGED_APP']) {
+    check(
+      notices.includes('**EPL-2.0**'),
+      'THIRD-PARTY-NOTICES.md livré (choix de licence d’elkjs)'
+    )
+  } else if (electron === project()) {
+    check(
+      notices.includes('**EPL-2.0**') &&
+        notices === readFileSync(join(root, 'THIRD-PARTY-NOTICES.md'), 'utf8'),
+      'THIRD-PARTY-NOTICES.md livré (celui du dépôt, choix de licence d’elkjs compris)'
+    )
+  } else {
+    // Plancher : les avis du dépôt (version du projet) régénérés pour l'Electron livré ; refusé
+    // par `electron-floor.mts` pour toute autre version.
+    const file = join(userData, 'THIRD-PARTY-NOTICES.md')
+    let expected = ''
+    try {
+      execFileSync(
+        process.execPath,
+        [
+          '--disable-warning=MODULE_TYPELESS_PACKAGE_JSON',
+          join(root, 'scripts', 'electron-floor.mts'),
+          'notices',
+          electron,
+          file
+        ],
+        { stdio: ['ignore', 'inherit', 'inherit'] }
+      )
+      expected = readFileSync(file, 'utf8')
+    } catch {
+      // Version refusée : dit par electron-floor.mts, et l'essai échoue ci-dessous.
+    }
+    console.log(`  ⚠ Electron ${electron} : plancher (ADR-0074), version du projet ${project()}`)
+    check(
+      notices.includes('**EPL-2.0**') && expected !== '' && notices === expected,
+      `THIRD-PARTY-NOTICES.md livré (celui du dépôt pour Electron ${electron}, plancher)`
+    )
+  }
   check(read('NOTICE').includes('Jérôme Lallement'), 'NOTICE de Bobine')
 }
 

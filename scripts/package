@@ -79,22 +79,46 @@ fi
 plan="$($signing plan ${strict[@]+"${strict[@]}"})"
 eval "$plan"
 
-# Electron de node_modules repris tel quel (electronDist, fiche 065) : il doit être là.
+# Electron de node_modules repris tel quel (electronDist, fiche 065) : il doit être là, en version
+# du projet ou du plancher (refusé sinon).
 ./scripts/check-electron
+export BOBINE_DMG_MANIFEST=''
+floor_dir=''
+cleanup() {
+  if [[ -n "$floor_dir" ]]; then rm -rf "$floor_dir"; fi
+  if [[ -n "$BOBINE_DMG_MANIFEST" ]]; then rm -f "$BOBINE_DMG_MANIFEST"; fi
+}
+trap cleanup EXIT
+# Plancher (fiche 288, ADR-0074) : l'Electron installé n'est pas celui du paquet npm. Le dépôt
+# n'est pas touché : avis de licence de l'app (nommant l'Electron livré) et configuration
+# d'electron-builder (la même, ces avis-là) écrits dans un dossier temporaire.
+electron_project="$(node -p "require('./node_modules/electron/package.json').version")"
+electron_runtime="$(sed 's/^v//' node_modules/electron/dist/version 2>/dev/null | tr -d '[:space:]' || true)"
+floor=(node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/electron-floor.mts)
+floor_args=()
+if [[ -n "$electron_runtime" && "$electron_runtime" != "$electron_project" ]]; then
+  "${floor[@]}" status "$electron_runtime" "$electron_project" >/dev/null
+  floor_dir="$(mktemp -d "${TMPDIR:-/tmp}/bobine-floor.XXXXXX")"
+  echo "▶ Construction sur le plancher : Electron $electron_runtime (version du projet : $electron_project)"
+fi
 # AXe livré avec l'app (ADR-0009) : téléchargé et vérifié s'il manque.
 ./scripts/fetch-axe
 pnpm -s build
 # Avis de licence livrés avec l'app à jour pour ce build (fiche 217) : sinon, rien n'est construit.
+# Toujours contre la version du projet, plancher ou non.
 pnpm -s third-party-notices --check
+if [[ -n "$floor_dir" ]]; then
+  "${floor[@]}" notices "$electron_runtime" "$floor_dir/THIRD-PARTY-NOTICES.md"
+  "${floor[@]}" builder-config "$floor_dir/THIRD-PARTY-NOTICES.md" "$floor_dir/electron-builder.json"
+  floor_args=(--config "$floor_dir/electron-builder.json" "-c.electronVersion=$electron_runtime")
+fi
 # Le hook afterSign ne produit que les DMG demandés par cette invocation. Il s’exécute avant
 # la fermeture du trousseau .p12 d’electron-builder ; un manifeste vide révèle un hook sauté.
-export BOBINE_DMG_MANIFEST=''
 if [[ $dir_only -eq 0 ]]; then
   BOBINE_DMG_MANIFEST="$(mktemp "${TMPDIR:-/tmp}/bobine-dmg-manifest.XXXXXX")"
-  trap 'rm -f "$BOBINE_DMG_MANIFEST"' EXIT
 fi
 # (Tableaux peut-être vides : forme compatible avec le bash 3.2 de macOS et `set -u`.)
-pnpm exec electron-builder --mac --dir "-c.mac.bundleShortVersion=$short_version" ${signing_args[@]+"${signing_args[@]}"} ${builder_args[@]+"${builder_args[@]}"}
+pnpm exec electron-builder --mac --dir ${floor_args[@]+"${floor_args[@]}"} "-c.mac.bundleShortVersion=$short_version" ${signing_args[@]+"${signing_args[@]}"} ${builder_args[@]+"${builder_args[@]}"}
 
 if [[ $dir_only -eq 0 ]]; then
   if [[ ! -s "$BOBINE_DMG_MANIFEST" ]]; then
@@ -105,4 +129,7 @@ if [[ $dir_only -eq 0 ]]; then
   while IFS= read -r image; do
     if [[ $notarize_dmg -eq 1 ]]; then $signing notarize-dmg "$image"; fi
   done < "$BOBINE_DMG_MANIFEST"
+fi
+if [[ -n "$floor_dir" ]]; then
+  echo "⚠ App construite sur le plancher : Electron $electron_runtime, sans les correctifs de sécurité d'Electron $electron_project (ADR-0074)."
 fi

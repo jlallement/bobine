@@ -1,0 +1,80 @@
+# Fumée sur le plancher d'Electron (fiche 288, ADR-0074) : l'app doit encore marcher et se
+# construire avec l'Electron minimal du dépôt (`scripts/electron-floor.json`), celui d'un Mac qui
+# ne peut pas obtenir la version fixée. Mêmes commandes que l'utilisateur : archive officielle
+# installée par `pnpm electron-local` (empreinte du dépôt vérifiée), fumée e2e (journées
+# `parcours-*`, ADR-0069, et `about`, qui affiche l'Electron réel), `pnpm package --dir`,
+# `pnpm e2e:packaged` ; puis le dépôt doit rester propre (`git status`).
+#
+# Jamais sur les pull requests ni à chaque poussée : à la main (onglet Actions, choisir la
+# branche) ; chaque nuit, selon le choix restant (fiche 288, « Nuit »).
+name: Electron floor
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  floor:
+    name: Plancher d'Electron (macOS arm64)
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Archive officielle du plancher, téléchargée à part comme l'utilisateur l'obtient ailleurs ;
+      # `electron-local` la refuse si son empreinte n'est pas celle du dépôt.
+      - name: Plancher installé par pnpm electron-local
+        run: |
+          floor="$(node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/electron-floor.mts version)"
+          name="electron-v${floor}-darwin-arm64.zip"
+          dir="$(mktemp -d "$RUNNER_TEMP/electron-floor.XXXXXX")"
+          curl -fsSL --retry 3 -o "$dir/$name" \
+            "https://github.com/electron/electron/releases/download/v${floor}/${name}"
+          pnpm electron-local "$dir/$name"
+          echo "FLOOR=$floor" >> "$GITHUB_ENV"
+      - run: pnpm build
+      # Écran 1920 × 1080, comme dans e2e.yml (fiche 250).
+      - name: Écran 1920 × 1080
+        run: scripts/ci/macos-screen.sh
+      # `parcours-outils` reste hors de la fumée sur ce runner (navigateur intégré instable sur la
+      # VM, indicative dans e2e.yml) ; jouée en local.
+      - name: Fumée e2e sur le plancher
+        run: |
+          pnpm e2e startup about parcours-premier-lancement parcours-matinee parcours-deleguer \
+            parcours-reglages parcours-longue parcours-pannes parcours-tour-de-table
+      - run: pnpm package --dir
+      - name: Electron de l'app construite
+        run: |
+          plist="dist/mac-arm64/Bobine.app/Contents/Frameworks/Electron Framework.framework/Resources/Info.plist"
+          built="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$plist")"
+          echo "Electron de l'app : $built (plancher : $FLOOR)"
+          if [[ "$built" != "$FLOOR" ]]; then
+            echo "::error::L'app embarque Electron $built, attendu le plancher $FLOOR."
+            exit 1
+          fi
+      - run: pnpm e2e:packaged
+      # Construire sur le plancher ne modifie aucun fichier suivi (package.json, lockfile, avis).
+      - name: Dépôt propre
+        run: |
+          changed="$(git status --porcelain)"
+          if [[ -n "$changed" ]]; then
+            echo "::error::Fichiers modifiés par la construction sur le plancher :"
+            echo "$changed"
+            exit 1
+          fi
+      - name: Captures
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: electron-floor-captures
+          path: e2e/captures/
+          retention-days: 7

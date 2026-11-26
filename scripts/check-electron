@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Electron installé ? (fiche 065) Sinon, dit quoi faire, plutôt qu'une erreur obscure au lancement.
+# Installé sur le plancher (fiche 288, ADR-0074) : le dit ; une autre version : refusée.
 # Appelé avant `pnpm dev`, `pnpm preview`, `pnpm package`, `pnpm e2e` (et `e2e:pretag`) et
 # `pnpm vitrine` : tout ce qui lance l'app ou lit `node_modules/electron/dist` (avis de licence).
 set -euo pipefail
@@ -11,9 +12,27 @@ if [[ ! -f "$pkg/package.json" ]]; then
   exit 1
 fi
 installed() { [[ -f "$pkg/path.txt" && -x "$pkg/dist/$(cat "$pkg/path.txt")" ]]; }
-installed && exit 0
 # Chemin résolu : `require` prendrait « node_modules/… » pour un nom de paquet.
 version="$(node -p 'require(require("node:path").resolve(process.argv[1])).version' "$pkg/package.json")"
+if installed; then
+  # Version installée (fiche 288, ADR-0074) : celle du projet, rien à dire ; le plancher, dit
+  # à chaque fois ; toute autre, refusée.
+  runtime="$(sed 's/^v//' "$pkg/dist/version" 2>/dev/null | tr -d '[:space:]' || true)"
+  [[ -z "$runtime" || "$runtime" == "$version" ]] && exit 0
+  why="$(mktemp)"
+  trap 'rm -f "$why"' EXIT
+  if node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/electron-floor.mts status "$runtime" "$version" >/dev/null 2>"$why"; then
+    echo "⚠ Electron $runtime installé : plancher accepté (ADR-0074), pas la version du projet ($version)."
+    echo "  Une app construite dessus n'a pas les correctifs de sécurité d'Electron $version."
+    exit 0
+  fi
+  cat >&2 <<EOT
+✗ Electron $runtime installé dans $pkg/dist : $(cat "$why")
+  Pour revenir à la version du projet : rm -rf $pkg/dist $pkg/path.txt, puis relancer
+  (téléchargement d'Electron $version) ou pnpm electron-local <archive>.
+EOT
+  exit 1
+fi
 # Depuis Electron 44.7.2, `pnpm install` ne télécharge plus le binaire : Electron le fait au
 # premier lancement, avec son `install.js` (proxy, ELECTRON_MIRROR…). On le fait ici, avant le
 # lancement ou la construction de l'app ; sans réseau, le message plus bas dit quoi faire.

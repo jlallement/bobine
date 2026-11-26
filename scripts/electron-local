@@ -2,8 +2,12 @@
 # Electron obtenu ailleurs (fiche 065) : sur un Mac au réseau verrouillé, le script d'installation
 # d'Electron ne peut pas le télécharger. On lui donne l'archive (ou l'app) récupérée autrement.
 #
-#   pnpm electron-local ~/Downloads/electron-v44.7.0-darwin-arm64.zip   empreinte SHA-256 vérifiée
+#   pnpm electron-local ~/Downloads/electron-v45.4.1-darwin-arm64.zip   empreinte SHA-256 vérifiée
 #   pnpm electron-local ~/Downloads/Electron.app                         version vérifiée seulement
+#
+# Deux versions acceptées (fiche 288, ADR-0074) : celle du projet (empreintes du paquet npm
+# `electron`) et le plancher (`scripts/electron-floor.json`, empreintes du dépôt). Toute autre est
+# refusée, avec la raison. Le plancher n'a pas les correctifs de sécurité de la version du projet.
 #
 # Extrait sans l'attribut de quarantaine (`ditto --noqtn`) : rien à retirer ensuite, même sans
 # droits d'administrateur. Même résultat que le script d'Electron : `dist/` et `path.txt`.
@@ -21,9 +25,17 @@ if [[ -z "$pkg" || ! -f "$pkg/package.json" ]]; then
   exit 1
 fi
 version="$(node -p 'require(process.argv[1]).version' "$pkg/package.json")"
+floor=(node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/electron-floor.mts)
 arch="$(uname -m)"
 [[ "$arch" == "x86_64" ]] && arch="x64"
-name="electron-v${version}-darwin-${arch}.zip"
+
+# Version du projet ou plancher ; sinon refusée, avec la raison (sur la sortie d'erreur).
+accepted() {
+  if ! kind="$("${floor[@]}" status "$1" "$version" 2>"$tmp/refus")"; then
+    echo "✗ $source : $(cat "$tmp/refus")" >&2
+    exit 1
+  fi
+}
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
@@ -33,23 +45,30 @@ if [[ -d "$source" ]]; then
   app="$source"
   [[ -d "$source/Electron.app" ]] && app="$source/Electron.app"
   found="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist" 2>/dev/null || true)"
-  if [[ "$found" != "$version" ]]; then
-    echo "✗ $app : version ${found:-inconnue}, attendu $version" >&2
-    exit 1
-  fi
-  echo "⚠ Une app ne se vérifie que par sa version : préférez l'archive $name (empreinte vérifiée)."
+  accepted "$found"
+  echo "⚠ Une app ne se vérifie que par sa version : préférez l'archive electron-v${found}-darwin-${arch}.zip (empreinte vérifiée)."
   ditto --noqtn "$app" "$tmp/dist/Electron.app"
-  printf '%s' "$version" > "$tmp/dist/version"
+  printf '%s' "$found" > "$tmp/dist/version"
 else
   if [[ ! -f "$source" ]]; then
     echo "✗ Introuvable : $source" >&2
     exit 1
   fi
+  # Version annoncée par l'archive (son fichier `version`, lu sans rien extraire) : elle choisit
+  # l'empreinte attendue, qui authentifie ensuite toute l'archive.
+  found="$(unzip -p "$source" version 2>/dev/null | head -c 64 | tr -d '[:space:]' | sed 's/^v//' || true)"
+  accepted "$found"
+  name="electron-v${found}-darwin-${arch}.zip"
   if [[ "$(basename "$source")" != "$name" ]]; then
     echo "⚠ Nom inattendu : $(basename "$source") (attendu $name)"
   fi
-  # Empreintes publiées par Electron, livrées dans son paquet npm.
-  expected="$(node -e 'process.stdout.write(require(process.argv[1])[process.argv[2]] ?? "")' "$pkg/checksums.json" "$name")"
+  if [[ "$kind" == "floor" ]]; then
+    # Plancher : empreintes officielles gardées dans le dépôt (scripts/electron-floor.json).
+    expected="$("${floor[@]}" checksum "$name")"
+  else
+    # Empreintes publiées par Electron, livrées dans son paquet npm.
+    expected="$(node -e 'process.stdout.write(require(process.argv[1])[process.argv[2]] ?? "")' "$pkg/checksums.json" "$name")"
+  fi
   actual="$(shasum -a 256 "$source" | cut -d' ' -f1)"
   if [[ -z "$expected" || "$actual" != "$expected" ]]; then
     echo "✗ Empreinte SHA-256 inattendue pour $name : $actual (attendu ${expected:-inconnue})" >&2
@@ -58,9 +77,9 @@ else
   # Recopiée sans ses attributs étendus (quarantaine d'un téléchargement), puis extraite.
   cat "$source" > "$tmp/electron.zip"
   ditto -x -k --noqtn "$tmp/electron.zip" "$tmp/dist"
-  found="$(sed 's/^v//' "$tmp/dist/version" 2>/dev/null || true)"
-  if [[ "$found" != "$version" ]]; then
-    echo "✗ Version dans l'archive : ${found:-inconnue}, attendu $version" >&2
+  extracted="$(sed 's/^v//' "$tmp/dist/version" 2>/dev/null || true)"
+  if [[ "$extracted" != "$found" ]]; then
+    echo "✗ Version dans l'archive : ${extracted:-inconnue}, attendu $found" >&2
     exit 1
   fi
 fi
@@ -73,4 +92,9 @@ rm -rf "$pkg/dist"
 mv "$tmp/dist" "$pkg/dist"
 if [[ -f "$pkg/dist/electron.d.ts" ]]; then mv "$pkg/dist/electron.d.ts" "$pkg/electron.d.ts"; fi
 printf '%s' 'Electron.app/Contents/MacOS/Electron' > "$pkg/path.txt"
-echo "✓ Electron $version installé ($pkg/dist)"
+if [[ "$kind" == "floor" ]]; then
+  echo "✓ Electron $found installé ($pkg/dist) : plancher accepté (ADR-0074)"
+  echo "⚠ Une app construite sur le plancher n'a pas les correctifs de sécurité d'Electron $version (version du projet)."
+else
+  echo "✓ Electron $version installé ($pkg/dist)"
+fi
