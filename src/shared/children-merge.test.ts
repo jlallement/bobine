@@ -5,6 +5,7 @@ import {
   mergeOverlaps,
   mergeSummary,
   planWithout,
+  resolvedLeft,
   settledMerge,
   type ChildrenMerge,
   type ChildrenMergePlan,
@@ -199,6 +200,35 @@ describe('pourquoi « Fusionner » ne part pas (fiche 287)', () => {
     )
     expect(why(plan([child('a', 'merged')]), [])).toBe(
       'Rien à fusionner : aucune branche n’a de commit que main n’a pas.'
+    )
+  })
+})
+
+describe('conflit résolu par son agent, à relire (fiche 289)', () => {
+  const review: ChildrenMerge = {
+    runId: 'r',
+    base: 'main',
+    cleanup: false,
+    status: 'review',
+    rows: [
+      { childId: 'a', title: 'a', state: 'merged' },
+      { childId: 'b', title: 'b', state: 'resolved', files: ['README.md'] },
+      { childId: 'c', title: 'c', state: 'pending' }
+    ],
+    startedAt: 1,
+    endedAt: 2
+  }
+
+  it('pas active : gardée telle quelle au redémarrage (le main ne la fait plus tourner)', () => {
+    expect(settledMerge(review, false)).toBe(review)
+  })
+
+  it('la ligne à relire, tant que le travail n’est pas fusionné depuis', () => {
+    expect(resolvedLeft(review, plan([child('b', 'ready')]))?.childId).toBe('b')
+    expect(resolvedLeft(review, undefined)?.childId).toBe('b')
+    expect(resolvedLeft(review, plan([child('b', 'merged')]))).toBeUndefined()
+    expect(resolvedLeft({ ...review, status: 'stopped' }, plan([child('b', 'ready')]))).toBe(
+      undefined
     )
   })
 })

@@ -438,9 +438,9 @@ export function App() {
   ) // Profil en lecture seule (fiche 196) : la saisie est inerte, la raison dessous.
   const composer = <ReadOnlyGate>{editor}</ReadOnlyGate>
   // Fusion des filles (fiche 120) : la carte « Sous-tâches » et Modifications › Filles (fiche 258).
-  const childrenMerge = childrenMergeActions((id) => {
+  const childrenMerge = childrenMergeActions((id, view) => {
     c.select(id)
-    panel.openChanges('git')
+    panel.openChanges(view ?? 'git')
   })
 
   return (

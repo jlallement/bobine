@@ -408,6 +408,14 @@
   border-color: color-mix(in srgb, var(--err) 35%, var(--border));
   background: var(--err-soft);
 }
+/* Fiche 289 : conflit résolu par son agent, à relire avant de fusionner. */
+.work-merge-box.review {
+  border-color: color-mix(in srgb, var(--warn) 35%, var(--border));
+  background: var(--warn-soft);
+}
+.work-merge-box.review .work-merge-row > svg {
+  color: var(--warn);
+}
 .work-merge-row {
   display: flex;
   align-items: center;

@@ -14,6 +14,7 @@ import { messageOf } from '@shared/errors'
 import {
   shortHash,
   type CommitOutcome,
+  type ConcludeOutcome,
   type MainDirty,
   type MergeOutcome,
   type OrphanRef,
@@ -37,6 +38,7 @@ import { gitError, gitErrorLine } from './git-errors'
 import { nativeGitPath, samePathIn } from '../git/git-platform'
 import { lostRevisions, WORKTREES_DIR, type WorktreeInfo } from './worktrees'
 import { markersLeft } from './commit-then-merge'
+import { commitMerge, concludeMerge, type WorktreeGit } from './merge-conclude'
 
 /**
  * Chemin relatif tel que git l'écrit (`docs/new.md`) : sous Windows, `relative` rend des `\`, que
@@ -598,15 +600,26 @@ export class WorktreeCycle {
     const main = await this.mainDirty(target)
     if (main && !options.stash) return { status: 'main-dirty', ...main }
     return this.stashed(target, !!main, async () => {
-      if (merging) {
-        if (files.length > 0) {
-          await this.exec(cwd, [...LITERAL, 'add', '--', ...files], target.id)
-        }
-        await this.exec(cwd, ['commit', '-q', '--no-edit'], target.id, 60_000)
-      }
+      if (merging) await commitMerge(this.worktreeGit(target), files)
       await this.advanceBase(target, base, merging)
       return { status: 'merged', kind: 'merge', base }
     })
+  }
+
+  /** Termine dans la branche seulement une fusion arrêtée sur des conflits (fiche 289). */
+  async concludeMerge(target: CycleTarget): Promise<ConcludeOutcome> {
+    const base = await this.baseBranch(target)
+    return concludeMerge(this.worktreeGit(target), target.worktree.branch, base)
+  }
+
+  /** Git dans le worktree de cette conversation (`merge-conclude.ts`). */
+  private worktreeGit(target: CycleTarget): WorktreeGit {
+    const cwd = target.worktree.path
+    return {
+      cwd,
+      run: (args) => this.gitRun(cwd, args, target.id),
+      exec: (args, timeoutMs) => this.exec(cwd, args, target.id, timeoutMs)
+    }
   }
 
   /** Abandonne une fusion arrêtée sur des conflits. */

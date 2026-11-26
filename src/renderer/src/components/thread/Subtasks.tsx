@@ -503,6 +503,7 @@ function SubtasksCard({ items, info }: { items: readonly TranscriptItem[]; info:
           state={merging}
           actions={info.merge}
           verdicts={verdicts}
+          onReview={info.onReview}
         />
       )}
     </div>

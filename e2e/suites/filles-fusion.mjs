@@ -25,7 +25,9 @@ const CHILDREN = [{ title: 'Import CSV' }, { title: 'Page d’aide' }, { title: 
  * travaux proposés par l'agent (`fusion-trois`), « Tout lancer » ; deux touchent README.md
  * (recouvrement dit), un a des modifications non commitées (exclu, dit) ; puis la fusion enchaînée
  * dans la carte, avec « Puis nettoyer » : la deuxième entre en conflit, l'agent factice le résout
- * (scénario `conflits`), la fusion reprend. Enfin, l'app redémarrée garde l'issue dans la carte.
+ * (scénario `conflits`) et la fusion s'arrête là, résolution à relire (fiche 289, journal Bricole
+ * 21:16-21:17) ; « Voir la résolution ». L'app redémarrée garde cet état ; la fusion repart sur un
+ * clic (« Mettre de côté »), puis l'app redémarrée garde l'issue dans la carte.
  */
 export async function fillesFusionSuite(scheme) {
   console.log(`\n— Fusionner toutes les filles (${scheme})`)
@@ -201,6 +203,7 @@ export async function fillesFusionSuite(scheme) {
             window.__resolving = {
               states,
               at,
+              title: [...document.querySelectorAll('[data-testid=work-row-name]')][at]?.innerText,
               progress: text('subtasks-merge-progress'),
               resolving: text('subtasks-merge-resolving'),
               stash: text('subtasks-merge-stash')
@@ -237,7 +240,99 @@ export async function fillesFusionSuite(scheme) {
         await ui.shot('120-fusion-en-cours')
         await ui.shot('264-groupe-fusion-en-cours')
 
-        await ui.waitFor(`${ui.$('subtasks-merge-result')}?.dataset.status === 'done'`, 90000)
+        // Fiche 289 (journal Bricole, 21:16-21:17) : le conflit résolu par l'agent reste dans la
+        // branche du travail ; la fusion s'arrête là, la carte demande une relecture. Contrôles qui ne
+        // lèvent pas : sur une version sans le correctif, la fusion va au bout et ils le disent.
+        const result = ui.$('subtasks-merge-result')
+        await ui.waitFor(`['review', 'done'].includes(${result}?.dataset.status)`, 90000)
+        const resolved = await ui.ev(
+          `[...document.querySelectorAll('[data-testid=work-row]')].find((r) => r.querySelector('[data-testid=subtask-merge-state]')?.dataset.state === 'resolved')?.querySelector('[data-testid=work-row-name]')?.innerText ?? null`
+        )
+        const conflicted = seen.title
+        check(
+          (await ui.ev(`${result}?.dataset.status`)) === 'review' && resolved === conflicted,
+          `fiche 289 : la fusion s’arrête après la résolution du conflit par l’agent, sa ligne dit « ${L('workGroup.merge.row.resolved')} » (${resolved})`
+        )
+        check(
+          readFileSync(join(workspace, 'README.md'), 'utf8') !== RESOLVED &&
+            !existsSync(join(workspace, 'NOTES.md')),
+          'fiche 289 : rien de la résolution ni des travaux suivants n’est entré dans main'
+        )
+        const branch = folders[conflicted]
+        check(
+          !!branch &&
+            readFileSync(join(branch, 'README.md'), 'utf8') === RESOLVED &&
+            git(branch, 'status', '--porcelain') === '' &&
+            git(branch, 'log', '-1', '--format=%P').split(' ').length === 2,
+          'fiche 289 : la résolution est commitée dans la branche du travail (commit de fusion)'
+        )
+        check(
+          (await ui.ev(`${result}?.innerText ?? ''`)).includes(
+            L('childrenMerge.result.review', {
+              title: titles(conflicted),
+              files: 'README.md',
+              base: 'main'
+            })
+          ),
+          'fiche 289 : la carte nomme le travail, le fichier et la base, et demande une relecture'
+        )
+        // La chaîne finit après avoir posé « à relire » : la mise de côté revient juste après.
+        for (let i = 0; i < 100 && git(workspace, 'stash', 'list') !== ''; i++) await sleep(100)
+        check(
+          git(workspace, 'stash', 'list') === '' &&
+            readFileSync(join(workspace, 'TODO.md'), 'utf8') === TODO_DRAFT,
+          'fusion arrêtée : les modifications mises de côté de la mère sont revenues'
+        )
+        await ui.ev(`${ui.$('work-group')}.scrollIntoView({ block: 'center' }), true`)
+        await ui.shot('289-fusion-a-relire')
+
+        // « Voir la résolution » : les modifications du travail, où se lit celle de README.md.
+        await ui.waitFor(`!!${ui.$('subtasks-merge-resolution')}`, 5000)
+        await ui.click(ui.$('subtasks-merge-resolution'))
+        const shown = await ui
+          .waitFor(
+            `[...document.querySelectorAll('[data-testid=changes-file]')].some((f) => f.innerText.includes('README.md'))`,
+            15000
+          )
+          .then(
+            () => true,
+            () => false
+          )
+        check(
+          shown &&
+            (
+              await ui.ev(`document.querySelector('.history-item.active')?.innerText ?? ''`)
+            ).includes(conflicted),
+          '« Voir la résolution » : les modifications du travail montrent README.md'
+        )
+        await ui.shot('289-voir-la-resolution')
+      },
+      userData,
+      'conflits',
+      env
+    )
+
+    // Redémarrage (fiche 289) : la fusion arrêtée « à relire » est dans le fil de la mère ; elle ne
+    // part que sur un clic, par les refus habituels (ici, la mère a des modifications : « Mettre de
+    // côté »).
+    await withApp(
+      scheme,
+      async (ui) => {
+        const item = `[...document.querySelectorAll('[data-testid=history-item]')].find((r) => r.innerText.includes(${JSON.stringify(MOTHER)}))`
+        await ui.waitFor(`!!${item}`, 20000)
+        await ui.click(`${item}.querySelector('.history-open') ?? ${item}`)
+        await ui.waitFor(`${ui.$('subtasks-merge-result')}?.dataset.status === 'review'`, 20000)
+        check(
+          readFileSync(join(workspace, 'README.md'), 'utf8') !== RESOLVED &&
+            (await ui.ev(
+              `[...document.querySelectorAll('[data-testid=subtask-merge-state]')].some((s) => s.dataset.state === 'resolved')`
+            )),
+          'après redémarrage : toujours « à relire », main inchangé'
+        )
+        await ui.waitFor(`!!${ui.$('main-dirty-stash')}`, 20000)
+        await ui.ev(`${ui.$('work-group')}.scrollIntoView({ block: 'center' }), true`)
+        await ui.click(ui.$('main-dirty-stash'))
+        await ui.waitFor(`${ui.$('subtasks-merge-result')}?.dataset.status === 'done'`, 60000)
         check(
           readFileSync(join(workspace, 'README.md'), 'utf8') === RESOLVED &&
             existsSync(join(workspace, 'src', 'app.js')) &&
@@ -245,15 +340,16 @@ export async function fillesFusionSuite(scheme) {
             git(workspace, 'status', '--porcelain', '--untracked-files=no') === 'M TODO.md' &&
             readFileSync(join(workspace, 'TODO.md'), 'utf8') === TODO_DRAFT &&
             readFileSync(join(workspace, 'brouillon.txt'), 'utf8') === 'idée\n' &&
-            git(workspace, 'stash', 'list') === '',
-          'main a les trois filles, conflit résolu ; les modifications de la mère sont revenues'
+            git(workspace, 'stash', 'list') === '' &&
+            git(workspace, 'log', '-1', '--format=%P').split(' ').length === 2,
+          'au clic : main a les trois travaux, conflit résolu ; les modifications de la mère sont revenues'
         )
         await ui.ev(`${ui.$('work-group')}.scrollIntoView({ block: 'center' }), true`)
         await ui.shot('120-fusion-finie')
         await ui.shot('264-groupe-fusionne')
       },
       userData,
-      'conflits',
+      'echo',
       env
     )
 

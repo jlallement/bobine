@@ -145,7 +145,7 @@ describe('Fusion de toutes les filles depuis la carte (fiche 120)', () => {
     await waitFor(() => screen.getByTestId('subtasks-merge-progress'))
     expect(badges()).toEqual(['merged', 'merging', 'pending'])
     expect(text('subtasks-merge-progress')).toBe(
-      'Fusion dans main, l’un après l’autre\u00a0: 1 sur 3 fait. Au premier conflit, le travail concerné le résout, puis la fusion reprend.'
+      'Fusion dans main, l’un après l’autre\u00a0: 1 sur 3 fait. Au premier conflit, le travail concerné le résout, puis la fusion s’arrête pour votre relecture.'
     )
     fireEvent.click(screen.getByTestId('subtasks-merge-stop'))
     // L'« Arrêter » de cette fusion seulement (fiche 264).
@@ -206,6 +206,26 @@ describe('Fusion de toutes les filles depuis la carte (fiche 120)', () => {
     await waitFor(() => expect(actions.abort).toHaveBeenCalledWith('b'))
     fireEvent.click(screen.getByTestId('subtasks-merge-show'))
     expect(actions.openGit).toHaveBeenCalledWith('b')
+  })
+
+  it('fiche 289 : arrêtée sur un conflit résolu par son agent : à relire, rien ne part sans clic', async () => {
+    const review = merge('review', ['merged', 'resolved', 'pending'])
+    if (review.kind === 'children-merge' && review.rows[1]) review.rows[1].files = ['README.md']
+    const actions = view(
+      [review],
+      plan([candidate('a', 'merged'), candidate('b', 'ready'), candidate('c', 'ready')])
+    )
+    await waitFor(() => screen.getByTestId('subtasks-merge-resolution'))
+    expect(screen.getByTestId('subtasks-merge-result').dataset['status']).toBe('review')
+    expect(badges()).toEqual(['merged', 'resolved', 'pending'])
+    // Sans « Faire relire » branché, seul « Voir la résolution » ; ni « Réessayer » ni « Abandonner ».
+    expect(screen.queryByTestId('subtasks-merge-review-request')).toBeNull()
+    expect(screen.queryByTestId('subtasks-merge-retry')).toBeNull()
+    expect(actions.start).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByTestId('subtasks-merge-resolution'))
+    expect(actions.openGit).toHaveBeenCalledWith('b', 'conversation')
+    fireEvent.click(screen.getByTestId('subtasks-merge-start'))
+    await waitFor(() => expect(actions.start).toHaveBeenCalledWith('mere', ['b', 'c'], false))
   })
 
   it('arrêtée sur un conflit, branches lues pendant la fusion : ni « Réessayer » ni « Abandonner »', async () => {

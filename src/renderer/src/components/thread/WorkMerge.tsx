@@ -247,10 +247,16 @@ export function WorkMergeBox({
       </div>
     )
   }
-  // Branche de nouveau prête (nouveaux commits, conflit abandonné, fusion arrêtée avant elle) :
-  // l'issue d'avant n'est plus d'actualité ; un échec, si (il dit pourquoi).
-  const stale = candidate?.state === 'ready' && row?.state !== 'failed' && row?.state !== 'dirty'
-  const outcome = merge && row && !stale ? <MergeOutcome row={row} merge={merge} /> : null
+  const stale = staleOutcome(row, candidate)
+  const outcome =
+    merge && row && !stale ? (
+      <MergeOutcome
+        row={row}
+        merge={merge}
+        name={name}
+        onShow={() => actions.openGit(card.childId, 'conversation')}
+      />
+    ) : null
   // Avant toute fusion (ou après une issue) : ce qui empêcherait « Fusionner dans main ».
   const blocked = candidate?.state === 'ready' && !control.active && state.plan?.blocked
   const otherRunning = candidate?.state === 'ready' && state.plan?.running && !control.active
@@ -341,10 +347,15 @@ function MergeSteps({ row, base, name }: { row: ChildrenMergeRow; base: string; 
 /** Issue de la dernière fusion de ce travail. */
 function MergeOutcome({
   row,
-  merge
+  merge,
+  name,
+  onShow
 }: {
   row: ChildrenMergeRow
   merge: NonNullable<ChildrenMergeState['merge']>
+  name: string
+  /** « Voir la résolution » d'un conflit résolu par son agent (fiche 289) : sa vue Git. */
+  onShow: () => void
 }) {
   const { t } = useTranslation()
   const ok = row.state === 'merged' || row.state === 'up-to-date'
@@ -356,6 +367,8 @@ function MergeOutcome({
   else if (row.state === 'failed') lines.push(t('workMerge.failed', { error: row.error ?? '' }))
   else if (row.state === 'conflict') {
     lines.push(t('workMerge.conflict', { files: fileList(row.files) }))
+  } else if (row.state === 'resolved') {
+    lines.push(t('workMerge.resolved', { name, files: fileList(row.files), base: merge.base }))
   } else if (row.state === 'pending') {
     lines.push(t(merge.interrupted ? 'workMerge.interrupted' : 'workMerge.stopped'))
   }
@@ -365,9 +378,10 @@ function MergeOutcome({
   }
   if (lines.length === 0) return null
   const [first, ...rest] = lines
+  const review = row.state === 'resolved'
   return (
     <div
-      className={`work-merge-box${ok ? ' ok' : ' err'}`}
+      className={`work-merge-box${ok ? ' ok' : review ? ' review' : ' err'}`}
       data-testid="work-merge-result"
       data-state={row.state}
     >
@@ -398,8 +412,33 @@ function MergeOutcome({
           {line}
         </div>
       ))}
+      {review && (
+        <div className="work-merge-actions">
+          <button
+            type="button"
+            className="btn small"
+            onClick={onShow}
+            data-testid="work-merge-resolution"
+          >
+            {t('childrenMerge.showResolution')}
+          </button>
+        </div>
+      )}
     </div>
   )
+}
+
+/**
+ * L'issue d'avant n'est plus d'actualité : branche de nouveau prête (nouveaux commits, conflit
+ * abandonné, fusion arrêtée avant elle). Un échec reste (il dit pourquoi) ; un conflit résolu par son
+ * agent reste à relire, sa branche prête, tant qu'il n'est pas fusionné (fiche 289).
+ */
+function staleOutcome(
+  row: ChildrenMergeRow | undefined,
+  candidate: MergeCandidate | undefined
+): boolean {
+  if (row?.state === 'resolved') return candidate?.state === 'merged'
+  return candidate?.state === 'ready' && row?.state !== 'failed' && row?.state !== 'dirty'
 }
 
 /** Le conflit de ce travail reste : sa branche le dit encore, lue après l'arrêt de la fusion. */

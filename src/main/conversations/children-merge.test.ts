@@ -269,13 +269,16 @@ describe('fusion de toutes les filles (fiche 120)', () => {
     expect((await env.merger.plan('mere', [])).children).toEqual([])
   })
 
-  it('conflit sur la deuxième : la fille le résout, la fusion reprend, la troisième suit', async () => {
+  // Fiche 289 (journal Bricole, 21:16-21:17) : la résolution de l'agent n'entre pas dans la base
+  // sans clic ; elle est commitée dans sa branche, la chaîne s'arrête, la carte demande une relecture.
+  it('conflit sur la deuxième : la fille le résout dans sa branche, la chaîne s’arrête à relire ; la fusion part au clic (fiche 289)', async () => {
     const env = await setup(['A', 'B', 'C'])
     const [a, b, c] = env.children as [Child, Child, Child]
     env.commit(a, 'README.md', '# Démo\n\nVersion A\n')
     env.commit(b, 'README.md', '# Démo\n\nVersion B\n')
     env.commit(c, 'c.txt', 'c\n')
-    await env.merger.start('mere', ids(env.children), false)
+    const bBefore = git(env.root, 'rev-parse', b.worktree.branch)
+    await env.merger.start('mere', ids(env.children), true)
     await env.merger.settled('mere')
 
     expect(env.prompts).toHaveLength(1)
@@ -286,12 +289,96 @@ describe('fusion de toutes les filles (fiche 120)', () => {
     expect(env.prompts[0]?.from).toEqual({ kind: 'merge', id: 'mere', title: 'Mère' })
     const resolving = env.merges.find((m) => m.rows[1]?.state === 'resolving')
     expect(resolving?.rows[1]?.files).toEqual(['README.md'])
+    const review = last(env.merges)
+    expect(review.status).toBe('review')
+    expect(states(review)).toEqual(['merged', 'resolved', 'pending'])
+    expect(review.rows[1]?.files).toEqual(['README.md'])
+    expect(review.endedAt).toBeDefined()
+    // La base n'a reçu que A ; « Puis nettoyer » ne touche qu'A, fusionnée.
+    const mainAfterA = git(env.root, 'rev-parse', 'main')
+    expect(readFileSync(join(env.root, 'README.md'), 'utf8')).toBe('# Démo\n\nVersion A\n')
+    expect(existsSync(join(env.root, 'c.txt'))).toBe(false)
+    expect(review.rows.map((r) => !!r.cleaned)).toEqual([true, false, false])
+    // La résolution est commitée dans la branche de B : commit de fusion, la base en premier parent
+    // (le même historique qu'avant, seulement décalé au clic).
+    expect(git(b.worktree.path, 'status', '--porcelain')).toBe('')
+    expect(git(b.worktree.path, 'show', 'HEAD:README.md')).toBe('résolu')
+    const resolution = git(env.root, 'rev-parse', b.worktree.branch)
+    expect(git(env.root, 'log', '-1', '--format=%P', resolution)).toBe(`${mainAfterA} ${bBefore}`)
+    const plan = await env.merger.plan('mere')
+    expect(plan.children.map((x) => x.state)).toEqual(['ready', 'ready'])
+    expect(env.logged).toContain('children merge: review')
+
+    // Le clic de l'utilisateur : B (déjà résolue) et C entrent, sans nouvelle consigne à l'agent.
+    await env.merger.start('mere', ['f2', 'f3'], true)
+    await env.merger.settled('mere')
     const done = last(env.merges)
     expect(done.status).toBe('done')
-    expect(states(done)).toEqual(['merged', 'merged', 'merged'])
+    expect(states(done)).toEqual(['merged', 'merged'])
+    expect(done.rows.every((r) => r.cleaned)).toBe(true)
+    expect(env.prompts).toHaveLength(1)
     expect(readFileSync(join(env.root, 'README.md'), 'utf8')).toBe('résolu\n')
     expect(existsSync(join(env.root, 'c.txt'))).toBe(true)
-  })
+    // La résolution est entrée telle quelle, sur la ligne principale de main : A, B, puis C.
+    expect(git(env.root, 'log', '--first-parent', '--format=%H', 'main').split('\n')).toEqual(
+      expect.arrayContaining([mainAfterA, resolution])
+    )
+    expect(git(env.root, 'status', '--porcelain')).toBe('')
+  }, 30_000)
+
+  it('conflit résolu à la main puis « Réessayer » : la fusion part sur ce clic, sans arrêt (fiche 289)', async () => {
+    const env = await setup(['A', 'B'])
+    const [a, b] = env.children as [Child, Child]
+    env.commit(a, 'README.md', '# Démo\n\nVersion A\n')
+    env.commit(b, 'README.md', '# Démo\n\nVersion B\n')
+    // L'agent ne retire pas les marqueurs : la chaîne s'arrête sur le conflit.
+    env.options.resolve = () => {}
+    await env.merger.start('mere', ids(env.children), false)
+    await env.merger.settled('mere')
+    expect(last(env.merges).status).toBe('conflict')
+    // L'utilisateur résout dans le worktree, puis « Réessayer » : rien n'est renvoyé à l'agent.
+    writeFileSync(join(b.worktree.path, 'README.md'), 'A et B, à la main\n')
+    await env.merger.start('mere', ['f2'], false)
+    await env.merger.settled('mere')
+    expect(env.prompts).toHaveLength(1)
+    expect(last(env.merges)).toMatchObject({ status: 'done' })
+    expect(states(last(env.merges))).toEqual(['merged'])
+    expect(readFileSync(join(env.root, 'README.md'), 'utf8')).toBe('A et B, à la main\n')
+  }, 30_000)
+
+  it('l’agent a commité la fusion lui-même (malgré la consigne) : à relire aussi, base intacte (fiche 289)', async () => {
+    const env = await setup(['A', 'B'])
+    const [a, b] = env.children as [Child, Child]
+    env.commit(a, 'README.md', '# Démo\n\nVersion A\n')
+    env.commit(b, 'README.md', '# Démo\n\nVersion B\n')
+    env.options.resolve = (child, files) => {
+      for (const file of files) writeFileSync(join(child.worktree.path, file), 'A et B\n')
+      git(child.worktree.path, 'add', '.')
+      git(child.worktree.path, '-c', 'core.editor=true', 'commit', '-q', '--no-edit')
+    }
+    await env.merger.start('mere', ids(env.children), false)
+    await env.merger.settled('mere')
+    expect(last(env.merges).status).toBe('review')
+    expect(states(last(env.merges))).toEqual(['merged', 'resolved'])
+    expect(readFileSync(join(env.root, 'README.md'), 'utf8')).toBe('# Démo\n\nVersion A\n')
+  }, 30_000)
+
+  it('fusion abandonnée pendant le tour de l’agent : rien n’entre dans la base, et c’est dit (fiche 289)', async () => {
+    const env = await setup(['A', 'B'])
+    const [a, b] = env.children as [Child, Child]
+    env.commit(a, 'README.md', '# Démo\n\nVersion A\n')
+    env.commit(b, 'README.md', '# Démo\n\nVersion B\n')
+    env.options.resolve = (child) => git(child.worktree.path, 'merge', '--abort')
+    await env.merger.start('mere', ids(env.children), false)
+    await env.merger.settled('mere')
+    const stopped = last(env.merges)
+    expect(stopped.status).toBe('failed')
+    expect(states(stopped)).toEqual(['merged', 'failed'])
+    expect(stopped.rows[1]?.error).toBe(
+      t('childrenMerge.error.notResolved', { title: 'B', base: 'main' })
+    )
+    expect(readFileSync(join(env.root, 'README.md'), 'utf8')).toBe('# Démo\n\nVersion A\n')
+  }, 30_000)
 
   // 30 s, processus lents à lancer sous Windows (fiche 229) : 98 git ;
   // 6,7 s sur x64, 8,8 s au pire (arm64).
@@ -314,10 +401,16 @@ describe('fusion de toutes les filles (fiche 120)', () => {
     const plan = await env.merger.plan('mere')
     expect(plan.children.map((x) => x.state)).toEqual(['merged', 'conflict', 'ready'])
 
-    // « Réessayer » : la chaîne reprend à B ; cette fois la fille résout.
+    // « Réessayer » : la chaîne reprend à B ; cette fois la fille résout, et la chaîne s'arrête à
+    // relire (fiche 289) ; un second clic la fusionne.
     env.options.resolve = (child, files) => {
       for (const file of files) writeFileSync(join(child.worktree.path, file), 'A et B\n')
     }
+    await env.merger.start('mere', ['f2', 'f3'], false)
+    await env.merger.settled('mere')
+    expect(last(env.merges).status).toBe('review')
+    expect(states(last(env.merges))).toEqual(['resolved', 'pending'])
+    expect(readFileSync(join(env.root, 'README.md'), 'utf8')).toBe('# Démo\n\nVersion A\n')
     await env.merger.start('mere', ['f2', 'f3'], false)
     await env.merger.settled('mere')
     expect(states(last(env.merges))).toEqual(['merged', 'merged'])

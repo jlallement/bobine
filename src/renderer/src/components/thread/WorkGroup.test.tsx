@@ -432,6 +432,44 @@ describe('carte de groupe : en cours et finis (fiche 264, écran D, états 2 et 
     await waitFor(() => expect(actions.stop).toHaveBeenCalledWith('mere', 'run'))
   })
 
+  it('fiche 289 : conflit résolu par son agent, à relire ; « Voir la résolution », « Faire relire » ; la fusion part au clic', async () => {
+    const actions = mergeActions([candidate('a', 'merged'), candidate('b', 'ready')])
+    const onReview = vi.fn()
+    const items = [
+      ...working(),
+      report(9, 'a'),
+      mergeItem(10, 'review', [
+        { childId: 'a', state: 'merged' },
+        { childId: 'b', state: 'resolved', files: ['src/list.ts'] }
+      ])
+    ]
+    view(items, info([child('a'), child('b', { role: front })], { merge: actions, onReview }))
+    const result = await screen.findByTestId('subtasks-merge-result')
+    expect(result.dataset['status']).toBe('review')
+    expect(plain(result.textContent)).toBe(
+      'Fusion arrêtée : 1 travail fusionné dans main, les autres restent en attente. ' +
+        '« Travail b » : son agent a résolu le conflit dans src/list.ts, dans sa branche. ' +
+        'Rien n’est entré dans main : relisez la résolution, puis fusionnez.'
+    )
+    expect(
+      screen.getAllByTestId('subtask-merge-state').map((s) => [s.dataset['state'], s.textContent])
+    ).toEqual([
+      ['merged', 'fusionné'],
+      ['resolved', 'conflit résolu · à relire']
+    ])
+    // Rien n'est parti sans clic ; le diff de la résolution et la relecture sont à portée.
+    expect(actions.start).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByTestId('subtasks-merge-resolution'))
+    expect(actions.openGit).toHaveBeenCalledWith('b', 'conversation')
+    fireEvent.click(screen.getByTestId('subtasks-merge-review-request'))
+    expect(onReview).toHaveBeenCalledWith('b')
+    // La fusion repart par le bouton habituel du pied, et ses refus.
+    const start = await screen.findByTestId('subtasks-merge-start')
+    expect(start.textContent).toBe('Fusionner le travail prêt dans main')
+    fireEvent.click(start)
+    await waitFor(() => expect(actions.start).toHaveBeenCalledWith('mere', ['b'], false))
+  })
+
   it('fusion finie dans la carte : le résultat, « fusionné » sur les lignes', async () => {
     const actions = mergeActions([candidate('a', 'merged'), candidate('b', 'merged')])
     const items = [
@@ -629,6 +667,40 @@ describe('travail qui écrit : fusion dans sa carte (fiche 264, écran C)', () =
     expect(screen.queryByTestId('work-stop')).toBeNull()
     expect(screen.queryByTestId('work-reply')).toBeNull()
     expect(screen.queryByTestId('work-retry')).toBeNull()
+  })
+
+  it('fiche 289 : conflit résolu par son agent : à relire, « Voir la résolution » ; « Fusionner dans main » attend le clic', async () => {
+    const actions = mergeActions([candidate('a', 'ready')])
+    view(
+      writer([
+        mergeItem(4, 'review', [{ childId: 'a', state: 'resolved', files: ['src/list.ts'] }], {
+          cleanup: true,
+          endedAt: T0
+        })
+      ]),
+      info([child('a', { role: front })], { merge: actions })
+    )
+    const result = await screen.findByTestId('work-merge-result')
+    expect(result.dataset['state']).toBe('resolved')
+    expect(result.className).toContain('review')
+    expect(plain(result.textContent)).toContain(
+      'Conflit résolu par Développeur front dans src/list.ts, dans sa branche : rien n’est entré dans main. Relisez la résolution, puis fusionnez.'
+    )
+    expect(actions.start).not.toHaveBeenCalled()
+    fireEvent.click(within(result).getByTestId('work-merge-resolution'))
+    expect(actions.openGit).toHaveBeenCalledWith('a', 'conversation')
+    fireEvent.click(await screen.findByTestId('work-merge-start'))
+    await waitFor(() => expect(actions.start).toHaveBeenCalledWith('mere', ['a'], true, undefined))
+  })
+
+  it('fiche 289 : résolu puis fusionné ailleurs (vue Git) : plus « à relire »', async () => {
+    const actions = mergeActions([candidate('a', 'merged')])
+    view(
+      writer([mergeItem(4, 'review', [{ childId: 'a', state: 'resolved', files: ['x.ts'] }])]),
+      info([child('a', { role: front })], { merge: actions })
+    )
+    await waitFor(() => expect(actions.plan).toHaveBeenCalled())
+    await waitFor(() => expect(screen.queryByTestId('work-merge-result')).toBeNull())
   })
 
   it('fusionné : « Fusionné dans main · branche supprimée », conversation archivée dite', async () => {

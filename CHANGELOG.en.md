@@ -2,6 +2,16 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixed
+
+- **Conflict resolved by a task: nothing goes into the main branch without you.** When a merge
+  from a card hits a conflict and the task resolves it, the resolution stays on its branch and the
+  merge stops: the card says “conflict resolved · to review”, with “Show the resolution” and
+  “Get a review”. The merge only starts when you click, with the usual checks. This state
+  survives closing the app.
+
 ## 1.2.0-beta.4 — November 26, 2026
 
 ### New
@@ -332,7 +342,7 @@ What changes for you, version by version. Shown in Settings › About.
   conversation under the pointer: it catches up with the bottom once the pointer leaves the card.
 - After the agent is woken up, the tasks card says “Responses passed to …”.
 - Durations: “< 1 s” under a second, never “0 s”, timeouts included.
-- “Request review” starts the **Code reviewer** role: one way to get a review, from Changes, the
+- “Get a review” starts the **Code reviewer** role: one way to get a review, from Changes, the
   “Tasks” view or a task’s card. The request shows in the thread (“@Code reviewer Review the
   branch …”) with its card, which shows **every comment**: its severity, `file:line` (a click opens
   the diff on that file), one sentence, then its verdict, or “Nothing to report”. “Ask <agent> to
@@ -841,7 +851,7 @@ is not notarized by Apple yet, so macOS needs one extra step to open it (see the
   that answers as you type and shows the chosen result’s page right away (↑↓, ↩, Esc), found
   words highlighted, and the keyboard
   shortcuts page taken from the real menu. Small “?” buttons open Help at the right section:
-  worktree setup, “Request review”, scheduled tasks, aside, and several Settings sections
+  worktree setup, “Get a review”, scheduled tasks, aside, and several Settings sections
   (Memory and the Trash among them). The guide also covers shared memory, the trash, backups, an
   agent’s version notice and the “agent hasn’t sent anything” banner.
 - **Bobine tips**: at most one a day, at the right moment, on the top edge of the input box (a

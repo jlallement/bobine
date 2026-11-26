@@ -4042,8 +4042,8 @@
     "cleanup": "Then clean up",
     "cleanupHint": "Archive the conversation of each merged task, then delete its working folder and branch",
     "stop": "Stop",
-    "progress_one": "Merging into {{base}}, one after the other: {{count}} of {{total}} done. At the first conflict, that task resolves it, then the merge resumes.",
-    "progress_other": "Merging into {{base}}, one after the other: {{count}} of {{total}} done. At the first conflict, that task resolves it, then the merge resumes.",
+    "progress_one": "Merging into {{base}}, one after the other: {{count}} of {{total}} done. At the first conflict, that task resolves it, then the merge stops for your review.",
+    "progress_other": "Merging into {{base}}, one after the other: {{count}} of {{total}} done. At the first conflict, that task resolves it, then the merge stops for your review.",
     "stopping": "Stopping after the current merge…",
     "result": {
       "done_one": "{{count}} task merged into {{base}} in {{duration}}.",
@@ -4057,7 +4057,8 @@
       "interrupted_one": "Merge interrupted when the app was closed: {{count}} task merged into {{base}}.",
       "interrupted_other": "Merge interrupted when the app was closed: {{count}} tasks merged into {{base}}.",
       "conflict": "Merge stopped on {{title}}: conflicts remain in {{files}}.",
-      "failed": "Merge stopped on {{title}}: {{error}}"
+      "failed": "Merge stopped on {{title}}: {{error}}",
+      "review": "{{title}}: its agent resolved the conflict in {{files}}, on its branch. Nothing went into {{base}}: review the resolution, then merge."
     },
     "retry": "Retry",
     "abort": "Abort",
@@ -4071,7 +4072,8 @@
       "conflict": "conflict",
       "dirty": "uncommitted",
       "failed": "failed",
-      "cleaned": "cleaned up"
+      "cleaned": "cleaned up",
+      "resolved": "conflict resolved · to review"
     },
     "duration": {
       "seconds": "{{count}} s",
@@ -4086,7 +4088,8 @@
       "mainDirty_other": "The main folder has {{count}} uncommitted changes ({{files}}): commit them or set them aside before merging.",
       "busy": "“{{title}}” is still working or waiting for approval: wait for its response to merge it.",
       "cleanupSkipped": "Merged, but not cleaned up: “{{title}}” changed since the merge (new commits, changes or work in progress); its branch and folder stay.",
-      "reviewing": "“{{title}}” is being reviewed: wait until the review ends to merge it."
+      "reviewing": "“{{title}}” is being reviewed: wait until the review ends to merge it.",
+      "notResolved": "“{{title}}” no longer has a merge in progress and its branch did not receive {{base}} (merge aborted?): nothing was merged."
     },
     "stashKept_one": "Your change is set aside for the duration of the merge.",
     "stashKept_other": "Your {{count}} changes are set aside for the duration of the merge.",
@@ -4100,7 +4103,8 @@
       "dirty_one": "{{titles}} has uncommitted changes: commit them from its Git view.",
       "dirty_other": "{{titles}} have uncommitted changes: commit them from their Git views.",
       "nothing": "Nothing to merge: no branch has commits that {{base}} doesn’t have."
-    }
+    },
+    "showResolution": "Show the resolution"
   },
   "handover": {
     "error": {
@@ -6201,10 +6205,11 @@
         "conflict": "conflict",
         "dirty": "uncommitted",
         "failed": "failed",
-        "cleaned": "branch deleted"
+        "cleaned": "branch deleted",
+        "resolved": "conflict resolved · to review"
       },
       "cleanup": "Then clean up (archive, delete the branches)",
-      "resolving": "Conflict: that task resolves it, then the merge resumes.",
+      "resolving": "Conflict: that task resolves it, then the merge stops for your review.",
       "advice": {
         "recommended": "The agent recommends {{titles}}",
         "notReady_one": "{{titles}} isn’t recommended yet",
@@ -6256,7 +6261,8 @@
     "busy": "Another merge is running here: this task can be merged afterwards.",
     "stateMerged": "merged · {{time}}",
     "commit": "commit {{commit}}",
-    "reviewing": "Under review: merging waits for the Code reviewer to finish."
+    "reviewing": "Under review: merging waits for the Code reviewer to finish.",
+    "resolved": "Conflict resolved by {{name}} in {{files}}, on its branch: nothing went into {{base}}. Review the resolution, then merge."
   },
   "controlCategory": {
     "model": "Model",

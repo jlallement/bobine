@@ -7,8 +7,10 @@
  *   extraite dans un autre worktree.
  * - `start` : la fusion enchaînée. Chaque fille passe par `WorktreeCycle.merge` (ADR-0022 : la
  *   base entre dans son worktree, puis avance en fast-forward), l'une après l'autre. Au premier
- *   conflit, la consigne générique de la fiche 110 part à la fille ; à la fin de son tour, la
- *   fusion reprend si les marqueurs ont disparu, sinon la chaîne s'arrête là.
+ *   conflit, la consigne générique de la fiche 110 part à la fille ; à la fin de son tour, si les
+ *   marqueurs ont disparu, la résolution est commitée dans sa branche et la chaîne s'arrête là,
+ *   à relire (fiche 289) : la base n'avance que sur un clic de l'utilisateur. Sinon, elle s'arrête
+ *   sur le conflit.
  * - `stop` : la fusion en cours finit (jamais de base à moitié avancée), les autres attendent.
  * - Fiche 123 : le dossier principal non commité (la base y est extraite) refuse la fusion d'avance ;
  *   `start(…, { commit })` y committe d'abord (« Committer puis fusionner »), seulement si rien ne
@@ -54,6 +56,7 @@ export interface ChildrenMergeDeps {
   cycle: Pick<
     WorktreeCycle,
     | 'merge'
+    | 'concludeMerge'
     | 'branchState'
     | 'baseElsewhere'
     | 'baseBranch'
@@ -427,7 +430,7 @@ export class ChildrenMerger {
           removed: brought.removed
         })
       }
-      let outcome = await this.deps.cycle.merge(target)
+      const outcome = await this.deps.cycle.merge(target)
       if (outcome.status === 'conflicts') {
         set({ state: 'resolving', files: outcome.files })
         const base = await this.deps.cycle.baseBranch(target)
@@ -448,8 +451,8 @@ export class ChildrenMerger {
           run.merge.status = 'conflict'
           return false
         }
-        // Une fusion arrêtée reprend : marqueurs partis, elle est commitée et la base avance.
-        outcome = await this.deps.cycle.merge(target)
+        // Fiche 289 : la résolution de l'agent reste dans sa branche ; la base attend un clic.
+        return await this.review(run, row, target, base, set)
       }
       if (outcome.status === 'merged') {
         const commit = await this.deps.cycle.shortHead(target, outcome.base).catch(() => undefined)
@@ -468,6 +471,35 @@ export class ChildrenMerger {
       run.merge.status = 'failed'
       return false
     }
+  }
+
+  /**
+   * Après le tour de l'agent sur un conflit (fiche 289) : marqueurs partis, la résolution est
+   * commitée dans la branche du travail, rien n'entre dans la base, et la chaîne s'arrête à relire.
+   * La fusion repart sur un clic (`start`, avec tous ses refus). Toujours `false` : la chaîne s'arrête.
+   */
+  private async review(
+    run: Run,
+    row: ChildrenMergeRow,
+    target: CycleTarget,
+    base: string,
+    set: (patch: Partial<ChildrenMergeRow>) => void
+  ): Promise<false> {
+    const concluded = await this.deps.cycle.concludeMerge(target)
+    if (concluded.status === 'conflicts') {
+      set({ state: 'conflict', files: concluded.files })
+      run.merge.status = 'conflict'
+    } else if (concluded.status === 'not-merging') {
+      set({
+        state: 'failed',
+        error: t('childrenMerge.error.notResolved', { title: row.title, base })
+      })
+      run.merge.status = 'failed'
+    } else {
+      run.merge.status = 'review'
+      set({ state: 'resolved' })
+    }
+    return false
   }
 
   private settle(

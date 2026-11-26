@@ -141,8 +141,11 @@ conversation of each merged task and deletes its worktree and branch.
 The branches go in one after the other, in the order they were started, with each row’s state
 live. **Stop** stops after the current merge.
 
-**A conflict.** The task concerned resolves it itself, then the merge resumes. If conflicts
-remain: **Retry**, **Abort** or **Show the conflict** (its Git view).
+**A conflict.** The task concerned resolves it itself, on its branch, then the merge stops:
+nothing of its resolution goes into `main` without you. Its row says **conflict resolved · to
+review**; **Show the resolution** opens its Git view, **Get a review** hands it to the Code
+reviewer. When you are happy with it, the card’s usual button merges it (with the tasks still
+waiting). If conflicts remain: **Retry**, **Abort** or **Show the conflict** (its Git view).
 
 **The main folder has uncommitted changes**: the merge doesn’t start. As with a worktree:
 **Commit first** or **Set aside**. See [Merge into `main`](worktrees.md#fusionner).

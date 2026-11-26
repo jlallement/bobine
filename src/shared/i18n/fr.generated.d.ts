@@ -4055,9 +4055,9 @@ export type FrResources = {
     readonly cleanup: 'Puis nettoyer'
     readonly cleanupHint: 'Archiver la conversation de chaque travail fusionné, puis supprimer son dossier de travail et sa branche'
     readonly stop: 'Arrêter'
-    readonly progress_one: 'Fusion dans {{base}}, l’un après l’autre : {{count}} sur {{total}} fait. Au premier conflit, le travail concerné le résout, puis la fusion reprend.'
-    readonly progress_other: 'Fusion dans {{base}}, l’un après l’autre : {{count}} sur {{total}} faits. Au premier conflit, le travail concerné le résout, puis la fusion reprend.'
-    readonly progress_many: 'Fusion dans {{base}}, l’un après l’autre : {{count}} sur {{total}} faits. Au premier conflit, le travail concerné le résout, puis la fusion reprend.'
+    readonly progress_one: 'Fusion dans {{base}}, l’un après l’autre : {{count}} sur {{total}} fait. Au premier conflit, le travail concerné le résout, puis la fusion s’arrête pour votre relecture.'
+    readonly progress_other: 'Fusion dans {{base}}, l’un après l’autre : {{count}} sur {{total}} faits. Au premier conflit, le travail concerné le résout, puis la fusion s’arrête pour votre relecture.'
+    readonly progress_many: 'Fusion dans {{base}}, l’un après l’autre : {{count}} sur {{total}} faits. Au premier conflit, le travail concerné le résout, puis la fusion s’arrête pour votre relecture.'
     readonly stopping: 'Arrêt après la fusion en cours…'
     readonly result: {
       readonly done_one: '{{count}} travail fusionné dans {{base}} en {{duration}}.'
@@ -4077,6 +4077,7 @@ export type FrResources = {
       readonly interrupted_many: 'Fusion interrompue par la fermeture de l’app : {{count}} travaux fusionnés dans {{base}}.'
       readonly conflict: 'Fusion arrêtée sur {{title}} : il reste des conflits dans {{files}}.'
       readonly failed: 'Fusion arrêtée sur {{title}} : {{error}}'
+      readonly review: '{{title}} : son agent a résolu le conflit dans {{files}}, dans sa branche. Rien n’est entré dans {{base}} : relisez la résolution, puis fusionnez.'
     }
     readonly retry: 'Réessayer'
     readonly abort: 'Abandonner'
@@ -4091,6 +4092,7 @@ export type FrResources = {
       readonly dirty: 'non commité'
       readonly failed: 'échec'
       readonly cleaned: 'nettoyé'
+      readonly resolved: 'conflit résolu · à relire'
     }
     readonly duration: {
       readonly seconds: '{{count}} s'
@@ -4107,6 +4109,7 @@ export type FrResources = {
       readonly busy: '« {{title}} » travaille encore ou attend un accord : attendez sa réponse pour le fusionner.'
       readonly cleanupSkipped: 'Fusionné, mais pas nettoyé : « {{title}} » a changé depuis la fusion (nouveaux commits, modifications ou travail en cours) ; sa branche et son dossier restent.'
       readonly reviewing: '« {{title}} » est en cours de relecture : attendez la fin de la relecture pour le fusionner.'
+      readonly notResolved: '« {{title}} » n’a plus de fusion en cours et sa branche n’a pas reçu {{base}} (fusion abandonnée ?) : rien n’a été fusionné.'
     }
     readonly stashKept_one: 'Votre modification est mise de côté le temps de la fusion.'
     readonly stashKept_other: 'Vos {{count}} modifications sont mises de côté le temps de la fusion.'
@@ -4125,6 +4128,7 @@ export type FrResources = {
       readonly dirty_many: '{{titles}} ont des modifications non commitées : à committer depuis leur vue Git.'
       readonly nothing: 'Rien à fusionner : aucune branche n’a de commit que {{base}} n’a pas.'
     }
+    readonly showResolution: 'Voir la résolution'
   }
   readonly handover: {
     readonly error: {
@@ -6267,9 +6271,10 @@ export type FrResources = {
         readonly dirty: 'non commité'
         readonly failed: 'échec'
         readonly cleaned: 'branche supprimée'
+        readonly resolved: 'conflit résolu · à relire'
       }
       readonly cleanup: 'Puis nettoyer (archiver, supprimer les branches)'
-      readonly resolving: 'Conflit : le travail concerné le résout, puis la fusion reprend.'
+      readonly resolving: 'Conflit : le travail concerné le résout, puis la fusion s’arrête pour votre relecture.'
       readonly advice: {
         readonly recommended: 'L’agent recommande {{titles}}'
         readonly notReady_one: '{{titles}} n’est pas encore recommandé'
@@ -6324,6 +6329,7 @@ export type FrResources = {
     readonly stateMerged: 'fusionné · {{time}}'
     readonly commit: 'commit {{commit}}'
     readonly reviewing: 'En relecture : la fusion attend la fin du Code reviewer.'
+    readonly resolved: 'Conflit résolu par {{name}} dans {{files}}, dans sa branche : rien n’est entré dans {{base}}. Relisez la résolution, puis fusionnez.'
   }
   readonly controlCategory: {
     readonly model: 'Modèle'

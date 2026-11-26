@@ -147,8 +147,11 @@ conversation de chaque travail fusionné et supprime son worktree et sa branche.
 Les branches entrent l'une après l'autre, dans l'ordre de lancement, avec l'état de chaque ligne
 en direct. **Arrêter** s'arrête après la fusion en cours.
 
-**Un conflit.** Le travail concerné le résout lui-même, puis la fusion reprend. S'il reste des
-conflits : **Réessayer**, **Abandonner** ou **Voir le conflit** (sa vue Git).
+**Un conflit.** Le travail concerné le résout lui-même, dans sa branche, puis la fusion s'arrête :
+rien de sa résolution n'entre dans `main` sans vous. Sa ligne dit **conflit résolu · à relire** ;
+**Voir la résolution** ouvre sa vue Git, **Faire relire** la confie au Code reviewer. Quand elle vous
+convient, le bouton habituel de la carte la fusionne (avec les travaux restés en attente). S'il
+reste des conflits : **Réessayer**, **Abandonner** ou **Voir le conflit** (sa vue Git).
 
 **Le dossier principal a des modifications non commitées** : la fusion ne part pas. Comme pour un
 worktree : **Committer d'abord** ou **Mettre de côté**. Voir

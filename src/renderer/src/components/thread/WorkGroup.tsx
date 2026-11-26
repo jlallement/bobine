@@ -333,6 +333,7 @@ function GroupMergeFoot({
         actions={info.merge}
         verdicts={verdicts}
         works
+        onReview={info.onReview}
         extra={
           // Rien à voir quand tous les travaux sont en lecture seule (fiche 272, recette).
           info.onShowChanges &&

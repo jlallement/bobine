@@ -73,7 +73,7 @@ async function trash(ui, title, { keepChildren = false } = {}) {
 /**
  * « Déléguer » (fiche 277) : une mère lance trois travaux, on en ouvre un pour lui répondre, on
  * revient ; l'utilisateur committe dans les worktrees ; fusion des trois depuis la carte, dont un
- * conflit résolu par le travail ; un travail supprimé ; la mère supprimée, puis restaurée depuis la
+ * conflit résolu par le travail, arrêtée à relire puis reprise au clic (fiche 289) ; un travail supprimé ; la mère supprimée, puis restaurée depuis la
  * corbeille, et l'on continue d'y converser ; l'app relancée garde tout.
  */
 export async function parcoursDeleguerSuite(scheme) {
@@ -153,9 +153,23 @@ export async function parcoursDeleguerSuite(scheme) {
         })
 
         await journee.step(
-          'fusionner les trois : le conflit est résolu par le travail',
+          'fusionner les trois : le conflit est résolu par le travail, relu, puis fusionné',
           async () => {
             await ui.ev(`${ui.$('work-group')}.scrollIntoView({ block: 'center' }), true`)
+            await ui.click(ui.$('subtasks-merge-start'))
+            // Fiche 289 : le conflit résolu par le travail reste dans sa branche, la fusion s'arrête
+            // à relire ; rien de lui dans main avant le clic suivant.
+            await ui.waitFor(`${ui.$('subtasks-merge-result')}?.dataset.status === 'review'`, 90000)
+            check(
+              readFileSync(join(workspace, 'README.md'), 'utf8') !== RESOLVED &&
+                !existsSync(join(workspace, 'NOTES.md')),
+              'conflit résolu par le travail : la fusion s’arrête à relire, main n’a pas la résolution'
+            )
+            // Le travail a fini son tour de résolution : les deux restants sont proposés ensemble.
+            await ui.waitFor(
+              `${ui.$('subtasks-merge-start')}?.innerText === ${JSON.stringify(L('workGroup.merge.action', { count: 2, base: 'main' }))}`,
+              20000
+            )
             await ui.click(ui.$('subtasks-merge-start'))
             await ui.waitFor(`${ui.$('subtasks-merge-result')}?.dataset.status === 'done'`, 90000)
             check(

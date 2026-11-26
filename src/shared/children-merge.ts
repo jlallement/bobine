@@ -14,6 +14,11 @@ export type MergeRowState =
   | 'merging'
   /** Conflit : la consigne de la fiche 110 est partie à la fille, qui le résout. */
   | 'resolving'
+  /**
+   * Fiche 289 : son agent a résolu le conflit, la résolution est commitée dans sa branche ; rien
+   * n'est entré dans la base, la chaîne s'est arrêtée là pour une relecture.
+   */
+  | 'resolved'
   | 'merged'
   /** Rien à fusionner : la base avait déjà tout. */
   | 'up-to-date'
@@ -47,10 +52,12 @@ export interface ChildrenMergeRow {
 /**
  * - `running` : la chaîne avance ; `stopping` : « Arrêter » demandé, la fusion en cours finit.
  * - `done` : toutes les lignes traitées ; `stopped` : arrêtée, des lignes restent en attente ;
- *   `conflict` : arrêtée sur une fille encore en conflit ; `failed` : arrêtée sur une erreur.
+ *   `conflict` : arrêtée sur une fille encore en conflit ; `failed` : arrêtée sur une erreur ;
+ *   `review` : arrêtée sur un conflit que son agent a résolu, à relire avant de fusionner
+ *   (fiche 289). Pas « active » : elle survit telle quelle au redémarrage.
  */
 export type ChildrenMergeStatus =
-  'running' | 'stopping' | 'done' | 'stopped' | 'conflict' | 'failed'
+  'running' | 'stopping' | 'done' | 'stopped' | 'conflict' | 'failed' | 'review'
 
 /** Une fusion enchaînée : posée, puis remplacée à chaque étape, dans le fil de la mère. */
 export interface ChildrenMerge {
@@ -316,6 +323,21 @@ export function lastChildrenMerge(items: readonly TranscriptItem[]): ChildrenMer
   if (item?.kind !== 'children-merge') return undefined
   const { kind: _kind, id: _id, ...merge } = item
   return merge
+}
+
+/**
+ * Fiche 289 : la ligne où la fusion s'est arrêtée sur un conflit résolu par son agent, tant que ce
+ * travail n'a pas été fusionné depuis (par sa vue Git, par exemple) ; `undefined` sinon.
+ */
+export function resolvedLeft(
+  merge: Pick<ChildrenMerge, 'status' | 'rows'> | undefined,
+  plan: Pick<ChildrenMergePlan, 'children'> | undefined
+): ChildrenMergeRow | undefined {
+  if (merge?.status !== 'review') return undefined
+  const row = merge.rows.find((r) => r.state === 'resolved')
+  return row && plan?.children.find((c) => c.id === row.childId)?.state !== 'merged'
+    ? row
+    : undefined
 }
 
 /** Lignes fusionnées (ou déjà à jour) d'une fusion. */

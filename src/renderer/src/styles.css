@@ -8158,7 +8158,8 @@ kbd {
 .subtask-merge-state.failed {
   color: var(--err);
 }
-.subtask-merge-state.dirty {
+.subtask-merge-state.dirty,
+.subtask-merge-state.resolved {
   color: var(--warn);
 }
 .subtasks-merge {
@@ -8192,6 +8193,10 @@ kbd {
 }
 .subtasks-merge-result.err svg {
   color: var(--err);
+}
+/* Fiche 289 : conflit résolu par son agent, à relire avant de fusionner. */
+.subtasks-merge-result.warn svg {
+  color: var(--warn);
 }
 .subtasks-merge-actions {
   display: flex;

@@ -115,6 +115,18 @@ export type MergeOutcome =
    */
   | ({ status: 'main-dirty' } & MainDirty)
 
+/**
+ * Fin, dans la branche seulement, d'une fusion arrêtée sur des conflits (fiche 289) : la base n'a
+ * pas bougé.
+ */
+export type ConcludeOutcome =
+  /** Marqueurs partis : la fusion est commitée dans la branche (ou l'agent l'a commitée). */
+  | { status: 'resolved' }
+  /** Il reste des marqueurs dans ces fichiers. */
+  | { status: 'conflicts'; files: string[] }
+  /** Plus de fusion en cours, et la base n'est pas dans la branche : fusion abandonnée. */
+  | { status: 'not-merging' }
+
 /** Dossier principal non commité, où la base est extraite : ce que la carte « fusion refusée » dit. */
 export interface MainDirty {
   /** Dossier principal du dépôt. */

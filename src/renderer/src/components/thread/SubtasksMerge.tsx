@@ -16,6 +16,7 @@ import {
   mergeable,
   mergedRows,
   mergeSummary,
+  resolvedLeft,
   settledMerge,
   type ChildrenMerge,
   type ChildrenMergePlan,
@@ -68,12 +69,17 @@ export interface ChildrenMergeActions {
   stop: (motherId: string, runId?: string) => Promise<unknown>
   /** « Abandonner » : `git merge --abort` dans la fille (fiche 110). */
   abort: (childId: string) => Promise<unknown>
-  /** Ouvre la fille et sa vue Git (où la fiche 110 montre le conflit). */
-  openGit: (childId: string) => void
+  /**
+   * Ouvre la fille et sa vue Git (où la fiche 110 montre le conflit) ; `conversation` : la vue de
+   * ses modifications, où se lit la résolution de son agent (fiche 289).
+   */
+  openGit: (childId: string, view?: 'conversation') => void
 }
 
 /** Actions de la fusion branchées sur l'IPC ; `openGit` : ouvrir la fille et sa vue Git. */
-export function childrenMergeActions(openGit: (childId: string) => void): ChildrenMergeActions {
+export function childrenMergeActions(
+  openGit: (childId: string, view?: 'conversation') => void
+): ChildrenMergeActions {
   return {
     plan: window.api.children.mergePlan,
     start: (id, ids, cleanup, stash, commit) =>
@@ -200,6 +206,8 @@ export function rowMergeState(
   if (candidate?.state === 'conflict') return 'conflict'
   if (!row) return undefined
   if (row.state === 'pending') return merge?.status === 'done' ? undefined : 'pending'
+  // Fiche 289 : à relire tant qu'il n'est pas fusionné, même sa branche prête.
+  if (row.state === 'resolved') return 'resolved'
   // Fusion finie : son issue reste sur la ligne, tant que la fille n'a pas de nouveau travail.
   return candidate?.state === 'ready' ? undefined : row.state
 }
@@ -208,6 +216,7 @@ const ROW_KEYS = {
   pending: 'childrenMerge.row.pending',
   merging: 'childrenMerge.row.merging',
   resolving: 'childrenMerge.row.resolving',
+  resolved: 'childrenMerge.row.resolved',
   merged: 'childrenMerge.row.merged',
   'up-to-date': 'childrenMerge.row.upToDate',
   conflict: 'childrenMerge.row.conflict',
@@ -220,6 +229,7 @@ const WORK_ROW_KEYS = {
   pending: 'workGroup.merge.row.pending',
   merging: 'workGroup.merge.row.merging',
   resolving: 'workGroup.merge.row.resolving',
+  resolved: 'workGroup.merge.row.resolved',
   merged: 'workGroup.merge.row.merged',
   'up-to-date': 'workGroup.merge.row.upToDate',
   conflict: 'workGroup.merge.row.conflict',
@@ -276,6 +286,8 @@ export function MergeRowBadge({
   const busy = state === 'merging' || state === 'resolving'
   const Icon = busy ? LoaderCircle : state === 'merged' || state === 'up-to-date' ? Check : null
   const failed = state === 'conflict' || state === 'failed'
+  // Fiche 289 : conflit résolu par son agent, à relire (pas une erreur, une attente).
+  const attention = failed || state === 'resolved'
   return (
     <span
       className={`subtask-merge-state ${state}`}
@@ -283,7 +295,7 @@ export function MergeRowBadge({
       data-state={state}
     >
       {Icon && <Icon size={12} className={busy ? 'spin' : undefined} />}
-      {failed && <CircleExclamationPoint size={12} />}
+      {attention && <CircleExclamationPoint size={12} />}
       {t(keys[state])}
       {cleaned && ` · ${t(TEXTS[works ? 'works' : 'children'].cleaned)}`}
     </span>
@@ -340,11 +352,14 @@ export function SubtasksMergeFooter({
   actions,
   verdicts,
   works = false,
-  extra
+  extra,
+  onReview
 }: {
   motherId: string
   state: ChildrenMergeState
   actions: ChildrenMergeActions
+  /** « Faire relire » un travail (fiche 265) : proposé sur un conflit résolu à relire (fiche 289). */
+  onReview?: ((childId: string) => void) | undefined
   /** Recommandations de la mère (fiche 160). */
   verdicts?: ReadonlyMap<string, ChildVerdict>
   /** Pied d'une carte de groupe (fiche 264) : ses textes, en « travaux ». */
@@ -394,6 +409,8 @@ export function SubtasksMergeFooter({
   const ready = plan ? mergeable(plan) : []
   // Arrêtée sur une fille encore en conflit : la reprise remplace « Fusionner les N ».
   const conflictRow = conflictLeft(merge, plan)
+  // Fiche 289 : arrêtée sur un conflit résolu par son agent ; la fusion repart par le pied habituel.
+  const reviewRow = conflictRow ? undefined : resolvedLeft(merge, plan)
   const sentences = plan ? mergeSummary(plan, titles) : []
   const lone = extra ? <div className="subtasks-merge-actions">{extra}</div> : null
   if (!merge && sentences.length === 0) return lone
@@ -429,7 +446,35 @@ export function SubtasksMergeFooter({
   return (
     <div className="subtasks-merge" data-testid="subtasks-merge">
       {merge && (
-        <MergeResult merge={merge} conflict={conflictRow} titles={titles} vocabulary={vocabulary} />
+        <MergeResult
+          merge={merge}
+          conflict={conflictRow}
+          review={reviewRow}
+          titles={titles}
+          vocabulary={vocabulary}
+        />
+      )}
+      {reviewRow && (
+        <div className="subtasks-merge-actions" data-testid="subtasks-merge-review">
+          <button
+            type="button"
+            className="btn small"
+            onClick={() => actions.openGit(reviewRow.childId, 'conversation')}
+            data-testid="subtasks-merge-resolution"
+          >
+            {t('childrenMerge.showResolution')}
+          </button>
+          {onReview && (
+            <button
+              type="button"
+              className="btn small"
+              onClick={() => onReview(reviewRow.childId)}
+              data-testid="subtasks-merge-review-request"
+            >
+              {t('workCard.review')}
+            </button>
+          )}
+        </div>
       )}
       {conflictRow ? (
         <div className="subtasks-merge-actions">
@@ -708,11 +753,14 @@ function MergeProgress({
 function MergeResult({
   merge,
   conflict,
+  review,
   titles,
   vocabulary
 }: {
   merge: ChildrenMerge & { interrupted?: true }
   conflict: ChildrenMergeRow | undefined
+  /** Conflit résolu par son agent, à relire avant de fusionner (fiche 289). */
+  review: ChildrenMergeRow | undefined
   titles: (list: readonly string[]) => string
   vocabulary: Vocabulary
 }) {
@@ -734,6 +782,16 @@ function MergeResult({
   } else if (failed) {
     sentences.push(
       t('childrenMerge.result.failed', { title: titles([failed.title]), error: failed.error ?? '' })
+    )
+  } else if (review) {
+    // Ce qui est déjà entré, puis la ligne à relire : rien d'elle n'est dans la base.
+    if (merged > 0) sentences.push(t(texts.stopped, { count: merged, base: merge.base }))
+    sentences.push(
+      t('childrenMerge.result.review', {
+        title: titles([review.title]),
+        files: (review.files ?? []).join(', '),
+        base: merge.base
+      })
     )
   } else if (merge.status === 'done') {
     sentences.push(
@@ -758,11 +816,15 @@ function MergeResult({
   const ok = merge.status === 'done'
   return (
     <div
-      className={`subtasks-merge-result${ok ? ' ok' : conflict || failed ? ' err' : ''}`}
+      className={`subtasks-merge-result${ok ? ' ok' : conflict || failed ? ' err' : review ? ' warn' : ''}`}
       data-testid="subtasks-merge-result"
       data-status={merge.status}
     >
-      {ok ? <Check size={13} /> : conflict || failed ? <CircleExclamationPoint size={13} /> : null}
+      {ok ? (
+        <Check size={13} />
+      ) : conflict || failed || review ? (
+        <CircleExclamationPoint size={13} />
+      ) : null}
       <span>{sentences.join(' ')}</span>
     </div>
   )
