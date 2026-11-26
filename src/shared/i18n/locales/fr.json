@@ -4093,7 +4093,8 @@
       "retry": "Réessayer",
       "abort": "Abandonner",
       "aborted": "Fusion abandonnée : la branche est comme avant.",
-      "resolved": "Conflit dans {{files}} résolu par l’agent et commité dans la branche ; rien n’est entré dans {{base}}. Relisez-le (onglet Conversation, « Faire relire… ») avant de fusionner."
+      "resolved": "Conflit dans {{files}} résolu par l’agent et commité dans la branche ; rien n’est entré dans {{base}}. Relisez-le (onglet Conversation, « Faire relire… ») avant de fusionner.",
+      "turn": "Son agent travaille encore : la fusion attend la fin de son tour."
     },
     "cleanup": {
       "action": "Nettoyer",
@@ -4240,7 +4241,8 @@
       "review": "{{title}} : conflit dans {{files}} résolu par son agent, à relire avant de fusionner. Rien n’en est entré dans {{base}}.",
       "reviewMerged_one": "Déjà dans {{base}} : {{count}} travail fusionné ; les autres attendent.",
       "reviewMerged_other": "Déjà dans {{base}} : {{count}} travaux fusionnés ; les autres attendent.",
-      "reviewMerged_many": "Déjà dans {{base}} : {{count}} travaux fusionnés ; les autres attendent."
+      "reviewMerged_many": "Déjà dans {{base}} : {{count}} travaux fusionnés ; les autres attendent.",
+      "reviewGone": "{{title}} : son dossier de travail ou sa branche n’existe plus ; sa résolution ne peut plus être relue ni fusionnée."
     },
     "retry": "Réessayer",
     "abort": "Abandonner",
@@ -4272,7 +4274,9 @@
       "busy": "« {{title}} » travaille encore ou attend un accord : attendez sa réponse pour le fusionner.",
       "cleanupSkipped": "Fusionné, mais pas nettoyé : « {{title}} » a changé depuis la fusion (nouveaux commits, modifications ou travail en cours) ; sa branche et son dossier restent.",
       "reviewing": "« {{title}} » est en cours de relecture : attendez la fin de la relecture pour le fusionner.",
-      "notResolved": "« {{title}} » n’a plus de fusion en cours et sa branche n’a pas reçu {{base}} (fusion abandonnée ?) : rien n’a été fusionné."
+      "notResolved": "« {{title}} » n’a plus de fusion en cours et sa branche n’a pas reçu {{base}} (fusion abandonnée ?) : rien n’a été fusionné.",
+      "undone": "« {{title}} » : son agent a défait le travail de la branche pendant la résolution du conflit ; rien n’a été fusionné. Sa tête d’avant est {{head}} (à retrouver avec git branch <nom> {{head}}).",
+      "enteredBase": "« {{title}} » est entré dans {{base}} pendant la résolution de son conflit, hors de cette fusion : rien n’en a été relu. Vérifiez {{base}}."
     },
     "stashKept_one": "Votre modification est mise de côté le temps de la fusion.",
     "stashKept_other": "Vos {{count}} modifications sont mises de côté le temps de la fusion.",

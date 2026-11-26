@@ -3942,7 +3942,8 @@
       "retry": "Retry",
       "abort": "Abort",
       "aborted": "Merge aborted: the branch is as before.",
-      "resolved": "Conflict in {{files}} resolved by the agent and committed on the branch; nothing went into {{base}}. Review it (Conversation tab, “Request review…”) before merging."
+      "resolved": "Conflict in {{files}} resolved by the agent and committed on the branch; nothing went into {{base}}. Review it (Conversation tab, “Request review…”) before merging.",
+      "turn": "Its agent is still working: the merge waits for its turn to end."
     },
     "cleanup": {
       "action": "Clean up",
@@ -4061,7 +4062,8 @@
       "failed": "Merge stopped on {{title}}: {{error}}",
       "review": "{{title}}: its agent resolved the conflict in {{files}}; review it before merging. Nothing of it went into {{base}}.",
       "reviewMerged_one": "Already in {{base}}: {{count}} task merged; the others are waiting.",
-      "reviewMerged_other": "Already in {{base}}: {{count}} tasks merged; the others are waiting."
+      "reviewMerged_other": "Already in {{base}}: {{count}} tasks merged; the others are waiting.",
+      "reviewGone": "{{title}}: its working folder or branch no longer exists; its resolution can no longer be reviewed or merged."
     },
     "retry": "Retry",
     "abort": "Abort",
@@ -4092,7 +4094,9 @@
       "busy": "“{{title}}” is still working or waiting for approval: wait for its response to merge it.",
       "cleanupSkipped": "Merged, but not cleaned up: “{{title}}” changed since the merge (new commits, changes or work in progress); its branch and folder stay.",
       "reviewing": "“{{title}}” is being reviewed: wait until the review ends to merge it.",
-      "notResolved": "“{{title}}” no longer has a merge in progress and its branch did not receive {{base}} (merge aborted?): nothing was merged."
+      "notResolved": "“{{title}}” no longer has a merge in progress and its branch did not receive {{base}} (merge aborted?): nothing was merged.",
+      "undone": "“{{title}}”: its agent undid the branch’s work while resolving the conflict; nothing was merged. Its previous head is {{head}} (recover it with git branch <name> {{head}}).",
+      "enteredBase": "“{{title}}” went into {{base}} while its conflict was being resolved, outside this merge: none of it was reviewed. Check {{base}}."
     },
     "stashKept_one": "Your change is set aside for the duration of the merge.",
     "stashKept_other": "Your {{count}} changes are set aside for the duration of the merge.",

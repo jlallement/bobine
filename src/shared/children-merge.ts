@@ -333,12 +333,28 @@ export function resolvedLeft(
   merge: Pick<ChildrenMerge, 'status' | 'rows'> | undefined,
   plan: Pick<ChildrenMergePlan, 'children'> | undefined
 ): ChildrenMergeRow | undefined {
-  if (merge?.status !== 'review') return undefined
-  const row = merge.rows.find((r) => r.state === 'resolved')
-  return row && plan?.children.find((c) => c.id === row.childId)?.state !== 'merged'
-    ? row
-    : undefined
+  const row = resolvedRow(merge)
+  if (!row || !plan) return row
+  const candidate = plan.children.find((c) => c.id === row.childId)
+  return candidate && candidate.state !== 'merged' && candidate.state !== 'error' ? row : undefined
 }
+
+/**
+ * Fiche 289 (testeur, point 6) : la ligne « à relire » dont le dossier de travail ou la branche ont
+ * disparu depuis (supprimés à la main) — lu dans un plan qui ne la trouve plus.
+ */
+export function resolvedGone(
+  merge: Pick<ChildrenMerge, 'status' | 'rows'> | undefined,
+  plan: Pick<ChildrenMergePlan, 'children'> | undefined
+): ChildrenMergeRow | undefined {
+  const row = resolvedRow(merge)
+  if (!row || !plan) return undefined
+  const candidate = plan.children.find((c) => c.id === row.childId)
+  return !candidate || candidate.state === 'error' ? row : undefined
+}
+
+const resolvedRow = (merge: Pick<ChildrenMerge, 'status' | 'rows'> | undefined) =>
+  merge?.status === 'review' ? merge.rows.find((r) => r.state === 'resolved') : undefined
 
 /** Lignes fusionnées (ou déjà à jour) d'une fusion. */
 export const mergedRows = (merge: Pick<ChildrenMerge, 'rows'>): ChildrenMergeRow[] =>

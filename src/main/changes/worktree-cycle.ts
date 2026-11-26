@@ -8,13 +8,12 @@
  * sale, elle ne part pas (`main-dirty`), sauf à le mettre de côté (`git stash -u`) le temps de la
  * fusion. Le commit sert aussi au dossier principal et aux conversations hors worktree.
  */
-import { isAbsolute, join, posix, relative, resolve, sep } from 'node:path'
+import { join, posix, relative, resolve, sep } from 'node:path'
 import { t } from 'i18next'
 import { messageOf } from '@shared/errors'
 import {
   shortHash,
   type CommitOutcome,
-  type ConcludeOutcome,
   type MainDirty,
   type MergeOutcome,
   type OrphanRef,
@@ -38,7 +37,8 @@ import { gitError, gitErrorLine } from './git-errors'
 import { nativeGitPath, samePathIn } from '../git/git-platform'
 import { lostRevisions, WORKTREES_DIR, type WorktreeInfo } from './worktrees'
 import { markersLeft } from './commit-then-merge'
-import { commitMerge, concludeMerge, type WorktreeGit } from './merge-conclude'
+import * as agentMerge from './merge-conclude'
+import { isInside, lineCounts, toolError } from './git-text'
 
 /**
  * Chemin relatif tel que git l'écrit (`docs/new.md`) : sous Windows, `relative` rend des `\`, que
@@ -554,6 +554,8 @@ export class WorktreeCycle {
    * avance en fast-forward. Les conflits restent dans le worktree.
    */
   async merge(target: CycleTarget, options: { stash?: boolean } = {}): Promise<MergeOutcome> {
+    const gated = await agentMerge.agentGate(this.agent(target))
+    if (gated) return gated
     const { worktree } = target
     const cwd = worktree.path
     const base = await this.baseBranch(target)
@@ -563,6 +565,7 @@ export class WorktreeCycle {
       .filter(Boolean).length
     if (dirty > 0) return { status: 'dirty', count: dirty }
     if ((await this.count(cwd, `${base}..${worktree.branch}`)) === 0) {
+      await agentMerge.clearMark(this.worktreeGit(target))
       return { status: 'nothing', base }
     }
     // Fiche 123 : rien ne part tant que le dossier principal a des modifications.
@@ -579,6 +582,7 @@ export class WorktreeCycle {
         }
       }
       await this.advanceBase(target, base, behind > 0)
+      await agentMerge.clearMark(this.worktreeGit(target))
       return { status: 'merged', kind: behind > 0 ? 'merge' : 'fast-forward', base }
     })
   }
@@ -591,6 +595,8 @@ export class WorktreeCycle {
     target: CycleTarget,
     options: { stash?: boolean } = {}
   ): Promise<MergeOutcome> {
+    const gated = await agentMerge.agentGate(this.agent(target))
+    if (gated) return gated
     const cwd = target.worktree.path
     const base = await this.baseBranch(target)
     const merging = await this.isMerging(cwd)
@@ -600,20 +606,42 @@ export class WorktreeCycle {
     const main = await this.mainDirty(target)
     if (main && !options.stash) return { status: 'main-dirty', ...main }
     return this.stashed(target, !!main, async () => {
-      if (merging) await commitMerge(this.worktreeGit(target), files)
+      if (merging) await agentMerge.commitMerge(this.worktreeGit(target), files)
       await this.advanceBase(target, base, merging)
+      await agentMerge.clearMark(this.worktreeGit(target))
       return { status: 'merged', kind: 'merge', base }
     })
   }
 
-  /** Termine dans la branche seulement une fusion arrêtée sur des conflits (fiche 289). */
-  async concludeMerge(target: CycleTarget): Promise<ConcludeOutcome> {
-    const base = await this.baseBranch(target)
-    return concludeMerge(this.worktreeGit(target), target.worktree.branch, base)
+  /** Fiche 289 : la résolution confiée à l'agent, vue par `merge-conclude.ts`. */
+  private agent(target: CycleTarget): agentMerge.AgentTarget {
+    const git = this.worktreeGit(target)
+    const { branch } = target.worktree
+    return { git, branch, title: target.title, base: () => this.baseBranch(target) }
+  }
+
+  /** Fin du tour de l'agent sur un conflit (fiche 289) : conclue dans la branche, jamais la base. */
+  concludeAgent(target: CycleTarget): Promise<MergeOutcome> {
+    return agentMerge.concludeAgent(this.agent(target))
+  }
+
+  /** La consigne de conflit part à l'agent : la fusion en cours est marquée (fiche 289). */
+  markAgentResolution(target: CycleTarget, files: readonly string[]): Promise<boolean> {
+    return agentMerge.writeMark(this.worktreeGit(target), files)
+  }
+
+  /** L'arrêt « à relire » a été dit : la fusion suivante est celle de l'utilisateur (fiche 289). */
+  async markReviewed(target: CycleTarget): Promise<void> {
+    await agentMerge.markStage(this.worktreeGit(target), 'review')
+  }
+
+  /** La marque d'une résolution confiée à l'agent, s'il y en a une (fiche 289). */
+  agentResolution(target: CycleTarget): Promise<agentMerge.AgentResolution | undefined> {
+    return agentMerge.readMark(this.worktreeGit(target))
   }
 
   /** Git dans le worktree de cette conversation (`merge-conclude.ts`). */
-  private worktreeGit(target: CycleTarget): WorktreeGit {
+  private worktreeGit(target: CycleTarget): agentMerge.WorktreeGit {
     const cwd = target.worktree.path
     return {
       cwd,
@@ -625,6 +653,7 @@ export class WorktreeCycle {
   /** Abandonne une fusion arrêtée sur des conflits. */
   async mergeAbort(target: CycleTarget): Promise<void> {
     await this.exec(target.worktree.path, ['merge', '--abort'], target.id)
+    await agentMerge.clearMark(this.worktreeGit(target))
   }
 
   /**
@@ -1000,35 +1029,3 @@ export class WorktreeCycle {
  * prendre `a1.txt`, ni `*.txt` tous les fichiers).
  */
 const LITERAL = ['--literal-pathspecs']
-
-/**
- * Ligne utile d'une erreur de `glab` : ce qui suit son cadre « ERROR », sans la phrase du fichier
- * de reprise (`--recover`), espaces des colonnes ramenés à un.
- */
-export function toolError(stderr: string): string {
-  const flat = stderr.replace(/\s+/g, ' ').trim()
-  const afterError = /\bERROR\b(.*)$/.exec(flat)?.[1]?.trim()
-  const message = (afterError || flat)
-    .replace(/Failed to create merge request\. Created recovery file: \S+/i, '')
-    .replace(/Run the command again with the '--recover' option to retry\./i, '')
-    .replace(/^x\s+/, '')
-    .trim()
-  return message
-}
-
-function isInside(parent: string, child: string): boolean {
-  const rel = relative(resolve(parent), resolve(child))
-  return !!rel && !rel.startsWith('..') && !isAbsolute(rel) && !rel.includes(`..${sep}`)
-}
-
-/** Totaux de `git diff --numstat` (« 12\t3\tchemin », « -\t-\t… » pour un binaire). */
-export function lineCounts(stdout: string): { added: number; removed: number } {
-  let added = 0
-  let removed = 0
-  for (const line of stdout.split('\n')) {
-    const [a, r] = line.split('\t')
-    added += Number(a) || 0
-    removed += Number(r) || 0
-  }
-  return { added, removed }
-}

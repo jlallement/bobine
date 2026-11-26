@@ -1,6 +1,6 @@
 # 289 — S'arrêter avant de fusionner un conflit résolu par l'agent
 
-- **Statut** : fait (1.2), en attente de relecture
+- **Statut** : en cours (1.2) — reprise après le rapport du testeur
 - **Dépend de** : 110 (conflit renvoyé à l'agent), 120 et 264 (fusion enchaînée depuis la carte,
   carte de groupe, carte d'un travail), 123 et 287 (refus de la fusion), 177 et 265 (« Faire
   relire »)
@@ -58,10 +58,23 @@ branche du travail, la carte demande une relecture, et la fusion ne part que sur
 
 ### Résolu automatiquement ou par l'utilisateur
 
-Est « résolu automatiquement » **exactement** le cas où la fusion enchaînée (`ChildrenMerger.mergeRow`)
-a envoyé elle-même la consigne de conflit au travail (`prompt` avec `from: merge`) et où le tour de
-l'agent qui suit a retiré les marqueurs. C'est le seul chemin où Bobine fait résoudre un conflit puis
-fusionnait sans geste de l'utilisateur ; l'état « à relire » est posé là, et nulle part ailleurs.
+**Définition (depuis le rapport du testeur, 2026-11-27) : la marque enregistrée.** Dès que la consigne
+de conflit part à l'agent — fusion enchaînée d'une carte, ou « Laisser l'agent résoudre » de la vue Git
+—, une marque est écrite dans le dossier git du worktree (`bobine-agent-resolution.json` :
+tête de la branche avant le tour, commit de base fusionné, fichiers en conflit). Elle survit au
+redémarrage. Tant qu'elle est au stade `resolving`, **toute** conclusion de cette fusion, quel que soit
+le chemin (fin du tour, « Réessayer », « Fusionner » de la vue Git, après redémarrage, fin à la main
+d'une résolution partielle), se fait dans la branche et s'arrête « à relire » ; rien n'entre dans la
+base. Elle passe au stade `review` quand l'arrêt a été dit (fil de la mère, note de la vue Git) : la
+fusion suivante est celle de l'utilisateur. Elle tombe à la fusion dans la base ou à l'abandon
+(`main/changes/merge-conclude.ts`).
+
+Jamais « résolu » : marqueurs restants dans ce que la résolution touche (index, ou commit fait par
+l'agent), branche défaite par l'agent (tête d'avant plus dans la branche : échec dit, avec cette
+tête), branche entrée dans la base pendant le tour, fusion abandonnée.
+
+Est « résolu par l'utilisateur » ce qui n'a jamais été confié à l'agent : une fusion de la vue Git
+arrêtée sur des conflits, finie à la main, puis « Réessayer » — elle part sur ce clic, comme avant.
 
 Second chemin, ajouté sur décision du tech lead (2026-11-26) : « Laisser l'agent résoudre » de la vue
 Git d'un worktree (`worktree:resolveWithAgent`, fiche 110) quand une fusion y est arrêtée sur des
@@ -189,3 +202,19 @@ nouveau choix structurant ; elle est consignée ici.
 
 - La barre latérale met une coche verte à un travail « à relire » (elle ne connaît pas l'état de
   fusion) ; elle devrait le dire comme la carte.
+- 2026-11-27 : **rapport du testeur** (vrais dépôts, `scratchpad/testeur-289/`) : un chemin faisait
+  entrer une résolution non relue dans `main` — redémarrage pendant le tour de résolution, puis
+  « Fusionner » (T11) ; autres défauts : fusion cliquée pendant le tour (T10, I2), marqueurs indexés ou
+  commités dits « résolus » (T1, T2), commit de fusion de l'agent avec la branche en premier parent
+  (T2), `reset --hard` dit « à relire » (T6b), fichiers de la résolution incomplets (T5b), « à relire »
+  collé à un worktree supprimé (C4), consigne mise en file sur une conversation occupée (point 7).
+  **Rouge constaté** : `children-merge-agent.test.ts`, 10 échecs sur 10 avant le correctif.
+- Correctif : la marque (ci-dessus) ; la chaîne et « Laisser l'agent résoudre » concluent après le tour
+  par `concludeAgent` (jamais dans la base, même si un clic pendant le tour a dit « à relire ») ; la
+  vue Git refuse « Fusionner », « Réessayer » et « Laisser l'agent résoudre » pendant un tour de la
+  conversation (`turn` dans la vue, bouton grisé avec sa raison) ; « à relire » nomme les fichiers de
+  la consigne et ceux où le commit de fusion diffère de ses deux parents ; « à relire » d'un worktree
+  disparu dit qu'il n'existe plus. Essais : `children-merge-agent.test.ts` (T1, T2, T2b, T3, T5b, T6b,
+  T9, T10, T11), `worktree-ipc-agent.test.ts` (I1, I2, I3, I5, point 7, en vrai dépôt), les 23 essais
+  du testeur rejoués tels quels : verts. `toolError` et `lineCounts` sortis dans `git-text.ts` (borne de
+  800 lignes de `worktree-cycle.ts`).

@@ -256,11 +256,13 @@ export function WorktreeBar({
   const shownNote = noteOrReview(note, info)
   const mergeWhy = mergeBlocker(info)
   const mergeHint =
-    mergeWhy === 'dirty'
-      ? t('worktreeCycle.merge.dirty', { count: info.dirty })
-      : mergeWhy === 'nothing'
-        ? t('worktreeCycle.merge.nothing', { base: info.baseBranch })
-        : undefined
+    mergeWhy === 'turn'
+      ? t('worktreeCycle.merge.turn')
+      : mergeWhy === 'dirty'
+        ? t('worktreeCycle.merge.dirty', { count: info.dirty })
+        : mergeWhy === 'nothing'
+          ? t('worktreeCycle.merge.nothing', { base: info.baseBranch })
+          : undefined
 
   return (
     <div className="worktree-bar" data-testid="worktree-bar">

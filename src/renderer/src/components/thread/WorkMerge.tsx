@@ -437,7 +437,9 @@ function staleOutcome(
   row: ChildrenMergeRow | undefined,
   candidate: MergeCandidate | undefined
 ): boolean {
-  if (row?.state === 'resolved') return candidate?.state === 'merged'
+  // Son dossier ou sa branche ont disparu (`error`) : plus rien à relire ni à fusionner.
+  if (row?.state === 'resolved')
+    return candidate?.state === 'merged' || candidate?.state === 'error'
   return candidate?.state === 'ready' && row?.state !== 'failed' && row?.state !== 'dirty'
 }
 

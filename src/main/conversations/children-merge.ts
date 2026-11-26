@@ -56,7 +56,9 @@ export interface ChildrenMergeDeps {
   cycle: Pick<
     WorktreeCycle,
     | 'merge'
-    | 'concludeMerge'
+    | 'markAgentResolution'
+    | 'markReviewed'
+    | 'concludeAgent'
     | 'branchState'
     | 'baseElsewhere'
     | 'baseBranch'
@@ -430,8 +432,14 @@ export class ChildrenMerger {
           removed: brought.removed
         })
       }
-      const outcome = await this.deps.cycle.merge(target)
-      if (outcome.status === 'conflicts') {
+      let outcome = await this.deps.cycle.merge(target)
+      // Fiche 289 : le fait est enregistré avant que la consigne parte ; tant qu'il l'est, toute
+      // conclusion de cette fusion s'arrête « à relire » (même après un redémarrage). Marqueurs déjà
+      // commités (plus de fusion en cours) : rien à confier à l'agent, le conflit est dit.
+      if (
+        outcome.status === 'conflicts' &&
+        (await this.deps.cycle.markAgentResolution(target, outcome.files))
+      ) {
         set({ state: 'resolving', files: outcome.files })
         const base = await this.deps.cycle.baseBranch(target)
         try {
@@ -451,8 +459,9 @@ export class ChildrenMerger {
           run.merge.status = 'conflict'
           return false
         }
-        // Fiche 289 : la résolution de l'agent reste dans sa branche ; la base attend un clic.
-        return await this.review(run, row, target, base, set)
+        // Fiche 289 : la résolution de l'agent est commitée dans sa branche (`resolved`), ou il
+        // reste des marqueurs ; la base attend un clic de l'utilisateur.
+        outcome = await this.deps.cycle.concludeAgent(target)
       }
       if (outcome.status === 'merged') {
         const commit = await this.deps.cycle.shortHead(target, outcome.base).catch(() => undefined)
@@ -464,42 +473,16 @@ export class ChildrenMerger {
           .catch(() => ({ head: undefined }))
         if (head) run.heads.set(row.childId, head)
       }
-      return this.settle(run, row, outcome, set)
+      const next = this.settle(run, row, outcome, set)
+      // L'arrêt « à relire » est dit : la fusion suivante de ce travail est celle de l'utilisateur.
+      if (outcome.status === 'resolved') await this.deps.cycle.markReviewed(target)
+      return next
     } catch (error) {
       // Base extraite ailleurs, dépôt principal qui refuse le fast-forward… : rien n'a avancé.
       set({ state: 'failed', error: messageOf(error) })
       run.merge.status = 'failed'
       return false
     }
-  }
-
-  /**
-   * Après le tour de l'agent sur un conflit (fiche 289) : marqueurs partis, la résolution est
-   * commitée dans la branche du travail, rien n'entre dans la base, et la chaîne s'arrête à relire.
-   * La fusion repart sur un clic (`start`, avec tous ses refus). Toujours `false` : la chaîne s'arrête.
-   */
-  private async review(
-    run: Run,
-    row: ChildrenMergeRow,
-    target: CycleTarget,
-    base: string,
-    set: (patch: Partial<ChildrenMergeRow>) => void
-  ): Promise<false> {
-    const concluded = await this.deps.cycle.concludeMerge(target)
-    if (concluded.status === 'conflicts') {
-      set({ state: 'conflict', files: concluded.files })
-      run.merge.status = 'conflict'
-    } else if (concluded.status === 'not-merging') {
-      set({
-        state: 'failed',
-        error: t('childrenMerge.error.notResolved', { title: row.title, base })
-      })
-      run.merge.status = 'failed'
-    } else {
-      run.merge.status = 'review'
-      set({ state: 'resolved' })
-    }
-    return false
   }
 
   private settle(
@@ -523,6 +506,11 @@ export class ChildrenMerger {
       case 'conflicts':
         set({ state: 'conflict', files: outcome.files })
         run.merge.status = 'conflict'
+        return false
+      case 'resolved':
+        // Fiche 289 : conflit résolu par l'agent, commité dans sa branche ; la chaîne s'arrête.
+        run.merge.status = 'review'
+        set({ state: 'resolved', files: outcome.files })
         return false
       case 'main-dirty':
         // Le dossier principal a changé pendant la chaîne (la mère y travaille) : rien n'a avancé.

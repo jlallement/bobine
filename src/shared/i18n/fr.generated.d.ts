@@ -3935,6 +3935,7 @@ export type FrResources = {
       readonly abort: 'Abandonner'
       readonly aborted: 'Fusion abandonnée : la branche est comme avant.'
       readonly resolved: 'Conflit dans {{files}} résolu par l’agent et commité dans la branche ; rien n’est entré dans {{base}}. Relisez-le (onglet Conversation, « Faire relire… ») avant de fusionner.'
+      readonly turn: 'Son agent travaille encore : la fusion attend la fin de son tour.'
     }
     readonly cleanup: {
       readonly action: 'Nettoyer'
@@ -4082,6 +4083,7 @@ export type FrResources = {
       readonly reviewMerged_one: 'Déjà dans {{base}} : {{count}} travail fusionné ; les autres attendent.'
       readonly reviewMerged_other: 'Déjà dans {{base}} : {{count}} travaux fusionnés ; les autres attendent.'
       readonly reviewMerged_many: 'Déjà dans {{base}} : {{count}} travaux fusionnés ; les autres attendent.'
+      readonly reviewGone: '{{title}} : son dossier de travail ou sa branche n’existe plus ; sa résolution ne peut plus être relue ni fusionnée.'
     }
     readonly retry: 'Réessayer'
     readonly abort: 'Abandonner'
@@ -4114,6 +4116,8 @@ export type FrResources = {
       readonly cleanupSkipped: 'Fusionné, mais pas nettoyé : « {{title}} » a changé depuis la fusion (nouveaux commits, modifications ou travail en cours) ; sa branche et son dossier restent.'
       readonly reviewing: '« {{title}} » est en cours de relecture : attendez la fin de la relecture pour le fusionner.'
       readonly notResolved: '« {{title}} » n’a plus de fusion en cours et sa branche n’a pas reçu {{base}} (fusion abandonnée ?) : rien n’a été fusionné.'
+      readonly undone: '« {{title}} » : son agent a défait le travail de la branche pendant la résolution du conflit ; rien n’a été fusionné. Sa tête d’avant est {{head}} (à retrouver avec git branch <nom> {{head}}).'
+      readonly enteredBase: '« {{title}} » est entré dans {{base}} pendant la résolution de son conflit, hors de cette fusion : rien n’en a été relu. Vérifiez {{base}}.'
     }
     readonly stashKept_one: 'Votre modification est mise de côté le temps de la fusion.'
     readonly stashKept_other: 'Vos {{count}} modifications sont mises de côté le temps de la fusion.'

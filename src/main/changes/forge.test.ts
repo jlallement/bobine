@@ -23,7 +23,7 @@ import {
   parseGlabHosts,
   readGlabHosts
 } from './forge-gitlab'
-import { toolError } from './worktree-cycle'
+import { toolError } from './git-text'
 import { ON_WINDOWS } from '../test-platform'
 
 const fixture = (name: string) => readFileSync(join(__dirname, 'fixtures', 'glab', name), 'utf8')

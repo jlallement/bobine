@@ -16,6 +16,7 @@ import {
   mergeable,
   mergedRows,
   mergeSummary,
+  resolvedGone,
   resolvedLeft,
   settledMerge,
   type ChildrenMerge,
@@ -206,8 +207,11 @@ export function rowMergeState(
   if (candidate?.state === 'conflict') return 'conflict'
   if (!row) return undefined
   if (row.state === 'pending') return merge?.status === 'done' ? undefined : 'pending'
-  // Fiche 289 : à relire tant qu'il n'est pas fusionné, même sa branche prête.
-  if (row.state === 'resolved') return 'resolved'
+  // Fiche 289 : à relire tant qu'il n'est pas fusionné, même sa branche prête ; plus rien à
+  // relire si son dossier ou sa branche ont disparu (le pied le dit).
+  if (row.state === 'resolved') {
+    return plan && (!candidate || candidate.state === 'error') ? undefined : 'resolved'
+  }
   // Fusion finie : son issue reste sur la ligne, tant que la fille n'a pas de nouveau travail.
   return candidate?.state === 'ready' ? undefined : row.state
 }
@@ -450,6 +454,7 @@ export function SubtasksMergeFooter({
           merge={merge}
           conflict={conflictRow}
           review={reviewRow}
+          gone={resolvedGone(merge, plan)}
           titles={titles}
           vocabulary={vocabulary}
         />
@@ -757,6 +762,7 @@ function MergeResult({
   merge,
   conflict,
   review,
+  gone,
   titles,
   vocabulary
 }: {
@@ -764,6 +770,8 @@ function MergeResult({
   conflict: ChildrenMergeRow | undefined
   /** Conflit résolu par son agent, à relire avant de fusionner (fiche 289). */
   review: ChildrenMergeRow | undefined
+  /** Le même, mais son dossier de travail ou sa branche n'existent plus (fiche 289). */
+  gone: ChildrenMergeRow | undefined
   titles: (list: readonly string[]) => string
   vocabulary: Vocabulary
 }) {
@@ -786,6 +794,8 @@ function MergeResult({
     sentences.push(
       t('childrenMerge.result.failed', { title: titles([failed.title]), error: failed.error ?? '' })
     )
+  } else if (gone) {
+    sentences.push(t('childrenMerge.result.reviewGone', { title: titles([gone.title]) }))
   } else if (review) {
     // L'action d'abord (revue UX/BA) : la ligne à relire, puis ce qui est déjà entré dans la base.
     sentences.push(
@@ -821,13 +831,13 @@ function MergeResult({
   const ok = merge.status === 'done'
   return (
     <div
-      className={`subtasks-merge-result${ok ? ' ok' : conflict || failed ? ' err' : review ? ' warn' : ''}`}
+      className={`subtasks-merge-result${ok ? ' ok' : conflict || failed || gone ? ' err' : review ? ' warn' : ''}`}
       data-testid="subtasks-merge-result"
       data-status={merge.status}
     >
       {ok ? (
         <Check size={13} />
-      ) : conflict || failed || review ? (
+      ) : conflict || failed || review || gone ? (
         <CircleExclamationPoint size={13} />
       ) : null}
       {review ? (

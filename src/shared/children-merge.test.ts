@@ -5,6 +5,7 @@ import {
   mergeOverlaps,
   mergeSummary,
   planWithout,
+  resolvedGone,
   resolvedLeft,
   settledMerge,
   type ChildrenMerge,
@@ -230,5 +231,10 @@ describe('conflit résolu par son agent, à relire (fiche 289)', () => {
     expect(resolvedLeft({ ...review, status: 'stopped' }, plan([child('b', 'ready')]))).toBe(
       undefined
     )
+    // Dossier ou branche supprimés à la main (testeur, point 6) : plus « à relire », dit autrement.
+    expect(resolvedLeft(review, plan([child('b', 'error')]))).toBeUndefined()
+    expect(resolvedLeft(review, plan([]))).toBeUndefined()
+    expect(resolvedGone(review, plan([child('b', 'error')]))?.childId).toBe('b')
+    expect(resolvedGone(review, plan([child('b', 'ready')]))).toBeUndefined()
   })
 })

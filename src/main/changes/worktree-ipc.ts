@@ -57,7 +57,9 @@ export interface WorktreeCycleDeps {
     | 'undoCommitIn'
     | 'merge'
     | 'mergeContinue'
-    | 'concludeMerge'
+    | 'markAgentResolution'
+    | 'markReviewed'
+    | 'concludeAgent'
     | 'mergeAbort'
     | 'pullRequest'
     | 'forgetGh'
@@ -213,9 +215,25 @@ export function worktreeHandlers(
     const busy = own && inTurn(own) ? own : turnInFolder(conversations, found.worktree.root)
     if (busy) throw new Error(t('worktreeCycle.error.turnRunning', { title: busy.title }))
   }
+  /** La conversation du worktree est-elle au travail (tour en cours, accord attendu) ? */
+  const ownTurn = (found: CycleTarget) => {
+    const own = available()
+      .conversations.state()
+      .conversations.find((c) => c.id === found.id)
+    return own && inTurn(own) ? own : undefined
+  }
+  /**
+   * Fiche 289 (testeur, T10, I2) : pas de fusion pendant un tour de la conversation du worktree ;
+   * sinon une demi-résolution partirait, le reste du tour restant non commité.
+   */
+  const assertOwnIdle = (found: CycleTarget) => {
+    const busy = ownTurn(found)
+    if (busy) throw new Error(t('worktreeCycle.error.turnRunning', { title: busy.title }))
+  }
   /**
    * Fusion d'une fille depuis son onglet Git (fiche 287) : réussie, elle est dite dans le fil de sa
-   * mère, comme une fusion faite depuis la carte.
+   * mère, comme une fusion faite depuis la carte. Fiche 289 : une résolution de l'agent arrêtée « à
+   * relire » y est dite aussi, puis la marque passe au stade relu.
    */
   const recorded = async (
     found: CycleTarget,
@@ -226,6 +244,16 @@ export function worktreeHandlers(
     const child = !!recorder.motherOf(found.id)
     const before = child ? await cycle.branchState(found).catch(() => undefined) : undefined
     const outcome = await merge()
+    if (outcome.status === 'resolved') {
+      if (child) {
+        recorder.resolved(found.id, {
+          base: outcome.base,
+          branch: found.worktree.branch,
+          files: outcome.files
+        })
+      }
+      await cycle.markReviewed(found)
+    }
     if (child && outcome.status === 'merged') {
       const commit = await cycle.shortHead(found, outcome.base).catch(() => undefined)
       recorder.merged(found.id, {
@@ -258,7 +286,10 @@ export function worktreeHandlers(
         .cycle.info(found, fresh ? { fresh } : {})
         .then((view) => {
           const review = new ChildMergeRecorder(available().conversations).review(found.id)
-          return review && !view.merged && !view.merging ? { ...view, review } : view
+          const turn = ownTurn(found) ? { turn: true as const } : {}
+          return review && !view.merged && !view.merging
+            ? { ...view, review, ...turn }
+            : { ...view, ...turn }
         })
     },
     'worktree:commit': (id, request) => available().cycle.commit(target(id), parseCommit(request)),
@@ -268,6 +299,7 @@ export function worktreeHandlers(
     },
     'worktree:merge': (id, options) => {
       const found = target(id)
+      assertOwnIdle(found)
       const stash = { stash: wantsStash(options) }
       const commit = commitOf(options)
       if (!commit) return recorded(found, () => available().cycle.merge(found, stash))
@@ -276,6 +308,7 @@ export function worktreeHandlers(
     },
     'worktree:mergeContinue': (id, options) => {
       const found = target(id)
+      assertOwnIdle(found)
       return recorded(found, () =>
         available().cycle.mergeContinue(found, { stash: wantsStash(options) })
       )
@@ -287,28 +320,19 @@ export function worktreeHandlers(
     'worktree:resolveWithAgent': async (id, options): Promise<ResolveOutcome> => {
       const { cycle, conversations } = available()
       const found = target(id)
+      // Point 7 du testeur : un tour en cours mettrait la consigne en file, sans l'attendre.
+      assertOwnIdle(found)
       const info = await cycle.info(found)
       const files = info.merging?.files ?? []
       // Sans conflit en cours (résolu à la main) : la fusion reprend sur ce clic, comme avant.
       if (files.length === 0) {
         return recorded(found, () => cycle.mergeContinue(found, { stash: wantsStash(options) }))
       }
-      // Le tour de l'agent est attendu (`prompt` rend la main à sa fin). Fiche 289 : sa résolution
-      // est commitée dans la branche seulement ; la base n'avance qu'au clic suivant (« Fusionner »).
+      // Fiche 289 : le fait est enregistré avant que la consigne parte. Le tour est attendu
+      // (`prompt` rend la main à sa fin) ; puis la conclusion s'arrête dans la branche, à relire.
+      await cycle.markAgentResolution(found, files)
       await conversations.prompt(found.id, conflictPrompt(info.baseBranch, info.branch, files))
-      const concluded = await cycle.concludeMerge(found)
-      if (concluded.status === 'conflicts') return concluded
-      if (concluded.status === 'not-merging') {
-        throw new Error(
-          t('childrenMerge.error.notResolved', { title: found.title, base: info.baseBranch })
-        )
-      }
-      new ChildMergeRecorder(conversations).resolved(found.id, {
-        base: info.baseBranch,
-        branch: info.branch,
-        files
-      })
-      return { status: 'resolved', files, base: info.baseBranch }
+      return recorded(found, () => cycle.concludeAgent(found))
     },
     'worktree:pullRequest': (id, request) => {
       const found = target(id)

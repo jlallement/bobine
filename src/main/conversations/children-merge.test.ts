@@ -1,171 +1,12 @@
-import { execFileSync } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { t } from 'i18next'
 import { afterEach, describe, expect, it } from 'vitest'
-import type { AgentEvent, ConversationSummary } from '@shared/agent'
-import type { ChildrenMerge } from '@shared/children-merge'
-import { emptyTranscript, reduceTranscript, type TranscriptState } from '@shared/transcript'
-import { WorktreeCycle, type CycleTarget } from '../changes/worktree-cycle'
-import { Worktrees, type WorktreeInfo } from '../changes/worktrees'
-import { gitCommand, queuedGit } from '../git/git-queue'
-import { ChildrenMerger, type ChildrenMergeHost } from './children-merge'
+import type { ConversationSummary } from '@shared/agent'
 import { childrenMergeHandlers } from './children-merge-ipc'
+import { cleanupDirs, git, ids, last, setup, states, type Child } from './children-merge.fixture'
 
-const dirs: string[] = []
-afterEach(() => {
-  // Windows : un processus git qui finit tient encore le dossier un instant (`EPERM`, CI du
-  // 2026-11-25) ; quelques nouvelles tentatives espacées, comme le fait `rm -rf` sous Windows.
-  for (const dir of dirs.splice(0)) {
-    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
-  }
-})
-
-const git = (cwd: string, ...args: string[]) =>
-  execFileSync('git', args, { cwd, encoding: 'utf8' }).trim()
-
-interface Child {
-  id: string
-  title: string
-  worktree: WorktreeInfo
-  workspace: string
-  status: ConversationSummary['status']
-  archived?: boolean
-}
-
-/**
- * Un dépôt jetable sur `main`, une mère et ses filles, chacune dans un vrai worktree (fiche 036).
- * Le gestionnaire est simulé : le fil de la mère est réduit comme dans l'app, et `prompt` joue
- * l'agent de la fille (`resolve` : ce qu'il fait d'une consigne de conflit).
- */
-async function setup(titles: string[], launchOrder?: number[]) {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), 'bob-fusion-')))
-  dirs.push(root)
-  writeFileSync(join(root, 'README.md'), '# Démo\n\nVersion 1\n')
-  git(root, 'init', '-q', '-b', 'main')
-  git(root, 'config', 'user.name', 't')
-  git(root, 'config', 'user.email', 't@example.invalid')
-  git(root, 'add', '.')
-  git(root, 'commit', '-q', '-m', 'init')
-  const worktrees = new Worktrees(queuedGit(gitCommand))
-  const children: Child[] = []
-  for (const [i, title] of titles.entries()) {
-    const { workspace, ...worktree } = await worktrees.create(root)
-    children.push({ id: `f${i + 1}`, title, worktree, workspace, status: 'ready' })
-  }
-  let mother: TranscriptState = emptyTranscript
-  const apply = (event: AgentEvent) => (mother = reduceTranscript(mother, event))
-  for (const i of launchOrder ?? children.map((_, i) => i)) {
-    const child = children[i] as Child
-    apply({
-      type: 'child-started',
-      child: { childId: child.id, title: child.title, prompt: 'Fais-le', at: i }
-    })
-  }
-  const merges: ChildrenMerge[] = []
-  const prompts: { id: string; text: string; from?: unknown }[] = []
-  const left: string[] = []
-  const options = {
-    /** Ce que fait l'agent de la fille d'une consigne de conflit : réécrit les fichiers. */
-    resolve: (child: Child, files: string[]) => {
-      for (const file of files) writeFileSync(join(child.worktree.path, file), 'résolu\n')
-    },
-    onPost: (_merge: ChildrenMerge) => {}
-  }
-  /** Autres conversations de la mère (Code reviewer d'un travail, fiche 265). */
-  const others: ConversationSummary[] = []
-  const host = {
-    state: () => ({
-      activeId: 'mere',
-      conversations: [
-        ...others,
-        ...children.map((c) => ({
-          id: c.id,
-          title: c.title,
-          profileId: 'mock',
-          profileLabel: 'Factice',
-          workspace: c.workspace,
-          updatedAt: '2026-10-22T10:00:00.000Z',
-          status: c.status,
-          draft: false,
-          branch: c.worktree.branch,
-          startedFrom: { id: 'mere', title: 'Mère' },
-          ...(c.archived ? { archived: true } : {})
-        }))
-      ]
-    }),
-    view: (id: string) => {
-      if (id !== 'mere') throw new Error('inconnue')
-      return { transcript: mother }
-    },
-    worktreeOf: (id: string): CycleTarget | null => {
-      const child = children.find((c) => c.id === id)
-      if (!child) throw new Error('inconnue')
-      if (left.includes(id)) return null
-      return { id, title: child.title, workspace: child.workspace, worktree: child.worktree }
-    },
-    post: (id: string, event: AgentEvent) => {
-      // Conversation inconnue : écarté, comme le gestionnaire (fiche 228).
-      if (id !== 'mere') return false
-      apply(event)
-      if (event.type === 'children-merge') {
-        merges.push(event.merge)
-        options.onPost(event.merge)
-      }
-      return true
-    },
-    prompt: async (id: string, text: string, _attachments?: unknown, opts?: { from?: unknown }) => {
-      prompts.push({ id, text, ...(opts?.from ? { from: opts.from } : {}) })
-      const child = children.find((c) => c.id === id) as Child
-      const files = [...text.matchAll(/^- (.+)$/gm)].map((m) => m[1] as string)
-      options.resolve(child, files)
-    },
-    leaveWorktree: (id: string) => {
-      const child = children.find((c) => c.id === id) as Child
-      left.push(id)
-      child.archived = true
-      return child.worktree
-    }
-  } as unknown as ChildrenMergeHost
-  const logged: string[] = []
-  /** Fiche 246, D4 : dépôts changés signalés (vues Git à relire). */
-  const changed: string[] = []
-  const cycle = new WorktreeCycle(gitCommand, { log: (_id, line) => logged.push(line) })
-  const merger = new ChildrenMerger({
-    conversations: host,
-    cycle,
-    worktrees,
-    log: (_id, line) => logged.push(line),
-    changed: (id) => changed.push(id)
-  })
-  /** Committe ce fichier dans le worktree de la fille. */
-  const commit = (child: Child, file: string, content: string) => {
-    writeFileSync(join(child.worktree.path, file), content)
-    git(child.worktree.path, 'add', '.')
-    git(child.worktree.path, 'commit', '-q', '-m', `feat: ${file}`)
-  }
-  const transcript = () => mother
-  return {
-    root,
-    children,
-    merger,
-    merges,
-    prompts,
-    logged,
-    changed,
-    options,
-    commit,
-    transcript,
-    left,
-    others,
-    apply
-  }
-}
-
-const ids = (children: Child[]) => children.map((c) => c.id)
-const last = (merges: ChildrenMerge[]) => merges.at(-1) as ChildrenMerge
-const states = (merge: ChildrenMerge) => merge.rows.map((r) => r.state)
+afterEach(cleanupDirs)
 
 describe('fusion de toutes les filles (fiche 120)', () => {
   // 30 s, processus lents à lancer sous Windows (fiche 229) : 68 git ;
@@ -350,7 +191,7 @@ describe('fusion de toutes les filles (fiche 120)', () => {
     expect(readFileSync(join(env.root, 'note.txt'), 'utf8')).toBe('n\n')
   }, 30_000)
 
-  it('conflit résolu à la main puis « Réessayer » : la fusion part sur ce clic, sans arrêt (fiche 289)', async () => {
+  it('consigne restée sans effet, conflit fini à la main puis « Réessayer » : à relire, car l’agent a été sollicité (fiche 289)', async () => {
     const env = await setup(['A', 'B'])
     const [a, b] = env.children as [Child, Child]
     env.commit(a, 'README.md', '# Démo\n\nVersion A\n')
@@ -360,12 +201,18 @@ describe('fusion de toutes les filles (fiche 120)', () => {
     await env.merger.start('mere', ids(env.children), false)
     await env.merger.settled('mere')
     expect(last(env.merges).status).toBe('conflict')
-    // L'utilisateur résout dans le worktree, puis « Réessayer » : rien n'est renvoyé à l'agent.
+    const before = git(env.root, 'rev-parse', 'main')
+    // L'utilisateur finit dans le worktree, puis « Réessayer » : l'agent a pu y toucher pendant son
+    // tour, la règle de la marque vaut (testeur, T3) ; pas de nouvelle consigne.
     writeFileSync(join(b.worktree.path, 'README.md'), 'A et B, à la main\n')
     await env.merger.start('mere', ['f2'], false)
     await env.merger.settled('mere')
     expect(env.prompts).toHaveLength(1)
-    expect(last(env.merges)).toMatchObject({ status: 'done' })
+    expect(last(env.merges)).toMatchObject({ status: 'review' })
+    expect(git(env.root, 'rev-parse', 'main')).toBe(before)
+    // Le clic suivant fusionne ; la marque tombe.
+    await env.merger.start('mere', ['f2'], false)
+    await env.merger.settled('mere')
     expect(states(last(env.merges))).toEqual(['merged'])
     expect(readFileSync(join(env.root, 'README.md'), 'utf8')).toBe('A et B, à la main\n')
   }, 30_000)
@@ -392,7 +239,7 @@ describe('fusion de toutes les filles (fiche 120)', () => {
     const [a, b] = env.children as [Child, Child]
     env.commit(a, 'README.md', '# Démo\n\nVersion A\n')
     env.commit(b, 'README.md', '# Démo\n\nVersion B\n')
-    env.options.resolve = (child) => git(child.worktree.path, 'merge', '--abort')
+    env.options.resolve = (child) => void git(child.worktree.path, 'merge', '--abort')
     await env.merger.start('mere', ids(env.children), false)
     await env.merger.settled('mere')
     const stopped = last(env.merges)

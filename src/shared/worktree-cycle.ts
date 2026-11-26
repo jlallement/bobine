@@ -40,6 +40,8 @@ export interface WorktreeCycleView {
    * au redémarrage (conversation fille seulement).
    */
   review?: { files: string[] }
+  /** Fiche 289 : son agent travaille (tour en cours) ; la fusion attend la fin de son tour. */
+  turn?: true
   /** « Ouvrir une PR » possible, ou pourquoi pas. */
   pr: PrAvailability
   /**
@@ -113,6 +115,11 @@ export type MergeOutcome =
   /** Rien à fusionner : la base a déjà tout. */
   | { status: 'nothing'; base: string }
   | { status: 'conflicts'; files: string[]; stash?: StashOutcome }
+  /**
+   * Fiche 289 : le conflit avait été confié à l'agent ; sa résolution est commitée dans la branche,
+   * rien n'est entré dans la base : à relire avant de fusionner.
+   */
+  | { status: 'resolved'; files: string[]; base: string }
   /** Modifications non commitées dans le worktree : committer d'abord. */
   | { status: 'dirty'; count: number }
   /**
@@ -122,22 +129,23 @@ export type MergeOutcome =
   | ({ status: 'main-dirty' } & MainDirty)
 
 /**
- * Fin, dans la branche seulement, d'une fusion arrêtée sur des conflits (fiche 289) : la base n'a
- * pas bougé.
+ * Conclusion, dans la branche seulement, d'une fusion dont le conflit a été confié à l'agent
+ * (fiche 289, `merge-conclude.ts`) : la base n'a jamais bougé.
  */
 export type ConcludeOutcome =
-  /** Marqueurs partis : la fusion est commitée dans la branche (ou l'agent l'a commitée). */
-  | { status: 'resolved' }
-  /** Il reste des marqueurs dans ces fichiers. */
+  /** Résolution commitée dans la branche (ou par l'agent) ; les fichiers qu'elle touche. */
+  | { status: 'resolved'; files: string[] }
+  /** Il reste des marqueurs dans ces fichiers (en conflit, indexés ou commités). */
   | { status: 'conflicts'; files: string[] }
   /** Plus de fusion en cours, et la base n'est pas dans la branche : fusion abandonnée. */
   | { status: 'not-merging' }
+  /** La tête d'avant le tour n'est plus dans la branche : l'agent a défait son travail. */
+  | { status: 'undone'; head: string }
+  /** La branche est entrée dans la base pendant le tour, hors de cette fusion. */
+  | { status: 'entered-base' }
 
-/**
- * « Laisser l'agent résoudre » (fiches 110, 289) : l'issue d'une fusion, ou `resolved` — l'agent a
- * résolu le conflit, la résolution est commitée dans la branche, rien n'est entré dans la base.
- */
-export type ResolveOutcome = MergeOutcome | { status: 'resolved'; files: string[]; base: string }
+/** Issue d'une fusion, ou de « Laisser l'agent résoudre » (même forme depuis la fiche 289). */
+export type ResolveOutcome = MergeOutcome
 
 /** Dossier principal non commité, où la base est extraite : ce que la carte « fusion refusée » dit. */
 export interface MainDirty {
@@ -416,8 +424,9 @@ export function prBlocker(
 
 /** Pourquoi « Fusionner » n'est pas possible : à committer d'abord, ou rien à fusionner. */
 export function mergeBlocker(
-  info: Pick<WorktreeCycleView, 'merging' | 'dirty' | 'ahead'>
-): 'dirty' | 'nothing' | undefined {
+  info: Pick<WorktreeCycleView, 'merging' | 'dirty' | 'ahead' | 'turn'>
+): 'turn' | 'dirty' | 'nothing' | undefined {
+  if (info.turn) return 'turn'
   if (info.merging) return undefined
   if (info.dirty > 0) return 'dirty'
   return info.ahead === 0 ? 'nothing' : undefined

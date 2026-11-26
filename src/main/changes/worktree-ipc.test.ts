@@ -5,6 +5,7 @@ import { t } from 'i18next'
 import { describe, expect, it, vi } from 'vitest'
 import type { AgentEvent } from '@shared/agent'
 import type { ChildrenMerge } from '@shared/children-merge'
+import type { MergeOutcome } from '@shared/worktree-cycle'
 import { emptyTranscript, reduceTranscript, type TranscriptState } from '@shared/transcript'
 import { hasWorkflows, worktreeHandlers, type WorktreeCycleDeps } from './worktree-ipc'
 
@@ -64,18 +65,18 @@ function setup(
     commitIn: vi.fn(async () => ({ hash: 'beef456', short: 'beef456' })),
     undoCommitIn: vi.fn(async () => {}),
     merge: vi.fn(async () => ({ status: 'nothing' as const, base: 'main' })),
-    mergeContinue: vi.fn(async () => ({
-      status: 'merged' as const,
-      kind: 'merge' as const,
+    mergeContinue: vi.fn(async (): Promise<MergeOutcome> => ({
+      status: 'merged',
+      kind: 'merge',
       base: 'main'
     })),
-    concludeMerge: vi.fn(
-      async (): Promise<
-        | { status: 'resolved' }
-        | { status: 'conflicts'; files: string[] }
-        | { status: 'not-merging' }
-      > => ({ status: 'resolved' })
-    ),
+    markAgentResolution: vi.fn(async () => true),
+    markReviewed: vi.fn(async () => {}),
+    concludeAgent: vi.fn(async (): Promise<MergeOutcome> => ({
+      status: 'resolved',
+      files: ['README.md'],
+      base: 'main'
+    })),
     mergeAbort: vi.fn(async () => {}),
     pullRequest: vi.fn(async () => ({ url: 'https://x/pull/1', existed: false })),
     orphans: vi.fn(async (roots: readonly string[], known: ReadonlySet<string>) =>
@@ -191,29 +192,35 @@ describe('canaux IPC du cycle des worktrees (fiche 110)', () => {
     expect(await handlers['worktree:mergeAbort']('c1')).toBeUndefined()
   })
 
-  it('laisser l’agent résoudre : consigne envoyée, tour attendu, résolution commitée dans la branche ; rien dans la base sans clic (fiche 289)', async () => {
+  it('laisser l’agent résoudre : marque, consigne, tour attendu, puis conclusion « à relire » ; rien dans la base (fiche 289)', async () => {
     const { handlers, cycle, conversations, posted } = setup({ merging: ['README.md', 'src/a.ts'] })
     const order: string[] = []
+    cycle.markAgentResolution.mockImplementation(async () => {
+      order.push('mark')
+      return true
+    })
     conversations.prompt.mockImplementation(async () => {
       order.push('prompt')
     })
-    cycle.concludeMerge.mockImplementation(async () => {
+    cycle.concludeAgent.mockImplementation(async () => {
       order.push('conclude')
-      return { status: 'resolved' as const }
+      return { status: 'resolved' as const, files: ['README.md', 'src/a.ts'], base: 'main' }
+    })
+    cycle.markReviewed.mockImplementation(async () => {
+      order.push('reviewed')
     })
     expect(await handlers['worktree:resolveWithAgent']('c1')).toEqual({
       status: 'resolved',
       files: ['README.md', 'src/a.ts'],
       base: 'main'
     })
-    expect(order).toEqual(['prompt', 'conclude'])
+    // La marque avant la consigne ; « relu » seulement une fois l'arrêt dit chez la mère.
+    expect(order).toEqual(['mark', 'prompt', 'conclude', 'reviewed'])
     expect(cycle.mergeContinue).not.toHaveBeenCalled()
     expect(cycle.merge).not.toHaveBeenCalled()
     const text = String((conversations.prompt.mock.calls as unknown[][])[0]?.[1])
     expect(text).toContain('`main` into `bobine/x`')
     expect(text).toContain('- README.md\n- src/a.ts')
-    // Dit chez la mère : la carte et Modifications › Travaux montrent « à relire » (survit au
-    // redémarrage), et la vue Git le relit.
     expect(posted.at(-1)).toMatchObject({
       status: 'review',
       base: 'main',
@@ -225,33 +232,38 @@ describe('canaux IPC du cycle des worktrees (fiche 110)', () => {
     expect(await handlers['worktree:info']('c1')).toMatchObject({
       review: { files: ['README.md', 'src/a.ts'] }
     })
-    // Sans conflit en cours (résolu à la main) : rien n'est envoyé, la fusion reprend sur ce clic.
+    // Sans conflit en cours (résolu à la main) : ni marque ni consigne, la fusion reprend.
     const quiet = setup()
     await quiet.handlers['worktree:resolveWithAgent']('c1')
     expect(quiet.conversations.prompt).not.toHaveBeenCalled()
-    expect(quiet.cycle.concludeMerge).not.toHaveBeenCalled()
+    expect(quiet.cycle.markAgentResolution).not.toHaveBeenCalled()
     expect(quiet.cycle.mergeContinue).toHaveBeenCalled()
   })
 
-  it('laisser l’agent résoudre : marqueurs restants ou fusion abandonnée, dits ; rien dans la base (fiche 289)', async () => {
-    const left = setup({ merging: ['README.md'] })
-    left.cycle.concludeMerge.mockImplementation(async () => ({
-      status: 'conflicts' as const,
-      files: ['README.md']
+  it('fusion, reprise ou « Laisser l’agent résoudre » pendant un tour de la conversation : refusés (fiche 289)', async () => {
+    const busy = setup({ merging: ['README.md'] })
+    busy.conversations.state.mockImplementation(() => ({
+      activeId: 'c1',
+      conversations: [
+        {
+          id: 'c1',
+          title: 'Essai',
+          workspace: '/autre',
+          branch: 'bobine/x',
+          status: 'busy',
+          startedFrom: { id: 'm', title: 'Mère' }
+        }
+      ]
     }))
-    expect(await left.handlers['worktree:resolveWithAgent']('c1')).toEqual({
-      status: 'conflicts',
-      files: ['README.md']
-    })
-    const aborted = setup({ merging: ['README.md'] })
-    aborted.cycle.concludeMerge.mockImplementation(async () => ({ status: 'not-merging' as const }))
-    await expect(aborted.handlers['worktree:resolveWithAgent']('c1')).rejects.toThrow(
-      t('childrenMerge.error.notResolved', { title: 'Essai', base: 'main' })
-    )
-    for (const env of [left, aborted]) {
-      expect(env.cycle.mergeContinue).not.toHaveBeenCalled()
-      expect(env.posted).toEqual([])
-    }
+    const why = t('worktreeCycle.error.turnRunning', { title: 'Essai' })
+    expect(() => busy.handlers['worktree:merge']('c1')).toThrow(why)
+    expect(() => busy.handlers['worktree:mergeContinue']('c1')).toThrow(why)
+    await expect(busy.handlers['worktree:resolveWithAgent']('c1')).rejects.toThrow(why)
+    expect(busy.cycle.merge).not.toHaveBeenCalled()
+    expect(busy.cycle.mergeContinue).not.toHaveBeenCalled()
+    expect(busy.conversations.prompt).not.toHaveBeenCalled()
+    // La vue Git le sait : « Fusionner » est grisé avec sa raison.
+    expect(await busy.handlers['worktree:info']('c1')).toMatchObject({ turn: true })
   })
 
   it('nettoyage : la conversation quitte le worktree, puis il est supprimé avec sa branche', async () => {

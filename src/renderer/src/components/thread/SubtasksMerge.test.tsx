@@ -228,6 +228,20 @@ describe('Fusion de toutes les filles depuis la carte (fiche 120)', () => {
     await waitFor(() => expect(actions.start).toHaveBeenCalledWith('mere', ['b', 'c'], false))
   })
 
+  it('fiche 289 : « à relire » dont le dossier ou la branche ont disparu : dit, rien à relire', async () => {
+    const review = merge('review', ['merged', 'resolved', 'pending'])
+    const actions = view(
+      [review],
+      plan([candidate('a', 'merged'), candidate('b', 'error'), candidate('c', 'ready')])
+    )
+    await waitFor(() =>
+      expect(screen.getByTestId('subtasks-merge-result').textContent).toContain('n’existe plus')
+    )
+    expect(screen.queryByTestId('subtasks-merge-resolution')).toBeNull()
+    expect(badges()).not.toContain('resolved')
+    expect(actions.openGit).not.toHaveBeenCalled()
+  })
+
   it('arrêtée sur un conflit, branches lues pendant la fusion : ni « Réessayer » ni « Abandonner »', async () => {
     // Relevé en CI macOS (fiche 250) : le plan montré avait été lu pendant que le travail résolvait
     // son conflit ; « Réessayer » se fiait à un « conflit » de cette lecture-là, puis disparaissait.
