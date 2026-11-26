@@ -82,7 +82,6 @@ function view(items: TranscriptItem[], merging: ChildrenMergePlan) {
     start: vi.fn(async () => undefined),
     stop: vi.fn(async () => undefined),
     abort: vi.fn(async () => undefined),
-    commitMain: vi.fn(async () => undefined),
     openGit: vi.fn()
   } satisfies ChildrenMergeActions
   render(
@@ -304,11 +303,13 @@ describe('Fusion refusée : dossier principal non commité (fiche 123)', () => {
     )
     fireEvent.change(message, { target: { value: 'docs: notes de la mère' } })
     fireEvent.click(screen.getByTestId('main-dirty-commit-confirm'))
-    await waitFor(() => expect(actions.start).toHaveBeenCalledWith('mere', ['a', 'b'], false))
-    expect(actions.commitMain).toHaveBeenCalledWith('mere', {
-      message: 'docs: notes de la mère',
-      files: ['README.md', 'note.txt']
-    })
+    // Fiche 287 : un seul appel, le commit avec la fusion (le main committe après ses refus).
+    await waitFor(() =>
+      expect(actions.start).toHaveBeenCalledWith('mere', ['a', 'b'], false, undefined, {
+        message: 'docs: notes de la mère',
+        files: ['README.md', 'note.txt']
+      })
+    )
   })
 
   it('au-delà de 6 fichiers : « … et N autres »', async () => {
@@ -388,11 +389,12 @@ describe('Fusion refusée : dossier principal non commité (fiche 123)', () => {
     const message = screen.getByTestId('main-dirty-commit-message') as HTMLTextAreaElement
     expect(message.value).toBe('docs: update README.md\n\n- README.md')
     fireEvent.click(screen.getByTestId('main-dirty-commit-confirm'))
-    await waitFor(() => expect(actions.start).toHaveBeenCalledWith('mere', ['a', 'b'], false, true))
-    expect(actions.commitMain).toHaveBeenCalledWith('mere', {
-      message: 'docs: update README.md\n\n- README.md',
-      files: ['README.md']
-    })
+    await waitFor(() =>
+      expect(actions.start).toHaveBeenCalledWith('mere', ['a', 'b'], false, true, {
+        message: 'docs: update README.md\n\n- README.md',
+        files: ['README.md']
+      })
+    )
   })
 })
 
@@ -497,7 +499,6 @@ describe('travaux d’une bulle « @Rôle … » (fiche 263)', () => {
       start: vi.fn(async () => undefined),
       stop: vi.fn(async () => undefined),
       abort: vi.fn(async () => undefined),
-      commitMain: vi.fn(async () => undefined),
       openGit: vi.fn()
     } satisfies ChildrenMergeActions
     render(

@@ -96,6 +96,12 @@ export interface CommitOutcome {
   short: string
 }
 
+/** Un commit demandé : le message et les fichiers cochés (relatifs au dossier où committer). */
+export interface CommitRequest {
+  message: string
+  files: string[]
+}
+
 export type MergeOutcome =
   | { status: 'merged'; kind: 'fast-forward' | 'merge'; base: string; stash?: StashOutcome }
   /** Rien à fusionner : la base a déjà tout. */

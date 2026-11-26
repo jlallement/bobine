@@ -72,7 +72,6 @@ function mergeActions() {
     start: vi.fn(async () => undefined),
     stop: vi.fn(async () => undefined),
     abort: vi.fn(async () => undefined),
-    commitMain: vi.fn(async () => undefined),
     openGit: vi.fn()
   } satisfies ChildrenMergeActions
 }

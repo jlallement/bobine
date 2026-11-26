@@ -15,6 +15,7 @@ import { t } from 'i18next'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { Run } from '../simulator/run'
 import { gitCommand } from '../git/git-queue'
+import { commitThenMerge } from './commit-then-merge'
 import { lineCounts, WorktreeCycle, type CycleTarget } from './worktree-cycle'
 import { Worktrees } from './worktrees'
 import { ON_WINDOWS } from '../test-platform'
@@ -373,6 +374,49 @@ describe('cycle d’un worktree (fiche 110)', () => {
     expect(git(root, 'rev-parse', 'HEAD')).toBe(done.hash)
     expect(git(root, 'status', '--porcelain')).toBe('?? autre.txt')
     await expect(cycle.commitMain(target, { message: 'x', files: ['../x'] })).rejects.toThrow()
+  })
+
+  it('fiche 287 : « Committer puis fusionner » — commit puis fusion, d’un seul geste', async () => {
+    const { root, target, cycle } = await setup()
+    write(target, 'a.txt', 'a\n')
+    await cycle.commit(target, { message: 'feat: a', files: ['a.txt'] })
+    writeFileSync(join(root, 'README.md'), '# Démo\n\nmère\n')
+    expect(
+      await commitThenMerge(cycle, target, { message: 'feat: mère', files: ['README.md'] })
+    ).toMatchObject({ status: 'merged' })
+    expect(git(root, 'log', '--format=%s', 'main').split('\n')).toContain('feat: mère')
+    expect(existsSync(join(root, 'a.txt'))).toBe(true)
+    expect(git(root, 'status', '--porcelain')).toBe('')
+  })
+
+  it('fiche 287 : ce qui refuserait la fusion la refuse avant le commit du dossier principal', async () => {
+    const { root, target, cycle } = await setup()
+    writeFileSync(join(root, 'README.md'), '# Démo\n\nmère\n')
+    const head = git(root, 'rev-parse', 'HEAD')
+    const request = { message: 'feat: mère', files: ['README.md'] }
+    // Rien à fusionner.
+    expect(await commitThenMerge(cycle, target, request)).toEqual({
+      status: 'nothing',
+      base: 'main'
+    })
+    // Le worktree a du non commité (l'agent de la fille écrit encore).
+    write(target, 'a.txt', 'a\n')
+    expect(await commitThenMerge(cycle, target, request)).toEqual({ status: 'dirty', count: 1 })
+    await cycle.commit(target, { message: 'feat: a', files: ['a.txt'] })
+    // Un fichier écrit depuis le choix, hors des cochés, sans « mettre de côté ».
+    writeFileSync(join(root, 'niveaux.ts'), 'export {}\n')
+    await expect(commitThenMerge(cycle, target, request)).rejects.toThrow('niveaux.ts')
+    expect(git(root, 'rev-parse', 'HEAD')).toBe(head)
+    expect(git(root, 'status', '--porcelain', '--', 'README.md', 'niveaux.ts')).toContain(
+      '?? niveaux.ts'
+    )
+    expect(git(root, 'diff', '--name-only')).toBe('README.md')
+    // Mis de côté demandé : les décochés passent (fiche 244).
+    expect(await commitThenMerge(cycle, target, request, { stash: true })).toMatchObject({
+      status: 'merged',
+      stash: { restored: true, count: 1 }
+    })
+    expect(git(root, 'status', '--porcelain')).toBe('?? niveaux.ts')
   })
 
   it('fiche 244 : « Committer d’abord » des cochés ; le .env décoché ne part pas, et revient après la fusion', async () => {

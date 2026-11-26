@@ -25,7 +25,7 @@ import {
 import { currentLocale } from '@shared/i18n/format'
 import { translate } from '@shared/i18n/message'
 import type { TranscriptItem } from '@shared/transcript'
-import type { StashOutcome } from '@shared/worktree-cycle'
+import type { CommitRequest, StashOutcome } from '@shared/worktree-cycle'
 import { lastMergeFor } from '@shared/work-groups'
 import {
   forgetPlans,
@@ -50,12 +50,20 @@ import { MainDirtyCard, stashSentence } from '../panel/MainDirtyCard'
 export interface ChildrenMergeActions {
   /** `ids` : seulement ces travaux (une carte de groupe ou de travail, fiche 264). */
   plan: (motherId: string, ids?: string[]) => Promise<ChildrenMergePlan>
-  /** `stash` : « Mettre de côté » le dossier principal le temps de la fusion (fiche 123). */
-  start: (motherId: string, ids: string[], cleanup: boolean, stash?: true) => Promise<unknown>
+  /**
+   * `stash` : « Mettre de côté » le dossier principal le temps de la fusion (fiche 123) ; `commit` :
+   * « Committer puis fusionner », committé par le main seulement si rien ne refuse la fusion
+   * (fiche 287).
+   */
+  start: (
+    motherId: string,
+    ids: string[],
+    cleanup: boolean,
+    stash?: true,
+    commit?: CommitRequest
+  ) => Promise<unknown>
   /** `runId` : la fusion de cette carte seulement (fiche 264). */
   stop: (motherId: string, runId?: string) => Promise<unknown>
-  /** « Committer d'abord » : ces fichiers, dans le dossier principal (fiche 123). */
-  commitMain: (motherId: string, request: { message: string; files: string[] }) => Promise<unknown>
   /** « Abandonner » : `git merge --abort` dans la fille (fiche 110). */
   abort: (childId: string) => Promise<unknown>
   /** Ouvre la fille et sa vue Git (où la fiche 110 montre le conflit). */
@@ -66,10 +74,13 @@ export interface ChildrenMergeActions {
 export function childrenMergeActions(openGit: (childId: string) => void): ChildrenMergeActions {
   return {
     plan: window.api.children.mergePlan,
-    start: (id, ids, cleanup, stash) =>
-      window.api.children.merge(id, ids, { cleanup, ...(stash ? { stash } : {}) }),
+    start: (id, ids, cleanup, stash, commit) =>
+      window.api.children.merge(id, ids, {
+        cleanup,
+        ...(stash ? { stash } : {}),
+        ...(commit ? { commit } : {})
+      }),
     stop: window.api.children.mergeStop,
-    commitMain: window.api.children.commitMain,
     abort: window.api.worktree.mergeAbort,
     openGit
   }
@@ -467,13 +478,14 @@ export function SubtasksMergeFooter({
                 dirty={{ ...plan.blocked, root: plan.blocked.path }}
                 busy={busy || plan.running}
                 onCommit={(message, files, left) =>
-                  void run(async () => {
-                    await actions.commitMain(motherId, { message, files })
-                    // Fiche 244 : les décochés restent ; mis de côté le temps de la fusion.
-                    await (left > 0
-                      ? actions.start(motherId, ids, cleanup, true)
-                      : actions.start(motherId, ids, cleanup))
-                  })
+                  // Fiche 244 : les décochés restent ; mis de côté le temps de la fusion. Fiche 287 :
+                  // un seul appel, le main ne committe que si rien ne refuse la fusion.
+                  void run(() =>
+                    actions.start(motherId, ids, cleanup, left > 0 ? true : undefined, {
+                      message,
+                      files
+                    })
+                  )
                 }
                 onStash={() => void run(() => actions.start(motherId, ids, cleanup, true))}
               >

@@ -3832,7 +3832,10 @@
       "emptyTitle": "The PR title is empty.",
       "noWorktree": "This conversation is not in a worktree.",
       "pushed": "This commit is already pushed: it can no longer be undone here.",
-      "emptyTitle_mr": "The MR title is empty."
+      "emptyTitle_mr": "The MR title is empty.",
+      "turnRunning": "“{{title}}” is still replying: nothing was committed or merged. Try again once its turn ends.",
+      "mainChanged_one": "The main folder changed since your choice: {{count}} other modified file ({{files}}). Nothing was committed: check the list, then try again.",
+      "mainChanged_other": "The main folder changed since your choice: {{count}} other modified files ({{files}}). Nothing was committed: check the list, then try again."
     },
     "pr": {
       "noGh": "“gh” (GitHub CLI) was not found: install it (brew install gh) to open a PR from the app.",

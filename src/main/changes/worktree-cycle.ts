@@ -8,12 +8,10 @@
  * sale, elle ne part pas (`main-dirty`), sauf à le mettre de côté (`git stash -u`) le temps de la
  * fusion. Le commit sert aussi au dossier principal et aux conversations hors worktree.
  */
-import { readFile } from 'node:fs/promises'
 import { isAbsolute, join, posix, relative, resolve, sep } from 'node:path'
 import { t } from 'i18next'
 import { messageOf } from '@shared/errors'
 import {
-  hasConflictMarkers,
   shortHash,
   type CommitOutcome,
   type MainDirty,
@@ -38,6 +36,7 @@ import { insideWorkspace, mergeIntoBase, onDisk, parseStatus, statusOf } from '.
 import { gitError, gitErrorLine } from './git-errors'
 import { nativeGitPath, samePathIn } from '../git/git-platform'
 import { lostRevisions, WORKTREES_DIR, type WorktreeInfo } from './worktrees'
+import { markersLeft } from './commit-then-merge'
 
 /**
  * Chemin relatif tel que git l'écrit (`docs/new.md`) : sous Windows, `relative` rend des `\`, que
@@ -594,11 +593,7 @@ export class WorktreeCycle {
     const base = await this.baseBranch(target)
     const merging = await this.isMerging(cwd)
     const files = merging ? await this.unmerged(cwd, target.id) : []
-    const left: string[] = []
-    for (const file of files) {
-      const content = await readFile(join(cwd, file), 'utf8').catch(() => null)
-      if (content === null || hasConflictMarkers(content)) left.push(file)
-    }
+    const left = await markersLeft(cwd, files)
     if (left.length > 0) return { status: 'conflicts', files: left }
     const main = await this.mainDirty(target)
     if (main && !options.stash) return { status: 'main-dirty', ...main }

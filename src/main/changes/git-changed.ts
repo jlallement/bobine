@@ -16,7 +16,6 @@ import type { Run } from '../simulator/run'
 export const REPO_CHANGING_CHANNELS = [
   'worktree:commit',
   'worktree:undoCommit',
-  'worktree:commitMain',
   'worktree:merge',
   'worktree:mergeContinue',
   'worktree:mergeAbort',
@@ -24,7 +23,8 @@ export const REPO_CHANGING_CHANNELS = [
   'changes:commit',
   'changes:undoCommit',
   'changes:revert',
-  'children:commitMain',
+  // « Committer puis fusionner » (fiche 287) : le commit de la mère part avec la fusion.
+  'children:merge',
   'conversation:commitForChildren'
 ] as const satisfies readonly IpcChannel[]
 

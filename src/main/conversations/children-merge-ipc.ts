@@ -6,6 +6,7 @@
 import { t } from 'i18next'
 import type { AttentionState } from '@shared/attention'
 import type { IpcHandlers } from '@shared/ipc'
+import type { CommitRequest } from '@shared/worktree-cycle'
 import { WorktreeCycle } from '../changes/worktree-cycle'
 import type { Worktrees } from '../changes/worktrees'
 import { agentLog } from '../log'
@@ -48,7 +49,7 @@ const idList = (ids: unknown): string[] => {
 }
 
 export function childrenMergeHandlers(
-  merger: Pick<ChildrenMerger, 'plan' | 'start' | 'stop' | 'commitMain'> | undefined
+  merger: Pick<ChildrenMerger, 'plan' | 'start' | 'stop'> | undefined
 ): Pick<IpcHandlers, ChildrenMergeChannel> {
   const available = () => {
     if (!merger) throw new Error(t('ipc.unavailable.childrenMerge'))
@@ -60,12 +61,11 @@ export function childrenMergeHandlers(
     'children:merge': (motherId, ids, options) => {
       idList(ids)
       const set = typeof options === 'object' && options !== null ? options : undefined
-      return available().start(
-        str(motherId, 'motherId'),
-        ids,
-        set?.cleanup === true,
-        set?.stash === true
-      )
+      const commit = set?.commit === undefined ? undefined : parseCommit(set.commit)
+      return available().start(str(motherId, 'motherId'), ids, set?.cleanup === true, {
+        stash: set?.stash === true,
+        ...(commit ? { commit } : {})
+      })
     },
     'children:mergeStop': (motherId, runId) => {
       available().stop(
@@ -73,18 +73,17 @@ export function childrenMergeHandlers(
         runId === undefined ? undefined : str(runId, 'runId')
       )
       return undefined
-    },
-    'children:commitMain': (motherId, request) => {
-      if (typeof request !== 'object' || request === null) throw new Error('Requête invalide')
-      const { message, files } = request as Record<string, unknown>
-      if (typeof message !== 'string') throw new Error('Paramètre invalide : message')
-      if (!Array.isArray(files) || !files.every((f) => typeof f === 'string' && f)) {
-        throw new Error('Paramètre invalide : files')
-      }
-      return available().commitMain(str(motherId, 'motherId'), {
-        message,
-        files: files as string[]
-      })
     }
   }
+}
+
+/** « Committer puis fusionner » (fiche 287) : message et fichiers cochés, vérifiés. */
+function parseCommit(request: unknown): CommitRequest {
+  if (typeof request !== 'object' || request === null) throw new Error('Requête invalide')
+  const { message, files } = request as Record<string, unknown>
+  if (typeof message !== 'string') throw new Error('Paramètre invalide : message')
+  if (!Array.isArray(files) || !files.every((f) => typeof f === 'string' && f)) {
+    throw new Error('Paramètre invalide : files')
+  }
+  return { message, files: files as string[] }
 }

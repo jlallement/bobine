@@ -20,6 +20,7 @@ import type {
 } from '@shared/agent'
 import type { AsideRequest } from '@shared/aside'
 import type { CommitDraftRequest } from '@shared/commit-draft'
+import type { CommitRequest } from '@shared/worktree-cycle'
 import type { MemoryDecision, MemoryPlace } from '@shared/memory'
 import type { ApprovalRulesChange } from '@shared/approval-rules'
 import type { CheckRequest } from '@shared/onboarding'
@@ -485,13 +486,11 @@ export function createApi(
       commit: (id: string, request: { message: string; files: string[] }) =>
         invoke('worktree:commit', id, request),
       undoCommit: (id: string, hash: string) => invoke('worktree:undoCommit', id, hash),
-      merge: (id: string, options?: { stash?: boolean }) =>
+      /** `commit` : « Committer puis fusionner », d'un seul geste côté main (fiche 287). */
+      merge: (id: string, options?: { stash?: boolean; commit?: CommitRequest }) =>
         invoke('worktree:merge', id, ...(options ? [options] : [])),
       mergeContinue: (id: string, options?: { stash?: boolean }) =>
         invoke('worktree:mergeContinue', id, ...(options ? [options] : [])),
-      /** « Committer d'abord » dans le dossier principal (fiche 123). */
-      commitMain: (id: string, request: { message: string; files: string[] }) =>
-        invoke('worktree:commitMain', id, request),
       mergeAbort: (id: string) => invoke('worktree:mergeAbort', id),
       resolveWithAgent: (id: string, options?: { stash?: boolean }) =>
         invoke('worktree:resolveWithAgent', id, ...(options ? [options] : [])),
@@ -522,12 +521,13 @@ export function createApi(
     children: {
       mergePlan: (motherId: string, ids?: string[]) =>
         invoke('children:mergePlan', motherId, ...(ids ? [ids] : [])),
-      merge: (motherId: string, ids: string[], options: { cleanup: boolean; stash?: boolean }) =>
-        invoke('children:merge', motherId, ids, options),
+      merge: (
+        motherId: string,
+        ids: string[],
+        options: { cleanup: boolean; stash?: boolean; commit?: CommitRequest }
+      ) => invoke('children:merge', motherId, ids, options),
       mergeStop: (motherId: string, runId?: string) =>
-        invoke('children:mergeStop', motherId, ...(runId ? [runId] : [])),
-      commitMain: (motherId: string, request: { message: string; files: string[] }) =>
-        invoke('children:commitMain', motherId, request)
+        invoke('children:mergeStop', motherId, ...(runId ? [runId] : []))
     },
     /** Aparté : question à côté, hors du fil (fiche 180). */
     /** Accueil du premier lancement (fiche 188). */

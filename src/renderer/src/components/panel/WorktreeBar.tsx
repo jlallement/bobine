@@ -364,14 +364,13 @@ export function WorktreeBar({
           dirty={mainDirty}
           busy={busy !== null}
           onCommit={async (message, files, left) => {
-            if (!(await run('merge', () => api.commitMain(conversationId, { message, files })))) {
-              return
-            }
             // Fiche 244 : les décochés restent ; mis de côté le temps de la fusion, puis remis.
-            if (left > 0) setStashed(true)
+            // Fiche 287 : un seul appel, le main ne committe que si rien ne refuse la fusion.
+            const commit = { message, files }
             const merged = await run('merge', () =>
-              left > 0 ? api.merge(conversationId, { stash: true }) : api.merge(conversationId)
+              api.merge(conversationId, left > 0 ? { stash: true, commit } : { commit })
             )
+            if (merged && left > 0) setStashed(true)
             showMerge(merged?.value)
           }}
           onStash={async () => {

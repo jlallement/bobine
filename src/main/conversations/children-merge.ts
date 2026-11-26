@@ -11,8 +11,9 @@
  *   fusion reprend si les marqueurs ont disparu, sinon la chaîne s'arrête là.
  * - `stop` : la fusion en cours finit (jamais de base à moitié avancée), les autres attendent.
  * - Fiche 123 : le dossier principal non commité (la base y est extraite) refuse la fusion d'avance ;
- *   `commitMain` y committe (« Committer d'abord ») ; `start(…, stash)` le met de côté le temps de
- *   la chaîne (`git stash -u`), puis le remet, et le fil le dit.
+ *   `start(…, { commit })` y committe d'abord (« Committer puis fusionner »), seulement si rien ne
+ *   refuse la fusion (fiche 287 : tour en cours dans le dossier, travail au travail…) ;
+ *   `start(…, { stash })` le met de côté le temps de la chaîne (`git stash -u`), puis le remet.
  *
  * L'état est posé dans le fil de la mère (évènement `children-merge`, remplacé à chaque étape) :
  * il part au renderer par l'évènement de conversation habituel et survit au redémarrage.
@@ -33,11 +34,13 @@ import {
 import { childState } from '@shared/children'
 import { roundtableChildIds } from '../roundtable/participants'
 import { messageOf } from '@shared/errors'
-import { conflictPrompt, type CommitOutcome, type MergeOutcome } from '@shared/worktree-cycle'
+import { conflictPrompt, type CommitRequest, type MergeOutcome } from '@shared/worktree-cycle'
 import type { ConversationSummary } from '@shared/agent'
 import type { TranscriptItem } from '@shared/transcript'
 import type { CycleTarget, StashHandle, WorktreeCycle } from '../changes/worktree-cycle'
 import type { Worktrees } from '../changes/worktrees'
+import { assertOnlyChecked } from '../changes/commit-then-merge'
+import { turnInFolder } from '../changes/folder-turn'
 import type { ConversationManager } from './manager'
 
 /** Ce que la fusion demande au gestionnaire de conversations. */
@@ -226,18 +229,6 @@ export class ChildrenMerger {
     )
   }
 
-  /** « Committer d'abord » : ces fichiers, dans le dossier principal du dépôt des filles. */
-  async commitMain(
-    motherId: string,
-    request: { message: string; files: string[] }
-  ): Promise<CommitOutcome> {
-    const target = this.children(motherId)
-      .map((child) => this.target(child.id))
-      .find((found): found is CycleTarget => !!found)
-    if (!target) throw new Error(t('childrenMerge.error.none'))
-    return this.deps.cycle.commitMain(target, request)
-  }
-
   private async candidate(
     child: ConversationSummary,
     target: CycleTarget,
@@ -289,13 +280,14 @@ export class ChildrenMerger {
   /**
    * Lance la fusion enchaînée de ces filles de `motherId`, dans l'ordre de lancement ; rend son
    * premier état. Refusée si une fusion de cette mère tourne déjà, sans fille, ou si une fille a
-   * été supprimée, archivée ou n'est plus dans un worktree.
+   * été supprimée, archivée ou n'est plus dans un worktree. `commit` (fiche 287) : committé dans le
+   * dossier principal après tous les refus possibles, jamais avant.
    */
   async start(
     motherId: string,
     ids: readonly string[],
     cleanup: boolean,
-    stash = false
+    { stash = false, commit }: { stash?: boolean; commit?: CommitRequest } = {}
   ): Promise<ChildrenMerge> {
     if (this.runs.has(motherId) || this.starting.has(motherId)) {
       throw new Error(t('childrenMerge.error.running'))
@@ -318,6 +310,7 @@ export class ChildrenMerger {
     let kept: StashHandle | undefined
     try {
       base = await this.deps.cycle.baseBranch(first)
+      if (commit) await this.commitFirst(first, commit, stash)
       // Fiche 123 : rien ne part sur un dossier principal non commité, sauf à le mettre de côté.
       const dirty = await this.deps.cycle.mainDirty(first)
       if (dirty && !stash) {
@@ -359,6 +352,25 @@ export class ChildrenMerger {
     const initial = structuredClone(merge)
     run.done = this.chain(motherId, run).finally(() => this.runs.delete(motherId))
     return initial
+  }
+
+  /**
+   * « Committer puis fusionner » (fiche 287) : les refus qui tomberaient après le commit sont lus
+   * avant — un tour écrit dans le dossier principal, la base extraite ailleurs, d'autres fichiers
+   * que les cochés —, puis le commit. Les travaux au travail ou en relecture sont déjà refusés.
+   */
+  private async commitFirst(
+    first: CycleTarget,
+    commit: CommitRequest,
+    stash: boolean
+  ): Promise<void> {
+    const { conversations } = this.deps.conversations.state()
+    const busy = turnInFolder(conversations, first.worktree.root, this.deps.attention?.() ?? {})
+    if (busy) throw new Error(t('worktreeCycle.error.turnRunning', { title: busy.title }))
+    const elsewhere = await this.deps.cycle.baseElsewhere(first)
+    if (elsewhere) throw new Error(t('worktreeCycle.error.baseElsewhere', { path: elsewhere }))
+    await assertOnlyChecked(this.deps.cycle, first, commit.files, stash)
+    await this.deps.cycle.commitMain(first, commit)
   }
 
   /**

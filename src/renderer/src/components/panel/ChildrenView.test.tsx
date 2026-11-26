@@ -174,7 +174,6 @@ describe('vue « Filles » de l’onglet Modifications (fiche 161)', () => {
       plan: vi.fn(async () => plan),
       start: vi.fn(),
       stop: vi.fn(),
-      commitMain: vi.fn(),
       abort: vi.fn(),
       openGit: vi.fn()
     } satisfies ChildrenMergeActions
@@ -257,7 +256,6 @@ describe('vue « Filles » de l’onglet Modifications (fiche 161)', () => {
       plan: vi.fn(async () => plan),
       start: vi.fn(),
       stop: vi.fn(),
-      commitMain: vi.fn(),
       abort: vi.fn(),
       openGit: vi.fn()
     } satisfies ChildrenMergeActions

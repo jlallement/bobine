@@ -269,13 +269,14 @@ export function WorkMergeBox({
               dirty={{ ...state.plan.blocked, root: state.plan.blocked.path }}
               busy={control.busy || state.plan.running}
               onCommit={(message, files, left) =>
-                control.run(async () => {
-                  await actions.commitMain(motherId, { message, files })
-                  // Fiche 244 : les décochés restent ; mis de côté le temps de la fusion.
-                  await (left > 0
-                    ? actions.start(motherId, [card.childId], true, true)
-                    : actions.start(motherId, [card.childId], true))
-                })
+                // Fiche 244 : les décochés restent ; mis de côté le temps de la fusion. Fiche 287 :
+                // un seul appel, le main ne committe que si rien ne refuse la fusion.
+                control.run(() =>
+                  actions.start(motherId, [card.childId], true, left > 0 ? true : undefined, {
+                    message,
+                    files
+                  })
+                )
               }
               onStash={() => control.start(true)}
             />

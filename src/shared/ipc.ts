@@ -45,6 +45,7 @@ import type { DraggedImage } from './images'
 import type { GitStatus } from './git'
 import type {
   CommitOutcome,
+  CommitRequest,
   MergeOutcome,
   OrphanWorktree,
   PrOutcome,
@@ -594,17 +595,17 @@ export interface IpcInvokeContract
   /**
    * Fusionne la branche dans la base (ADR-0022) : fait, rien à faire, conflits, à committer, ou
    * dossier principal non commité (fiche 123) ; `stash` : « Mettre de côté » le temps de la fusion.
+   * `commit` : « Committer puis fusionner » (fiches 123, 287) — ces fichiers du dossier principal,
+   * committés seulement si rien ne refuse la fusion (tour en cours, autres fichiers…).
    */
-  'worktree:merge': { args: [id: string, options?: { stash?: boolean }]; result: MergeOutcome }
+  'worktree:merge': {
+    args: [id: string, options?: { stash?: boolean; commit?: CommitRequest }]
+    result: MergeOutcome
+  }
   /** Reprend une fusion arrêtée sur des conflits, une fois les marqueurs retirés. */
   'worktree:mergeContinue': {
     args: [id: string, options?: { stash?: boolean }]
     result: MergeOutcome
-  }
-  /** « Committer d'abord » (fiche 123) : ces fichiers, dans le dossier principal du dépôt. */
-  'worktree:commitMain': {
-    args: [id: string, request: { message: string; files: string[] }]
-    result: CommitOutcome
   }
   /** « Committer » hors worktree (fiche 123) : les fichiers cochés, dans le dossier de `id`. */
   'changes:commit': {
@@ -660,16 +661,16 @@ export interface IpcInvokeContract
   'children:mergePlan': { args: [motherId: string, ids?: string[]]; result: ChildrenMergePlan }
   /**
    * Lance la fusion enchaînée de ces filles dans la base, l'une après l'autre ; son état suit
-   * dans le fil de la mère (élément `children-merge`). `cleanup` : « Puis nettoyer ».
+   * dans le fil de la mère (élément `children-merge`). `cleanup` : « Puis nettoyer » ; `commit` :
+   * « Committer puis fusionner » (fiches 123, 287), committé seulement si rien ne refuse la fusion.
    */
   'children:merge': {
-    args: [motherId: string, ids: string[], options: { cleanup: boolean; stash?: boolean }]
+    args: [
+      motherId: string,
+      ids: string[],
+      options: { cleanup: boolean; stash?: boolean; commit?: CommitRequest }
+    ]
     result: ChildrenMerge
-  }
-  /** « Committer d'abord » (fiche 123) : ces fichiers, dans le dossier principal du dépôt. */
-  'children:commitMain': {
-    args: [motherId: string, request: { message: string; files: string[] }]
-    result: CommitOutcome
   }
   /** « Arrêter » : la fusion en cours finit, les autres filles restent en attente. */
   'children:mergeStop': { args: [motherId: string, runId?: string]; result: undefined }
@@ -1030,7 +1031,6 @@ export const IPC_CHANNELS = [
   'pr:mergeNow',
   'worktree:commit',
   'worktree:undoCommit',
-  'worktree:commitMain',
   'changes:commit',
   'changes:undoCommit',
   'worktree:merge',
@@ -1044,7 +1044,6 @@ export const IPC_CHANNELS = [
   'children:mergePlan',
   'children:merge',
   'children:mergeStop',
-  'children:commitMain',
   'aside:ask',
   'aside:close',
   'aside:view',

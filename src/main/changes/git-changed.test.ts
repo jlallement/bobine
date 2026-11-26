@@ -49,14 +49,17 @@ describe('withGitChanged', () => {
   it('après un commit ou une fusion de Bobine, réussis ou non, la conversation est signalée', async () => {
     const notify = vi.fn()
     const handlers = {
-      'children:commitMain': vi.fn(async () => ({ hash: 'a', short: 'a' })),
+      'children:merge': vi.fn(async () => ({ runId: 'r' })),
       'worktree:merge': vi.fn(async () => {
         throw new Error('conflit')
       }),
       'changes:git': vi.fn(async () => null)
     } as unknown as IpcHandlers
     const wrapped = withGitChanged(handlers, notify)
-    await wrapped['children:commitMain']('mere', { message: 'm', files: ['a'] })
+    await wrapped['children:merge']('mere', ['f1'], {
+      cleanup: false,
+      commit: { message: 'm', files: ['a'] }
+    })
     expect(notify).toHaveBeenLastCalledWith('mere')
     await expect(wrapped['worktree:merge']('fille')).rejects.toThrow('conflit')
     expect(notify).toHaveBeenLastCalledWith('fille')
@@ -71,8 +74,7 @@ describe('withGitChanged', () => {
       expect.arrayContaining([
         'changes:commit',
         'worktree:commit',
-        'worktree:commitMain',
-        'children:commitMain',
+        'children:merge',
         'conversation:commitForChildren',
         'worktree:merge',
         'worktree:undoCommit',

@@ -3814,6 +3814,10 @@ export type FrResources = {
       readonly noWorktree: 'Cette conversation n’est pas dans un worktree.'
       readonly pushed: 'Ce commit est déjà poussé : il ne peut plus être défait ici.'
       readonly emptyTitle_mr: 'Le titre de la MR est vide.'
+      readonly turnRunning: '« {{title}} » répond encore : rien n’a été committé ni fusionné. Réessayez à la fin de son tour.'
+      readonly mainChanged_one: 'Le dossier principal a changé depuis votre choix : {{count}} autre fichier modifié ({{files}}). Rien n’a été committé : relisez la liste, puis recommencez.'
+      readonly mainChanged_other: 'Le dossier principal a changé depuis votre choix : {{count}} autres fichiers modifiés ({{files}}). Rien n’a été committé : relisez la liste, puis recommencez.'
+      readonly mainChanged_many: 'Le dossier principal a changé depuis votre choix : {{count}} autres fichiers modifiés ({{files}}). Rien n’a été committé : relisez la liste, puis recommencez.'
     }
     readonly pr: {
       readonly noGh: '« gh » (GitHub CLI) est introuvable : installez-le (brew install gh) pour ouvrir une PR depuis l’app.'

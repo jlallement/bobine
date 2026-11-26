@@ -3,10 +3,14 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { t } from 'i18next'
 import { describe, expect, it, vi } from 'vitest'
+import type { AgentEvent } from '@shared/agent'
+import type { ChildrenMerge } from '@shared/children-merge'
+import { emptyTranscript, reduceTranscript, type TranscriptState } from '@shared/transcript'
 import { hasWorkflows, worktreeHandlers, type WorktreeCycleDeps } from './worktree-ipc'
 
 function setup(
   options: {
+    others?: { id: string; title: string; workspace: string; status: string }[]
     merging?: string[]
     inWorktree?: boolean
     prs?: boolean
@@ -41,6 +45,22 @@ function setup(
     commit: vi.fn(async () => ({ hash: 'deadbeef', short: 'deadbee' })),
     undoCommit: vi.fn(async () => {}),
     commitMain: vi.fn(async () => ({ hash: 'cafe123', short: 'cafe123' })),
+    mainDirty: vi.fn(async () => ({
+      root: '/repo',
+      base: 'main',
+      files: [{ path: 'a', status: 'modified' as const }]
+    })),
+    baseElsewhere: vi.fn(async (): Promise<string | undefined> => undefined),
+    branchState: vi.fn(async () => ({
+      base: 'main',
+      dirty: 0,
+      ahead: options.merged ? 0 : 1,
+      sinceBase: 1,
+      files: ['a.txt', 'b.txt'],
+      added: 5,
+      removed: 1
+    })),
+    shortHead: vi.fn(async () => 'f00ba12'),
     commitIn: vi.fn(async () => ({ hash: 'beef456', short: 'beef456' })),
     undoCommitIn: vi.fn(async () => {}),
     merge: vi.fn(async () => ({ status: 'nothing' as const, base: 'main' })),
@@ -63,6 +83,8 @@ function setup(
       return options.remoteMoved ? 'moved' : 'deleted'
     })
   }
+  /** Autres conversations (la mère dans le dossier principal, fiche 287). */
+  const extra = [...(options.others ?? [])]
   const conversations = {
     worktreeOf: vi.fn((id: string) =>
       options.inWorktree === false || id !== 'c1' ? null : target
@@ -73,13 +95,31 @@ function setup(
     state: vi.fn(() => ({
       activeId: 'c1',
       conversations: [
-        { id: 'c1', workspace: '/autre', startedFrom: { id: 'm', title: 'Mère' } },
-        { id: 'c2', workspace: '/autre' }
+        {
+          id: 'c1',
+          title: 'Essai',
+          workspace: '/autre',
+          branch: 'bobine/x',
+          status: 'ready',
+          startedFrom: { id: 'm', title: 'Mère' }
+        },
+        { id: 'c2', title: 'Autre', workspace: '/autre', status: 'ready' },
+        ...extra
       ]
     })),
+    view: vi.fn(() => ({ transcript: mother })),
+    post: vi.fn((id: string, event: AgentEvent) => {
+      if (id !== 'm') return false
+      mother = reduceTranscript(mother, event)
+      if (event.type === 'children-merge') posted.push(event.merge)
+      return true
+    }),
     workspaceOf: vi.fn((id: string) => (id === 'c2' ? '/autre/app' : target.workspace))
   }
   const worktrees = { remove: vi.fn(async () => {}) }
+  /** Fil de la mère « m » de c1 : les fusions faites depuis l'onglet Git y sont dites (fiche 287). */
+  let mother: TranscriptState = emptyTranscript
+  const posted: ChildrenMerge[] = []
   const track = { status: 'none' as const, checkedAt: 0 }
   const prs = {
     status: vi.fn(async () => track),
@@ -99,7 +139,16 @@ function setup(
     worktrees,
     recentWorkspaces: () => ['/repo', '/recent']
   } as unknown as WorktreeCycleDeps
-  return { handlers: worktreeHandlers(deps), cycle, conversations, worktrees, target, prs }
+  return {
+    handlers: worktreeHandlers(deps),
+    cycle,
+    conversations,
+    worktrees,
+    target,
+    prs,
+    posted,
+    extra
+  }
 }
 
 describe('canaux IPC du cycle des worktrees (fiche 110)', () => {
@@ -266,17 +315,22 @@ describe('canaux IPC du cycle des worktrees (fiche 110)', () => {
       status: 'main-dirty',
       title: 'Mère'
     })
-    expect(await handlers['worktree:commitMain']('c1', { message: 'm', files: ['a'] })).toEqual({
-      hash: 'cafe123',
-      short: 'cafe123'
-    })
     await handlers['worktree:resolveWithAgent']('c1', { stash: true })
     expect(cycle.mergeContinue).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'c1' }), {
       stash: true
     })
-    expect(() => handlers['worktree:commitMain']('c2', { message: 'm', files: ['a'] })).toThrow(
-      t('worktreeCycle.error.noWorktree')
-    )
+    // « Committer puis fusionner » (fiche 287) : un seul appel, commit vérifié.
+    expect(() =>
+      handlers['worktree:merge']('c1', { commit: { message: 'm', files: [''] } })
+    ).toThrow('files')
+    await handlers['worktree:merge']('c1', { stash: true, commit: { message: 'm', files: ['a'] } })
+    expect(cycle.commitMain).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'c1' }), {
+      message: 'm',
+      files: ['a']
+    })
+    expect(cycle.merge).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'c1' }), {
+      stash: true
+    })
   })
 
   it('« Committer » hors worktree : dans le dossier de la conversation (fiche 123)', async () => {
@@ -355,5 +409,117 @@ describe('canaux IPC du cycle des worktrees (fiche 110)', () => {
     expect(() => worktreeHandlers(undefined)['worktree:info']('c1')).toThrow(
       t('ipc.unavailable.worktree')
     )
+  })
+})
+
+describe('« Committer puis fusionner » depuis l’onglet Git (fiche 287)', () => {
+  it('un tour dans le dossier principal : refusé avant le commit, la raison dite', () => {
+    const { handlers, cycle } = setup({
+      others: [{ id: 'm', title: 'Mère', workspace: '/repo', status: 'busy' }]
+    })
+    expect(() =>
+      handlers['worktree:merge']('c1', { commit: { message: 'm', files: ['a'] } })
+    ).toThrow(t('worktreeCycle.error.turnRunning', { title: 'Mère' }))
+    expect(cycle.commitMain).not.toHaveBeenCalled()
+  })
+
+  it('la fille elle-même répond encore : refusé de même', () => {
+    const env = setup()
+    const own = env.conversations.state().conversations[0] as { status: string }
+    env.conversations.state.mockReturnValueOnce({
+      activeId: 'c1',
+      conversations: [{ ...own, status: 'busy' } as never]
+    })
+    expect(() =>
+      env.handlers['worktree:merge']('c1', { commit: { message: 'm', files: ['a'] } })
+    ).toThrow(t('worktreeCycle.error.turnRunning', { title: 'Essai' }))
+    expect(env.cycle.commitMain).not.toHaveBeenCalled()
+  })
+
+  it('une conversation dans un autre dossier ou dans un worktree ne bloque pas', async () => {
+    const { handlers, cycle } = setup({
+      others: [{ id: 'x', title: 'Ailleurs', workspace: '/ailleurs', status: 'busy' }]
+    })
+    await handlers['worktree:merge']('c1', { commit: { message: 'm', files: ['a'] } })
+    expect(cycle.commitMain).toHaveBeenCalledTimes(1)
+  })
+
+  it('base extraite ailleurs : refusé avant le commit', async () => {
+    const { handlers, cycle } = setup()
+    cycle.baseElsewhere.mockImplementationOnce(async () => '/repo/autre')
+    await expect(
+      handlers['worktree:merge']('c1', { commit: { message: 'm', files: ['a'] } })
+    ).rejects.toThrow('/repo/autre')
+    expect(cycle.commitMain).not.toHaveBeenCalled()
+  })
+})
+
+describe('fusion et nettoyage depuis l’onglet Git, dits chez la mère (fiche 287)', () => {
+  it('fusionnée : une ligne « fusionné » chez la mère ; nettoyée : la même ligne, nettoyée', async () => {
+    const env = setup()
+    env.cycle.merge.mockImplementationOnce(
+      async () => ({ status: 'merged', kind: 'fast-forward', base: 'main' }) as never
+    )
+    await env.handlers['worktree:merge']('c1')
+    expect(env.posted).toHaveLength(1)
+    const merged = env.posted[0] as ChildrenMerge
+    expect(merged).toMatchObject({ base: 'main', status: 'done', cleanup: false })
+    expect(merged.rows).toEqual([
+      {
+        childId: 'c1',
+        title: 'Essai',
+        branch: 'bobine/x',
+        state: 'merged',
+        commit: 'f00ba12',
+        fileCount: 2,
+        added: 5,
+        removed: 1
+      }
+    ])
+    await env.handlers['worktree:cleanup']('c1')
+    expect(env.posted).toHaveLength(2)
+    const cleaned = env.posted[1] as ChildrenMerge
+    expect(cleaned.runId).toBe(merged.runId)
+    expect(cleaned.rows[0]).toMatchObject({ state: 'merged', cleaned: true })
+  })
+
+  it('rien à fusionner, conflit : rien n’est dit chez la mère', async () => {
+    const env = setup()
+    await env.handlers['worktree:merge']('c1')
+    env.cycle.merge.mockImplementationOnce(
+      async () => ({ status: 'conflicts', files: ['a'] }) as never
+    )
+    await env.handlers['worktree:merge']('c1')
+    expect(env.posted).toHaveLength(0)
+  })
+
+  it('nettoyée sans fusion dite (faite hors de Bobine, ou PR fusionnée) : fusionnée et nettoyée', async () => {
+    const inBase = setup({ merged: true, prs: false })
+    await inBase.handlers['worktree:cleanup']('c1')
+    expect(inBase.posted).toHaveLength(1)
+    expect(inBase.posted[0]?.rows[0]).toMatchObject({
+      childId: 'c1',
+      state: 'merged',
+      cleaned: true,
+      commit: 'f00ba12'
+    })
+    const pr = setup({ merged: true })
+    pr.cycle.branchState.mockImplementationOnce(async () => ({
+      base: 'main',
+      dirty: 0,
+      ahead: 1,
+      sinceBase: 1,
+      files: [],
+      added: 0,
+      removed: 0
+    }))
+    await pr.handlers['worktree:cleanup']('c1')
+    expect(pr.posted[0]?.rows[0]).toMatchObject({ state: 'merged', cleaned: true })
+  })
+
+  it('nettoyée sans être fusionnée : rien n’est inventé', async () => {
+    const env = setup()
+    await env.handlers['worktree:cleanup']('c1')
+    expect(env.posted).toHaveLength(0)
   })
 })

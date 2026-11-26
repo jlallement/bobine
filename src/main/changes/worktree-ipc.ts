@@ -16,6 +16,7 @@ import {
   type RemoteBranchOutcome
 } from '@shared/worktree-cycle'
 import { findExecutable } from '../agent/profiles'
+import { ChildMergeRecorder, type MergedFacts } from '../conversations/child-merge-record'
 import type { ConversationManager } from '../conversations/manager'
 import { agentLog } from '../log'
 import type { ConversationTrash } from '../conversations/trash'
@@ -23,12 +24,21 @@ import type { Run } from '../simulator/run'
 import type { PrOptions } from '@shared/pr-tracking'
 import { PrWatcher } from './pr-watch'
 import type { WorktreeInfo, Worktrees } from './worktrees'
+import { commitThenMerge } from './commit-then-merge'
+import { inTurn, turnInFolder } from './folder-turn'
 import { WorktreeCycle, type CycleTarget } from './worktree-cycle'
 
 /** Ce que le cycle demande au gestionnaire de conversations. */
 export type WorktreeHost = Pick<
   ConversationManager,
-  'worktreeOf' | 'worktreePaths' | 'leaveWorktree' | 'prompt' | 'state' | 'workspaceOf'
+  | 'worktreeOf'
+  | 'worktreePaths'
+  | 'leaveWorktree'
+  | 'prompt'
+  | 'state'
+  | 'workspaceOf'
+  | 'view'
+  | 'post'
 >
 
 export interface WorktreeCycleDeps {
@@ -38,6 +48,10 @@ export interface WorktreeCycleDeps {
     | 'commit'
     | 'undoCommit'
     | 'commitMain'
+    | 'mainDirty'
+    | 'baseElsewhere'
+    | 'branchState'
+    | 'shortHead'
     | 'commitIn'
     | 'undoCommitIn'
     | 'merge'
@@ -187,6 +201,42 @@ export function worktreeHandlers(
     const workspace = available().conversations.workspaceOf(conversation)
     return { id: conversation, workspace, cwd: workspace }
   }
+  /**
+   * « Committer puis fusionner » (fiche 287) : refusé avant tout commit tant qu'un tour tourne
+   * dans la conversation elle-même (son worktree bouge) ou dans le dossier principal du dépôt.
+   */
+  const assertNoTurn = (found: CycleTarget) => {
+    const { conversations } = available().conversations.state()
+    const own = conversations.find((c) => c.id === found.id)
+    const busy = own && inTurn(own) ? own : turnInFolder(conversations, found.worktree.root)
+    if (busy) throw new Error(t('worktreeCycle.error.turnRunning', { title: busy.title }))
+  }
+  /**
+   * Fusion d'une fille depuis son onglet Git (fiche 287) : réussie, elle est dite dans le fil de sa
+   * mère, comme une fusion faite depuis la carte.
+   */
+  const recorded = async (
+    found: CycleTarget,
+    merge: () => Promise<MergeOutcome>
+  ): Promise<MergeOutcome> => {
+    const { cycle, conversations } = available()
+    const recorder = new ChildMergeRecorder(conversations)
+    const child = !!recorder.motherOf(found.id)
+    const before = child ? await cycle.branchState(found).catch(() => undefined) : undefined
+    const outcome = await merge()
+    if (child && outcome.status === 'merged') {
+      const commit = await cycle.shortHead(found, outcome.base).catch(() => undefined)
+      recorder.merged(found.id, {
+        base: outcome.base,
+        branch: found.worktree.branch,
+        ...(commit ? { commit } : {}),
+        ...(before
+          ? { fileCount: before.files.length, added: before.added, removed: before.removed }
+          : {})
+      })
+    }
+    return withTitle(found.id, outcome)
+  }
   /** Fusion refusée d'avance : le titre de la mère, d'où proposer le message de commit. */
   const withTitle = (id: string, outcome: MergeOutcome): MergeOutcome => {
     if (outcome.status !== 'main-dirty') return outcome
@@ -208,19 +258,19 @@ export function worktreeHandlers(
       await available().cycle.undoCommit(target(id), str(hash, 'hash'))
       return undefined
     },
-    'worktree:commitMain': (id, request) =>
-      available().cycle.commitMain(target(id), parseCommit(request)),
     'worktree:merge': (id, options) => {
       const found = target(id)
-      return available()
-        .cycle.merge(found, { stash: wantsStash(options) })
-        .then((outcome) => withTitle(found.id, outcome))
+      const stash = { stash: wantsStash(options) }
+      const commit = commitOf(options)
+      if (!commit) return recorded(found, () => available().cycle.merge(found, stash))
+      assertNoTurn(found)
+      return recorded(found, () => commitThenMerge(available().cycle, found, commit, stash))
     },
     'worktree:mergeContinue': (id, options) => {
       const found = target(id)
-      return available()
-        .cycle.mergeContinue(found, { stash: wantsStash(options) })
-        .then((outcome) => withTitle(found.id, outcome))
+      return recorded(found, () =>
+        available().cycle.mergeContinue(found, { stash: wantsStash(options) })
+      )
     },
     'worktree:mergeAbort': async (id) => {
       await available().cycle.mergeAbort(target(id))
@@ -232,10 +282,11 @@ export function worktreeHandlers(
       const stash = { stash: wantsStash(options) }
       const info = await cycle.info(found)
       const files = info.merging?.files ?? []
-      if (files.length === 0) return withTitle(found.id, await cycle.mergeContinue(found, stash))
-      // Le tour de l'agent est attendu (`prompt` rend la main à sa fin), puis la fusion reprend.
-      await conversations.prompt(found.id, conflictPrompt(info.baseBranch, info.branch, files))
-      return withTitle(found.id, await cycle.mergeContinue(found, stash))
+      if (files.length > 0) {
+        // Le tour de l'agent est attendu (`prompt` rend la main à sa fin), puis la fusion reprend.
+        await conversations.prompt(found.id, conflictPrompt(info.baseBranch, info.branch, files))
+      }
+      return recorded(found, () => cycle.mergeContinue(found, stash))
     },
     'worktree:pullRequest': (id, request) => {
       const found = target(id)
@@ -267,6 +318,10 @@ export function worktreeHandlers(
       let remote: RemoteBranchOutcome | undefined
       const found = conversations.worktreeOf(conversation)
       const head = available().prs?.mergedHead(conversation)
+      // Fiche 287 : lu avant que la fille soit archivée et sa branche supprimée.
+      const recorder = new ChildMergeRecorder(conversations)
+      const motherId = recorder.motherOf(conversation)
+      const merged = motherId && found ? await mergedFacts(cycle, found, !!head) : undefined
       if (found && head) {
         remote = await cycle.deleteRemoteBranch(found, head).then(
           (outcome) =>
@@ -277,6 +332,7 @@ export function worktreeHandlers(
       available().prs?.forget(conversation)
       const worktree = conversations.leaveWorktree(conversation)
       await worktrees.remove(worktree, { force: true })
+      recorder.cleaned(conversation, motherId, merged)
       return { state: conversations.state(), ...(remote ? { remote } : {}) }
     },
     'changes:commit': (id, request) => available().cycle.commitIn(folder(id), parseCommit(request)),
@@ -309,6 +365,36 @@ export async function hasWorkflows(worktree: string): Promise<boolean> {
   } catch {
     return false
   }
+}
+
+/**
+ * Branche d'une fille au moment de la nettoyer (fiche 287) : déjà dans la base, ou sa PR
+ * fusionnée (`prMerged`) ; `undefined` sinon, ou illisible.
+ */
+async function mergedFacts(
+  cycle: Pick<WorktreeCycle, 'branchState' | 'shortHead'>,
+  found: CycleTarget,
+  prMerged: boolean
+): Promise<(MergedFacts & { title: string }) | undefined> {
+  const state = await cycle.branchState(found).catch(() => undefined)
+  const inBase = !!state && state.sinceBase > 0 && state.ahead === 0
+  if (!state || !(inBase || prMerged)) return undefined
+  const commit = inBase
+    ? await cycle.shortHead(found, state.base).catch(() => undefined)
+    : undefined
+  return {
+    title: found.title,
+    base: state.base,
+    branch: found.worktree.branch,
+    ...(commit ? { commit } : {})
+  }
+}
+
+/** « Committer puis fusionner » (fiche 287) : le commit demandé avec la fusion, vérifié. */
+const commitOf = (options: unknown): { message: string; files: string[] } | undefined => {
+  if (typeof options !== 'object' || options === null) return undefined
+  const { commit } = options as { commit?: unknown }
+  return commit === undefined ? undefined : parseCommit(commit)
 }
 
 /** « Mettre de côté » demandé (fiche 123) ; tout le reste vaut non. */

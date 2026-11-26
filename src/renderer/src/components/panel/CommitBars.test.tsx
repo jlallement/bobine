@@ -104,8 +104,7 @@ describe('Barre du worktree : fusion refusée, dossier principal sale (fiche 123
       }
     ]
     const merge = vi.fn(async () => outcomes.shift() as MergeOutcome)
-    const commitMain = vi.fn(async () => ({ hash: 'f00', short: 'f00' }))
-    window.api.worktree = { ...window.api.worktree, merge, commitMain }
+    window.api.worktree = { ...window.api.worktree, merge }
     render(<WorktreeBar conversationId="c1" info={info} selected={[]} onChanged={vi.fn()} />)
     fireEvent.click(screen.getByTestId('worktree-merge'))
     await waitFor(() => screen.getByTestId('main-dirty'))
@@ -157,8 +156,7 @@ describe('Barre du worktree : fusion refusée, dossier principal sale (fiche 123
       { status: 'merged', kind: 'merge', base: 'main' }
     ]
     const merge = vi.fn(async () => outcomes.shift() as MergeOutcome)
-    const commitMain = vi.fn(async () => ({ hash: 'f00', short: 'f00' }))
-    window.api.worktree = { ...window.api.worktree, merge, commitMain }
+    window.api.worktree = { ...window.api.worktree, merge }
     render(<WorktreeBar conversationId="c1" info={info} selected={[]} onChanged={vi.fn()} />)
     fireEvent.click(screen.getByTestId('worktree-merge'))
     await waitFor(() => screen.getByTestId('main-dirty'))
@@ -169,11 +167,10 @@ describe('Barre du worktree : fusion refusée, dossier principal sale (fiche 123
     )
     fireEvent.click(screen.getByTestId('main-dirty-commit-confirm'))
     await waitFor(() => screen.getByTestId('worktree-note'))
-    expect(commitMain).toHaveBeenCalledWith('c1', {
-      message: 'docs: update notes.md\n\n- notes.md',
-      files: ['notes.md']
+    // Fiche 287 : un seul appel, le commit avec la fusion (le main committe après ses refus).
+    expect(merge).toHaveBeenLastCalledWith('c1', {
+      commit: { message: 'docs: update notes.md\n\n- notes.md', files: ['notes.md'] }
     })
-    expect(merge).toHaveBeenLastCalledWith('c1')
   })
 
   it('erreur de git sur plusieurs lignes : montrée en entier', async () => {
@@ -201,8 +198,7 @@ describe('Barre du worktree : fusion refusée, dossier principal sale (fiche 123
       { status: 'merged', kind: 'merge', base: 'main', stash: { restored: true, count: 1 } }
     ]
     const merge = vi.fn(async () => outcomes.shift() as MergeOutcome)
-    const commitMain = vi.fn(async () => ({ hash: 'f00', short: 'f00' }))
-    window.api.worktree = { ...window.api.worktree, merge, commitMain }
+    window.api.worktree = { ...window.api.worktree, merge }
     render(<WorktreeBar conversationId="c1" info={info} selected={[]} onChanged={vi.fn()} />)
     fireEvent.click(screen.getByTestId('worktree-merge'))
     await waitFor(() => screen.getByTestId('main-dirty'))
@@ -219,8 +215,10 @@ describe('Barre du worktree : fusion refusée, dossier principal sale (fiche 123
     )
     fireEvent.click(screen.getByTestId('main-dirty-commit-confirm'))
     await waitFor(() => screen.getByTestId('worktree-note'))
-    expect(commitMain).toHaveBeenCalledWith('c1', { message, files: ['notes.md', 'src/app.js'] })
-    expect(merge).toHaveBeenLastCalledWith('c1', { stash: true })
+    expect(merge).toHaveBeenLastCalledWith('c1', {
+      stash: true,
+      commit: { message, files: ['notes.md', 'src/app.js'] }
+    })
     expect(text('worktree-note')).toBe(
       'Fusionné dans main (commit de fusion). Votre modification mise de côté est revenue.'
     )
@@ -241,8 +239,7 @@ describe('Barre du worktree : fusion refusée, dossier principal sale (fiche 123
       }
     ]
     const merge = vi.fn(async () => outcomes.shift() as MergeOutcome)
-    const commitMain = vi.fn(async () => ({ hash: 'f00', short: 'f00' }))
-    window.api.worktree = { ...window.api.worktree, merge, commitMain }
+    window.api.worktree = { ...window.api.worktree, merge }
     render(<WorktreeBar conversationId="c1" info={info} selected={[]} onChanged={vi.fn()} />)
     fireEvent.click(screen.getByTestId('worktree-merge'))
     await waitFor(() => screen.getByTestId('main-dirty'))
@@ -251,7 +248,7 @@ describe('Barre du worktree : fusion refusée, dossier principal sale (fiche 123
     uncheck('main-dirty-commit', '.env')
     fireEvent.click(screen.getByTestId('main-dirty-commit-confirm'))
     await waitFor(() => screen.getByTestId('worktree-note'))
-    expect(merge).toHaveBeenLastCalledWith('c1', { stash: true })
+    expect(merge).toHaveBeenLastCalledWith('c1', expect.objectContaining({ stash: true }))
     expect(text('worktree-note')).toBe(
       'Fusionné dans main (commit de fusion). Vos modifications mises de côté n’ont pas pu revenir sans conflit (.env)\u00a0: elles restent dans git stash (abc1234).'
     )

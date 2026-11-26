@@ -577,7 +577,7 @@ describe('dossier principal non commité (fiche 123)', () => {
     env.commit(b, 'b.txt', 'b\n')
     writeFileSync(join(env.root, 'README.md'), '# Démo\n\nbrouillon\n')
     writeFileSync(join(env.root, 'note.txt'), 'n\n')
-    const first = await env.merger.start('mere', ids(env.children), false, true)
+    const first = await env.merger.start('mere', ids(env.children), false, { stash: true })
     expect(first.stash).toEqual({ state: 'kept', count: 2 })
     await env.merger.settled('mere')
     const done = last(env.merges)
@@ -597,7 +597,7 @@ describe('dossier principal non commité (fiche 123)', () => {
     const [a] = env.children as [Child]
     env.commit(a, 'README.md', '# Démo\n\nVersion A\n')
     writeFileSync(join(env.root, 'README.md'), '# Démo\n\nbrouillon\n')
-    await env.merger.start('mere', ['f1'], false, true)
+    await env.merger.start('mere', ['f1'], false, { stash: true })
     await env.merger.settled('mere')
     const done = last(env.merges)
     expect(done.status).toBe('done')
@@ -614,10 +614,12 @@ describe('dossier principal non commité (fiche 123)', () => {
     writeFileSync(join(a.worktree.path, 'en-cours.txt'), 'x\n')
     writeFileSync(join(env.root, 'plan.md'), 'plan\n')
     writeFileSync(join(env.root, '.env'), 'SECRET=1\n')
-    await env.merger.commitMain('mere', { message: 'feat: plan', files: ['plan.md'] })
-    expect(git(env.root, 'status', '--porcelain')).toBe('?? .env')
-    await env.merger.start('mere', ['f1'], false, true)
+    await env.merger.start('mere', ['f1'], false, {
+      stash: true,
+      commit: { message: 'feat: plan', files: ['plan.md'] }
+    })
     await env.merger.settled('mere')
+    expect(git(env.root, 'log', '--format=%s', '-1', 'main')).toBe('feat: plan')
     const done = last(env.merges)
     expect(states(done)).toEqual(['dirty'])
     expect(done.stash).toEqual({ state: 'restored', count: 1 })
@@ -626,23 +628,102 @@ describe('dossier principal non commité (fiche 123)', () => {
     expect(git(env.root, 'log', '--all', '--name-only', '--format=')).not.toContain('.env')
   })
 
-  it('« Committer d’abord » : commit dans le dossier principal, puis la fusion part', async () => {
+  it('« Committer puis fusionner » : commit dans le dossier principal, puis la fusion part', async () => {
     const env = await setup(['A'])
     const [a] = env.children as [Child]
     env.commit(a, 'a.txt', 'a\n')
     writeFileSync(join(env.root, 'README.md'), '# Démo\n\nmère\n')
-    const commit = await env.merger.commitMain('mere', {
-      message: 'feat: mère',
-      files: ['README.md']
+    await env.merger.start('mere', ['f1'], false, {
+      commit: { message: 'feat: mère', files: ['README.md'] }
     })
-    expect(git(env.root, 'log', '--format=%s', '-1')).toBe('feat: mère')
-    expect(commit.short).toHaveLength(7)
-    expect((await env.merger.plan('mere')).blocked).toBeUndefined()
-    await env.merger.start('mere', ['f1'], false)
     await env.merger.settled('mere')
+    expect(git(env.root, 'log', '--format=%s', 'main').split('\n')).toContain('feat: mère')
     expect(last(env.merges).status).toBe('done')
     expect(readFileSync(join(env.root, 'README.md'), 'utf8')).toBe('# Démo\n\nmère\n')
     expect(existsSync(join(env.root, 'a.txt'))).toBe(true)
+  })
+})
+
+/** La mère, dans le dossier principal du dépôt (hors worktree), à tel statut. */
+const motherIn = (root: string, status: ConversationSummary['status']): ConversationSummary => ({
+  id: 'mere',
+  title: 'Mère',
+  profileId: 'mock',
+  profileLabel: 'Factice',
+  workspace: root,
+  updatedAt: '2026-11-26T10:00:00.000Z',
+  status,
+  draft: false
+})
+
+describe('« Committer puis fusionner » refusé avant tout commit (fiche 287)', () => {
+  // Recette Bricole, 21:55 : la mère écrivait encore dans le dossier principal ; le commit partait,
+  // puis la fusion était refusée (« le dossier principal a 6 modifications non commitées »).
+  it('un tour de la mère dans le dossier principal : refusé, rien de committé ni de fusionné', async () => {
+    const env = await setup(['A'])
+    const [a] = env.children as [Child]
+    env.commit(a, 'a.txt', 'a\n')
+    env.others.push(motherIn(env.root, 'busy'))
+    writeFileSync(join(env.root, 'README.md'), '# Démo\n\nmère\n')
+    const before = git(env.root, 'rev-parse', 'main')
+    await expect(
+      env.merger.start('mere', ['f1'], false, {
+        commit: { message: 'feat: mère', files: ['README.md'] }
+      })
+    ).rejects.toThrow(t('worktreeCycle.error.turnRunning', { title: 'Mère' }))
+    expect(git(env.root, 'rev-parse', 'main')).toBe(before)
+    expect(git(env.root, 'status', '--porcelain')).toBe('M README.md')
+    expect(env.merges).toHaveLength(0)
+    expect(env.merger.running('mere')).toBe(false)
+  })
+
+  it('la mère attend un accord : refusé de même ; finie, le même geste passe', async () => {
+    const env = await setup(['A'])
+    const [a] = env.children as [Child]
+    env.commit(a, 'a.txt', 'a\n')
+    const mother = motherIn(env.root, 'needs-action')
+    env.others.push(mother)
+    writeFileSync(join(env.root, 'README.md'), '# Démo\n\nmère\n')
+    const request = { commit: { message: 'feat: mère', files: ['README.md'] } }
+    await expect(env.merger.start('mere', ['f1'], false, request)).rejects.toThrow('Mère')
+    mother.status = 'ready'
+    await env.merger.start('mere', ['f1'], false, request)
+    await env.merger.settled('mere')
+    expect(last(env.merges).status).toBe('done')
+    expect(git(env.root, 'log', '--format=%s', 'main').split('\n')).toContain('feat: mère')
+  })
+
+  it('un travail qui répond encore : refusé avant le commit (plus après)', async () => {
+    const env = await setup(['A'])
+    const [a] = env.children as [Child]
+    env.commit(a, 'a.txt', 'a\n')
+    a.status = 'busy'
+    writeFileSync(join(env.root, 'README.md'), '# Démo\n\nmère\n')
+    const before = git(env.root, 'rev-parse', 'main')
+    await expect(
+      env.merger.start('mere', ['f1'], false, {
+        commit: { message: 'feat: mère', files: ['README.md'] }
+      })
+    ).rejects.toThrow('travaille encore')
+    expect(git(env.root, 'rev-parse', 'main')).toBe(before)
+    expect(git(env.root, 'status', '--porcelain')).toBe('M README.md')
+  })
+
+  it('d’autres fichiers écrits depuis le choix : refusé avant le commit, ils sont nommés', async () => {
+    const env = await setup(['A'])
+    const [a] = env.children as [Child]
+    env.commit(a, 'a.txt', 'a\n')
+    writeFileSync(join(env.root, 'README.md'), '# Démo\n\nmère\n')
+    // Écrit après que l'utilisateur a coché README.md (un agent, un outil).
+    writeFileSync(join(env.root, 'niveaux.ts'), 'export {}\n')
+    const before = git(env.root, 'rev-parse', 'main')
+    await expect(
+      env.merger.start('mere', ['f1'], false, {
+        commit: { message: 'feat: mère', files: ['README.md'] }
+      })
+    ).rejects.toThrow('niveaux.ts')
+    expect(git(env.root, 'rev-parse', 'main')).toBe(before)
+    expect(env.merges).toHaveLength(0)
   })
 })
 
@@ -666,11 +747,7 @@ describe('canaux IPC de la fusion des filles (fiche 120)', () => {
           startedAt: 0
         }
       },
-      stop: (id) => void calls.push(['stop', id]),
-      commitMain: async (...args) => {
-        calls.push(['commitMain', ...args])
-        return { hash: 'deadbeef', short: 'deadbee' }
-      }
+      stop: (id) => void calls.push(['stop', id])
     })
     expect(await handlers['children:mergePlan']('mere')).toMatchObject({ base: 'mere' })
     expect(() => handlers['children:mergePlan']('')).toThrow('motherId')
@@ -687,19 +764,23 @@ describe('canaux IPC de la fusion des filles (fiche 120)', () => {
     })
     expect(handlers['children:mergeStop']('mere')).toBeUndefined()
     await handlers['children:merge']('mere', ['f1'], { cleanup: false, stash: true })
-    expect(() => handlers['children:commitMain']('mere', { message: 'm', files: [''] })).toThrow(
-      'files'
-    )
-    expect(await handlers['children:commitMain']('mere', { message: 'm', files: ['a'] })).toEqual({
-      hash: 'deadbeef',
-      short: 'deadbee'
+    // « Committer puis fusionner » (fiche 287) : le commit va avec la fusion, vérifié.
+    expect(() =>
+      handlers['children:merge']('mere', ['f1'], {
+        cleanup: false,
+        commit: { message: 'm', files: [''] }
+      })
+    ).toThrow('files')
+    await handlers['children:merge']('mere', ['f1'], {
+      cleanup: false,
+      commit: { message: 'm', files: ['a'] }
     })
     expect(calls).toEqual([
-      ['mere', ['f1'], true, false],
-      ['mere', ['f1'], false, false],
+      ['mere', ['f1'], true, { stash: false }],
+      ['mere', ['f1'], false, { stash: false }],
       ['stop', 'mere'],
-      ['mere', ['f1'], false, true],
-      ['commitMain', 'mere', { message: 'm', files: ['a'] }]
+      ['mere', ['f1'], false, { stash: true }],
+      ['mere', ['f1'], false, { stash: false, commit: { message: 'm', files: ['a'] } }]
     ])
     expect(() => childrenMergeHandlers(undefined)['children:mergePlan']('mere')).toThrow(
       t('ipc.unavailable.childrenMerge')

@@ -321,7 +321,7 @@ export function createHandlers(
       /** Cycle complet d'un worktree (fiche 110). */
       worktree?: WorktreeCycleDeps
       /** Fusion de toutes les filles finies (fiche 120). */
-      childrenMerge?: Pick<ChildrenMerger, 'plan' | 'start' | 'stop' | 'commitMain'>
+      childrenMerge?: Pick<ChildrenMerger, 'plan' | 'start' | 'stop'>
       /** Aparté (fiche 180) : ce qu'il demande aux conversations ; sa vue part par `send`. */
       asides?: AsideConversations
       /** Message de commit rédigé par l'agent (fiche 246). */
