@@ -1,7 +1,16 @@
 import { Check, CircleAlert, CornerDownLeft, FolderOpen } from 'lucide-react'
-import { useEffect, useId, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ClipboardEvent,
+  type DragEvent,
+  type KeyboardEvent
+} from 'react'
 import { useTranslation } from 'react-i18next'
 import { extraFolderRefusalKey, type AddFolderResult } from '@shared/extra-folders'
+import { currentHomeFolder, shortFolderPath } from '@shared/path-display'
 import { FILE_DRAG_TYPE } from '../../useFileDrop'
 import { Tip } from '../common/Menus'
 import { ReasonButton } from '../common/ReasonButton'
@@ -19,8 +28,10 @@ type Note =
   | { kind: 'several' }
 
 export interface FolderPathFieldProps {
-  /** Pourquoi l'ajout attend (un tour de l'agent) ; absent : ouvert. */
+  /** Pourquoi l'ajout attend (un tour de l'agent, un démarrage) ; absent : ouvert. */
   blocked?: string | undefined
+  /** Un tour de l'agent est en cours : la ligne « Ajouté » s'efface. */
+  turn?: boolean
   /** Ajoute : sans chemin, la fenêtre du système ; `null` si elle est annulée. */
   add: (path?: string) => Promise<AddFolderResult | null>
   /** Chemin d'un élément glissé (`window.api.files.pathFor`) ; '' s'il n'en a pas. */
@@ -30,6 +41,26 @@ export interface FolderPathFieldProps {
   /** Erreur inattendue (conversation disparue…). */
   onError: (error: unknown) => void
 }
+
+/** Longueur au-delà de laquelle un chemin est abrégé au milieu dans le message. */
+export const SHOWN_PATH_MAX = 40
+
+/**
+ * Chemin dit dans un message (fiche 290) : le dossier personnel par `~`, puis une ellipse au
+ * milieu au-delà de `max` caractères (le début et le nom du dossier restent lisibles). Le chemin
+ * complet est dans l'infobulle.
+ */
+export function shownPath(path: string, home = currentHomeFolder(), max = SHOWN_PATH_MAX): string {
+  const short = shortFolderPath(path, { home }) ?? path
+  if (short.length <= max) return short
+  const tail = Math.ceil((max - 1) * 0.6)
+  return `${short.slice(0, max - 1 - tail)}…${short.slice(-tail)}`
+}
+
+/** Plusieurs lignes non vides : plusieurs chemins collés (Chromium les joindrait par un espace). */
+const LINES = /\r\n|\r|\n|\u2028|\u2029|\u0085/
+export const severalLines = (text: string) =>
+  text.split(LINES).filter((line) => line.trim()).length > 1
 
 /** Un glisser de fichiers du système, pas une ligne de l'onglet Fichiers ni du texte. */
 const systemFiles = (event: DragEvent) =>
@@ -49,7 +80,9 @@ export function FolderPathField(props: FolderPathFieldProps) {
   const depth = useRef(0)
   const noteId = useId()
   // Pendant un tour, et juste après un ajout pendant que la session repart : même traitement.
-  const reason = props.blocked || (pending ? t('sessionTab.folderRestarting') : undefined)
+  const reason = pending ? t('sessionTab.folderRestarting') : props.blocked || undefined
+  // Un tour commence : « Ajouté » ne vaut plus (état dérivé, pendant le rendu).
+  if (props.turn && note?.kind === 'added') setNote(null)
 
   useEffect(() => {
     if (note?.kind !== 'added') return
@@ -76,6 +109,13 @@ export function FolderPathField(props: FolderPathFieldProps) {
       setNote({ kind: 'added' })
       props.onAdded(result.folder)
     } else setNote({ kind: 'refused', result, typed: source === 'typed' })
+  }
+
+  const onPaste = (event: ClipboardEvent<HTMLInputElement>) => {
+    if (reason || !severalLines(event.clipboardData.getData('text'))) return
+    // Plusieurs chemins : refusé ici, sans rien envoyer au main.
+    event.preventDefault()
+    setNote({ kind: 'several' })
   }
 
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -153,6 +193,7 @@ export function FolderPathField(props: FolderPathFieldProps) {
               setNote(null)
             }}
             onKeyDown={onKeyDown}
+            onPaste={onPaste}
             data-testid="session-folder-path"
           />
         </Tip>
@@ -204,14 +245,22 @@ function FolderNote({ note }: { note: Note }) {
         <span>{t('sessionTab.folderAdded')}</span>
       </>
     )
-  const text =
-    note.kind === 'several'
-      ? t('sessionTab.oneFolder')
-      : t(extraFolderRefusalKey(note.result.reason), { folder: note.result.folder ?? '' })
+  if (note.kind === 'several')
+    return (
+      <>
+        <CircleAlert size={14} aria-hidden />
+        <span className="folder-path-note-text">{t('sessionTab.oneFolder')}</span>
+      </>
+    )
+  const { reason, folder } = note.result
+  const text = t(extraFolderRefusalKey(reason), { folder: folder ? shownPath(folder) : '' })
   return (
     <>
       <CircleAlert size={14} aria-hidden />
-      <span>{text}</span>
+      {/* Chemin abrégé dans le message, entier dans l'infobulle. */}
+      <Tip label={folder ?? ''}>
+        <span className="folder-path-note-text">{text}</span>
+      </Tip>
     </>
   )
 }

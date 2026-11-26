@@ -874,6 +874,7 @@
       "busyArchiveChild": "« {{title}} », un travail lancé ici, est encore en cours : arrêtez-le avant d’archiver sa conversation d’origine",
       "unknown": "Conversation inconnue : {{id}}",
       "busyFolders": "L’agent répond encore : changez les dossiers de la conversation après sa réponse",
+      "startingFolders": "L’agent démarre : réessayez quand il est prêt.",
       "folderGoneAtSend": "Le dossier de cette conversation n’existe plus : {{folder}}. Rien n’est parti. Remettez-le à sa place, ou continuez dans une nouvelle conversation."
     },
     "newTitle": "Nouvelle conversation",
@@ -4606,10 +4607,11 @@
     "addFolderTip": "L’agent voit aussi ce dossier. Sa session repart aussitôt avec la nouvelle liste ; le fil est gardé.",
     "removeFolder": "Retirer {{name}} de la conversation",
     "foldersBusy": "L’agent répond : l’ajout et le retrait d’un dossier attendent la fin de son tour.",
+    "foldersStarting": "L’agent démarre : l’ajout et le retrait d’un dossier attendent qu’il soit prêt.",
     "foldersUnsupported": "Non transmis : {{agent}} ne prend pas d’autres dossiers que le dossier de travail.",
     "folderRefusal": {
       "empty": "Saisissez le chemin d’un dossier.",
-      "tooLong": "Ce chemin est trop long pour être celui d’un dossier.",
+      "tooLong": "Chemin trop long.",
       "invalid": "Un seul chemin à la fois, sur une ligne.",
       "notAbsolute": "Chemin incomplet : partez de la racine, ou de ~ pour votre dossier personnel.",
       "notLocal": "Seul un dossier de cet ordinateur peut être ajouté.",
@@ -4622,14 +4624,15 @@
       "isWorkspace": "C’est déjà le dossier de travail de la conversation.",
       "insideWorkspace": "Ce dossier est dans le dossier de travail : l’agent y a déjà accès.",
       "alreadyAdded": "Ce dossier est déjà dans la liste.",
-      "busy": "L’agent répond : réessayez à la fin de son tour."
+      "busy": "L’agent répond : réessayez à la fin de son tour.",
+      "starting": "L’agent démarre : réessayez quand il est prêt."
     },
     "folderPlaceholder": "Chemin d’un dossier…",
     "folderField": "Chemin d’un autre dossier",
     "chooseFolder": "Choisir un dossier…",
     "addThisFolder": "Ajouter ce dossier",
     "dropFolder": "Déposer pour ajouter",
-    "folderAdded": "Ajouté ; la session de l’agent repart.",
+    "folderAdded": "Ajouté.",
     "folderRestarting": "La session de l’agent repart avec la nouvelle liste…",
     "oneFolder": "Un seul dossier à la fois.",
     "documents": "Documents",

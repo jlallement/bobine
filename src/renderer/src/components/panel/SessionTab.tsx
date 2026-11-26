@@ -206,6 +206,7 @@ export function SessionTab({
             folders={data.additionalDirectories ?? []}
             supported={foldersSupported}
             busy={view.status === 'busy'}
+            starting={view.status === 'starting'}
             agentLabel={view.agentLabel}
             finder={platformFeatures().finder}
             explorer={platformFeatures().explorer}

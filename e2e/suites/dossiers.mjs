@@ -118,6 +118,18 @@ export async function dossiersSuite(scheme) {
           'dossier glissé sur le champ : ajouté (dossier réel)'
         )
         await ui.ready()
+        // Glisser au-dessus d'un champ non vide : le texte saisi s'efface sous « Déposer pour ajouter ».
+        await ui.ev(`${field(ui)}.focus(), true`)
+        await ui.type('~/Dev/en-cours')
+        await ui.dragFiles([library], await fieldCenter(ui), { drop: false })
+        await ui.waitFor(`${ui.$('session-folder-field')}.classList.contains('dropping')`)
+        check(
+          (await ui.ev(`getComputedStyle(${field(ui)}).color`)) === 'rgba(0, 0, 0, 0)',
+          'glisser au-dessus d’un champ non vide : le texte saisi ne se mêle pas à l’invite'
+        )
+        await ui.shot('dossiers-3-depot')
+        await ui.dragCancel(await fieldCenter(ui))
+        await ui.press('Escape')
         // Plusieurs éléments à la fois : refusés, rien d'ajouté.
         await ui.dragFiles([library, server], await fieldCenter(ui))
         await ui.waitFor(
@@ -170,6 +182,10 @@ export async function dossiersSuite(scheme) {
         await ui.ready()
         await ui.send('Et sans ?')
         await ui.ready()
+        check(
+          (await ui.lastAgentText()).includes('Aucun autre dossier reçu.'),
+          'retiré : la session repart, l’agent ne reçoit plus le dossier'
+        )
 
         // Remis par la fenêtre du système (simulée) : elle rend `library` ; fiche 287 : elle
         // s'ouvre à côté du dossier de travail, pas sur Téléchargements (recette Bricole, 22:22).
@@ -251,6 +267,28 @@ export async function dossiersSuite(scheme) {
         MOCK_AGENT_DIRECTORIES: '1',
         MOCK_AGENT_TURN_LOCK: turnLock
       },
+      args
+    )
+
+    // Fiche 290 : après un redémarrage de l'app, la liste et ce que reçoit l'agent concordent.
+    await withApp(
+      scheme,
+      async (ui) => {
+        const item = `document.querySelector('[data-testid=history-item] .history-open')`
+        await ui.waitFor(`!!${item}`)
+        await ui.click(item)
+        await ui.ready()
+        await ui.waitFor(`!!${ui.$('session-extra-folder')}`)
+        await ui.send('Après redémarrage ?')
+        await ui.ready()
+        check(
+          (await folders(ui)) === libraryReal && (await ui.lastAgentText()).includes(libraryReal),
+          'après redémarrage de l’app : la liste et ce que reçoit l’agent concordent'
+        )
+      },
+      userData,
+      'dossiers',
+      { BOBINE_WORKSPACE: workspace, MOCK_AGENT_DIRECTORIES: '1' },
       args
     )
   } finally {

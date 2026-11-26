@@ -1113,6 +1113,7 @@ export class AgentHost {
     const limitRenewal = this.turnLimit.takeRenewal()
     const renew = reopen && (limitRenewal || (!this.support.load && !this.support.resume))
     const reopening = renew ? undefined : reopen
+    await this.options.directories?.prepare() // fiche 290 : dossiers vérifiés sans bloquer
 
     // Les réponses sont attendues ici même : le rejeu se termine (`finally`) dès qu'elles arrivent.
     let session: OpenedSession | undefined

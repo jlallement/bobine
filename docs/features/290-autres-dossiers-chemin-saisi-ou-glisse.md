@@ -26,13 +26,25 @@ avec, le chemin saisi ou celui du dossier glissé. Dans les trois cas : `addAddi
 passe-droit.
 
 **Rien de synchrone sur le disque.** `realpath`, `stat`, `access`, `opendir` passent par
-`fs.promises`, sous un délai de 5 s (`timeoutMs`) : un partage réseau figé rend `timeout`, le main
-ne gèle pas. L'appel en cours n'est pas annulé (Node ne le permet pas) : il finit en arrière-plan,
-son résultat est ignoré. Les clés du dossier de travail et des dossiers déjà là sont lues avant
-l'écriture, sous le même délai (figé : chemin normalisé) ; la section synchrone
-(`updateRecord`) ne fait plus qu'une comparaison de chaînes sur la liste fraîche : deux ajouts
-concurrents du même dossier ne passent pas tous les deux (essai). `updateRecord` accepte qu'un
-changement rende `false` : rien d'écrit ni de prévenu (une lecture).
+`fs.promises`, sous **un seul délai de 5 s pour tout l'ajout** (`Budget` : chemin, dossier
+personnel, dossier de travail, dossiers déjà là). Ce qui est garanti face à un partage réseau
+figé : la réponse arrive dans le délai (`timeout`) et le fil principal n'attend jamais le disque.
+Ce qui ne l'est pas : l'appel au disque en cours n'est pas annulable (Node ne le permet pas) et
+garde un fil de libuv (4 par défaut) jusqu'à ce que le système réponde. Pour ne pas les épuiser,
+un chemin dont la vérification a dépassé le délai n'est pas relu tant qu'elle n'a pas répondu
+(nouvel essai : `timeout` tout de suite ; dossier déjà enregistré : comparé par son chemin), et
+les clés des dossiers déjà connus sont mémorisées. La section synchrone (`updateRecord`) ne fait
+qu'une comparaison de clés sur la liste fraîche : deux ajouts concurrents du même dossier ne
+passent pas tous les deux (essais). `updateRecord` accepte qu'un changement rende `false` : rien
+d'écrit ni de prévenu (une lecture).
+
+**Identité d'un dossier.** Un dossier se reconnaît par son périphérique et son inode (`stat`), en
+plus de son chemin réel. `realpath` ne réécrit pas les firmlinks de macOS
+(`/System/Volumes/Data/Users/moi` est `/Users/moi`) : comparer des chaînes laissait passer le
+dossier personnel et des doublons (D1 du testeur). Dossier de travail, sous-dossier (chaîne des
+parents du candidat, par identité : plus de `rel.startsWith('..')`, D3), doublon et « contient le
+dossier personnel » se décident par identité, le chemin servant quand l'inode est inconnu (FAT) ou
+que le disque ne répond pas.
 
 **Règles** (`src/main/conversations/extra-folder-check.ts`, système injecté) :
 
@@ -51,16 +63,19 @@ changement rende `false` : rien d'écrit ni de prévenu (une lecture).
 | macOS, Linux : `C:\…` | pas absolu ; `\` reste un caractère du nom | `notAbsolute` |
 | `.`, `..`, séparateurs doublés ou finaux | normalisés (`path.resolve`) | — |
 | lien symbolique (jonction NTFS comprise) | **suivi jusqu'au bout** (`realpath` du système) : le dossier réel est retenu, montré et donné à l'agent | — |
-| racine du disque, d'un lecteur ou d'un partage (`/`, `C:\`, `\\serveur\partage`), dossier personnel exact (aussi par un lien) | refusé : l'agent aurait `~/.ssh` et les configurations. Un parent du dossier de travail (`~/Dev`) reste accepté, sans avertissement | `tooBroad` |
+| dossier qui **contient le dossier personnel** (lui compris), reconnu par identité : `/`, `/Users`, `~/..`, `~`, `/System/Volumes/Data`, `/System/Volumes/Data/Users`, un lien vers l'un d'eux. Règle : pour chaque fin du chemin du dossier personnel (`Users/moi`, `moi`, rien), `<candidat>/<fin>` est-il le dossier personnel ? | refusé : l'agent aurait `~/.ssh` et les configurations (décision du 2026-11-26) | `tooBroad` |
+| **racine de volume** : racine du chemin (`/`, `C:\`, `\\serveur\partage`), ou point de montage (périphérique différent de celui du parent : `/Volumes/X`) | refusé | `tooBroad` |
+| parent du dossier de travail qui ne contient pas le dossier personnel (`~/Dev`) | accepté, sans avertissement | — |
 | rien à ce chemin, ou lien cassé | refusé | `notFound` |
 | un fichier | refusé | `notDirectory` |
 | sans droit de lecture ou de traversée, chemin sous un dossier fermé (`EACCES`) | refusé | `unreadable` |
 | macOS refuse l'accès (`EPERM` : Documents, Bureau, disques externes…) | refusé ; le texte mène à Réglages Système › Confidentialité et sécurité › Fichiers et dossiers | `privacy` |
-| vérification plus longue que 5 s | refusé | `timeout` |
+| vérification plus longue que 5 s (tout l'ajout), ou même chemin encore sans réponse | refusé | `timeout` |
 | le dossier de travail (aussi enregistré par un lien non résolu, ou une autre casse) | refusé | `isWorkspace` |
-| un sous-dossier du dossier de travail | refusé : l'agent y a déjà accès | `insideWorkspace` |
+| un sous-dossier du dossier de travail (aussi `<dossier>/..cache`, ou écrit par un firmlink) | refusé : l'agent y a déjà accès | `insideWorkspace` |
 | un dossier déjà dans la liste (aussi par un lien) | refusé | `alreadyAdded` |
 | l'agent répond (avant la lecture du disque, et de nouveau à l'écriture) | refusé, rien d'écrit | `busy` |
+| l'agent démarre (la session qui s'ouvre n'aurait pas le dossier, et ne serait pas rouverte) | refusé, rien d'écrit ; le retrait aussi attend | `starting` |
 
 Pourquoi suivre les liens : l'accès donné à l'agent est celui que l'utilisateur voit dans la liste
 (un lien re-pointé plus tard ne déplace pas l'accès en silence) ; un doublon se reconnaît quel que
@@ -74,6 +89,11 @@ ou figé). Pendant une réponse : erreur levée, comme avant (bouton déjà dés
 `{ ok: false, reason, folder? }` (le chemin compris, pour le montrer) ; `null` si la fenêtre est
 annulée. Texte de chaque raison : `sessionTab.folderRefusal.<raison>` (fr, en). Refus noté au
 journal (`info`).
+
+**À l'ouverture d'une session** (fiche 179, `agent/additional-directories.ts`) : la présence des
+dossiers enregistrés était lue par `statSync` (un partage figé gelait le main). Elle est lue avant
+l'ouverture (`SessionDirectories.prepare`), en parallèle, sous un délai de 3 s ; un dossier qui ne
+répond pas à temps n'est pas envoyé (journal).
 
 **Agent sans la capacité** : pas de refus `unsupported` côté main (décision du 2026-11-26 : la
 capacité n'est connue qu'après l'initialisation, et rien n'est envoyé à un agent qui ne l'annonce
@@ -118,7 +138,14 @@ ligne « Ajouter un dossier… » :
   atteignable au Tab, raison dans l'infobulle et la description (`aria-description`, comme
   `ReasonButton`) ; boutons par `ReasonButton` ; aucune ligne de plus ; le texte en cours reste ;
 - dépôt : la zone est le champ lui-même (bord en tirets, « Déposer pour ajouter »), rien ne bouge
-  autour (les boutons sont masqués par `visibility`) ;
+  autour (les boutons sont masqués par `visibility`) ; un texte déjà saisi devient transparent
+  pendant le glisser ;
+- chemin dans un refus : `~` pour le dossier personnel, ellipse au milieu au-delà de 40
+  caractères, chemin entier dans l'infobulle ; message borné à trois lignes ;
+- collage de plusieurs lignes non vides : « Un seul dossier à la fois. », rien d'envoyé au main
+  (Chromium les joindrait par un espace) ;
+- « Ajouté. » s'efface dès qu'un tour commence ; pendant que l'agent démarre, champ et boutons
+  attendent avec leur raison (`sessionTab.foldersStarting`) ;
 - changement de conversation : le champ est vidé (composant remonté), pas de brouillon par
   conversation.
 
@@ -156,10 +183,15 @@ ligne « Ajouter un dossier… » :
   dossiers reçus ; suite e2e `dossiers`, clair et sombre) : chemin relatif refusé avec sa raison,
   chemin complet ajouté et reçu par l'agent, dossier glissé ajouté, plusieurs éléments refusés,
   panneau à 280 px, fenêtre du système (dossier réel, ouverte à côté), pendant un tour.
+- [x] Relevés du testeur reproduits en rouge puis corrigés (essais repris dans
+  `additional-directories-disk.test.ts` et `extra-folder-check.test.ts`) : D1, D2, D3, délais
+  additionnés, courses, `starting`, collage de plusieurs lignes.
 - [ ] Recette manuelle (tech lead) : glisser depuis le vrai Finder.
 - [ ] Recette manuelle (tech lead) : demande d'accès de macOS (`~/Documents/x`).
 - [ ] Recette réelle avec OpenCode (tech lead) : chemin tapé, l'agent lit un fichier du dossier au
   tour suivant.
+- [ ] Recette manuelle (tech lead) : vraie fenêtre du système, et forme des chemins qu'elle rend
+  (liens, firmlinks, volumes).
 
 ## Plan
 
@@ -199,6 +231,24 @@ appliquée telle quelle.
   sombre : `dossiers`, `session`, `attachments`, `aparte`, `pr-ci`, `pilote` (celles du catalogue
   dont les sources touchent l'onglet Session ou le dépôt de fichiers) ; suite complète laissée à la
   branche d'intégration (consigne du 2026-11-26).
+- 2026-11-26 — Retours du testeur et de l'expert UX (un lot). Rouge d'abord : la sortie du
+  testeur sur le code d'avant (`/System/Volumes/Data<home>` et `/System/Volumes/Data` acceptés,
+  doublon et dossier de travail par ce préfixe acceptés, `/Users` et `~/..` acceptés,
+  `<ws>/..cache` accepté, délais additionnés : 405 ms pour un délai de 200 ms, `starting` écrit
+  sans redémarrage). Corrigé à la cause :
+  - D1 : identité (périphérique, inode) en plus du chemin ; D2 : règle « contient le dossier
+    personnel » par identité, et racine de volume ; D3 : sous-dossier par la chaîne des parents ;
+  - M2 : un seul délai pour tout l'ajout ; R1 : pas de nouvel appel sur un chemin encore sans
+    réponse, clés mémorisées ; `starting` refusé ; présence des dossiers à l'ouverture de session
+    lue sans bloquer ;
+  - interface : texte transparent au dépôt, chemin abrégé (3 lignes au plus), « Ajouté. » effacé
+    au début d'un tour, collage de plusieurs lignes refusé ; textes `folderAdded`, `tooLong`,
+    `tooBroad` (en) revus.
+  - Audit du piège `rel.startsWith('..')` ailleurs : `write-area.ts`, `restore-files.ts`,
+    `worktree-cycle.ts`, `worktrees.ts`, `roles/export/files.ts`, `branching.ts`,
+    `folder-fingerprint.ts`, `committed-since.ts`. Tous se trompent dans le sens prudent (un
+    `..x` est dit « dehors » : demande d'accord, refus, ou repli sur « tout ») ; aucun n'accepte à
+    tort. Non corrigés ici (hors du lot, code partagé par d'autres fiches) : reste à faire.
 - Non vérifié : glisser depuis le vrai Finder, Explorateur ou gestionnaire de fichiers Linux ;
   demande d'accès de macOS ; essais du vrai disque sous Windows (jonction) et Linux (casse), qui
   tournent en CI, pas sur ce Mac ; recette avec un vrai OpenCode.

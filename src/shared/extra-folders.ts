@@ -36,7 +36,9 @@ export const EXTRA_FOLDER_REFUSALS = [
   /** Déjà dans les autres dossiers de la conversation. */
   'alreadyAdded',
   /** L'agent répond : la liste ne change pas pendant un tour (la session ne peut pas repartir). */
-  'busy'
+  'busy',
+  /** L'agent démarre : la session en cours d'ouverture n'aurait pas la nouvelle liste. */
+  'starting'
 ] as const
 
 export type ExtraFolderRefusal = (typeof EXTRA_FOLDER_REFUSALS)[number]

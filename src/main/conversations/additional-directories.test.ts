@@ -49,6 +49,12 @@ function disk(
   absent: string[] = [],
   gate?: Promise<void>
 ): FolderSystem {
+  // Identité : une par chemin réel (les liens mènent au même dossier).
+  const inodes = new Map<string, string>()
+  const ino = (p: string) => {
+    if (!inodes.has(p)) inodes.set(p, String(inodes.size + 10))
+    return inodes.get(p) ?? '0'
+  }
   return {
     path,
     home: abs('/Users/moi'),
@@ -58,7 +64,7 @@ function disk(
       if (absent.includes(p)) throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
       return links[p] ?? path.resolve(p)
     },
-    isDirectory: async () => true,
+    stat: async (p) => ({ dir: true, dev: '1', ino: ino(links[p] ?? path.resolve(p)) }),
     access: async () => 'ok'
   }
 }
@@ -200,6 +206,29 @@ describe('autres dossiers d’une conversation (fiches 179, 290)', () => {
     // Rien à retirer : rien d'écrit, pas de session rouverte.
     await removeAdditionalDirectory(m, 'c1', abs('/projets/autre'), sys)
     expect(m.restart).toHaveBeenCalledTimes(2)
+  })
+
+  it('agent qui démarre : `starting`, rien d’écrit (la session qui s’ouvre n’aurait pas le dossier)', async () => {
+    const m = fakeManager('starting')
+    expect(await addAdditionalDirectory(m, 'c1', abs('/projets/lib'), disk())).toEqual({
+      ok: false,
+      reason: 'starting'
+    })
+    expect(m.writes).toBe(0)
+    await expect(removeAdditionalDirectory(m, 'c1', abs('/projets/lib'), disk())).rejects.toThrow()
+  })
+
+  it('sous-dossier dont le nom commence par « .. » : dans le dossier de travail (D3)', async () => {
+    const m = fakeManager('ready')
+    expect(
+      await addAdditionalDirectory(m, 'c1', abs('/projets/app/..cache'), disk())
+    ).toMatchObject({
+      reason: 'insideWorkspace'
+    })
+    // Et le voisin `/projets/app..x` n'est pas dedans.
+    expect(await addAdditionalDirectory(m, 'c1', abs('/projets/app..x'), disk())).toMatchObject({
+      ok: true
+    })
   })
 
   it('retrait pendant une réponse : refusé, rien ne change', async () => {

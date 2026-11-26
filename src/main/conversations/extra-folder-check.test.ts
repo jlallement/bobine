@@ -1,14 +1,24 @@
-import { chmodSync, existsSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync
+} from 'node:fs'
+import { homedir } from 'node:os'
 import { join, posix, win32 } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { MAX_FOLDER_INPUT } from '@shared/extra-folders'
 import {
   checkExtraFolder,
-  folderKey,
-  isUnder,
+  examineFolder,
+  folderKeys,
   NATIVE_FOLDER_SYSTEM,
   parseFolderInput,
-  plainKey,
+  pathKey,
   type FolderSystem
 } from './extra-folder-check'
 import { ON_WINDOWS, POSIX_MODES, tempDir } from '../test-platform'
@@ -107,46 +117,73 @@ describe('lecture d’un chemin saisi (fiche 290)', () => {
 })
 
 /**
- * Disque simulé : des dossiers, des fichiers, des liens (chemin → cible), des dossiers fermés ou
- * protégés par macOS, des chemins interdits (`EACCES`), un partage figé (ne répond jamais).
+ * Disque simulé : des dossiers (identité = leur rang ; `dev` 1, ou 2 pour ceux de `volume`), des
+ * fichiers, des liens (chemin → cible), des alias qui ne sont pas des liens (firmlinks : même
+ * identité, autre chemin, `realpath` ne les réécrit pas), des dossiers fermés ou protégés par
+ * macOS, des chemins interdits (`EACCES`), un partage figé (ne répond jamais).
  */
 function fakeSystem(disk: {
   dirs: string[]
   files?: string[]
   links?: Record<string, string>
+  aliases?: Record<string, string>
+  volume?: string[]
   closed?: string[]
   privacy?: string[]
   denied?: string[]
   frozen?: string
+  calls?: string[]
 }): FolderSystem {
   const error = (code: string) => Object.assign(new Error(code), { code })
+  const exists = (p: string) => disk.dirs.includes(p) || !!disk.files?.includes(p)
+  const original = (p: string) => disk.aliases?.[p] ?? p
+  const frozen = (p: string) => !!disk.frozen && p.startsWith(disk.frozen)
   return {
     ...unix,
     timeoutMs: 50,
     realpath: async (path) => {
-      if (disk.frozen && path.startsWith(disk.frozen)) return new Promise<string>(() => {})
+      disk.calls?.push(path)
+      if (frozen(path)) return new Promise<string>(() => {})
       if (disk.denied?.includes(path)) throw error('EACCES')
       const target = disk.links?.[path] ?? path
-      if (disk.dirs.includes(target) || disk.files?.includes(target)) return target
+      if (exists(target) || exists(original(target))) return target
       throw error('ENOENT')
     },
-    isDirectory: async (path) => disk.dirs.includes(path),
+    stat: async (path) => {
+      if (frozen(path)) return new Promise(() => {})
+      const real = original(path)
+      if (!exists(real)) throw error('ENOENT')
+      return {
+        dir: disk.dirs.includes(real),
+        dev: disk.volume?.includes(real) ? '2' : '1',
+        ino: String(1 + [...disk.dirs, ...(disk.files ?? [])].indexOf(real))
+      }
+    },
     access: async (path) =>
       disk.privacy?.includes(path) ? 'privacy' : disk.closed?.includes(path) ? 'denied' : 'ok'
   }
 }
 
+const DIRS = [
+  '/',
+  '/Users',
+  '/Users/moi',
+  '/Users/moi/Dev',
+  '/Users/moi/Dev/lib',
+  '/Volumes',
+  '/Volumes/data',
+  '/Volumes/data/lib',
+  '/Users/moi/Dev/fermee',
+  '/Users/moi/Documents',
+  '/Users/moi/Documents/x',
+  '/System',
+  '/System/Volumes',
+  '/System/Volumes/Data'
+]
+
 describe('vérification d’un chemin sur le disque (fiche 290)', () => {
   const sys = fakeSystem({
-    dirs: [
-      '/',
-      '/Users/moi',
-      '/Users/moi/Dev',
-      '/Users/moi/Dev/lib',
-      '/Volumes/data/lib',
-      '/Users/moi/Dev/fermee',
-      '/Users/moi/Documents/x'
-    ],
+    dirs: DIRS,
     files: ['/Users/moi/Dev/notes.txt'],
     links: {
       '/Users/moi/Dev/raccourci': '/Volumes/data/lib',
@@ -154,6 +191,13 @@ describe('vérification d’un chemin sur le disque (fiche 290)', () => {
       '/Users/moi/tout': '/',
       '/maison': '/Users/moi'
     },
+    // Firmlinks de macOS : même dossier, autre chemin, que `realpath` laisse tel quel.
+    aliases: {
+      '/System/Volumes/Data/Users': '/Users',
+      '/System/Volumes/Data/Users/moi': '/Users/moi',
+      '/System/Volumes/Data/Users/moi/Dev': '/Users/moi/Dev'
+    },
+    volume: ['/Volumes/data', '/Volumes/data/lib', '/System/Volumes/Data'],
     closed: ['/Users/moi/Dev/fermee'],
     privacy: ['/Users/moi/Documents/x'],
     denied: ['/Users/moi/Prive/x'],
@@ -171,10 +215,41 @@ describe('vérification d’un chemin sur le disque (fiche 290)', () => {
     })
   })
 
-  it('trop large : racine, dossier personnel (aussi par un lien) ; un parent du projet passe', async () => {
-    for (const text of ['/', '~', '~/', '/Users/moi/tout', '/maison'])
-      expect(await checkExtraFolder(text, sys)).toMatchObject({ ok: false, reason: 'tooBroad' })
+  it('trop large : ce qui contient le dossier personnel, par chemin, lien ou firmlink (D1, D2)', async () => {
+    for (const text of [
+      '/',
+      '~',
+      '~/',
+      '~/..',
+      '/Users',
+      '/Users/moi/tout',
+      '/maison',
+      '/System/Volumes/Data/Users/moi',
+      '/System/Volumes/Data/Users'
+    ])
+      expect(await checkExtraFolder(text, sys), text).toMatchObject({
+        ok: false,
+        reason: 'tooBroad'
+      })
+  })
+
+  it('trop large : une racine de volume (D2) ; un parent du projet sans le dossier personnel passe', async () => {
+    for (const text of ['/Volumes/data', '/System/Volumes/Data'])
+      expect(await checkExtraFolder(text, sys), text).toMatchObject({ reason: 'tooBroad' })
     expect(await checkExtraFolder('~/Dev', sys)).toEqual({ ok: true, folder: '/Users/moi/Dev' })
+    // Par le firmlink, un dossier qui ne contient pas le dossier personnel passe aussi.
+    expect(await checkExtraFolder('/System/Volumes/Data/Users/moi/Dev', sys)).toMatchObject({
+      ok: true
+    })
+  })
+
+  it('identité : le même dossier par un firmlink a les mêmes clés', async () => {
+    const direct = await examineFolder('/Users/moi/Dev', sys)
+    const firm = await examineFolder('/System/Volumes/Data/Users/moi/Dev', sys)
+    if (!direct.ok || !firm.ok) throw new Error('attendu : accepté')
+    expect(firm.keys.filter((k) => k.startsWith('id:'))).toEqual(
+      direct.keys.filter((k) => k.startsWith('id:'))
+    )
   })
 
   it('absent, lien cassé, fichier, fermé, chemin interdit, protection de macOS', async () => {
@@ -204,31 +279,38 @@ describe('vérification d’un chemin sur le disque (fiche 290)', () => {
     })
   })
 
-  it('partage figé : refus `timeout` dans le délai, rien de bloqué', async () => {
+  it('partage figé : `timeout` dans le délai ; tant qu’il n’a pas répondu, pas de nouvel appel (R1)', async () => {
+    const calls: string[] = []
+    const watched = fakeSystem({ dirs: DIRS, frozen: '/Volumes/nfs', calls })
     const started = Date.now()
-    expect(await checkExtraFolder('/Volumes/nfs/projet', sys)).toEqual({
+    expect(await checkExtraFolder('/Volumes/nfs/projet', watched)).toEqual({
       ok: false,
       reason: 'timeout',
       folder: '/Volumes/nfs/projet'
     })
     expect(Date.now() - started).toBeLessThan(1000)
+    const before = calls.length
+    expect(await checkExtraFolder('/Volumes/nfs/projet/', watched)).toMatchObject({
+      reason: 'timeout'
+    })
+    // Refusé tout de suite, sans relancer d'appel au disque sur ce chemin.
+    expect(calls.length).toBe(before)
     // Clé d'un dossier figé déjà enregistré : son chemin normalisé, dans le délai.
-    expect(await folderKey('/Volumes/nfs/projet/', sys)).toBe('/Volumes/nfs/projet')
+    expect(await folderKeys('/Volumes/nfs/autre/', watched)).toEqual(['path:/Volumes/nfs/autre'])
   })
 
   it('un refus de lecture du texte passe avant le disque', async () => {
     expect(await checkExtraFolder('Dev/lib', sys)).toEqual({ ok: false, reason: 'notAbsolute' })
   })
 
-  it('clés : lien suivi, chemin normalisé ; Windows sans casse ; « sous » strict', async () => {
-    expect(await folderKey('/Users/moi/Dev/raccourci', sys)).toBe('/Volumes/data/lib')
-    expect(await folderKey('/Users/moi/Dev/x/../parti/', sys)).toBe('/Users/moi/Dev/parti')
-    expect(plainKey('C:/Users/MOI/Dev/', windows)).toBe('c:\\users\\moi\\dev')
-    expect(isUnder('/a/b/c', '/a/b', posix)).toBe(true)
-    expect(isUnder('/a/b', '/a/b', posix)).toBe(false)
-    expect(isUnder('/a/bc', '/a/b', posix)).toBe(false)
-    expect(isUnder('/a', '/a/b', posix)).toBe(false)
-    expect(isUnder('c:\\projet\\src', 'c:\\projet', win32)).toBe(true)
+  it('clés : identité et chemin réel ; Windows sans casse', async () => {
+    expect(await folderKeys('/Users/moi/Dev/raccourci', sys)).toEqual(
+      expect.arrayContaining(['path:/Volumes/data/lib', 'path:/Users/moi/Dev/raccourci'])
+    )
+    expect(await folderKeys('/Users/moi/Dev/x/../parti/', sys)).toEqual([
+      'path:/Users/moi/Dev/parti'
+    ])
+    expect(pathKey('C:/Users/MOI/Dev/', windows)).toBe('path:c:\\users\\moi\\dev')
   })
 
   it('Windows : racine d’un lecteur ou d’un partage, dossier personnel : trop large', async () => {
@@ -236,11 +318,14 @@ describe('vérification d’un chemin sur le disque (fiche 290)', () => {
       ...windows,
       timeoutMs: 50,
       realpath: async (p) => p,
-      isDirectory: async () => true,
+      stat: async () => ({ dir: true, dev: '1', ino: '0' }),
       access: async () => 'ok'
     }
     for (const text of ['C:\\', 'D:/', '\\\\serveur\\partage', '\\\\serveur\\partage\\', '~'])
-      expect(await checkExtraFolder(text, win)).toMatchObject({ ok: false, reason: 'tooBroad' })
+      expect(await checkExtraFolder(text, win), text).toMatchObject({
+        ok: false,
+        reason: 'tooBroad'
+      })
     expect(await checkExtraFolder('\\\\serveur\\partage\\projet', win)).toMatchObject({ ok: true })
   })
 })
@@ -261,7 +346,7 @@ describe('sur le vrai disque (fiche 290)', () => {
   })
   const real = (p: string) => NATIVE_FOLDER_SYSTEM.realpath(p)
 
-  it('dossier, lien, absent, lien cassé, fichier, racine, dossier personnel', async () => {
+  it('dossier, lien, absent, lien cassé, fichier, racine, dossier personnel et son parent', async () => {
     const lib = await real(join(root, 'lib'))
     expect(await checkExtraFolder(join(root, 'lib'))).toEqual({ ok: true, folder: lib })
     expect(await checkExtraFolder(join(root, 'lien'))).toEqual({ ok: true, folder: lib })
@@ -272,8 +357,40 @@ describe('sur le vrai disque (fiche 290)', () => {
     })
     expect(await checkExtraFolder(ON_WINDOWS ? 'C:\\' : '/')).toMatchObject({ reason: 'tooBroad' })
     expect(await checkExtraFolder('~')).toMatchObject({ reason: 'tooBroad' })
-    expect(await folderKey(join(root, 'lien'))).toBe(plainKey(lib))
+    expect(await checkExtraFolder('~/..')).toMatchObject({ reason: 'tooBroad' })
+    const [libId] = (await folderKeys(lib)).filter((k) => k.startsWith('id:'))
+    expect(await folderKeys(join(root, 'lien'))).toContain(libId)
   })
+
+  // Relevé du testeur (D1) : firmlinks du volume de données de macOS.
+  it.skipIf(process.platform !== 'darwin')(
+    'macOS : le dossier personnel et le volume de données par /System/Volumes/Data (D1)',
+    async () => {
+      const home = homedir()
+      expect(await checkExtraFolder(`/System/Volumes/Data${home}`)).toMatchObject({
+        reason: 'tooBroad'
+      })
+      expect(await checkExtraFolder('/System/Volumes/Data')).toMatchObject({ reason: 'tooBroad' })
+      expect(await checkExtraFolder('/System/Volumes/Data/Users')).toMatchObject({
+        reason: 'tooBroad'
+      })
+      symlinkSync(`/System/Volumes/Data${home}`, join(root, 'lien-maison'))
+      expect(await checkExtraFolder(join(root, 'lien-maison'))).toMatchObject({
+        reason: 'tooBroad'
+      })
+    }
+  )
+
+  it.skipIf(process.platform !== 'darwin')(
+    'macOS : chaque volume monté dans /Volumes est une racine de volume (D2)',
+    async () => {
+      for (const name of readdirSync('/Volumes')) {
+        const mount = join('/Volumes', name)
+        if (statSync(mount).dev === statSync('/Volumes').dev) continue // lien vers le disque
+        expect(await checkExtraFolder(mount), mount).toMatchObject({ reason: 'tooBroad' })
+      }
+    }
+  )
 
   it('casse différente d’un dossier existant (disque insensible à la casse) : la casse réelle', async () => {
     const upper = join(root, 'LIB')

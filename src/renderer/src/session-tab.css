@@ -262,6 +262,11 @@
   background: color-mix(in srgb, var(--accent) 8%, var(--bg));
 }
 
+.folder-path.dropping .folder-path-input {
+  /* Le texte saisi ne se mêle pas à « Déposer pour ajouter ». */
+  color: transparent;
+}
+
 .folder-path.dropping .folder-path-buttons {
   visibility: hidden;
 }
@@ -291,6 +296,14 @@
 .folder-path-note:not(:empty) {
   /* Toujours là (région annoncée), sans hauteur quand elle est vide. */
   margin-top: 4px;
+}
+
+.folder-path-note-text {
+  /* Trois lignes au plus ; le chemin entier est dans l'infobulle. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
 }
 
 .folder-path-note svg {

@@ -3,7 +3,13 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AddFolderResult } from '@shared/extra-folders'
 import { FILE_DRAG_TYPE } from '../../useFileDrop'
-import { ADDED_NOTE_MS, FolderPathField, type FolderPathFieldProps } from './FolderPathField'
+import {
+  ADDED_NOTE_MS,
+  FolderPathField,
+  severalLines,
+  shownPath,
+  type FolderPathFieldProps
+} from './FolderPathField'
 
 const props = (over: Partial<FolderPathFieldProps> = {}): FolderPathFieldProps => ({
   add: vi.fn(async (): Promise<AddFolderResult | null> => ({ ok: true, folder: '/projets/lib' })),
@@ -66,7 +72,7 @@ describe('champ « Autres dossiers » : chemin saisi (fiche 290)', () => {
     await settle()
     expect(p.add).toHaveBeenCalledWith('~/Dev/lib')
     expect(field().value).toBe('')
-    expect(note().textContent).toContain('Ajouté')
+    expect(note().textContent).toBe('Ajouté.')
     expect(note().getAttribute('role')).toBe('status')
     expect(p.onAdded).toHaveBeenCalledWith('/projets/lib')
     act(() => vi.advanceTimersByTime(ADDED_NOTE_MS))
@@ -78,7 +84,7 @@ describe('champ « Autres dossiers » : chemin saisi (fiche 290)', () => {
     type('/a')
     fireEvent.keyDown(field(), { key: 'Enter' })
     await settle()
-    expect(note().textContent).toContain('Ajouté')
+    expect(note().textContent).toBe('Ajouté.')
     type('/b')
     expect(note().textContent).toBe('')
   })
@@ -207,7 +213,7 @@ describe('champ « Autres dossiers » : dossier glissé', () => {
     await settle()
     expect(box().classList.contains('dropping')).toBe(false)
     expect(p.add).toHaveBeenCalledWith('/glisse/lib')
-    expect(note().textContent).toContain('Ajouté')
+    expect(note().textContent).toBe('Ajouté.')
   })
 
   it('sortie de la zone : l’indication disparaît, entrée dans un enfant comprise', () => {
@@ -266,5 +272,55 @@ describe('champ « Autres dossiers » : dossier glissé', () => {
     show(p)
     fireEvent.drop(box(), drag(['Files'], [folder('x')]))
     expect(p.add).not.toHaveBeenCalled()
+  })
+})
+
+describe('champ « Autres dossiers » : retours du testeur (fiche 290)', () => {
+  it('collage de plusieurs lignes : « Un seul dossier à la fois », rien n’est envoyé (M1)', () => {
+    const p = props()
+    show(p)
+    const several = fireEvent.paste(field(), {
+      clipboardData: { getData: () => '/a/b\n/c/d' }
+    })
+    expect(several).toBe(false)
+    expect(note().textContent).toContain('Un seul dossier à la fois')
+    expect(p.add).not.toHaveBeenCalled()
+    // Une seule ligne (retour final compris) : collage ordinaire.
+    expect(fireEvent.paste(field(), { clipboardData: { getData: () => '/a/b\n' } })).toBe(true)
+    expect(severalLines('/a\r\n/b')).toBe(true)
+    expect(severalLines('/a\u2028/b')).toBe(true)
+    expect(severalLines('  /a  \n\n')).toBe(false)
+  })
+
+  it('« Ajouté » s’efface dès qu’un tour commence', async () => {
+    const p = props()
+    const view = show(p)
+    type('/a')
+    fireEvent.keyDown(field(), { key: 'Enter' })
+    await settle()
+    expect(note().textContent).toBe('Ajouté.')
+    view.rerender({ ...p, blocked: 'L’agent répond.', turn: true })
+    expect(note().textContent).toBe('')
+  })
+
+  it('chemin long dans un refus : `~`, ellipse au milieu, entier dans l’infobulle', async () => {
+    const long = '/Users/moi/Dev/un/chemin/vraiment/tres/long/pour/le/panneau/notes.txt'
+    expect(shownPath(long, '/Users/moi')).toBe('~/Dev/un/chemin…our/le/panneau/notes.txt')
+    expect(shownPath(long, '/Users/moi').length).toBe(40)
+    expect(shownPath('/Users/moi/Dev/lib', '/Users/moi')).toBe('~/Dev/lib')
+    expect(shownPath('/opt/lib', undefined)).toBe('/opt/lib')
+    const p = props({
+      add: vi.fn(async () => ({
+        ok: false as const,
+        reason: 'notDirectory' as const,
+        folder: long
+      }))
+    })
+    show(p)
+    type(long)
+    fireEvent.keyDown(field(), { key: 'Enter' })
+    await settle()
+    expect(note().textContent).not.toContain(long)
+    expect(note().textContent).toContain('…')
   })
 })

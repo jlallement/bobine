@@ -67,6 +67,17 @@ describe('onglet « Session » : autres dossiers (fiche 179)', () => {
     expect(p.onRemove).not.toHaveBeenCalled()
   })
 
+  it('agent qui démarre : ajout et retrait attendent, la raison dite (fiche 290)', () => {
+    const p = props({ folders: ['/projets/lib'], starting: true })
+    wrap(p)
+    const field = screen.getByTestId('session-folder-path') as HTMLInputElement
+    expect(field.readOnly).toBe(true)
+    expect(field.getAttribute('aria-description')).toContain('démarre')
+    expect(screen.getByTestId('session-remove-folder').getAttribute('aria-disabled')).toBe('true')
+    fireEvent.click(screen.getByTestId('session-remove-folder'))
+    expect(p.onRemove).not.toHaveBeenCalled()
+  })
+
   it('agent qui ne les prend pas : dossiers gardés, « non transmis », pas d’ajout', () => {
     wrap(props({ folders: ['/projets/lib'], supported: false }))
     expect(screen.queryByTestId('session-add-folder')).toBeNull()

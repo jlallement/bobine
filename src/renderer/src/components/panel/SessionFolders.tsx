@@ -15,6 +15,8 @@ export interface SessionFoldersProps {
   supported: boolean
   /** L'agent répond : la session ne peut pas être rouverte maintenant. */
   busy: boolean
+  /** L'agent démarre : la session qui s'ouvre n'aurait pas la nouvelle liste (fiche 290). */
+  starting?: boolean
   agentLabel: string
   /** Le Finder (macOS) ou le gestionnaire de fichiers (fiche 145). */
   finder: boolean
@@ -47,6 +49,11 @@ export function SessionFolders(props: SessionFoldersProps) {
   }, [fresh])
   if (!props.supported && props.folders.length === 0) return null
   const revealLabel = t(revealLabelKey({ finder: props.finder, explorer: props.explorer === true }))
+  const blocked = props.busy
+    ? t('sessionTab.foldersBusy')
+    : props.starting
+      ? t('sessionTab.foldersStarting')
+      : undefined
   return (
     <div
       className="session-row session-folders"
@@ -76,7 +83,7 @@ export function SessionFolders(props: SessionFoldersProps) {
             <ReasonButton
               className="btn small ghost icon session-folder-remove"
               aria-label={t('sessionTab.removeFolder', { name: baseName(folder) })}
-              reason={props.busy ? t('sessionTab.foldersBusy') : undefined}
+              reason={blocked}
               tip={t('sessionTab.removeFolder', { name: baseName(folder) })}
               onClick={() => props.onRemove(folder)}
               data-testid="session-remove-folder"
@@ -87,7 +94,8 @@ export function SessionFolders(props: SessionFoldersProps) {
         ))}
         {props.supported ? (
           <FolderPathField
-            blocked={props.busy ? t('sessionTab.foldersBusy') : undefined}
+            blocked={blocked}
+            turn={props.busy}
             add={props.onAdd}
             pathFor={props.pathFor}
             onAdded={setFresh}
