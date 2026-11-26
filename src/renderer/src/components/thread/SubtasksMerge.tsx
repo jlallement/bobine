@@ -12,6 +12,7 @@ import type { ConversationSummary } from '@shared/agent'
 import { recommendedIds, type ChildVerdict } from '@shared/children'
 import {
   mergeActive,
+  mergeBlockReasons,
   mergeable,
   mergedRows,
   mergeSummary,
@@ -23,7 +24,7 @@ import {
   type MergeRowState
 } from '@shared/children-merge'
 import { currentLocale } from '@shared/i18n/format'
-import { translate } from '@shared/i18n/message'
+import { translate, type Message } from '@shared/i18n/message'
 import type { TranscriptItem } from '@shared/transcript'
 import type { CommitRequest, StashOutcome } from '@shared/worktree-cycle'
 import { lastMergeFor } from '@shared/work-groups'
@@ -38,6 +39,7 @@ import {
 } from './merge-plan-store'
 import { ipcErrorText } from '../../ipc-errors'
 import { MainDirtyCard, stashSentence } from '../panel/MainDirtyCard'
+import { ReasonButton } from '../common/ReasonButton'
 
 /**
  * Fusion de toutes les filles finies depuis la carte « Sous-tâches » (fiche 120) : l'état de
@@ -499,7 +501,13 @@ export function SubtasksMergeFooter({
                 ids={ids}
                 others={others}
                 advised={advised}
-                disabled={busy || !!plan.blocked || plan.running}
+                disabled={busy}
+                // Fiche 287 : grisé, il dit pourquoi (fusion en cours, base ailleurs, travaux au
+                // travail ou non commités), au survol et au clavier.
+                startReason={reasonText(mergeBlockReasons(plan, ids, titles))}
+                othersReason={reasonText(
+                  mergeBlockReasons(plan, [...ids, ...others.map((c) => c.id)], titles)
+                )}
                 titles={titles}
                 onStart={(list) => void run(() => actions.start(motherId, list, cleanup))}
                 extra={extra}
@@ -516,6 +524,10 @@ export function SubtasksMergeFooter({
   )
 }
 
+/** Raisons d'un bouton grisé, en une phrase ; `undefined` : rien ne l'empêche. */
+const reasonText = (reasons: readonly Message[]): string | undefined =>
+  reasons.length > 0 ? reasons.map(translate).join(' ') : undefined
+
 /**
  * « Fusionner les N (recommandées) dans main » et, si la mère n'en recommande pas certaines,
  * « Inclure les M autres… » qui demande confirmation (fiche 160). Ordre de lancement gardé.
@@ -529,6 +541,8 @@ function MergeButtons({
   others,
   advised,
   disabled,
+  startReason,
+  othersReason,
   titles,
   onStart,
   children
@@ -542,7 +556,12 @@ function MergeButtons({
   ids: string[]
   others: MergeCandidate[]
   advised: boolean
+  /** Une action de la carte est en cours : rien à expliquer. */
   disabled: boolean
+  /** Pourquoi « Fusionner … » ne part pas (fiche 287) ; absent : il part. */
+  startReason?: string | undefined
+  /** Pourquoi « Inclure les M autres… » et sa confirmation ne partent pas. */
+  othersReason?: string | undefined
   titles: (list: readonly string[]) => string
   onStart: (ids: string[]) => void
   children: ReactNode
@@ -572,9 +591,10 @@ function MergeButtons({
           >
             {t('childrenMerge.recommended.cancel')}
           </button>
-          <button
+          <ReasonButton
             className="btn small primary"
             disabled={disabled}
+            reason={othersReason}
             onClick={() => {
               setConfirming(false)
               onStart(all)
@@ -583,7 +603,7 @@ function MergeButtons({
           >
             <GitMerge size={13} />
             {t(texts.confirmAction, { count: all.length })}
-          </button>
+          </ReasonButton>
           {vocabulary !== 'works' && children}
         </div>
       </div>
@@ -593,19 +613,21 @@ function MergeButtons({
     <div className="subtasks-merge-actions">
       {extra}
       {others.length > 0 && (
-        <button
+        <ReasonButton
           className="btn small"
           disabled={disabled}
+          reason={othersReason}
           onClick={() => setConfirming(true)}
           data-testid="subtasks-merge-others"
         >
           {t(texts.others, { count: others.length })}
-        </button>
+        </ReasonButton>
       )}
       {(!advised || ids.length > 0) && (
-        <button
+        <ReasonButton
           className="btn small primary"
-          disabled={disabled || ids.length === 0}
+          disabled={disabled}
+          reason={startReason}
           onClick={() => onStart(ids)}
           data-testid="subtasks-merge-start"
         >
@@ -613,7 +635,7 @@ function MergeButtons({
           {advised
             ? t(texts.recommendedAction, { count: ids.length, base })
             : t(texts.action, { count: ids.length, base })}
-        </button>
+        </ReasonButton>
       )}
       {vocabulary !== 'works' && children}
     </div>

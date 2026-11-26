@@ -172,14 +172,21 @@ describe('barre du worktree : départ et fusion (fiches 110, 123)', () => {
     expect(screen.getByTestId('worktree-dirty-at-start').textContent).toContain('2')
   })
 
-  it('« Fusionner » bloqué tant qu’il reste du non commité, la raison en infobulle', async () => {
+  it('« Fusionner » bloqué tant qu’il reste du non commité, la raison au survol et au clavier', async () => {
     trackPr({ status: 'unavailable' })
+    const merging = vi.fn()
+    window.api.worktree = { ...window.api.worktree, merge: merging }
     const { rerender } = bar(view({ dirty: 2 }))
     const merge = screen.getByTestId('worktree-merge') as HTMLButtonElement
-    expect(merge.disabled).toBe(true)
-    expect(merge.title.replace(/[  ]/g, ' ')).toBe(
-      'Committez d’abord : 2 modifications non commitées.'
-    )
+    const why = 'Committez d’abord\u00a0: 2 modifications non commitées.'
+    // Fiche 287 : atteignable au clavier (pas `disabled`), sans effet, et il dit pourquoi.
+    expect(merge.disabled).toBe(false)
+    expect(merge.getAttribute('aria-disabled')).toBe('true')
+    expect(merge.getAttribute('aria-description')).toBe(why)
+    fireEvent.click(merge)
+    expect(merging).not.toHaveBeenCalled()
+    act(() => merge.focus())
+    await waitFor(() => expect(screen.getAllByRole('tooltip')[0]?.textContent).toBe(why))
     rerender(
       <WorktreeBar
         conversationId="c1"
@@ -189,6 +196,6 @@ describe('barre du worktree : départ et fusion (fiches 110, 123)', () => {
       />
     )
     expect((screen.getByTestId('worktree-merge') as HTMLButtonElement).disabled).toBe(false)
-    expect(screen.getByTestId('worktree-merge').title).toBe('')
+    expect(screen.getByTestId('worktree-merge').hasAttribute('aria-disabled')).toBe(false)
   })
 })

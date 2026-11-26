@@ -4265,7 +4265,21 @@
     },
     "stashKept_one": "Votre modification est mise de côté le temps de la fusion.",
     "stashKept_other": "Vos {{count}} modifications sont mises de côté le temps de la fusion.",
-    "stashKept_many": "Vos {{count}} modifications sont mises de côté le temps de la fusion."
+    "stashKept_many": "Vos {{count}} modifications sont mises de côté le temps de la fusion.",
+    "why": {
+      "running": "Une fusion est déjà en cours ici : celle-ci attend sa fin.",
+      "baseElsewhere": "{{base}} est extraite dans un autre worktree ({{path}}) : fusionnez de là.",
+      "working_one": "{{titles}} répond encore : la fusion attend la fin de son tour.",
+      "working_other": "{{titles}} répondent encore : la fusion attend la fin de leur tour.",
+      "working_many": "{{titles}} répondent encore : la fusion attend la fin de leur tour.",
+      "waiting_one": "{{titles}} attend votre accord : la fusion attend sa réponse.",
+      "waiting_other": "{{titles}} attendent votre accord : la fusion attend leur réponse.",
+      "waiting_many": "{{titles}} attendent votre accord : la fusion attend leur réponse.",
+      "dirty_one": "{{titles}} a des modifications non commitées : à committer depuis sa vue Git.",
+      "dirty_other": "{{titles}} ont des modifications non commitées : à committer depuis leur vue Git.",
+      "dirty_many": "{{titles}} ont des modifications non commitées : à committer depuis leur vue Git.",
+      "nothing": "Rien à fusionner : aucune branche n’a de commit que {{base}} n’a pas."
+    }
   },
   "handover": {
     "error": {
@@ -4587,7 +4601,7 @@
     "addFolder": "Ajouter un dossier…",
     "addFolderTip": "L’agent voit aussi ce dossier. Sa session repart aussitôt avec la nouvelle liste ; le fil est gardé.",
     "removeFolder": "Retirer {{name}} de la conversation",
-    "foldersBusy": "Après la réponse de l’agent",
+    "foldersBusy": "L’agent répond : l’ajout et le retrait d’un dossier attendent la fin de son tour.",
     "foldersUnsupported": "Non transmis : {{agent}} ne prend pas d’autres dossiers que le dossier de travail.",
     "documents": "Documents",
     "discussionDocuments": "Documents de la discussion",

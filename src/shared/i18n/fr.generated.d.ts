@@ -4107,6 +4107,20 @@ export type FrResources = {
     readonly stashKept_one: 'Votre modification est mise de côté le temps de la fusion.'
     readonly stashKept_other: 'Vos {{count}} modifications sont mises de côté le temps de la fusion.'
     readonly stashKept_many: 'Vos {{count}} modifications sont mises de côté le temps de la fusion.'
+    readonly why: {
+      readonly running: 'Une fusion est déjà en cours ici : celle-ci attend sa fin.'
+      readonly baseElsewhere: '{{base}} est extraite dans un autre worktree ({{path}}) : fusionnez de là.'
+      readonly working_one: '{{titles}} répond encore : la fusion attend la fin de son tour.'
+      readonly working_other: '{{titles}} répondent encore : la fusion attend la fin de leur tour.'
+      readonly working_many: '{{titles}} répondent encore : la fusion attend la fin de leur tour.'
+      readonly waiting_one: '{{titles}} attend votre accord : la fusion attend sa réponse.'
+      readonly waiting_other: '{{titles}} attendent votre accord : la fusion attend leur réponse.'
+      readonly waiting_many: '{{titles}} attendent votre accord : la fusion attend leur réponse.'
+      readonly dirty_one: '{{titles}} a des modifications non commitées : à committer depuis sa vue Git.'
+      readonly dirty_other: '{{titles}} ont des modifications non commitées : à committer depuis leur vue Git.'
+      readonly dirty_many: '{{titles}} ont des modifications non commitées : à committer depuis leur vue Git.'
+      readonly nothing: 'Rien à fusionner : aucune branche n’a de commit que {{base}} n’a pas.'
+    }
   }
   readonly handover: {
     readonly error: {
@@ -4426,7 +4440,7 @@ export type FrResources = {
     readonly addFolder: 'Ajouter un dossier…'
     readonly addFolderTip: 'L’agent voit aussi ce dossier. Sa session repart aussitôt avec la nouvelle liste ; le fil est gardé.'
     readonly removeFolder: 'Retirer {{name}} de la conversation'
-    readonly foldersBusy: 'Après la réponse de l’agent'
+    readonly foldersBusy: 'L’agent répond : l’ajout et le retrait d’un dossier attendent la fin de son tour.'
     readonly foldersUnsupported: 'Non transmis : {{agent}} ne prend pas d’autres dossiers que le dossier de travail.'
     readonly documents: 'Documents'
     readonly discussionDocuments: 'Documents de la discussion'

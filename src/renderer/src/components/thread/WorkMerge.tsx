@@ -18,6 +18,7 @@ import type { TranscriptItem } from '@shared/transcript'
 import { useWorkFacts } from './work-layout-context'
 import { ipcErrorText } from '../../ipc-errors'
 import { MainDirtyCard } from '../panel/MainDirtyCard'
+import { ReasonButton } from '../common/ReasonButton'
 import { FileStats, type SubtasksInfo } from './Subtasks'
 import {
   planReadAfter,
@@ -145,17 +146,18 @@ export function WorkMergeButton({
   const { t } = useTranslation()
   if (!control.startable || !control.candidate) return null
   return (
-    <button
-      type="button"
+    // Fiche 287 : en relecture, la raison au survol et au clavier (pas un `title` sur un bouton
+    // désactivé, que ni le pointeur ni le clavier n'atteignent).
+    <ReasonButton
       className={`btn small${secondary ? '' : ' primary'}`}
-      disabled={control.busy || reviewing}
-      title={reviewing ? t('workMerge.reviewing') : undefined}
+      disabled={control.busy}
+      reason={reviewing ? t('workMerge.reviewing') : undefined}
       onClick={() => control.start()}
       data-testid="work-merge-start"
     >
       <GitMerge size={13} aria-hidden />
       {t('workMerge.action', { base: control.candidate.base })}
-    </button>
+    </ReasonButton>
   )
 }
 

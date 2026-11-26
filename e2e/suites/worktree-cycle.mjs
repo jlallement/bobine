@@ -112,7 +112,10 @@ export async function worktreeCycleSuite(scheme) {
         await ui.click(
           `document.querySelector('.changes-bar [aria-label="${L('changes.refresh')}"]')`
         )
-        await ui.waitFor(`!${ui.$('worktree-merge')}.disabled`)
+        // Grisé avec sa raison : `aria-disabled`, pas `disabled` (fiche 287).
+        await ui.waitFor(
+          `!${ui.$('worktree-merge')}.disabled && !${ui.$('worktree-merge')}.hasAttribute('aria-disabled')`
+        )
         await ui.click(ui.$('worktree-merge'))
         // Le dossier principal a encore notes.txt (fiche 123) : la fusion ne part pas et le dit.
         await ui.waitFor(`!!${ui.$('main-dirty')}`)

@@ -60,7 +60,9 @@ button {
   padding: 0;
 }
 
-button:disabled {
+/* `aria-disabled` : désactivé mais atteignable, pour dire pourquoi (fiche 287, `ReasonButton`). */
+button:disabled,
+button[aria-disabled='true'] {
   cursor: default;
 }
 
@@ -2236,7 +2238,7 @@ a.btn {
   text-decoration: none;
 }
 
-.btn:hover:not(:disabled) {
+.btn:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--surface-2);
 }
 
@@ -2253,19 +2255,20 @@ a.btn {
 
 /* Aurore (fiche 226) : un même dégradé doux pour l'action principale (touche 4) ; bordure
    transparente sur le fond (même rendu qu'une bordure de l'accent dans les autres thèmes). */
-.btn.primary:not(:disabled) {
+.btn.primary:not(:disabled):not([aria-disabled='true']) {
   background-image: var(--touch-action);
   border-color: transparent;
 }
 
-.btn.primary:hover:not(:disabled) {
+.btn.primary:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--accent-hover);
   background-image: var(--touch-action-hover);
   border-color: transparent;
 }
 
 /* Pas encore possible : neutre comme Envoyer, l'accent arrive quand l'action l'est. */
-.btn.primary:disabled {
+.btn.primary:disabled,
+.btn.primary[aria-disabled='true'] {
   background: var(--surface-3);
   border-color: var(--surface-3);
   color: var(--muted);
@@ -2277,7 +2280,7 @@ a.btn {
   color: var(--text-2);
 }
 
-.btn.ghost:hover:not(:disabled) {
+.btn.ghost:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--surface-3);
 }
 
@@ -10139,7 +10142,8 @@ html.about-page body {
  * Fiche 189 (verdict UX) : « Ouvrir une PR / MR » grisé se voit grisé (outil absent, non connecté,
  * hôte injoignable) ; la raison est la ligne grise dessous.
  */
-.worktree-actions .btn:disabled {
+.worktree-actions .btn:disabled,
+.worktree-actions .btn[aria-disabled='true'] {
   color: var(--muted);
   border-color: var(--border);
   background: transparent;

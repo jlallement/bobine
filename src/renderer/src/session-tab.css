@@ -168,12 +168,14 @@
   color: var(--muted);
 }
 
-.session-link:disabled {
+.session-link:disabled,
+.session-link[aria-disabled='true'] {
   color: var(--muted);
   cursor: default;
 }
 
-.session-link:disabled:hover {
+.session-link:disabled:hover,
+.session-link[aria-disabled='true']:hover {
   background: none;
 }
 

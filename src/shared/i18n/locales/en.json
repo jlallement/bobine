@@ -4086,7 +4086,18 @@
       "reviewing": "“{{title}}” is being reviewed: wait until the review ends to merge it."
     },
     "stashKept_one": "Your change is set aside for the duration of the merge.",
-    "stashKept_other": "Your {{count}} changes are set aside for the duration of the merge."
+    "stashKept_other": "Your {{count}} changes are set aside for the duration of the merge.",
+    "why": {
+      "running": "A merge is already running here: this one waits for it to end.",
+      "baseElsewhere": "{{base}} is checked out in another worktree ({{path}}): merge from there.",
+      "working_one": "{{titles}} is still replying: the merge waits until its turn ends.",
+      "working_other": "{{titles}} are still replying: the merge waits until their turns end.",
+      "waiting_one": "{{titles}} is waiting for your approval: the merge waits for its response.",
+      "waiting_other": "{{titles}} are waiting for your approval: the merge waits for their responses.",
+      "dirty_one": "{{titles}} has uncommitted changes: commit them from its Git view.",
+      "dirty_other": "{{titles}} have uncommitted changes: commit them from their Git views.",
+      "nothing": "Nothing to merge: no branch has commits that {{base}} doesn’t have."
+    }
   },
   "handover": {
     "error": {
@@ -4399,7 +4410,7 @@
     "addFolder": "Add a folder…",
     "addFolderTip": "The agent sees this folder too. Its session restarts right away with the new list; the thread is kept.",
     "removeFolder": "Remove {{name}} from the conversation",
-    "foldersBusy": "After the agent’s reply",
+    "foldersBusy": "The agent is replying: adding or removing a folder waits until its turn ends.",
     "foldersUnsupported": "Not sent: {{agent}} only takes its working folder.",
     "documents": "Documents",
     "discussionDocuments": "Chat documents",

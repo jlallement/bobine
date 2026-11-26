@@ -2,6 +2,7 @@ import { FolderPlus, FolderSymlink, X } from 'lucide-react'
 import { revealLabelKey } from '../../platform-features'
 import { useTranslation } from 'react-i18next'
 import { Tip } from '../common/Menus'
+import { ReasonButton } from '../common/ReasonButton'
 import { folderName } from '@shared/windows-paths'
 
 export interface SessionFoldersProps {
@@ -52,39 +53,30 @@ export function SessionFolders(props: SessionFoldersProps) {
                 <span className="session-link-text">{baseName(folder)}</span>
               </button>
             </Tip>
-            <Tip
-              label={
-                props.busy
-                  ? t('sessionTab.foldersBusy')
-                  : t('sessionTab.removeFolder', { name: baseName(folder) })
-              }
+            {/* Pendant une réponse : la raison au survol et au clavier (fiche 287). */}
+            <ReasonButton
+              className="btn small ghost icon session-folder-remove"
+              aria-label={t('sessionTab.removeFolder', { name: baseName(folder) })}
+              reason={props.busy ? t('sessionTab.foldersBusy') : undefined}
+              tip={t('sessionTab.removeFolder', { name: baseName(folder) })}
+              onClick={() => props.onRemove(folder)}
+              data-testid="session-remove-folder"
             >
-              <button
-                type="button"
-                className="btn small ghost icon session-folder-remove"
-                aria-label={t('sessionTab.removeFolder', { name: baseName(folder) })}
-                disabled={props.busy}
-                onClick={() => props.onRemove(folder)}
-                data-testid="session-remove-folder"
-              >
-                <X size={14} />
-              </button>
-            </Tip>
+              <X size={14} />
+            </ReasonButton>
           </span>
         ))}
         {props.supported ? (
-          <Tip label={props.busy ? t('sessionTab.foldersBusy') : t('sessionTab.addFolderTip')}>
-            <button
-              type="button"
-              className="session-link session-add-folder"
-              disabled={props.busy}
-              onClick={props.onAdd}
-              data-testid="session-add-folder"
-            >
-              <FolderPlus size={16} />
-              <span className="session-link-text">{t('sessionTab.addFolder')}</span>
-            </button>
-          </Tip>
+          <ReasonButton
+            className="session-link session-add-folder"
+            reason={props.busy ? t('sessionTab.foldersBusy') : undefined}
+            tip={t('sessionTab.addFolderTip')}
+            onClick={props.onAdd}
+            data-testid="session-add-folder"
+          >
+            <FolderPlus size={16} />
+            <span className="session-link-text">{t('sessionTab.addFolder')}</span>
+          </ReasonButton>
         ) : (
           <span className="session-folders-note" data-testid="session-folders-unsupported">
             {t('sessionTab.foldersUnsupported', { agent: props.agentLabel })}

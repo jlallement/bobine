@@ -214,8 +214,9 @@ describe('carte d’un travail avec sa relecture (fiche 265)', () => {
   it('relecture en cours : « Fusionner » attend sa fin (pas de nettoyage sous le relecteur)', async () => {
     view(reviewed('low').slice(0, 5), info('busy'))
     const start = (await within(authorCard()).findByTestId('work-merge-start')) as HTMLButtonElement
-    expect(start.disabled).toBe(true)
-    expect(start.title).toContain('relecture')
+    // Fiche 287 : atteignable au clavier, sans effet, la raison dans sa description et son infobulle.
+    expect(start.getAttribute('aria-disabled')).toBe('true')
+    expect(start.getAttribute('aria-description')).toContain('relecture')
   })
 
   it('remarque haute à traiter : « Faire corriger » principal, « Fusionner » secondaire', async () => {

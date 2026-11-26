@@ -25,6 +25,7 @@ import {
 import { ipcErrorText } from '../../ipc-errors'
 import { usePrTrack } from '../../usePrTrack'
 import { CommitForm } from './CommitForm'
+import { ReasonButton } from '../common/ReasonButton'
 import { MainDirtyCard, stashSentence } from './MainDirtyCard'
 import { PrCard } from './PrCard'
 import { useTipsContext } from '../../useTips'
@@ -292,10 +293,11 @@ export function WorktreeBar({
               : t('worktreeCycle.pr.open', nounContext)}
           </button>
         )}
-        <button
+        {/* Grisé : la raison au survol et au clavier, pas seulement un `title` (fiche 287). */}
+        <ReasonButton
           className="btn small"
-          disabled={!!mergeHint || busy !== null}
-          title={mergeHint}
+          reason={mergeHint}
+          disabled={busy !== null}
           onClick={async () =>
             showMerge((await run('merge', () => api.merge(conversationId)))?.value)
           }
@@ -308,7 +310,7 @@ export function WorktreeBar({
           {busy === 'merge'
             ? t('worktreeCycle.merge.working')
             : t('worktreeCycle.merge.action', { base: info.baseBranch })}
-        </button>
+        </ReasonButton>
         {(info.merged || prMerged) && (
           <button
             className="btn small"

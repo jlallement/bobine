@@ -398,6 +398,28 @@ describe('Fusion refusée : dossier principal non commité (fiche 123)', () => {
   })
 })
 
+describe('« Fusionner » grisé dit pourquoi (fiche 287)', () => {
+  it('rien de prêt : sans effet, la raison au clavier ; une fusion ailleurs : dite aussi', async () => {
+    const actions = view([], plan([candidate('a', 'dirty'), candidate('b', 'running')]))
+    await waitFor(() => screen.getByTestId('subtasks-merge-start'))
+    const start = screen.getByTestId('subtasks-merge-start') as HTMLButtonElement
+    expect(start.disabled).toBe(false)
+    expect(start.getAttribute('aria-disabled')).toBe('true')
+    expect(start.getAttribute('aria-description')).toBe(
+      '«\u00a0Fille b\u00a0» répond encore\u00a0: la fusion attend la fin de son tour. ' +
+        '«\u00a0Fille a\u00a0» a des modifications non commitées\u00a0: à committer depuis sa vue Git.'
+    )
+    fireEvent.click(start)
+    expect(actions.start).not.toHaveBeenCalled()
+    start.focus()
+    await waitFor(() =>
+      expect(screen.getAllByRole('tooltip')[0]?.textContent).toBe(
+        start.getAttribute('aria-description')
+      )
+    )
+  })
+})
+
 describe('Recommandations de la mère (fiche 160)', () => {
   const recommend = (id: number, childId: string, ready: boolean): TranscriptItem => ({
     kind: 'child-recommendation',

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   lastChildrenMerge,
+  mergeBlockReasons,
   mergeOverlaps,
   mergeSummary,
   planWithout,
@@ -164,5 +165,40 @@ describe('plan sans les travaux d’une bulle (fiche 263)', () => {
     expect(kept.overlaps).toEqual([{ first: 'a', second: 'b', files: ['y.ts'] }])
     expect(planWithout(plan, new Set())).toBe(plan)
     expect(planWithout(plan, undefined)).toBe(plan)
+  })
+})
+
+describe('pourquoi « Fusionner » ne part pas (fiche 287)', () => {
+  const why = (p: ChildrenMergePlan, chosen: string[]) =>
+    mergeBlockReasons(p, chosen, titles)
+      .map(translate)
+      .join(' ')
+      .replace(/\u00a0/g, ' ')
+
+  it('rien ne l’empêche : aucune raison', () => {
+    expect(mergeBlockReasons(plan([child('a', 'ready')]), ['a'], titles)).toEqual([])
+  })
+
+  it('une fusion en cours, la base extraite ailleurs : dit, même avec des travaux prêts', () => {
+    expect(why(plan([child('a', 'ready')], { running: true }), ['a'])).toBe(
+      'Une fusion est déjà en cours ici : celle-ci attend sa fin.'
+    )
+    expect(
+      why(plan([child('a', 'ready')], { blocked: { reason: 'base-elsewhere', path: '/x' } }), ['a'])
+    ).toBe('main est extraite dans un autre worktree (/x) : fusionnez de là.')
+  })
+
+  it('rien de prêt : une phrase par cause réelle, avec les titres (recette Bricole, 21:13)', () => {
+    expect(why(plan([child('a', 'dirty'), child('b', 'running'), child('c', 'waiting')]), [])).toBe(
+      '« b » répond encore : la fusion attend la fin de son tour. ' +
+        '« c » attend votre accord : la fusion attend sa réponse. ' +
+        '« a » a des modifications non commitées : à committer depuis sa vue Git.'
+    )
+    expect(why(plan([child('a', 'dirty'), child('b', 'dirty')]), [])).toBe(
+      '« a » et « b » ont des modifications non commitées : à committer depuis leur vue Git.'
+    )
+    expect(why(plan([child('a', 'merged')]), [])).toBe(
+      'Rien à fusionner : aucune branche n’a de commit que main n’a pas.'
+    )
   })
 })

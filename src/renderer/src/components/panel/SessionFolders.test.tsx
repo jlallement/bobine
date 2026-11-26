@@ -42,10 +42,22 @@ describe('onglet « Session » : autres dossiers (fiche 179)', () => {
     expect(screen.queryByTestId('session-folders-unsupported')).toBeNull()
   })
 
-  it('pendant une réponse : ajout et retrait désactivés', () => {
-    wrap(props({ folders: ['/projets/lib'], busy: true }))
-    expect((screen.getByTestId('session-add-folder') as HTMLButtonElement).disabled).toBe(true)
-    expect((screen.getByTestId('session-remove-folder') as HTMLButtonElement).disabled).toBe(true)
+  it('pendant une réponse : ajout et retrait sans effet, la raison dite au clavier (fiche 287)', () => {
+    const p = props({ folders: ['/projets/lib'], busy: true })
+    wrap(p)
+    const add = screen.getByTestId('session-add-folder') as HTMLButtonElement
+    const remove = screen.getByTestId('session-remove-folder') as HTMLButtonElement
+    const why =
+      'L’agent répond\u00a0: l’ajout et le retrait d’un dossier attendent la fin de son tour.'
+    for (const button of [add, remove]) {
+      // Atteignable au clavier (pas `disabled`), mais sans effet, et il dit pourquoi.
+      expect(button.disabled).toBe(false)
+      expect(button.getAttribute('aria-disabled')).toBe('true')
+      expect(button.getAttribute('aria-description')).toBe(why)
+      fireEvent.click(button)
+    }
+    expect(p.onAdd).not.toHaveBeenCalled()
+    expect(p.onRemove).not.toHaveBeenCalled()
   })
 
   it('agent qui ne les prend pas : dossiers gardés, « non transmis », pas d’ajout', () => {

@@ -248,6 +248,43 @@ export function mergeSummary(plan: ChildrenMergePlan, titles: TitleList): Messag
   return sentences
 }
 
+/**
+ * Pourquoi « Fusionner … » ne part pas (fiche 287) : une phrase par cause, tirée du plan, jamais
+ * devinée. `chosen` : ce que le bouton fusionnerait. Vide : rien ne l'empêche (une action en cours
+ * de l'interface n'a rien à expliquer). Le refus « dossier principal non commité » a sa propre
+ * carte, à la place des boutons : il n'est pas répété ici.
+ */
+export function mergeBlockReasons(
+  plan: ChildrenMergePlan,
+  chosen: readonly string[],
+  titles: TitleList
+): Message[] {
+  if (plan.running) return [{ key: 'childrenMerge.why.running' }]
+  if (plan.blocked?.reason === 'base-elsewhere') {
+    return [
+      {
+        key: 'childrenMerge.why.baseElsewhere',
+        params: { base: plan.base, path: plan.blocked.path }
+      }
+    ]
+  }
+  if (chosen.length > 0) return []
+  const named = (state: MergeCandidateState) => {
+    const list = plan.children.filter((c) => c.state === state).map((c) => c.title)
+    return { count: list.length, titles: titles(list) }
+  }
+  const reasons: Message[] = []
+  const working = named('running')
+  if (working.count) reasons.push({ key: 'childrenMerge.why.working', params: working })
+  const waiting = named('waiting')
+  if (waiting.count) reasons.push({ key: 'childrenMerge.why.waiting', params: waiting })
+  const dirty = named('dirty')
+  if (dirty.count) reasons.push({ key: 'childrenMerge.why.dirty', params: dirty })
+  return reasons.length > 0
+    ? reasons
+    : [{ key: 'childrenMerge.why.nothing', params: { base: plan.base } }]
+}
+
 /** La fusion avance encore (dans le main). */
 export const mergeActive = (merge: Pick<ChildrenMerge, 'status'>): boolean =>
   merge.status === 'running' || merge.status === 'stopping'

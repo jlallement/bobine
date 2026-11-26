@@ -65,7 +65,10 @@ export async function commitChoisiSuite(scheme) {
         await ui.click(
           `document.querySelector('.changes-bar [aria-label="${L('changes.refresh')}"]')`
         )
-        await ui.waitFor(`!${ui.$('worktree-merge')}.disabled`)
+        // Grisé avec sa raison : `aria-disabled`, pas `disabled` (fiche 287).
+        await ui.waitFor(
+          `!${ui.$('worktree-merge')}.disabled && !${ui.$('worktree-merge')}.hasAttribute('aria-disabled')`
+        )
         await ui.click(ui.$('worktree-merge'))
         await ui.waitFor(`!!${ui.$('main-dirty')}`, 20000)
         await ui.click(ui.$('main-dirty-commit'))
