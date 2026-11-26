@@ -116,7 +116,8 @@ export async function branchSuite(scheme) {
         await ui.ev(`${ui.$('message-edit-input')}.select()`)
         await ui.type('/scenario echo')
         await ui.enter()
-        await ui.waitFor(`!!${ui.$('branch-committed')}`)
+        // L'aperçu (git compris) est calculé avant que le dialogue s'ouvre.
+        await ui.waitFor(`!!${ui.$('branch-dialog')}`)
         await ui.shot('a5-repartir-commite-depuis')
         check(
           (await ui.ev(`${ui.$('branch-restore')}?.checked === false`)) &&
