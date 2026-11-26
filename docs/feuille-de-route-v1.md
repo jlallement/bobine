@@ -17,8 +17,8 @@ But fixé par l'utilisateur le 2026-11-06 : **une jolie V1 qu'on peut distribuer
 | **1.0.0-beta.1** — bêta publique (10 novembre 2026) | Dépôt public, Release préversion ; ouvre le point 16 de la barre V1 (bêta de deux semaines, au moins cinq utilisateurs) | 220 |
 | **1.0** | Barre de qualité de la V1 atteinte (définie par la fiche 187), recette complète par un rôle QA, second passage de l'audit d'interface | — |
 | **1.0.x** — ligne stable | Publiée (1.0.0 puis 1.0.1, marquée « Latest » sur la page des versions) ; correctifs depuis `main` | — |
-| **1.1** — versions candidates | Onglet Fichiers, montées de version ; préversions publiées depuis la branche `1.1` (ADR-0068) | 271, 273 |
-| **1.2** — bêtas | Tour de table (`/roundtable`) ; préversions publiées depuis la branche `1.2` (ADR-0073) | 285 |
+| **1.1** — versions candidates | Onglet Fichiers, montées de version ; préversions publiées depuis la branche `1.1` (ADR-0068) | fiches sur la branche `1.1` |
+| **1.2** — bêtas | Tour de table (`/roundtable`) ; préversions publiées depuis la branche `1.2` | fiches sur la branche `1.2` |
 
 État au 2026-11-26 (lignes 1.0.x, 1.1 et 1.2 ajoutées d'après la page des versions de GitHub ;
 aucune date annoncée).

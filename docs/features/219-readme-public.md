@@ -81,3 +81,6 @@ project, not affiliated with IBM. »
     constaté (1.0.x publiée, 1.1 en rc, 1.2 tour de table en bêta), sans date ni promesse ;
     `docs/feuille-de-route-v1.md` complétée (lignes 1.0.x, 1.1, 1.2 ; avis de nouvelle version
     fait).
+    Report sur `main` : les fiches 271, 273, 285 et l'ADR-0073 n'existant que sur les branches
+    `1.1` et `1.2`, la feuille de route de `main` dit « branche `1.1` » ou « branche `1.2` » sans
+    numéro.
