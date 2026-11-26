@@ -9,7 +9,8 @@ const basename = (path: string) => folderName(path)
 /**
  * Repartir d'un message alors que l'agent a modifié des fichiers depuis (fiche 023) : on propose de
  * les remettre dans leur état d'alors, comme le « Rewind » de Claude Code. Un fichier modifié
- * depuis par quelqu'un d'autre n'est jamais touché ; les commandes lancées ne s'annulent pas.
+ * depuis par quelqu'un d'autre n'est jamais touché ; les commandes lancées ne s'annulent pas. Case
+ * décochée d'office si l'un des fichiers à remettre a été commité depuis (fiche 286).
  */
 export function BranchDialog({
   preview,
@@ -23,7 +24,10 @@ export function BranchDialog({
   const { t } = useTranslation()
   const restorable = preview.files.filter((f) => f.status === 'restore')
   const untouched = preview.files.filter((f) => f.status === 'conflict' || f.status === 'outside')
-  const [restore, setRestore] = useState(restorable.length > 0)
+  // Fichiers commités depuis le message (fiche 286) : les remettre déferait ces commits. La case
+  // n'est cochée d'office que s'il n'y en a aucun ; l'utilisateur peut toujours la cocher.
+  const committed = restorable.filter((f) => f.committedSince).length
+  const [restore, setRestore] = useState(restorable.length > 0 && committed === 0)
   return (
     <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
@@ -50,11 +54,19 @@ export function BranchDialog({
                       {f.created && (
                         <span className="muted"> {t('branchDialog.createdSince')}</span>
                       )}
+                      {f.committedSince && (
+                        <span className="muted"> {t('branchDialog.committedFile')}</span>
+                      )}
                     </li>
                   ))}
                 </ul>
               </span>
             </label>
+          )}
+          {committed > 0 && (
+            <p className="confirm-text confirm-warning" data-testid="branch-committed">
+              {t('branchDialog.committedSince', { count: committed })}
+            </p>
           )}
           {untouched.length > 0 && (
             <p className="confirm-text confirm-warning" data-testid="branch-conflicts">

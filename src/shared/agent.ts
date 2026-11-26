@@ -479,6 +479,8 @@ export interface BranchPreview {
     status: 'restore' | 'unchanged' | 'conflict' | 'outside'
     /** Créé par l'agent : il sera supprimé. */
     created: boolean
+    /** À remettre, mais commité depuis le message (fiche 286) : la remise défairait ce commit. */
+    committedSince?: true
   }[]
   /** Commandes lancées depuis ce point (elles ne s'annulent pas). */
   commands: number

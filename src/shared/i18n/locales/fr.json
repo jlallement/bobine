@@ -1123,7 +1123,11 @@
     "commands_one": "{{count}} commande lancée depuis ce message : ses effets restent.",
     "commands_other": "{{count}} commandes lancées depuis ce message : leurs effets restent.",
     "restore_many": "Remettre {{count}} fichiers dans leur état d’alors",
-    "commands_many": "{{count}} commandes lancées depuis ce message : leurs effets restent."
+    "commands_many": "{{count}} commandes lancées depuis ce message : leurs effets restent.",
+    "committedFile": "— commité depuis",
+    "committedSince_one": "{{count}} de ces fichiers a été commité depuis ce message : le remettre déferait ce commit dans le dossier, en modifications non commitées.",
+    "committedSince_many": "{{count}} de ces fichiers ont été commités depuis ce message : les remettre déferait ces commits dans le dossier, en modifications non commitées.",
+    "committedSince_other": "{{count}} de ces fichiers ont été commités depuis ce message : les remettre déferait ces commits dans le dossier, en modifications non commitées."
   },
   "beside": {
     "makeMain": "En faire la conversation principale",

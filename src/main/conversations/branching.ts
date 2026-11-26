@@ -22,20 +22,42 @@ import type { TranscriptItem, TranscriptState } from '@shared/transcript'
 import { applyRestore, planRestore } from './restore-files'
 
 /**
+ * Fichiers (absolus) commités depuis l'heure d'un message (`committed-since.ts`, fiche 286) ;
+ * jamais d'erreur.
+ */
+export type CommittedSince = (
+  workspace: string,
+  paths: readonly string[],
+  since: number | undefined
+) => Promise<ReadonlySet<string>>
+
+/**
  * Avant de repartir d'un message : fichiers modifiés par l'agent depuis ce point et ce qu'il
- * adviendrait de chacun, commandes lancées depuis.
+ * adviendrait de chacun, commandes lancées depuis. `committed` (fiche 286) : les fichiers à
+ * remettre qu'un commit a touchés depuis le message sont marqués ; absent, aucun ne l'est.
  */
 export async function previewBranch(
   items: readonly TranscriptItem[],
   itemId: number,
-  workspace: string
+  workspace: string,
+  committed?: CommittedSince
 ): Promise<BranchPreview> {
   const point = branchPoint(items, itemId)
   if (!point) throw new Error(t('conversations.error.messageMissing'))
   const changes = fileChangesSince(items, point.index)
   const plan = await planRestore(workspace, changes)
+  const restorable = plan.filter((f) => f.status === 'restore').map((f) => f.path)
+  const since =
+    committed && restorable.length > 0
+      ? await committed(workspace, restorable, point.message.at).catch(() => new Set(restorable))
+      : new Set<string>()
   return {
-    files: plan.map(({ path, status, created }) => ({ path, status, created })),
+    files: plan.map(({ path, status, created }) => ({
+      path,
+      status,
+      created,
+      ...(status === 'restore' && since.has(path) ? { committedSince: true as const } : {})
+    })),
     commands: commandsSince(items, point.index)
   }
 }
