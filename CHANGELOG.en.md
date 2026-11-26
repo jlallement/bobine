@@ -8,6 +8,15 @@ What changes for you, version by version. Shown in Settings › About.
 
 - **Child tasks launched together**: two worktrees created in the same minute can no longer get
   the same name; creating one no longer fails with “branch already exists”.
+- **“Commit then merge”** while an agent is still writing in the main folder (or a task is still
+  replying): refused before anything is committed, with the reason; no more half-done commit
+  followed by a refused merge.
+- **Child task merged then cleaned up from its Git tab**: the parent conversation’s card says
+  “merged”, no longer “To review”.
+- **Greyed-out buttons**: “Merge” (tasks card, Git tab, task card) and “Add a folder…” say why
+  they are waiting, on hover and from the keyboard.
+- **“Add a folder…”** opens the folder picker next to the conversation’s folder, no longer on
+  Downloads.
 
 ## 1.2.0-beta.2 — November 26, 2026
 

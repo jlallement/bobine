@@ -8,6 +8,15 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 - **Tâches filles lancées ensemble** : deux worktrees créés dans la même minute ne peuvent plus
   tomber sur le même nom ; la création ne finit plus en erreur « branch already exists ».
+- **« Committer puis fusionner »** pendant qu’un agent écrit encore dans le dossier principal (ou
+  qu’un travail répond encore) : refusé avant tout commit, la raison dite ; plus de commit fait à
+  moitié suivi d’une fusion refusée.
+- **Tâche fille fusionnée puis nettoyée depuis son onglet Git** : la carte de la conversation mère
+  dit « fusionné », plus « À revoir ».
+- **Boutons grisés** : « Fusionner » (carte des travaux, onglet Git, carte d’un travail) et
+  « Ajouter un dossier… » disent pourquoi ils attendent, au survol comme au clavier.
+- **« Ajouter un dossier… »** ouvre la fenêtre de choix à côté du dossier de la conversation, plus
+  sur Téléchargements.
 
 ## 1.2.0-beta.2 — 26 novembre 2026
 
