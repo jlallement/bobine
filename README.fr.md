@@ -145,7 +145,7 @@ antérieures refusent de l'ouvrir), et au moins un agent installé (`bob` ou
    marquées « pre-release »).
 
    **Quelle version ?** Plusieurs lignes se partagent cette page : la 1.0.x, version stable,
-   marquée « Latest » ; la 1.1 en versions candidates (`-rc.N`) ; la 1.2 en bêtas (`-beta.N`).
+   marquée « Latest » ; la 1.1 et la 1.2 en versions candidates (`-rc.N`).
    Prendre la version stable par défaut. Les préversions servent à essayer ce qui arrive, avec
    plus de risque de bugs.
 2. Ouvrir le `.dmg` et double-cliquer sur Bobine dans sa fenêtre. C'est le premier lancement, et
@@ -239,7 +239,7 @@ et elle est écrite de zéro avec Electron, React et le
   nouvelles versions de Bob et d'OpenCode.
 - **1.1, en version candidate :** un onglet Fichiers pour parcourir le dossier de travail et
   commenter une ligne.
-- **1.2, en bêta :** le tour de table (`/roundtable`) : la même question part à plusieurs
+- **1.2, en version candidate :** le tour de table (`/roundtable`) : la même question part à plusieurs
   modèles, sans qu'aucun ne voie les autres, puis la conversation en fait la synthèse.
 - **Idées, pas encore prévues :** revenir avant un tour d'une conversation ; donner la même tâche
   à deux agents et garder le meilleur résultat.

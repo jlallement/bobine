@@ -140,7 +140,7 @@ oldest macOS each release is tried on before it is published; earlier versions r
    are marked as pre-releases).
 
    **Which version?** Several lines share that page: 1.0.x, the stable version, marked
-   « Latest »; 1.1 in release candidates (`-rc.N`); 1.2 in betas (`-beta.N`). Take the stable
+   « Latest »; 1.1 and 1.2 in release candidates (`-rc.N`). Take the stable
    version by default. Pre-releases are there to try what is coming, with more risk of bugs.
 2. Open the `.dmg` and double-click Bobine in its window. This is the first launch, and **macOS
    blocks it** (« Apple could not verify… ») because the app is signed ad hoc, not notarized
@@ -229,7 +229,7 @@ from scratch on Electron, React and the
   [known issues](https://github.com/jlallement/bobine/milestone/1), compatibility with new
   versions of Bob and OpenCode.
 - **1.1, in release candidate:** a Files tab to browse the working folder and comment on a line.
-- **1.2, in beta:** Roundtable (`/roundtable`): the same question goes to several models, none
+- **1.2, in release candidate:** Roundtable (`/roundtable`): the same question goes to several models, none
   seeing the others, then the conversation gives a synthesis.
 - **Ideas, not scheduled:** rewind a conversation to before a turn; give the same task to two
   agents and keep the best result.
