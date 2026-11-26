@@ -50,7 +50,6 @@ export type FrResources = {
     }
     readonly resumeSession: 'Reprendre une session…'
     readonly childOf: 'Travail de « {{title}} » : {{state}}'
-    readonly childTip: 'Travail de « {{title}} »'
     readonly resize: 'Redimensionner la barre latérale'
     readonly yesterday: 'hier'
     readonly activity: 'Mon activité'
@@ -150,7 +149,6 @@ export type FrResources = {
       readonly send: 'Envoyer'
       readonly action: 'Modifier'
     }
-    readonly retry: 'Réessayer'
     readonly retryBranch: 'Réessayer dans une nouvelle branche'
     readonly copyReply: 'Copier la réponse'
     readonly thought: 'Réflexion'
@@ -1243,7 +1241,6 @@ export type FrResources = {
       readonly agents: { readonly label: 'Agents' }
       readonly none: 'Aucun agent installé.'
       readonly ready: 'Prêt'
-      readonly notStartedYet: 'Pas encore démarré'
       readonly missing: 'Non installés : {{list}}.'
       readonly missingDiagnostics: 'Voir le Diagnostic'
       readonly capabilities: {
@@ -1259,7 +1256,6 @@ export type FrResources = {
         readonly back: 'Agents'
         readonly backLabel: 'Revenir à la liste des agents'
         readonly open: 'Ouvrir la page de {{agent}}'
-        readonly version: 'version {{version}}'
         readonly restart: 'Relancer'
         readonly restartTip: 'Relance l’agent de la conversation en cours'
         readonly connection: 'Connexion'
@@ -2463,7 +2459,6 @@ export type FrResources = {
     readonly modified: 'Modifié dans cette conversation'
     readonly special: 'Fichier spécial (tube, socket ou périphérique) : il ne s’ouvre pas ici'
     readonly linkOutside: 'Lien vers l’extérieur des dossiers de la conversation : non suivi'
-    readonly noFolder: 'Cette conversation n’a pas encore de dossier.'
     readonly chooseFolder: 'Choisir un dossier…'
     readonly folderMissing: 'Ce dossier n’existe plus.'
     readonly readOnly: 'Lecture seule'
@@ -2631,7 +2626,6 @@ export type FrResources = {
       readonly help: 'Liste des commandes'
       readonly agentCompact: 'Résumer la conversation pour libérer du contexte (commande de {{agent}} ; /compact y mène aussi)'
       readonly btw: 'Aparté : une question à côté, répondue hors du fil'
-      readonly roundtable: 'Poser la question à plusieurs modèles, puis en faire la synthèse'
     }
     readonly hint: {
       readonly name: '[nom]'
@@ -3712,39 +3706,15 @@ export type FrResources = {
     readonly limit_many: '{{count}} travaux sont déjà en cours : c’est le plafond réglé dans Réglages › Conversations.'
     readonly limit_other: '{{count}} travaux sont déjà en cours : c’est le plafond réglé dans Réglages › Conversations.'
     readonly proposals: {
-      readonly title_one: '{{count}} travail proposé'
-      readonly title_many: '{{count}} travaux proposés'
-      readonly title_other: '{{count}} travaux proposés'
-      readonly worktree: 'L’agent propose de découper ceci en travaux, chacun dans son propre worktree. Vous pouvez aussi lui demander de tout faire ici.'
-      readonly started_one: '{{count}} lancé'
-      readonly started_many: '{{count}} lancés'
-      readonly started_other: '{{count}} lancés'
       readonly here_one: '{{count}} fait ici'
       readonly here_many: '{{count}} faits ici'
       readonly here_other: '{{count}} faits ici'
-      readonly refused_one: '{{count}} refusé'
-      readonly refused_many: '{{count}} refusés'
-      readonly refused_other: '{{count}} refusés'
-      readonly expired_one: '{{count}} expiré'
-      readonly expired_many: '{{count}} expirés'
-      readonly expired_other: '{{count}} expirés'
-      readonly pending_one: '{{count}} en attente'
-      readonly pending_many: '{{count}} en attente'
-      readonly pending_other: '{{count}} en attente'
       readonly start: 'Lancer'
       readonly here: 'Faire ici'
       readonly refuse: 'Refuser'
       readonly options: 'Agent et modèle'
-      readonly hint: '↑ ↓ pour choisir une ligne, Entrée pour la lancer'
-      readonly expiredHint: 'L’agent a redémarré entre-temps : « Lancer » lance ce travail comme « Lancer en parallèle… », sans réveil de l’agent.'
       readonly loadingChoice: 'Lecture de la suggestion de l’agent…'
       readonly proposed: 'Suggéré par l’agent, à confirmer : {{choice}}'
-      readonly state: {
-        readonly start: 'Lancé'
-        readonly here: 'Fait ici'
-        readonly refuse: 'Refusé'
-        readonly expired: 'Expiré'
-      }
     }
     readonly from: {
       readonly parent: 'De la conversation d’origine « {{title}} »'
@@ -4203,7 +4173,6 @@ export type FrResources = {
       readonly report: 'Réponse d’un travail à lire'
       readonly errorPlain: 'Erreur de l’agent'
     }
-    readonly childOf: 'travail de « {{title}} »'
     readonly ago: {
       readonly now: 'à l’instant'
       readonly minutes_one: '{{count}} min'
@@ -4240,9 +4209,6 @@ export type FrResources = {
     readonly truncated: 'Message tronqué : seul le début est gardé ({{size}} au total).'
     readonly out: 'Vers l’agent'
     readonly in: 'De l’agent'
-  }
-  readonly agents: {
-    readonly noneHint: 'Installez Bob Shell (commande bob) ou OpenCode, puis Réglages › Diagnostic › Relire le PATH.'
   }
   readonly customAgents: {
     readonly apiKey: 'Clé d’API ({{name}})'
@@ -4627,7 +4593,6 @@ export type FrResources = {
     readonly readOnlyRequested: 'lecture seule demandée'
     readonly readOnlyRequestedHint: 'L’agent de cette conversation écrit sans demander d’autorisation : la lecture seule lui est seulement demandée, et Bobine vérifie le dossier après chaque tour.'
     readonly writes: 'écrit du code'
-    readonly mode: 'mode {{mode}}'
     readonly byAgent: 'proposé par l’agent'
     readonly prompt: 'Consigne'
     readonly hides: 'Rôle du projet : il remplace le rôle {{scopes}} du même nom.'
@@ -4695,8 +4660,6 @@ export type FrResources = {
       readonly error: '{{role}} est en erreur — {{title}}'
       readonly saveAsRole: 'Enregistrer comme rôle…'
     }
-    readonly proposalsWhere: 'L’agent propose de confier ce travail : un rôle en lecture seule travaille dans ce dossier, les autres chacun dans son worktree. Vous pouvez aussi lui demander de le faire ici.'
-    readonly where: { readonly sameFolder: 'dans ce dossier'; readonly worktree: 'son worktree' }
   }
   readonly review: {
     readonly action: 'Faire relire…'
@@ -4748,10 +4711,6 @@ export type FrResources = {
       readonly scopeCommit: 'Dernier commit {{base}}'
     }
     readonly severity: { readonly high: 'Haute'; readonly medium: 'Moyenne'; readonly low: 'Basse' }
-    readonly category: {
-      readonly correctness: 'Correction'
-      readonly simplification: 'Simplification'
-    }
     readonly notes: {
       readonly title: 'Remarques de la relecture'
       readonly remove: 'Retirer la remarque'
@@ -5089,7 +5048,7 @@ export type FrResources = {
       readonly text: 'Gros changement : le faire relire par un autre agent avant de fusionner ?'
     }
     readonly scheduled: {
-      readonly text: 'Troisième fois ce message. En faire une tâche planifiée ?'
+      readonly text: 'Troisième jour avec ce message. En faire une tâche planifiée ?'
       readonly plan: 'Planifier…'
     }
   }
@@ -5120,7 +5079,6 @@ export type FrResources = {
       readonly title: 'Bienvenue dans Bobine'
       readonly subtitle: 'Quatre étapes courtes. Tout se change ensuite dans Réglages.'
       readonly found: 'trouvé'
-      readonly foundVersion: 'trouvé · {{version}}'
       readonly missing: 'introuvable'
       readonly note: 'Un autre agent ACP s’ajoute dans Réglages › Agents.'
       readonly group: 'Agent'
@@ -5171,7 +5129,6 @@ export type FrResources = {
       readonly networkText: '{{agent}} n’a pas pu joindre son modèle. Vérifiez la connexion, le VPN ou le proxy.'
       readonly rateLimit: 'Trop de demandes'
       readonly rateLimitText: 'Le modèle fait patienter {{agent}}. Réessayez dans un moment.'
-      readonly networkSettings: 'Réglages › Réseau'
       readonly timeout: 'Pas de réponse à temps'
       readonly timeoutText: '{{agent}} a été arrêté. Le modèle est peut-être surchargé : réessayez, ou changez de modèle plus tard dans la conversation.'
       readonly crashed: '{{agent}} s’est arrêté'
@@ -6129,7 +6086,6 @@ export type FrResources = {
     readonly commitThenSend: 'Committer puis envoyer'
     readonly commitThenStart: 'Committer puis lancer'
     readonly commitOnly: 'Committer'
-    readonly proposalsHere: 'L’agent propose de confier ce travail. Vous pouvez aussi lui demander de le faire ici.'
     readonly without_one: 'depuis le dernier commit, sans votre modification'
     readonly without_many: 'depuis le dernier commit, sans vos {{count}} modifications'
     readonly without_other: 'depuis le dernier commit, sans vos {{count}} modifications'
@@ -6187,9 +6143,6 @@ export type FrResources = {
       readonly expired_one: '{{count}} expiré'
       readonly expired_other: '{{count}} expirés'
       readonly expired_many: '{{count}} expirés'
-      readonly pending_one: '{{count}} en attente'
-      readonly pending_other: '{{count}} en attente'
-      readonly pending_many: '{{count}} en attente'
       readonly started_one: '{{count}} lancé'
       readonly started_other: '{{count}} lancés'
       readonly started_many: '{{count}} lancés'
@@ -6304,7 +6257,6 @@ export type FrResources = {
     readonly action: 'Fusionner dans {{base}}'
     readonly step: {
       readonly merging: 'Fusion de {{branch}} dans {{base}}…'
-      readonly merged: 'Fusion de {{branch}} dans {{base}}'
       readonly conflict: 'Conflit dans {{files}}'
       readonly resolving: '{{name}} résout le conflit…'
       readonly pending: 'En attente : une autre fusion passe avant.'
@@ -6405,7 +6357,6 @@ export type FrResources = {
       readonly search: 'Rechercher un modèle'
       readonly footer: 'Chacun reçoit la question et peut lire les fichiers de ce dossier.'
       readonly full: '5 participants au plus'
-      readonly once: 'Une seule fois, sans choix de modèle'
       readonly gone: 'N’existe plus : décochez-le'
       readonly modelGone: 'Modèle indisponible : décochez-le'
       readonly arbiter: 'C’est le modèle de cette conversation : il fait la synthèse'
@@ -6426,8 +6377,6 @@ export type FrResources = {
       readonly held: 'synthèse retenue : plafond de la conversation atteint'
       readonly interrupted: 'interrompu par le redémarrage de l’app'
       readonly stopped: 'arrêté'
-      readonly footer: 'Lecture seule · chacun répond sans voir les autres'
-      readonly footerShort: 'Lecture seule'
       readonly synthesizeNow: 'Synthétiser sans attendre'
       readonly synthesizeNowShort: 'Synthétiser'
       readonly synthesizeWith_one: 'Synthétiser avec {{count}} avis'
@@ -6437,20 +6386,11 @@ export type FrResources = {
       readonly stopAll: 'Arrêter le tour de table'
       readonly relaunch: 'Relancer'
       readonly open: 'Ouvrir sa conversation'
-      readonly readMore: 'Lire la suite'
-      readonly otherModel: 'Choisir un autre modèle'
-      readonly seeSynthesis: 'Voir la synthèse'
       readonly used: 'Consommé : {{total}}'
       readonly usedAll: 'Consommé en tout : {{total}}'
       readonly tokens: '{{tokens}} jetons'
-      readonly silent_one: '{{count}} participant sans chiffre'
-      readonly silent_many: '{{count}} participants sans chiffre'
-      readonly silent_other: '{{count}} participants sans chiffre'
       readonly single: 'Un seul avis : pas de synthèse.'
       readonly none: 'Aucun avis : pas de synthèse.'
-      readonly partial_one: 'Synthèse avec {{opinions}} avis : un participant n’a pas répondu.'
-      readonly partial_many: 'Synthèse avec {{opinions}} avis : {{count}} participants n’ont pas répondu.'
-      readonly partial_other: 'Synthèse avec {{opinions}} avis : {{count}} participants n’ont pas répondu.'
       readonly stopSeat: 'Arrêter {{name}}'
       readonly attachments: 'Fichiers joints : {{files}}'
       readonly withExchange: 'Avec le dernier échange de cette conversation'
@@ -6473,12 +6413,9 @@ export type FrResources = {
       readonly waiting: 'en attente'
       readonly working: 'au travail'
       readonly answered: 'a répondu'
-      readonly noOpinion: 'sans avis'
-      readonly silent: 'silencieux depuis {{duration}}'
       readonly removed: 'conversation supprimée'
       readonly changedFolder: 'a modifié des fichiers du dossier'
       readonly error: 'Sans avis : {{reason}}'
-      readonly errorAfter: 'Sans avis : {{reason}} au bout de {{duration}}'
       readonly modelNotOffered: 'Modèle non proposé par {{agent}} pour le moment.'
       readonly stopped: {
         readonly user: 'Arrêté par vous'
@@ -6500,7 +6437,6 @@ export type FrResources = {
         readonly native: 'Lecture seule garantie (rôle Participant installé)'
         readonly requested: 'Lecture seule demandée : vérifiée sur les fichiers suivis par git'
         readonly unverified: 'Lecture seule demandée, non vérifiée (dossier hors git)'
-        readonly requestedShort: 'Lecture seule demandée'
       }
       readonly noOpinionBecause: 'Sans avis : {{reason}}'
       readonly noOpinionAfter: 'Sans avis : {{reason}} au bout de {{duration}}'
@@ -6525,7 +6461,6 @@ export type FrResources = {
       readonly requested_one: 'Synthèse demandée · {{count}} avis'
       readonly requested_many: 'Synthèse demandée · {{count}} avis'
       readonly requested_other: 'Synthèse demandée · {{count}} avis'
-      readonly participant: 'Participant {{letter}}'
       readonly apply: 'Demander à {{agent}} de l’appliquer'
       readonly applyDraft: 'Applique ta recommandation du tour de table.'
       readonly changed: '{{agent}} a modifié des fichiers pendant la synthèse.'
