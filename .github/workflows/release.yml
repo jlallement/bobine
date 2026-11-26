@@ -525,14 +525,14 @@ jobs:
               if compgen -G 'dist/Bobine-*.deb' > /dev/null; then
                 echo "**Linux (preview):** \`Bobine-$version-amd64.deb\` (x64) or \`Bobine-$version-arm64.deb\`" \
                   "(Ubuntu 24.04+, Debian): \`sudo apt install ./Bobine-$version-<arch>.deb\`" \
-                  "([how](https://github.com/$GH_REPO/blob/main/docs/installation.md#linux-préversion))."
+                  "([how](https://github.com/$GH_REPO/blob/$GITHUB_REF_NAME/docs/installation.md#linux-préversion))."
                 echo
               fi
               # Windows seulement s'il a été construit (BOBINE_WINDOWS_RELEASE).
               if compgen -G 'dist/Bobine-*.exe' > /dev/null; then
                 echo "**Windows (preview):** \`Bobine-$version-x64.exe\` or \`Bobine-$version-arm64.exe\`," \
                   "installed for the current user, no administrator rights. Not signed: if SmartScreen" \
-                  "warns, **More info › Run anyway** ([how](https://github.com/$GH_REPO/blob/main/docs/installation.md#windows-préversion))."
+                  "warns, **More info › Run anyway** ([how](https://github.com/$GH_REPO/blob/$GITHUB_REF_NAME/docs/installation.md#windows-préversion))."
                 echo
               fi
               cat notes.md

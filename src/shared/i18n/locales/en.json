@@ -48,7 +48,6 @@
     },
     "resumeSession": "Resume a session…",
     "childOf": "Task from “{{title}}”: {{state}}",
-    "childTip": "Task from “{{title}}”",
     "resize": "Resize sidebar",
     "yesterday": "yesterday",
     "activity": "My activity",
@@ -124,7 +123,6 @@
       "send": "Send",
       "action": "Edit"
     },
-    "retry": "Try again",
     "retryBranch": "Try again in a new branch",
     "copyReply": "Copy response",
     "thought": "Thinking",
@@ -1202,7 +1200,6 @@
       },
       "none": "No agent installed.",
       "ready": "Ready",
-      "notStartedYet": "Not started yet",
       "missing": "Not installed: {{list}}.",
       "missingDiagnostics": "See Diagnostics",
       "capabilities": {
@@ -1218,7 +1215,6 @@
         "back": "Agents",
         "backLabel": "Back to the agent list",
         "open": "Open the {{agent}} page",
-        "version": "version {{version}}",
         "restart": "Restart",
         "restartTip": "Restarts the current conversation’s agent",
         "connection": "Sign-in",
@@ -1795,7 +1791,7 @@
     "copyReport": "Copy report",
     "reportIssue": "Report an issue",
     "reportIssueHint": "Opens a GitHub issue in the browser, prefilled with the version and this report. Nothing is sent until you submit it on GitHub.",
-    "reportIssueTruncated": "[Report cut to fit in the address: paste the rest from « Copy report ».]",
+    "reportIssueTruncated": "[Report cut to fit in the address: paste the rest from “Copy report”.]",
     "privacy": "Nothing is sent to a model. Each agent is started outside any conversation, in the current folder. Bobine only opens a trial session on its own with an agent that can delete it, and deletes it afterwards.",
     "log": {
       "label": "Log",
@@ -2406,7 +2402,6 @@
     "modified": "Changed in this conversation",
     "special": "Special file (pipe, socket or device): it can't be opened here",
     "linkOutside": "Link outside the conversation's folders: not followed",
-    "noFolder": "This conversation has no folder yet.",
     "chooseFolder": "Choose a folder…",
     "folderMissing": "This folder no longer exists.",
     "readOnly": "Read-only",
@@ -2574,8 +2569,7 @@
       "split": "Split the message into tasks, one per area of work",
       "help": "List of commands",
       "agentCompact": "Summarize the conversation to free up context ({{agent}} command; /compact works too)",
-      "btw": "Aside: a side question, answered outside the conversation",
-      "roundtable": "Ask several models the question, then synthesize"
+      "btw": "Aside: a side question, answered outside the conversation"
     },
     "hint": {
       "name": "[name]",
@@ -3741,33 +3735,14 @@
     "limit_one": "{{count}} task is already running: that is the limit set in Settings › Conversations.",
     "limit_other": "{{count}} tasks are already running: that is the limit set in Settings › Conversations.",
     "proposals": {
-      "title_one": "{{count}} proposed task",
-      "title_other": "{{count}} proposed tasks",
-      "worktree": "The agent proposes splitting this into tasks, each in its own worktree. You can also ask it to do everything here.",
-      "started_one": "{{count}} started",
-      "started_other": "{{count}} started",
       "here_one": "{{count}} done here",
       "here_other": "{{count}} done here",
-      "refused_one": "{{count}} refused",
-      "refused_other": "{{count}} refused",
-      "expired_one": "{{count}} expired",
-      "expired_other": "{{count}} expired",
-      "pending_one": "{{count}} pending",
-      "pending_other": "{{count}} pending",
       "start": "Start",
       "here": "Do it here",
       "refuse": "Refuse",
       "options": "Agent and model",
-      "hint": "↑ ↓ to pick a row, Enter to start it",
-      "expiredHint": "The agent restarted in the meantime: “Start” starts this task like “Run in parallel…”, without waking the agent.",
       "loadingChoice": "Reading the agent’s suggestion…",
-      "proposed": "Suggested by the agent, to confirm: {{choice}}",
-      "state": {
-        "start": "Started",
-        "here": "Done here",
-        "refuse": "Refused",
-        "expired": "Expired"
-      }
+      "proposed": "Suggested by the agent, to confirm: {{choice}}"
     },
     "from": {
       "parent": "From the source conversation “{{title}}”",
@@ -4179,7 +4154,6 @@
       "report": "Unread task response",
       "errorPlain": "Agent error"
     },
-    "childOf": "task from “{{title}}”",
     "ago": {
       "now": "just now",
       "minutes_one": "{{count}} min",
@@ -4213,9 +4187,6 @@
     "truncated": "Truncated message: only the beginning is kept ({{size}} in all).",
     "out": "To the agent",
     "in": "From the agent"
-  },
-  "agents": {
-    "noneHint": "Install Bob Shell (the bob command) or OpenCode, then Settings › Diagnostics › Reload PATH."
   },
   "customAgents": {
     "apiKey": "API key ({{name}})",
@@ -4412,11 +4383,9 @@
     "pr": "Pull request",
     "prTip": "See the PR in the Git view",
     "extraFolders": "Other folders",
-    "addFolder": "Add a folder…",
-    "addFolderTip": "The agent sees this folder too. Its session restarts right away with the new list; the thread is kept.",
     "removeFolder": "Remove {{name}} from the conversation",
-    "foldersBusy": "The agent is replying: adding or removing a folder waits until its turn ends.",
-    "foldersStarting": "The agent is starting: adding or removing a folder waits until it is ready.",
+    "foldersBusy": "The agent is responding: you can add or remove a folder once its turn ends.",
+    "foldersStarting": "The agent is starting: you can add or remove a folder once it is ready.",
     "foldersUnsupported": "Not sent: {{agent}} only takes its working folder.",
     "folderRefusal": {
       "empty": "Type the path of a folder.",
@@ -4611,7 +4580,6 @@
     "readOnlyRequested": "read-only requested",
     "readOnlyRequestedHint": "This conversation's agent writes without asking for permission: read-only is only requested, and Bobine checks the folder after each turn.",
     "writes": "writes code",
-    "mode": "{{mode}} mode",
     "byAgent": "proposed by the agent",
     "prompt": "Instructions",
     "hides": "Project role: it replaces the {{scopes}} role with the same name.",
@@ -4675,11 +4643,6 @@
       "stopped": "{{role}} was stopped — {{title}}",
       "error": "{{role}} failed — {{title}}",
       "saveAsRole": "Save as role…"
-    },
-    "proposalsWhere": "The agent proposes handing out this work as tasks: a read-only role works in this folder, the others each in its own worktree. You can also ask it to do it here.",
-    "where": {
-      "sameFolder": "in this folder",
-      "worktree": "its own worktree"
     }
   },
   "review": {
@@ -4732,10 +4695,6 @@
       "high": "High",
       "medium": "Medium",
       "low": "Low"
-    },
-    "category": {
-      "correctness": "Correctness",
-      "simplification": "Simplification"
     },
     "notes": {
       "title": "Review comments",
@@ -5055,7 +5014,7 @@
       "text": "Big change: have another agent review it before merging?"
     },
     "scheduled": {
-      "text": "Third time you send this message. Make it a scheduled task?",
+      "text": "Same message on three different days. Make it a scheduled task?",
       "plan": "Schedule…"
     }
   },
@@ -5086,7 +5045,6 @@
       "title": "Welcome to Bobine",
       "subtitle": "Four short steps. You can change everything later in Settings.",
       "found": "found",
-      "foundVersion": "found · {{version}}",
       "missing": "not found",
       "note": "Add another ACP agent in Settings › Agents.",
       "group": "Agent",
@@ -5137,7 +5095,6 @@
       "networkText": "{{agent}} could not reach its model. Check the connection, VPN or proxy.",
       "rateLimit": "Too many requests",
       "rateLimitText": "The model is asking {{agent}} to wait. Try again in a moment.",
-      "networkSettings": "Settings › Network",
       "timeout": "No reply in time",
       "timeoutText": "{{agent}} was stopped. The model may be overloaded: try again, or switch models later in the conversation.",
       "crashed": "{{agent}} stopped",
@@ -6078,28 +6035,28 @@
     "changeLabel": {
       "role": "Choose where the role will start",
       "roles": "Choose where the roles will start",
-      "work": "Choose where this work will start",
-      "works": "Choose where this work will start"
+      "work": "Choose where this task will start",
+      "works": "Choose where these tasks will start"
     },
     "fromCommit": "from the last commit ({{commit}})",
     "noCommit": {
       "role": "This repository has no commit yet: the role will work in this folder, at the same time as the agent, with no branch and nothing to merge",
       "roles": "This repository has no commit yet: the roles will work in this folder, at the same time as the agent, with no branch and nothing to merge",
-      "work": "This repository has no commit yet: this work will be done in this folder, at the same time as the agent, with no branch and nothing to merge",
-      "works": "This repository has no commit yet: this work will be done in this folder, at the same time as the agent, with no branch and nothing to merge"
+      "work": "This repository has no commit yet: this task will run in this folder, at the same time as the agent, with no branch and nothing to merge",
+      "works": "This repository has no commit yet: these tasks will run in this folder, at the same time as the agent, with no branch and nothing to merge"
     },
     "notRepo": {
       "role": "This folder is not a git repository: a role that writes cannot start from here (it needs a worktree)",
       "roles": "This folder is not a git repository: roles that write cannot start from here (they need a worktree)",
-      "work": "This folder is not a git repository: this work cannot start from here (it needs a worktree)",
-      "works": "This folder is not a git repository: this work cannot start from here (it needs a worktree)"
+      "work": "This folder is not a git repository: this task cannot start from here (it needs a worktree)",
+      "works": "This folder is not a git repository: these tasks cannot start from here (they need a worktree)"
     },
     "menu": {
       "commit": "Commit first",
-      "commitDesc": "You will choose the files and the message; the work will start from this commit, with the checked files.",
+      "commitDesc": "You will choose the files and the message; the task will start from this commit, with the checked files.",
       "without": "Start without them",
-      "withoutDesc_one": "The work will start from the last commit ({{commit}}). Your changed file will stay here, untouched.",
-      "withoutDesc_other": "The work will start from the last commit ({{commit}}). Your {{count}} changed files will stay here, untouched.",
+      "withoutDesc_one": "The task will start from the last commit ({{commit}}). Your changed file will stay here, untouched.",
+      "withoutDesc_other": "The task will start from the last commit ({{commit}}). Your {{count}} changed files will stay here, untouched.",
       "worktree": "Work in its own worktree",
       "worktreeDesc": "A separate branch, which will start from the last commit ({{commit}}).",
       "opinion": "Just an opinion, read-only",
@@ -6115,12 +6072,11 @@
       "previewMore": "{{names}}…"
     },
     "files": "Uncommitted changes in this folder",
-    "left_one": "{{count}} unchecked file stays in this folder, uncommitted: the work will start without it.",
-    "left_other": "{{count}} unchecked files stay in this folder, uncommitted: the work will start without them.",
+    "left_one": "{{count}} unchecked file stays in this folder, uncommitted: the task will start without it.",
+    "left_other": "{{count}} unchecked files stay in this folder, uncommitted: the task will start without them.",
     "commitThenSend": "Commit, then send",
     "commitThenStart": "Commit, then start",
     "commitOnly": "Commit",
-    "proposalsHere": "The agent offers to hand this work off. You can also ask it to do it here.",
     "without_one": "from the last commit, without your uncommitted change",
     "without_other": "from the last commit, without your {{count}} uncommitted changes",
     "withoutAlone": {
@@ -6162,8 +6118,6 @@
       "refused_other": "{{count}} declined",
       "expired_one": "{{count}} expired",
       "expired_other": "{{count}} expired",
-      "pending_one": "{{count}} pending",
-      "pending_other": "{{count}} pending",
       "started_one": "{{count}} started",
       "started_other": "{{count}} started"
     },
@@ -6173,7 +6127,7 @@
     "whereMixed": "Each task that writes starts from the last commit; your uncommitted changes stay here.",
     "whereReadOnly": "Each advisory role reads this folder without changing anything.",
     "whereHere": "No commit yet: each task will work in this folder.",
-    "keys": "↑ ↓ to pick a row, Enter to start it",
+    "keys": "↑ ↓ to pick a row, Return to start it",
     "place": {
       "readOnly": "read-only",
       "branch": "writes in its branch",
@@ -6266,7 +6220,6 @@
     "action": "Merge into {{base}}",
     "step": {
       "merging": "Merging {{branch}} into {{base}}…",
-      "merged": "Merge {{branch}} into {{base}}",
       "conflict": "Conflict in {{files}}",
       "resolving": "{{name}} is resolving the conflict…",
       "pending": "Waiting: another merge goes first."
@@ -6365,7 +6318,6 @@
       "search": "Search models",
       "footer": "Each one gets the question and can read the files in this folder.",
       "full": "5 participants at most",
-      "once": "Once only, no model choice",
       "gone": "No longer exists: uncheck it",
       "modelGone": "Model unavailable: uncheck it",
       "arbiter": "It is this conversation’s model: it writes the synthesis",
@@ -6384,8 +6336,6 @@
       "held": "synthesis held: conversation cost cap reached",
       "interrupted": "interrupted by the app restart",
       "stopped": "stopped",
-      "footer": "Read-only · each one answers without seeing the others",
-      "footerShort": "Read-only",
       "synthesizeNow": "Synthesize now",
       "synthesizeNowShort": "Synthesize",
       "synthesizeWith_one": "Synthesize with {{count}} opinion",
@@ -6394,15 +6344,10 @@
       "stopAll": "Stop the roundtable",
       "relaunch": "Run again",
       "open": "Open its conversation",
-      "readMore": "Read more",
-      "otherModel": "Choose another model",
-      "seeSynthesis": "See the synthesis",
       "used": "Used: {{total}}",
       "tokens": "{{tokens}} tokens",
       "single": "Only one opinion: no synthesis.",
       "none": "No opinion: no synthesis.",
-      "partial_one": "Synthesis with {{opinions}} opinions: one participant did not answer.",
-      "partial_other": "Synthesis with {{opinions}} opinions: {{count}} participants did not answer.",
       "stopSeat": "Stop {{name}}",
       "attachments": "Attached files: {{files}}",
       "withExchange": "With the last exchange of this conversation",
@@ -6423,12 +6368,9 @@
       "waiting": "waiting",
       "working": "working",
       "answered": "replied",
-      "noOpinion": "no opinion",
-      "silent": "silent for {{duration}}",
       "removed": "conversation deleted",
       "changedFolder": "changed files in the folder",
       "error": "No opinion: {{reason}}",
-      "errorAfter": "No opinion: {{reason}} after {{duration}}",
       "modelNotOffered": "Model not offered by {{agent}} for now.",
       "stopped": {
         "user": "Stopped by you",
@@ -6449,8 +6391,7 @@
         "enforced": "Read-only",
         "native": "Read-only guaranteed (Participant role installed)",
         "requested": "Read-only requested: checked on files tracked by git",
-        "unverified": "Read-only requested, not verified (folder outside git)",
-        "requestedShort": "Read-only requested"
+        "unverified": "Read-only requested, not verified (folder outside git)"
       },
       "noOpinionBecause": "No opinion: {{reason}}",
       "noOpinionAfter": "No opinion: {{reason}} after {{duration}}",
@@ -6474,7 +6415,6 @@
       "label": "Roundtable synthesis · {{model}}",
       "requested_one": "Synthesis requested · {{count}} opinion",
       "requested_other": "Synthesis requested · {{count}} opinions",
-      "participant": "Participant {{letter}}",
       "apply": "Ask {{agent}} to apply it",
       "applyDraft": "Apply your roundtable recommendation.",
       "changed": "{{agent}} changed files during the synthesis.",

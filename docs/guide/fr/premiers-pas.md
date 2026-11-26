@@ -38,7 +38,7 @@ Vous pouvez aussi glisser Bobine sur Applications, comme toute app. **Plus tard*
 question au lancement suivant ; **Ne plus proposer** la fait taire.
 
 <!-- si: finder -->
-**macOS refuse d'ouvrir le `.dmg` ?** Bobine n'est pas encore signée par Apple : un `.dmg`
+**macOS refuse d'ouvrir le `.dmg` ?** Bobine n'est pas notarisée par Apple : un `.dmg`
 téléchargé par un navigateur est mis en quarantaine. Retirez l'attribut avant de l'ouvrir :
 
 <!-- si: finder -->
@@ -46,8 +46,10 @@ téléchargé par un navigateur est mis en quarantaine. Retirez l'attribut avant
 xattr -d com.apple.quarantine ~/Downloads/Bobine-*.dmg
 ```
 
-Bobine ne se met pas à jour toute seule : pour être prévenu d'une nouvelle version, suivez les
-« Releases » du dépôt sur GitHub. Les nouveautés de chaque version sont dans Réglages ›
+Bobine ne se met pas à jour toute seule, mais elle prévient quand une version plus récente existe :
+une ligne en bas de la barre latérale, « Bobine X.Y.Z est disponible », et **Voir** ouvre sa page
+sur GitHub. Vous installez vous-même la nouvelle version ; voir
+[Réglages](reglages.md#nouvelles-versions). Les nouveautés de chaque version sont dans Réglages ›
 Nouveautés.
 
 Pour l'installer depuis les sources, derrière un proxy ou sans réseau : voir
@@ -77,9 +79,15 @@ Ce que chaque agent permet : voir [Agents](agents.md).
 
 ## Choisir le dossier du projet
 
-Au premier lancement, Bobine demande d'abord le dossier du projet : **Choisissez le dossier de
-votre projet**, puis **Choisir un dossier…**. Aucun agent ne démarre avant ce choix. L'agent y
-lira et modifiera des fichiers.
+Au premier lancement, un accueil en quatre étapes vous guide : **Agent**, **Connexion**,
+**Dossier**, puis **Essai** (un message d'essai très court, pour vérifier que tout marche de bout
+en bout). À l'étape **Dossier** (« Où travailler ? »), prenez **Un projet existant**
+(**Choisir…**) ou **Un dossier d'essai vide** (**Créer**). Ouverte par
+[`bobine <dossier>`](#commande-bobine), Bobine propose d'abord ce dossier : « Le dossier
+demandé », **Utiliser ce dossier**. L'agent lira et modifiera les fichiers du dossier choisi.
+
+**Passer l'accueil** saute les quatre étapes. Sans dossier, Bobine demande alors **Choisissez le dossier de votre
+projet**, puis **Choisir un dossier…**.
 
 Pour changer de dossier ensuite : cliquez sur le dossier sous la zone de saisie (menu **Dossier de
 travail**), puis **Choisir un dossier…**. Le même menu propose

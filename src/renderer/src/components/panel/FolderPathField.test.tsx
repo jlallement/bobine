@@ -150,7 +150,7 @@ describe('champ « Autres dossiers » : chemin saisi (fiche 290)', () => {
 })
 
 describe('champ « Autres dossiers » : pendant un tour, et pendant que la session repart', () => {
-  const busy = 'L’agent répond : l’ajout et le retrait d’un dossier attendent la fin de son tour.'
+  const busy = 'L’agent répond : un dossier s’ajoute ou se retire une fois son tour fini.'
 
   it('tour en cours : lecture seule, atteignable, la raison décrite ; rien ne part ; le texte reste', () => {
     const p = props()

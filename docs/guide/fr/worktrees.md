@@ -166,7 +166,8 @@ s'affiche sous les boutons. Ensuite, la vue Git suit la PR et sa CI : voir
 ## Fusionner dans `main`
 
 Cliquez sur **Fusionner dans main** (ou le nom de votre branche de base). Le bouton est grisé tant
-qu'il reste des modifications non commitées dans le worktree, ou s'il n'y a rien à fusionner.
+qu'il reste des modifications non commitées dans le worktree, ou s'il n'y a rien à fusionner ;
+le survol, ou le focus au clavier, dit pourquoi.
 
 Bobine met d'abord le worktree à jour avec la base si elle a avancé, puis avance la base.
 
@@ -184,13 +185,20 @@ Bobine refuse de partir et liste les fichiers. Deux choix :
 - **Mettre de côté** : les modifications sont rangées (`git stash`) le temps de la fusion, puis
   remises.
 
+Tant qu'un tour est en cours dans le dossier principal (agent qui répond ou attend votre accord),
+**Committer puis fusionner** est refusé avant tout commit, avec la raison : réessayez une fois le
+tour fini.
+
 <a id="nettoyer"></a>
 
 ## Nettoyer
 
 Une fois la branche fusionnée (ou sa PR fusionnée sur GitHub), **Nettoyer** archive la
 conversation, lance la commande `archive` si vous l'avez autorisée, puis supprime le worktree et sa
-branche. Ressortie des archives, la conversation continue dans le dossier principal.
+branche. Ressortie des archives, la conversation continue dans le dossier principal. S'il reste
+des fichiers non commités, la question le dit (« 1 fichier non commité serait perdu ») et
+**Garder** est le bouton par défaut. Nettoyer un travail délégué ouvert ramène à sa conversation
+d'origine.
 
 **Supprimer une conversation qui a un worktree** : la case **Supprimer aussi le worktree et la
 branche** est cochée d'office seulement quand rien ne serait perdu ; sinon, Bobine dit ce qui le

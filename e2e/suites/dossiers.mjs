@@ -9,7 +9,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
-import { L, MAIN_PORT, check, mainProcess, sleep, withApp } from '../lib.mjs'
+import { L, M, MAIN_PORT, check, mainProcess, sleep, withApp } from '../lib.mjs'
 
 /**
  * Plusieurs dossiers par conversation (fiche 179) : un agent qui annonce `additionalDirectories`
@@ -183,7 +183,7 @@ export async function dossiersSuite(scheme) {
         await ui.send('Et sans ?')
         await ui.ready()
         check(
-          (await ui.lastAgentText()).includes('Aucun autre dossier reçu.'),
+          (await ui.lastAgentText()).includes(M('Aucun autre dossier reçu.')),
           'retiré : la session repart, l’agent ne reçoit plus le dossier'
         )
 

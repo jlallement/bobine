@@ -71,7 +71,7 @@ Annoncé mais pas encore utilisé par l'app : `session/fork` (OpenCode).
 | `terminal-login` | — : SSO par `authenticate` | `opencode auth login` | `authenticate` ne fait rien chez OpenCode (1.19, 2.0.31 — fiche 022) |
 | `auth-method-labels` | `sso` (« Log in with SSO » chez Bob 2.0.9) → « Se connecter par SSO » / « Sign in with SSO » | — | Le nom d'une méthode de connexion (`authMethods` d'`initialize`) vient de l'agent, en anglais chez Bob ; libellé traduit déclaré par le profil, nom de l'agent pour une méthode inconnue (fiche 205) |
 | `license` | `bob --show-license` ; l'app ne l'accepte jamais | — | Licence IBM exigée à `session/new` (fiche 022) |
-| `tested-versions` | 2.0.6, 2.0.9, 2.1.0 (`scripts/bob-probe.expected.json` : 2.1.0, recette QA du 2026-11-09) | 1.19, 2.0.31, 2.0.32 (`scripts/opencode-probe.expected.json`) | Versions que l'app a vérifiées ; le Diagnostic prévient quand l'agent en annonce une autre (fiche 140) |
+| `tested-versions` | 2.0.6, 2.0.9, 2.1.0 (`scripts/bob-probe.expected.json` : 2.1.0, recette QA du 2026-11-09) | 1.19, 2.0.31, 2.0.32, 2.2.5, 2.3.0, 2.4.1 (`testedVersions` ; contrat sondé : `scripts/opencode-probe.expected.json`) | Versions que l'app a vérifiées ; le Diagnostic prévient quand l'agent en annonce une autre (fiche 140) |
 | `folder-trust` | `--trust`, retenu par Bob dans `~/.bob/trustedFolders.json` | — | Bob refuse un dossier non approuvé (fiche 011) |
 
 ## Génériques, mais différents d'un agent à l'autre

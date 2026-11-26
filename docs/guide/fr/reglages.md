@@ -10,8 +10,8 @@ n'envoie rien ailleurs qu'à l'agent que vous utilisez : elle n'a pas de télém
 exception, que vous pouvez couper : la [vérification des nouvelles versions](#nouvelles-versions).
 
 Les réglages (⌘,) sont rangés en trois groupes : Général, Apparence, Notifications, Raccourcis
-clavier ; Conversations, Agents, Serveurs MCP, Commandes ; Confidentialité, Données, Diagnostic,
-Nouveautés. Le champ de recherche, en haut, retrouve chaque réglage (⌘F).
+clavier ; Conversations, Agents, Rôles, Mémoire, Serveurs MCP, Commandes ; Confidentialité, Données,
+Diagnostic, Nouveautés. Le champ de recherche, en haut, retrouve chaque réglage (⌘F).
 
 Ici, vous pouvez :
 
@@ -130,7 +130,7 @@ Réglages › Données › **Worktrees orphelins** : les worktrees dont la conve
 
 Bobine note chaque échange avec un agent (agent, modèle, projet, jetons, coût, durée) pour la page
 **Mon activité** (⇧⌘U). Réglages › Données › **Remettre à zéro…** efface tout, après confirmation.
-C'est définitif : exportez d'abord (Mon activité › **Exporter…** › tout l'historique) pour le
+C'est définitif : exportez d'abord (Mon activité › **Exporter…** › **Tout l'historique**) pour le
 garder. Le quota des agents, comme celui d'IBM Bob, n'est pas concerné.
 
 <a id="recommencer"></a>

@@ -28,14 +28,19 @@ de table », et une ligne grise s'affiche dessous :
 
 Un tour de table ne se lance pas depuis un travail délégué, ni dans l'espace Discussion. Un seul
 tour à la fois par conversation : tant que le premier n'a pas rendu sa synthèse, le bouton est
-grisé et `/roundtable` aussi, dans la liste des commandes, avec sa raison. Une question de plus de 8 000 caractères est refusée aussi : joignez le détail en
-fichier.
+grisé et `/roundtable` aussi, dans la liste des commandes, avec sa raison. Une question de plus de
+8 000 caractères est refusée aussi : joignez le détail en fichier. Une conversation archivée ne
+lance pas de tour de table : désarchivez-la d'abord.
+
+Chaque participant compte dans **Travaux en même temps, au plus** (Réglages › Conversations) :
+s'il manque des places, la ligne le dit (« Trop de travaux à la fois : il en faut 1 de plus ») et
+le tour ne part pas.
 
 <a id="participants"></a>
 
 ## Choisir les participants
 
-« 3 participants ▾ » ouvre un menu à cases : les modèles utilisés récemment d'abord, puis
+« 3 participants ▾ » ouvre un menu à cases : les modèles qui ont répondu récemment d'abord, puis
 **Autres modèles…** pour chercher dans la liste complète. Un agent qui ne laisse pas choisir son
 modèle (IBM Bob) tient sur une ligne. Un agent absent de cet ordinateur n'est pas proposé. De deux
 à cinq participants ; au-delà, les autres cases se désactivent, et la ligne d'état en bas du menu
@@ -84,11 +89,11 @@ carte (« conversation à la corbeille ») ; restaurée, sa ligne redevient ce q
 
 Quand tous ont fini avec au moins deux avis, la conversation reçoit d'elle-même les avis, sans le
 nom des modèles (« Participant A, B, C ») : elle juge les arguments, pas les marques. Sa réponse
-porte une seule ligne d'étiquette, « Synthèse du tour de table · <modèle> · N avis », et la carte
-se replie en deux lignes : l'en-tête et **Consommé** (un clic la rouvre ; les lignes y sont alors
-rangées par lettre). Au survol ou au focus de « Participant C » (ou « Participants B et C »), le vrai nom
-s'affiche ; sur la carte, chaque ligne porte sa lettre, pour faire le lien quand la synthèse écrit
-la lettre seule.
+porte une seule ligne d'étiquette, « Synthèse du tour de table · <modèle> · N avis », et la carte se
+replie en deux lignes : l'en-tête et **Consommé** (un clic la rouvre ; les lignes y sont alors
+rangées par lettre). Au survol ou au focus de « Participant C » (ou « Participants B et C »), le
+vrai nom s'affiche ; sur la carte, chaque ligne porte sa lettre, pour faire le lien quand la
+synthèse écrit la lettre seule.
 
 La synthèse et la décision se font en lecture seule. Ce qui est **garanti** : un agent qui demande
 une autorisation avant d'écrire ou de lancer une commande (IBM Bob, par exemple) se la voit refuser
@@ -119,15 +124,15 @@ décision. Une seule réplique par tour.
 
 ## Ce que coûte un tour de table
 
-Nettement plus qu'une question simple : chaque participant, puis la synthèse. La ligne le dit
-avant l'envoi, sans estimation en argent, et c'est un minimum : un participant qui explore le dépôt
-avec ses outils coûte plus qu'une question, et la synthèse relit toute la conversation qui arbitre
-(dans une longue conversation, des centaines de milliers de jetons). Au pied de la carte, **Consommé** donne en une ligne ce que
-le tour a consommé : les jetons traités (entrée et sortie, comme dans Mon activité) et le coût de la
-synthèse et de la décision, plus tout ce qu'ont consommé les conversations des participants (avis,
-réplique, et ce que vous leur demandez ensuite), par unité, sans conversion. « Demander à … de
-l'appliquer » et vos messages dans la conversation comptent avec elle, pas dans ce total. Le
-détail, par modèle ou par conversation, est dans **Mon activité**.
+Nettement plus qu'une question simple : chaque participant, puis la synthèse. La ligne le dit avant
+l'envoi, sans estimation en argent, et c'est un minimum : un participant qui explore le dépôt avec
+ses outils coûte plus qu'une question, et la synthèse relit toute la conversation qui arbitre (dans
+une longue conversation, des centaines de milliers de jetons). Au pied de la carte, **Consommé**
+donne en une ligne ce que le tour a consommé : les jetons traités (entrée et sortie, comme dans Mon
+activité) et le coût de la synthèse et de la décision, plus tout ce qu'ont consommé les
+conversations des participants (avis, réplique, et ce que vous leur demandez ensuite), par unité,
+sans conversion. « Demander à … de l'appliquer » et vos messages dans la conversation comptent avec
+elle, pas dans ce total. Le détail, par modèle ou par conversation, est dans **Mon activité**.
 
 Le plafond par conversation, s'il est activé, s'applique à chaque participant comme à toute
 conversation. Un participant qui l'atteint s'arrête, et sa ligne le dit ; la carte « Plafond

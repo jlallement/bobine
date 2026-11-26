@@ -53,8 +53,7 @@ describe('onglet « Session » : autres dossiers (fiche 179)', () => {
     // Le champ (fiche 290) : en lecture seule, atteignable, il dit pourquoi.
     expect(field.readOnly).toBe(true)
     expect(field.getAttribute('aria-disabled')).toBe('true')
-    const why =
-      'L’agent répond\u00a0: l’ajout et le retrait d’un dossier attendent la fin de son tour.'
+    const why = 'L’agent répond\u00a0: un dossier s’ajoute ou se retire une fois son tour fini.'
     for (const button of [add, remove]) {
       // Atteignable au clavier (pas `disabled`), mais sans effet, et il dit pourquoi.
       expect(button.disabled).toBe(false)
