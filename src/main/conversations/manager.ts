@@ -1010,15 +1010,16 @@ export class ConversationManager {
   /**
    * Change la fiche d'une conversation, enregistrée (sauf conversation vide, gardée en mémoire)
    * puis la liste prévenue. `change` reçoit le statut de son agent (`undefined` sans agent), qu'il
-   * rend ; une erreur levée par `change` laisse tout tel quel.
+   * rend ; une erreur levée par `change` laisse tout tel quel, `false` rendu aussi (rien changé :
+   * rien d'écrit ni de prévenu, une simple lecture — fiche 290).
    */
   updateRecord(
     id: string,
-    change: (record: ConversationRecord, status: AgentStatus | undefined) => void
+    change: (record: ConversationRecord, status: AgentStatus | undefined) => unknown
   ): AgentStatus | undefined {
     const conversation = this.get(id)
     const status = conversation.host?.snapshot().status
-    change(conversation.record, status)
+    if (change(conversation.record, status) === false) return status
     if (!conversation.draft) this.saveIndex()
     this.emitList()
     return status

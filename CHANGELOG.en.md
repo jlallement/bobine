@@ -2,6 +2,16 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### New
+
+- **Other folders: a typed path or a dragged folder**: in the Session tab, the “Other folders”
+  row accepts a path typed on the keyboard (or pasted, `~/…` and `file://…` included) and a
+  folder dragged from the Finder, besides the system window. A refused path says why (not found,
+  a file, too broad like your whole home folder, already inside the working folder…). A link is
+  followed: the agent gets access to the real folder, the one the list shows.
+
 ## 1.2.0-rc.1 — November 26, 2026
 
 ### New

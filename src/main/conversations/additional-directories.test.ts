@@ -2,73 +2,239 @@ import { describe, expect, it, vi } from 'vitest'
 import type { AgentStatus } from '@shared/agent'
 import { mkdtempSync, realpathSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import path, { join } from 'node:path'
 import {
   addAdditionalDirectory,
   extraFolderStart,
   extraFolderStartOf,
-  normalize,
   readableDirectory,
   removeAdditionalDirectory
 } from './additional-directories'
+import type { FolderSystem } from './extra-folder-check'
 import type { ConversationRecord } from './store'
 import { abs } from '../test-platform'
 
-function fakeManager(status: AgentStatus | undefined, folders?: string[]) {
+function fakeManager(
+  status: AgentStatus | undefined,
+  folders?: string[],
+  workspace = '/projets/app'
+) {
   const record = {
     id: 'c1',
-    workspace: abs('/projets/app'),
+    workspace: abs(workspace),
     ...(folders ? { additionalDirectories: folders } : {})
   } as ConversationRecord
   const manager = {
     record,
+    status,
+    /** Écritures réelles (`change` qui ne rend pas `false`). */
+    writes: 0,
     restart: vi.fn(async () => {}),
     updateRecord: vi.fn(
-      (_id: string, change: (r: ConversationRecord, s: AgentStatus | undefined) => void) => {
-        change(record, status)
-        return status
+      (_id: string, change: (r: ConversationRecord, s: AgentStatus | undefined) => unknown) => {
+        if (change(record, manager.status) !== false) manager.writes++
+        return manager.status
       }
     )
   }
   return manager
 }
 
-describe('autres dossiers d’une conversation (fiche 179)', () => {
-  it('ajout : mémorisé, sans doublon ni le dossier de travail ; agent prêt : session rouverte', async () => {
+/**
+ * Disque simulé : tout chemin absolu est un dossier lisible, sauf ceux de `absent` ; `links` :
+ * chemin → dossier réel. `gate` : la lecture attend ce signal (course entre deux ajouts).
+ */
+function disk(
+  links: Record<string, string> = {},
+  absent: string[] = [],
+  gate?: Promise<void>
+): FolderSystem {
+  // Identité : une par chemin réel (les liens mènent au même dossier).
+  const inodes = new Map<string, string>()
+  const ino = (p: string) => {
+    if (!inodes.has(p)) inodes.set(p, String(inodes.size + 10))
+    return inodes.get(p) ?? '0'
+  }
+  return {
+    path,
+    home: abs('/Users/moi'),
+    timeoutMs: 1000,
+    realpath: async (p) => {
+      await gate
+      if (absent.includes(p)) throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+      return links[p] ?? path.resolve(p)
+    },
+    stat: async (p) => ({ dir: true, dev: '1', ino: ino(links[p] ?? path.resolve(p)) }),
+    access: async () => 'ok'
+  }
+}
+
+describe('autres dossiers d’une conversation (fiches 179, 290)', () => {
+  it('ajout : mémorisé ; doublon, dossier de travail, sous-dossier refusés ; agent prêt : session rouverte', async () => {
     const m = fakeManager('ready', [abs('/projets/lib')])
-    await addAdditionalDirectory(m, 'c1', '/projets/serveur/')
-    await addAdditionalDirectory(m, 'c1', abs('/projets/lib'))
-    await addAdditionalDirectory(m, 'c1', abs('/projets/app'))
-    expect(m.record.additionalDirectories).toEqual([abs('/projets/lib'), abs('/projets/serveur')])
-    // Doublon et dossier de travail : rien de changé, la session n'est pas rouverte.
-    expect(m.restart).toHaveBeenCalledTimes(1)
+    const sys = disk()
+    expect(await addAdditionalDirectory(m, 'c1', abs('/projets/serveur/'), sys)).toEqual({
+      ok: true,
+      folder: abs('/projets/serveur')
+    })
+    expect(await addAdditionalDirectory(m, 'c1', abs('/projets/lib'), sys)).toEqual({
+      ok: false,
+      reason: 'alreadyAdded',
+      folder: abs('/projets/lib')
+    })
+    expect(await addAdditionalDirectory(m, 'c1', abs('/projets/app'), sys)).toEqual({
+      ok: false,
+      reason: 'isWorkspace',
+      folder: abs('/projets/app')
+    })
+    expect(await addAdditionalDirectory(m, 'c1', abs('/projets/app/src'), sys)).toEqual({
+      ok: false,
+      reason: 'insideWorkspace',
+      folder: abs('/projets/app/src')
+    })
+    // Un parent du dossier de travail reste accepté.
+    expect(await addAdditionalDirectory(m, 'c1', abs('/projets'), sys)).toMatchObject({ ok: true })
+    expect(m.record.additionalDirectories).toEqual([
+      abs('/projets/lib'),
+      abs('/projets/serveur'),
+      abs('/projets')
+    ])
+    expect(m.writes).toBe(2)
+    expect(m.restart).toHaveBeenCalledTimes(2)
   })
 
   it('sans agent vivant : seulement mémorisé (envoyé au prochain démarrage)', async () => {
     const m = fakeManager(undefined)
-    await addAdditionalDirectory(m, 'c1', abs('/projets/lib'))
+    await addAdditionalDirectory(m, 'c1', abs('/projets/lib'), disk())
     expect(m.record.additionalDirectories).toEqual([abs('/projets/lib')])
     expect(m.restart).not.toHaveBeenCalled()
   })
 
-  it('retrait du dernier : le champ disparaît', async () => {
-    const m = fakeManager('exited', [abs('/projets/lib')])
-    await removeAdditionalDirectory(m, 'c1', abs('/projets/lib'))
-    expect('additionalDirectories' in m.record).toBe(false)
+  it('chemin refusé (relatif, absent) : rien d’écrit, aucune session rouverte', async () => {
+    const m = fakeManager('ready', [abs('/projets/lib')])
+    expect(await addAdditionalDirectory(m, 'c1', 'serveur', disk())).toEqual({
+      ok: false,
+      reason: 'notAbsolute'
+    })
+    const gone = abs('/projets/parti')
+    expect(await addAdditionalDirectory(m, 'c1', gone, disk({}, [gone]))).toMatchObject({
+      reason: 'notFound'
+    })
+    expect(m.writes).toBe(0)
+    expect(m.restart).not.toHaveBeenCalled()
   })
 
-  it('pendant une réponse : refusé, rien ne change', async () => {
+  it('dossier de travail sous un lien, enregistré par son chemin non résolu : lui et ses sous-dossiers refusés', async () => {
+    // La conversation a été ouverte sur `/liens/app`, lien vers `/projets/app`.
+    const m = fakeManager('ready', [], '/liens/app')
+    const sys = disk({ [abs('/liens/app')]: abs('/projets/app') })
+    expect(await addAdditionalDirectory(m, 'c1', abs('/projets/app'), sys)).toMatchObject({
+      reason: 'isWorkspace'
+    })
+    expect(await addAdditionalDirectory(m, 'c1', abs('/projets/app/src'), sys)).toMatchObject({
+      reason: 'insideWorkspace'
+    })
+    expect(m.writes).toBe(0)
+  })
+
+  it('un lien vers un dossier déjà là (enregistré avant, non résolu) : refusé', async () => {
+    const m = fakeManager('ready', [abs('/raccourcis/lib')])
+    const sys = disk({ [abs('/raccourcis/lib')]: abs('/projets/lib') })
+    expect(await addAdditionalDirectory(m, 'c1', abs('/projets/lib'), sys)).toMatchObject({
+      reason: 'alreadyAdded'
+    })
+    expect(m.restart).not.toHaveBeenCalled()
+  })
+
+  it('`~/…` développé, le dossier réel retenu', async () => {
+    const m = fakeManager(undefined)
+    const sys = disk({ [abs('/Users/moi/Dev/lien')]: abs('/Volumes/donnees/lib') })
+    expect(await addAdditionalDirectory(m, 'c1', '~/Dev/lien', sys)).toEqual({
+      ok: true,
+      folder: abs('/Volumes/donnees/lib')
+    })
+    expect(m.record.additionalDirectories).toEqual([abs('/Volumes/donnees/lib')])
+  })
+
+  it('deux ajouts concurrents du même dossier : un seul passe', async () => {
+    const m = fakeManager('ready')
+    let open: () => void = () => {}
+    const gate = new Promise<void>((done) => (open = done))
+    const sys = disk({}, [], gate)
+    const first = addAdditionalDirectory(m, 'c1', abs('/projets/lib'), sys)
+    const second = addAdditionalDirectory(m, 'c1', abs('/projets/lib/'), sys)
+    open()
+    const results = await Promise.all([first, second])
+    expect(results.map((r) => (r.ok ? 'ok' : r.reason)).sort()).toEqual(['alreadyAdded', 'ok'])
+    expect(m.record.additionalDirectories).toEqual([abs('/projets/lib')])
+    expect(m.restart).toHaveBeenCalledTimes(1)
+  })
+
+  it('pendant une réponse : `busy`, sans lire le disque ni rien écrire', async () => {
     const m = fakeManager('busy', [abs('/projets/lib')])
-    await expect(addAdditionalDirectory(m, 'c1', abs('/projets/serveur'))).rejects.toThrow()
+    const sys = disk()
+    const read = vi.spyOn(sys, 'realpath')
+    expect(await addAdditionalDirectory(m, 'c1', abs('/projets/serveur'), sys)).toEqual({
+      ok: false,
+      reason: 'busy'
+    })
+    expect(read).not.toHaveBeenCalled()
     expect(m.record.additionalDirectories).toEqual([abs('/projets/lib')])
+    expect(m.writes).toBe(0)
+  })
+
+  it('un tour commence pendant la vérification : `busy`, rien d’écrit', async () => {
+    const m = fakeManager('ready')
+    let open: () => void = () => {}
+    const gate = new Promise<void>((done) => (open = done))
+    const pending = addAdditionalDirectory(m, 'c1', abs('/projets/lib'), disk({}, [], gate))
+    m.status = 'busy'
+    open()
+    expect(await pending).toEqual({ ok: false, reason: 'busy' })
+    expect(m.record.additionalDirectories).toBeUndefined()
     expect(m.restart).not.toHaveBeenCalled()
   })
 
-  it('normalize : chemins absolus seulement, normalisés, dans l’ordre', () => {
-    expect(normalize(['relatif', '/a/b/../c', abs('/a/c'), abs('/d')])).toEqual([
-      abs('/a/c'),
-      abs('/d')
-    ])
+  it('retrait : même comparaison que l’ajout (lien, séparateur final) ; le dernier efface le champ', async () => {
+    const m = fakeManager('ready', [abs('/projets/lib'), abs('/raccourcis/serveur')])
+    const sys = disk({ [abs('/raccourcis/serveur')]: abs('/projets/serveur') })
+    await removeAdditionalDirectory(m, 'c1', abs('/projets/serveur'), sys)
+    expect(m.record.additionalDirectories).toEqual([abs('/projets/lib')])
+    await removeAdditionalDirectory(m, 'c1', `${abs('/projets/lib')}/`, sys)
+    expect('additionalDirectories' in m.record).toBe(false)
+    expect(m.restart).toHaveBeenCalledTimes(2)
+    // Rien à retirer : rien d'écrit, pas de session rouverte.
+    await removeAdditionalDirectory(m, 'c1', abs('/projets/autre'), sys)
+    expect(m.restart).toHaveBeenCalledTimes(2)
+  })
+
+  it('agent qui démarre : `starting`, rien d’écrit (la session qui s’ouvre n’aurait pas le dossier)', async () => {
+    const m = fakeManager('starting')
+    expect(await addAdditionalDirectory(m, 'c1', abs('/projets/lib'), disk())).toEqual({
+      ok: false,
+      reason: 'starting'
+    })
+    expect(m.writes).toBe(0)
+    await expect(removeAdditionalDirectory(m, 'c1', abs('/projets/lib'), disk())).rejects.toThrow()
+  })
+
+  it('sous-dossier dont le nom commence par « .. » : dans le dossier de travail (D3)', async () => {
+    const m = fakeManager('ready')
+    expect(
+      await addAdditionalDirectory(m, 'c1', abs('/projets/app/..cache'), disk())
+    ).toMatchObject({
+      reason: 'insideWorkspace'
+    })
+    // Et le voisin `/projets/app..x` n'est pas dedans.
+    expect(await addAdditionalDirectory(m, 'c1', abs('/projets/app..x'), disk())).toMatchObject({
+      ok: true
+    })
+  })
+
+  it('retrait pendant une réponse : refusé, rien ne change', async () => {
+    const m = fakeManager('busy', [abs('/projets/lib')])
+    await expect(removeAdditionalDirectory(m, 'c1', abs('/projets/lib'), disk())).rejects.toThrow()
+    expect(m.record.additionalDirectories).toEqual([abs('/projets/lib')])
   })
 })
 
