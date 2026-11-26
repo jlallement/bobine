@@ -12,7 +12,7 @@ What changes for you, version by version. Shown in Settings › About.
   “Get a review”. The merge only starts when you click, with the usual checks. This state
   survives closing the app.
 
-## 1.2.0-beta.4 — November 26, 2026
+## 1.2.0-rc.1 — November 26, 2026
 
 ### New
 

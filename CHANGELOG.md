@@ -12,7 +12,7 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   résolution » et « Faire relire ». La fusion ne part que sur votre clic, avec les refus habituels.
   Cet état survit à la fermeture de l’app.
 
-## 1.2.0-beta.4 — 26 novembre 2026
+## 1.2.0-rc.1 — 26 novembre 2026
 
 ### Nouveau
 
