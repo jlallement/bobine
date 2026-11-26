@@ -1,6 +1,6 @@
 # Nouveautés
 
-Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › À propos.
+Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › Nouveautés.
 
 ## 1.2.0-rc.1 — 26 novembre 2026
 
@@ -15,7 +15,7 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ## 1.2.0-beta.3 — 26 novembre 2026
 
-### Corrigé
+### Corrections
 
 - **Repartir de ce message** : si l’un des fichiers à remettre dans leur état d’alors a été commité
   depuis ce message, la case n’est plus cochée d’office et le dialogue dit combien de fichiers
@@ -36,7 +36,7 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ## 1.2.0-beta.2 — 26 novembre 2026
 
-### Corrigé
+### Corrections
 
 - **Nettoyer une tâche fille** qui a des fichiers non commités : la question le dit (« 1 fichier non
   commité serait perdu ») et « Garder » est le bouton par défaut.

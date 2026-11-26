@@ -1,6 +1,6 @@
 # What’s new
 
-What changes for you, version by version. Shown in Settings › About.
+What changes for you, version by version. Shown in Settings › What’s new.
 
 ## 1.2.0-rc.1 — November 26, 2026
 
@@ -14,7 +14,7 @@ What changes for you, version by version. Shown in Settings › About.
 
 ## 1.2.0-beta.3 — November 26, 2026
 
-### Fixed
+### Fixes
 
 - **Branch from this message**: if one of the files to restore to their state at that point was
   committed since that message, the box is no longer checked for you and the dialog says how many
@@ -24,7 +24,7 @@ What changes for you, version by version. Shown in Settings › About.
   is counted under the model that answered, no longer under the refused one.
 - **Child tasks launched together**: two worktrees created in the same minute can no longer get
   the same name; creating one no longer fails with “branch already exists”.
-- **“Commit then merge”** while an agent is still writing in the main folder (or a task is still
+- **“Commit, then merge”** while an agent is still writing in the main folder (or a task is still
   replying): refused before anything is committed, with the reason; no more half-done commit
   followed by a refused merge.
 - **Child task merged then cleaned up from its Git tab**: the parent conversation’s card says
@@ -36,7 +36,7 @@ What changes for you, version by version. Shown in Settings › About.
 
 ## 1.2.0-beta.2 — November 26, 2026
 
-### Fixed
+### Fixes
 
 - **Cleaning up a child task** with uncommitted files: the question says so (“1 uncommitted file
   would be lost”) and “Keep” is the default button.
