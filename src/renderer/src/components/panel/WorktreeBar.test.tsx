@@ -198,4 +198,34 @@ describe('barre du worktree : départ et fusion (fiches 110, 123)', () => {
     expect((screen.getByTestId('worktree-merge') as HTMLButtonElement).disabled).toBe(false)
     expect(screen.getByTestId('worktree-merge').hasAttribute('aria-disabled')).toBe(false)
   })
+
+  it('fiche 289 : « Laisser l’agent résoudre » s’arrête à relire ; la fusion part sur « Fusionner dans main »', async () => {
+    trackPr({ status: 'unavailable' })
+    const resolve = vi.fn(async () => ({
+      status: 'resolved' as const,
+      files: ['README.md'],
+      base: 'main'
+    }))
+    const merging = vi.fn(async () => ({ status: 'nothing' as const, base: 'main' }))
+    window.api.worktree = { ...window.api.worktree, resolveWithAgent: resolve, merge: merging }
+    bar(view({ merging: { files: ['README.md'] } }))
+    fireEvent.click(screen.getByTestId('worktree-merge-resolve'))
+    const note = await screen.findByTestId('worktree-note')
+    expect(note.dataset['kind']).toBe('resolved')
+    expect(note.textContent).toBe(
+      'Conflit résolu par l’agent dans README.md, dans la branche : rien n’est entré dans main. Relisez la résolution (onglet Conversation, « Faire relire… »), puis fusionnez.'
+    )
+    expect(screen.queryByTestId('worktree-conflicts')).toBeNull()
+    expect(merging).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByTestId('worktree-merge'))
+    await waitFor(() => expect(merging).toHaveBeenCalledWith('c1'))
+  })
+
+  it('fiche 289 : résolution à relire dite par le main (fille, après un redémarrage)', () => {
+    trackPr({ status: 'unavailable' })
+    bar(view({ review: { files: ['README.md', 'src/a.ts'] } }))
+    const note = screen.getByTestId('worktree-note')
+    expect(note.dataset['kind']).toBe('resolved')
+    expect(note.textContent).toContain('README.md et src/a.ts')
+  })
 })

@@ -9977,6 +9977,17 @@ html.about-page body {
 .worktree-note span {
   flex: 1;
 }
+/* Fiche 289 : conflit résolu par l'agent, à relire avant de fusionner. */
+.worktree-note.review {
+  align-items: flex-start;
+  color: var(--text-2);
+  background: var(--warn-soft);
+}
+.worktree-note.review svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--warn);
+}
 
 /* ===== Fusion refusée : dossier principal non commité (fiche 123) ===== */
 

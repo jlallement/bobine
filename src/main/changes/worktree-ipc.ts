@@ -13,7 +13,8 @@ import {
   conflictPrompt,
   type MergeOutcome,
   type OrphanWorktree,
-  type RemoteBranchOutcome
+  type RemoteBranchOutcome,
+  type ResolveOutcome
 } from '@shared/worktree-cycle'
 import { findExecutable } from '../agent/profiles'
 import { ChildMergeRecorder, type MergedFacts } from '../conversations/child-merge-record'
@@ -56,6 +57,7 @@ export interface WorktreeCycleDeps {
     | 'undoCommitIn'
     | 'merge'
     | 'mergeContinue'
+    | 'concludeMerge'
     | 'mergeAbort'
     | 'pullRequest'
     | 'forgetGh'
@@ -251,7 +253,13 @@ export function worktreeHandlers(
       if (!found) return Promise.resolve(null)
       const fresh = isFresh(options)
       if (fresh) available().cycle.forgetGh()
-      return available().cycle.info(found, fresh ? { fresh } : {})
+      // Fiche 289 : une résolution de l'agent à relire, dite chez la mère, revient dans la vue Git.
+      return available()
+        .cycle.info(found, fresh ? { fresh } : {})
+        .then((view) => {
+          const review = new ChildMergeRecorder(available().conversations).review(found.id)
+          return review && !view.merged && !view.merging ? { ...view, review } : view
+        })
     },
     'worktree:commit': (id, request) => available().cycle.commit(target(id), parseCommit(request)),
     'worktree:undoCommit': async (id, hash) => {
@@ -276,17 +284,31 @@ export function worktreeHandlers(
       await available().cycle.mergeAbort(target(id))
       return undefined
     },
-    'worktree:resolveWithAgent': async (id, options): Promise<MergeOutcome> => {
+    'worktree:resolveWithAgent': async (id, options): Promise<ResolveOutcome> => {
       const { cycle, conversations } = available()
       const found = target(id)
-      const stash = { stash: wantsStash(options) }
       const info = await cycle.info(found)
       const files = info.merging?.files ?? []
-      if (files.length > 0) {
-        // Le tour de l'agent est attendu (`prompt` rend la main à sa fin), puis la fusion reprend.
-        await conversations.prompt(found.id, conflictPrompt(info.baseBranch, info.branch, files))
+      // Sans conflit en cours (résolu à la main) : la fusion reprend sur ce clic, comme avant.
+      if (files.length === 0) {
+        return recorded(found, () => cycle.mergeContinue(found, { stash: wantsStash(options) }))
       }
-      return recorded(found, () => cycle.mergeContinue(found, stash))
+      // Le tour de l'agent est attendu (`prompt` rend la main à sa fin). Fiche 289 : sa résolution
+      // est commitée dans la branche seulement ; la base n'avance qu'au clic suivant (« Fusionner »).
+      await conversations.prompt(found.id, conflictPrompt(info.baseBranch, info.branch, files))
+      const concluded = await cycle.concludeMerge(found)
+      if (concluded.status === 'conflicts') return concluded
+      if (concluded.status === 'not-merging') {
+        throw new Error(
+          t('childrenMerge.error.notResolved', { title: found.title, base: info.baseBranch })
+        )
+      }
+      new ChildMergeRecorder(conversations).resolved(found.id, {
+        base: info.baseBranch,
+        branch: info.branch,
+        files
+      })
+      return { status: 'resolved', files, base: info.baseBranch }
     },
     'worktree:pullRequest': (id, request) => {
       const found = target(id)

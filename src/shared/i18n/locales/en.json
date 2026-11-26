@@ -3941,7 +3941,8 @@
       "resolving": "The agent is resolving the conflicts…",
       "retry": "Retry",
       "abort": "Abort",
-      "aborted": "Merge aborted: the branch is as before."
+      "aborted": "Merge aborted: the branch is as before.",
+      "resolved": "Conflict resolved by the agent in {{files}}, on the branch: nothing went into {{base}}. Review the resolution (Conversation tab, “Request review…”), then merge."
     },
     "cleanup": {
       "action": "Clean up",

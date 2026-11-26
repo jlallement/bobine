@@ -71,6 +71,38 @@ export class ChildMergeRecorder {
   }
 
   /**
+   * Fiche 289 : l'agent de la fille a résolu un conflit depuis son onglet Git (« Laisser l'agent
+   * résoudre ») ; la résolution est dans sa branche, à relire. Dit chez sa mère comme une fusion de
+   * carte arrêtée à relire : sa ligne, Modifications › Travaux et sa vue Git le montrent.
+   */
+  resolved(childId: string, facts: { base: string; branch: string; files: string[] }): void {
+    const motherId = this.motherOf(childId)
+    const child = this.summary(childId)
+    if (!motherId || !child) return
+    const at = this.now()
+    this.post(motherId, {
+      runId: randomUUID(),
+      base: facts.base,
+      cleanup: false,
+      status: 'review',
+      rows: [
+        { childId, title: child.title, branch: facts.branch, state: 'resolved', files: facts.files }
+      ],
+      startedAt: at,
+      endedAt: at
+    })
+  }
+
+  /** Fiche 289 : la résolution de cette fille attend encore sa relecture (dernière fusion qui la touche). */
+  review(childId: string): { files: string[] } | undefined {
+    const motherId = this.motherOf(childId)
+    if (!motherId) return undefined
+    const last = lastMergeFor(this.host.view(motherId).transcript.items, [childId])
+    const row = last?.status === 'review' ? last.rows.find((r) => r.childId === childId) : undefined
+    return row?.state === 'resolved' ? { files: row.files ?? [] } : undefined
+  }
+
+  /**
    * La fille vient d'être nettoyée depuis son onglet Git (worktree et branche supprimés). Sa
    * dernière ligne fusionnée chez sa mère est dite nettoyée ; sans ligne (fusion faite hors de
    * Bobine, PR fusionnée), une ligne fusionnée et nettoyée est posée si `merged` dit que la branche

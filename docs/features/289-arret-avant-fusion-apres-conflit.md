@@ -1,6 +1,6 @@
 # 289 — S'arrêter avant de fusionner un conflit résolu par l'agent
 
-- **Statut** : fait (1.2), en attente de relecture
+- **Statut** : en cours (1.2)
 - **Dépend de** : 110 (conflit renvoyé à l'agent), 120 et 264 (fusion enchaînée depuis la carte,
   carte de groupe, carte d'un travail), 123 et 287 (refus de la fusion), 177 et 265 (« Faire
   relire »)
@@ -24,27 +24,35 @@ branche du travail, la carte demande une relecture, et la fusion ne part que sur
 
 ## Critères d'acceptation
 
-- [x] Fusion enchaînée (carte de groupe, carte « Sous-tâches », carte d'un travail) : au conflit, la
+- [ ] Fusion enchaînée (carte de groupe, carte « Sous-tâches », carte d'un travail) : au conflit, la
       consigne part au travail comme avant ; à la fin de son tour, si les marqueurs ont disparu, la
       résolution est commitée **dans la branche du travail** et la base (`main`) n'avance pas. La
       chaîne s'arrête là ; les travaux suivants restent en attente.
-- [x] La carte dit l'état « conflit résolu, à relire » : pastille de la ligne, phrase du pied (qui
+- [ ] La carte dit l'état « conflit résolu, à relire » : pastille de la ligne, phrase du pied (qui
       nomme le travail, les fichiers et la base), et donne accès au diff par l'existant : « Voir la
       résolution » (vue Git du travail, comme « Voir le conflit ») et « Faire relire » (fiche 265)
       quand la carte le propose.
-- [x] Rien n'entre dans la base sans clic : la fusion repart par les boutons existants de la carte
+- [ ] Rien n'entre dans la base sans clic : la fusion repart par les boutons existants de la carte
       (« Fusionner … dans main », « Fusionner dans main » d'un travail), donc par tous leurs refus
       (fusion en cours, tour en cours, travail au travail ou en relecture, dossier principal non
       commité avec « Committer d'abord » / « Mettre de côté », base extraite ailleurs, branche non
       commitée).
-- [x] L'état survit à un redémarrage de l'app (posé dans le fil de la conversation, comme toute
+- [ ] L'état survit à un redémarrage de l'app (posé dans le fil de la conversation, comme toute
       fusion enchaînée, fiche 103).
-- [x] Sans conflit : rien ne change. Conflit dont il reste des marqueurs : rien ne change (« Réessayer »,
+- [ ] Vue Git d'un worktree, « Laisser l'agent résoudre » : même arrêt ; la barre dit « Conflit
+      résolu par l'agent dans …, dans la branche : rien n'est entré dans main », « Fusionner dans
+      main » part au clic avec ses refus. Pour une fille, l'état est dit chez la mère (sa ligne
+      « à relire ») et relu par la vue Git après un redémarrage.
+- [ ] Worktree sans mère : après un redémarrage, rien n'est fusionné et « Fusionner dans main »
+      reste le seul chemin (la note ne revient pas : hors champ, voir plus bas).
+- [ ] Un clic tombé entre l'affichage « à relire » et la fin de la chaîne (remise du stash) est
+      refusé (« fusion en cours ») : rien ne part.
+- [ ] Sans conflit : rien ne change. Conflit dont il reste des marqueurs : rien ne change (« Réessayer »,
       « Abandonner », « Voir le conflit »). Conflit résolu à la main puis « Réessayer » : la fusion part
       sur ce clic, comme avant.
-- [x] L'historique final est le même qu'avant (commit de fusion réécrit, la base en premier parent :
+- [ ] L'historique final est le même qu'avant (commit de fusion réécrit, la base en premier parent :
       `mergeIntoBase`), seulement décalé au clic.
-- [x] Essais : unitaires (moteur `ChildrenMerger`, `WorktreeCycle.concludeMerge`, cartes) et e2e
+- [ ] Essais : unitaires (moteur `ChildrenMerger`, `WorktreeCycle.concludeMerge`, cartes) et e2e
       contre l'agent factice (scénario `conflits`, qui retire les marqueurs à la consigne de conflit)
       dans `filles-fusion` (rejoue le journal, redémarrage compris) et `parcours-deleguer`.
 
@@ -55,11 +63,20 @@ a envoyé elle-même la consigne de conflit au travail (`prompt` avec `from: mer
 l'agent qui suit a retiré les marqueurs. C'est le seul chemin où Bobine fait résoudre un conflit puis
 fusionnait sans geste de l'utilisateur ; l'état « à relire » est posé là, et nulle part ailleurs.
 
-Tout le reste part d'un clic de l'utilisateur et ne change pas : « Réessayer » sur la carte ou dans la
-vue Git après une résolution à la main (`mergeContinue`), et les fusions de la vue Git du travail.
-Hors champ, signalé au tech lead : « Laisser l'agent résoudre » de la vue Git (fiche 110) fait
-résoudre par l'agent **à la demande de l'utilisateur** puis reprend la fusion ; le guide le décrit
-ainsi. Le même arrêt pourrait s'y appliquer, c'est une décision à prendre à part.
+Second chemin, ajouté sur décision du tech lead (2026-11-26) : « Laisser l'agent résoudre » de la vue
+Git d'un worktree (`worktree:resolveWithAgent`, fiche 110) quand une fusion y est arrêtée sur des
+conflits. Même règle : la résolution est commitée dans la branche (`concludeMerge`), rien n'entre dans
+la base sans un clic sur « Fusionner dans main ».
+
+Tout le reste part d'un clic de l'utilisateur sur une résolution qu'il a faite lui-même, et ne change
+pas : « Réessayer » sur la carte ou dans la vue Git après une résolution à la main (`mergeContinue`),
+« Laisser l'agent résoudre » quand il ne reste plus de conflit en cours (rien n'est envoyé à l'agent),
+et les fusions de la vue Git.
+
+**Hors champ (décision du tech lead, 2026-11-26)** : pour une conversation en worktree **sans mère**
+(« Nouvelle conversation dans un worktree »), la note « à relire » de la vue Git ne survit pas au
+redémarrage : pas de nouveau stockage pour cela. Après redémarrage, rien n'est fusionné et
+« Fusionner dans main » reste le seul chemin (affirmé par l'e2e `worktree-cycle`).
 
 ## Plan
 
@@ -100,6 +117,11 @@ ainsi. Le même arrêt pourrait s'y appliquer, c'est une décision à prendre à
    `parcours-deleguer`.
 8. Clôture : index, CHANGELOG (fr, en), journal.
 
+9. Ajout (décision du tech lead, 2026-11-26) : `worktree:resolveWithAgent` → `concludeMerge`, issue
+   `resolved` (`ResolveOutcome`), dit chez la mère par `ChildMergeRecorder.resolved` ; `worktree:info`
+   relit `review` ; `WorktreeBar` : note `resolved` (nouvel état de la note existante, pas d'écran).
+   Essais : `worktree-ipc.test.ts`, `WorktreeBar.test.tsx`, e2e `worktree-cycle`.
+
 Aucune nouvelle dépendance. Pas d'ADR : la décision prolonge la fiche 120 (fusion enchaînée) sans
 nouveau choix structurant ; elle est consignée ici.
 
@@ -127,3 +149,11 @@ nouveau choix structurant ; elle est consignée ici.
   - Pas de nouveau scénario d'agent factice : `conflits` retire déjà les marqueurs à la consigne de
     conflit (fiche 110), c'est exactement le comportement à rejouer.
   - Capture « avant » en clair seulement (la suite rouge s'arrête sur l'exception avant le sombre).
+- 2026-11-26 : vérification du premier lot : `./scripts/verify` sorti 0 (commit 2ec05491).
+  Fusion de `1.2` (1.2.0-rc.1) ; « Prochaine version » gardée en tête des deux CHANGELOG.
+- 2026-11-26 : second chemin, « Laisser l'agent résoudre » de la vue Git (décision du tech lead).
+  **Rouge constaté** : `worktree-ipc.test.ts`, 2 échecs sur 21 (« expected { status: 'merged' … } to
+  deeply equal { status: 'resolved' … } » : la fusion reprenait d'elle-même).
+  Limite assumée : pour une conversation en worktree **sans mère** (« Nouvelle conversation dans un
+  worktree »), la note « à relire » de la vue Git ne survit pas au redémarrage (rien où la poser sans
+  nouveau stockage) ; la fusion, elle, ne part toujours que sur un clic.

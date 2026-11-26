@@ -3934,6 +3934,7 @@ export type FrResources = {
       readonly retry: 'Réessayer'
       readonly abort: 'Abandonner'
       readonly aborted: 'Fusion abandonnée : la branche est comme avant.'
+      readonly resolved: 'Conflit résolu par l’agent dans {{files}}, dans la branche : rien n’est entré dans {{base}}. Relisez la résolution (onglet Conversation, « Faire relire… »), puis fusionnez.'
     }
     readonly cleanup: {
       readonly action: 'Nettoyer'

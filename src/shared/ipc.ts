@@ -47,6 +47,7 @@ import type {
   CommitOutcome,
   CommitRequest,
   MergeOutcome,
+  ResolveOutcome,
   OrphanWorktree,
   PrOutcome,
   RemoteBranchOutcome,
@@ -618,11 +619,12 @@ export interface IpcInvokeContract
   'worktree:mergeAbort': { args: [id: string]; result: undefined }
   /**
    * « Laisser l'agent résoudre » : envoie à la conversation les fichiers en conflit, attend la fin
-   * de son tour, puis reprend la fusion.
+   * de son tour, puis commite la résolution dans la branche (fiche 289) : la base n'avance qu'au
+   * clic suivant. Sans conflit en cours (résolu à la main), reprend la fusion.
    */
   'worktree:resolveWithAgent': {
     args: [id: string, options?: { stash?: boolean }]
-    result: MergeOutcome
+    result: ResolveOutcome
   }
   /** Pousse la branche et ouvre une PR vers la base par `gh` (détecté, jamais requis). */
   'worktree:pullRequest': {

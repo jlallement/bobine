@@ -7,7 +7,8 @@ import { L, Lpart, check, sleep, withApp } from '../lib.mjs'
 /**
  * Cycle complet d'un worktree (fiche 110) : départ explicite dans le fil, commit des fichiers
  * cochés avec message proposé, « Ouvrir une PR » bloqué avec la raison, fusion dans `main` avec
- * conflit résolu par l'agent (scénario `conflits`), nettoyage, puis worktree orphelin dans les
+ * conflit résolu par l'agent (scénario `conflits`) puis arrêtée à relire et reprise au clic
+ * (fiche 289), nettoyage, puis worktree orphelin dans les
  * réglages. Vrai dépôt git local.
  */
 export async function worktreeCycleSuite(scheme) {
@@ -28,6 +29,10 @@ export async function worktreeCycleSuite(scheme) {
   git('config', 'user.email', 'e2e@example.invalid')
   // Une modification non commitée du dossier d'origine : pas dans le worktree, et dit.
   writeFileSync(join(workspace, 'notes.txt'), 'à faire\n')
+  /** Profil gardé d'un lancement à l'autre (fiche 289 : redémarrage avec une résolution à relire). */
+  const userData = mkdtempSync(join(tmpdir(), 'bob-e2e-cycle-data-'))
+  /** Ce qu'écrit le scénario `conflits` quand on lui demande de résoudre. */
+  const resolvedReadme = '# Démo\n\nVersion 2 et 3\n\n## Utilisation\n\nLancer `node src/app.js`.\n'
   try {
     await withApp(
       scheme,
@@ -132,6 +137,78 @@ export async function worktreeCycleSuite(scheme) {
         )
         await ui.shot('113-worktree-conflit')
         await ui.click(ui.$('worktree-merge-resolve'))
+        // Fiche 289 : la résolution de l'agent reste dans la branche, la barre demande une relecture ;
+        // rien n'entre dans main avant le clic suivant. Contrôles qui ne lèvent pas : sur une version
+        // sans le correctif, la fusion part d'elle-même et ils le disent.
+        const toReview = JSON.stringify(
+          L('worktreeCycle.merge.resolved', { files: 'README.md', base: 'main' })
+        )
+        const stopped = await ui
+          .waitFor(
+            `${ui.$('worktree-note')}?.innerText === ${toReview} || ${ui.$('worktree-state')}?.innerText === ${JSON.stringify(L('worktreeCycle.state.merged', { base: 'main' }))}`,
+            60000
+          )
+          .then(
+            () => true,
+            () => false
+          )
+        const branchReadme = git(
+          'show',
+          `${git('worktree', 'list', '--porcelain')
+            .split('\n')
+            .find((l) => l.startsWith('branch refs/heads/bobine/'))
+            ?.slice('branch refs/heads/'.length)}:README.md`
+        )
+        check(
+          stopped &&
+            (await ui.ev(`${ui.$('worktree-note')}?.innerText ?? ''`)) === JSON.parse(toReview),
+          'fiche 289 : « Laisser l’agent résoudre » s’arrête, résolution à relire dans la branche'
+        )
+        check(
+          git('log', '-1', '--format=%s', 'main') === 'v3' &&
+            branchReadme === resolvedReadme.trimEnd() &&
+            readFileSync(join(workspace, 'notes.txt'), 'utf8') === 'à faire\n' &&
+            git('stash', 'list') === '',
+          'fiche 289 : main n’a pas bougé ; la résolution est commitée dans la branche'
+        )
+        await ui.shot('289-worktree-a-relire')
+      },
+      userData,
+      'conflits',
+      { BOBINE_WORKSPACE: workspace }
+    )
+
+    // Fiche 289, limite assumée : une conversation en worktree sans mère perd la note « à relire » au
+    // redémarrage ; rien n'est fusionné pour autant, « Fusionner dans main » reste le seul chemin.
+    await withApp(
+      scheme,
+      async (ui) => {
+        await ui.waitFor(
+          `document.querySelectorAll('[data-testid=history-item]').length > 0`,
+          20000
+        )
+        if (!(await ui.ev(`!!document.querySelector('.history-item.active')`))) {
+          const item = `document.querySelector('[data-testid=history-item]')`
+          await ui.click(`${item}.querySelector('.history-open') ?? ${item}`)
+        }
+        await ui.waitFor(`!!${ui.$('changes-toggle')}`, 20000)
+        if (!(await ui.ev(`!!${ui.$('changes-tab')}`))) await ui.click(ui.$('changes-toggle'))
+        await ui.waitFor(`!!${ui.$('changes-view-git')}`, 20000)
+        await ui.click(ui.$('changes-view-git'))
+        await ui.waitFor(`!!${ui.$('worktree-merge')}`, 20000)
+        await sleep(1000)
+        check(
+          git('log', '-1', '--format=%s', 'main') === 'v3' &&
+            readFileSync(join(workspace, 'README.md'), 'utf8') !== resolvedReadme &&
+            git('stash', 'list') === '' &&
+            !(await ui.ev(`!!${ui.$('worktree-conflicts')}`)) &&
+            !(await ui.ev(`${ui.$('worktree-merge')}.hasAttribute('aria-disabled')`)),
+          'après redémarrage (sans mère) : rien n’est fusionné ; « Fusionner dans main » reste le seul chemin'
+        )
+        // La fusion part sur un clic, par ses refus habituels : notes.txt est encore là.
+        await ui.click(ui.$('worktree-merge'))
+        await ui.waitFor(`!!${ui.$('main-dirty')}`)
+        await ui.click(ui.$('main-dirty-stash'))
         await ui.waitFor(
           `${ui.$('worktree-note')}?.innerText === ${JSON.stringify(`${L('worktreeCycle.merge.merge', { base: 'main' })} ${L('worktreeCycle.mainDirty.stashRestored', { count: 1 })}`)}`,
           60000
@@ -157,7 +234,7 @@ export async function worktreeCycleSuite(scheme) {
             merged.notes === 'à faire\n' &&
             merged.stashes === '' &&
             merged.subject.startsWith('Merge branch'),
-          `l’agent a résolu le conflit, la fusion a repris : main a le README fusionné (${JSON.stringify(merged)})`
+          `l’agent a résolu le conflit, la fusion est partie au clic : main a le README fusionné (${JSON.stringify(merged)})`
         )
         await ui.shot('114-worktree-fusionne')
 
@@ -210,11 +287,12 @@ export async function worktreeCycleSuite(scheme) {
         await ui.click(ui.$('confirm-row-confirm'))
         await ui.waitFor(`!!${ui.$('orphans-none')}`)
       },
-      undefined,
+      userData,
       'conflits',
       { BOBINE_WORKSPACE: workspace }
     )
   } finally {
     rmSync(workspace, { recursive: true, force: true })
+    rmSync(userData, { recursive: true, force: true })
   }
 }

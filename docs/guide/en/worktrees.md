@@ -171,7 +171,11 @@ forward.
 
 **Conflicts.** If the update runs into conflicts, the view lists them file by file:
 
-- **Let the agent resolve**: the agent removes the conflict markers, then Bobine resumes the merge;
+- **Let the agent resolve**: the agent removes the conflict markers; its resolution is committed
+  on the branch, and nothing goes into the base without you. The view says so (“Conflict resolved
+  by the agent…”): review the resolution (**Conversation** tab, **Request review…**), then **Merge
+  into main**. In a worktree conversation that is not another one’s task, this note does not come
+  back after Bobine restarts, but nothing is merged without that button;
 - **Retry**, after resolving them yourself;
 - **Abort**: the branch goes back to how it was.
 

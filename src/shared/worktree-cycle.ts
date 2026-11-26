@@ -34,6 +34,12 @@ export interface WorktreeCycleView {
   merged: boolean
   /** Fusion en cours, arrêtée sur des conflits. */
   merging?: { files: string[] }
+  /**
+   * Fiche 289 : conflit résolu par l'agent (« Laisser l'agent résoudre », ou la fusion d'une carte),
+   * commité dans la branche, à relire avant de fusionner ; lu dans le fil de la mère, d'où il survit
+   * au redémarrage (conversation fille seulement).
+   */
+  review?: { files: string[] }
   /** « Ouvrir une PR » possible, ou pourquoi pas. */
   pr: PrAvailability
   /**
@@ -126,6 +132,12 @@ export type ConcludeOutcome =
   | { status: 'conflicts'; files: string[] }
   /** Plus de fusion en cours, et la base n'est pas dans la branche : fusion abandonnée. */
   | { status: 'not-merging' }
+
+/**
+ * « Laisser l'agent résoudre » (fiches 110, 289) : l'issue d'une fusion, ou `resolved` — l'agent a
+ * résolu le conflit, la résolution est commitée dans la branche, rien n'est entré dans la base.
+ */
+export type ResolveOutcome = MergeOutcome | { status: 'resolved'; files: string[]; base: string }
 
 /** Dossier principal non commité, où la base est extraite : ce que la carte « fusion refusée » dit. */
 export interface MainDirty {

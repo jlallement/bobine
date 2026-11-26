@@ -326,6 +326,30 @@ describe('fusion de toutes les filles (fiche 120)', () => {
     expect(git(env.root, 'status', '--porcelain')).toBe('')
   }, 30_000)
 
+  it('fiche 289 : un clic tombé entre « à relire » et la fin de la chaîne est refusé, rien ne part', async () => {
+    const env = await setup(['A', 'B'])
+    const [a, b] = env.children as [Child, Child]
+    env.commit(a, 'README.md', '# Démo\n\nVersion A\n')
+    env.commit(b, 'README.md', '# Démo\n\nVersion B\n')
+    // « Mettre de côté » : la chaîne a encore à remettre le dossier principal après l'arrêt.
+    writeFileSync(join(env.root, 'note.txt'), 'n\n')
+    let early: Promise<unknown> | undefined
+    env.options.onPost = (merge) => {
+      if (merge.status === 'review' && !early) {
+        early = env.merger.start('mere', ['f2'], false, { stash: true }).then(
+          () => 'parti',
+          (error: unknown) => (error instanceof Error ? error.message : String(error))
+        )
+      }
+    }
+    await env.merger.start('mere', ids(env.children), false, { stash: true })
+    await env.merger.settled('mere')
+    expect(await early).toBe(t('childrenMerge.error.running'))
+    expect(last(env.merges).status).toBe('review')
+    expect(readFileSync(join(env.root, 'README.md'), 'utf8')).toBe('# Démo\n\nVersion A\n')
+    expect(readFileSync(join(env.root, 'note.txt'), 'utf8')).toBe('n\n')
+  }, 30_000)
+
   it('conflit résolu à la main puis « Réessayer » : la fusion part sur ce clic, sans arrêt (fiche 289)', async () => {
     const env = await setup(['A', 'B'])
     const [a, b] = env.children as [Child, Child]

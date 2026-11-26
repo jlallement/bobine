@@ -172,8 +172,11 @@ Bobine met d'abord le worktree à jour avec la base si elle a avancé, puis avan
 
 **Conflits.** Si la mise à jour bute sur des conflits, la vue les liste fichier par fichier :
 
-- **Laisser l'agent résoudre** : l'agent retire les marques de conflit, puis Bobine reprend la
-  fusion ;
+- **Laisser l'agent résoudre** : l'agent retire les marques de conflit ; sa résolution est
+  commitée dans la branche, et rien n'entre dans la base sans vous. La vue le dit (« Conflit
+  résolu par l'agent… ») : relisez la résolution (onglet **Conversation**, **Faire relire…**), puis
+  **Fusionner dans main**. Dans une conversation en worktree qui n'est pas un travail d'une autre,
+  cette note ne revient pas après une relance de Bobine, mais rien n'est fusionné sans ce bouton ;
 - **Réessayer**, après les avoir résolus vous-même ;
 - **Abandonner** : la branche revient comme avant.
 

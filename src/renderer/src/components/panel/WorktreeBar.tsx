@@ -17,7 +17,7 @@ import {
   proposePr,
   type CommitFile,
   type MainDirty,
-  type MergeOutcome,
+  type ResolveOutcome,
   type RemoteBranchOutcome,
   type StashOutcome,
   type WorktreeCycleView
@@ -48,6 +48,8 @@ type Note =
   | { kind: 'nothing'; base: string }
   | { kind: 'dirty'; count: number }
   | { kind: 'aborted' }
+  /** Fiche 289 : conflit résolu par l'agent, commité dans la branche, à relire avant de fusionner. */
+  | { kind: 'resolved'; files: string[]; base: string }
   | { kind: 'pr'; url: string; existed: boolean; noun?: 'mr' }
 
 /** Formulaire ou question ouverts sous les boutons. */
@@ -145,8 +147,15 @@ export function WorktreeBar({
       setBusy(null)
     }
   }
-  const showMerge = (outcome: MergeOutcome | undefined) => {
+  const showMerge = (outcome: ResolveOutcome | undefined) => {
     if (!outcome) return
+    if (outcome.status === 'resolved') {
+      setMainDirty(null)
+      setMode(null)
+      setNote({ kind: 'resolved', files: outcome.files, base: outcome.base })
+      onChanged()
+      return
+    }
     setMainDirty(outcome.status === 'main-dirty' ? outcome : null)
     if (outcome.status === 'main-dirty') {
       setNote(null)
@@ -244,6 +253,7 @@ export function WorktreeBar({
     open: !!openPr,
     merged: prMerged
   })
+  const shownNote = noteOrReview(note, info)
   const mergeWhy = mergeBlocker(info)
   const mergeHint =
     mergeWhy === 'dirty'
@@ -387,8 +397,8 @@ export function WorktreeBar({
         </div>
       )}
       {/* Le lien de la PR est sur la carte : la note ne le répète pas. */}
-      {note && !(note.kind === 'pr' && pr?.status === 'found') && (
-        <WorktreeNote note={note} busy={busy} onUndo={undo} />
+      {shownNote && !(shownNote.kind === 'pr' && pr?.status === 'found') && (
+        <WorktreeNote note={shownNote} busy={busy} onUndo={undo} />
       )}
     </div>
   )
@@ -614,6 +624,15 @@ function WorktreeForm({
   }
 }
 
+/**
+ * La note de la dernière action ; sinon, une résolution de l'agent à relire dite par le main
+ * (fiche 289 : fille, d'où elle survit au redémarrage).
+ */
+function noteOrReview(note: Note | null, info: WorktreeCycleView): Note | null {
+  if (note || !info.review || info.merging) return note
+  return { kind: 'resolved', files: info.review.files, base: info.baseBranch }
+}
+
 /** Ce que la dernière action a donné ; un commit peut être défait tant qu'il est le dernier. */
 function WorktreeNote({
   note,
@@ -644,6 +663,11 @@ function WorktreeNote({
         return t('worktreeCycle.merge.dirty', { count: note.count })
       case 'aborted':
         return t('worktreeCycle.merge.aborted')
+      case 'resolved':
+        return t('worktreeCycle.merge.resolved', {
+          files: new Intl.ListFormat(currentLocale(), { type: 'conjunction' }).format(note.files),
+          base: note.base
+        })
       case 'pr':
         return (
           <Trans
@@ -674,8 +698,16 @@ function WorktreeNote({
     }
   }
   return (
-    <div className="panel-note worktree-note" data-testid="worktree-note">
-      <CircleCheck size={13} />
+    <div
+      className={`panel-note worktree-note${note.kind === 'resolved' ? ' review' : ''}`}
+      data-testid="worktree-note"
+      data-kind={note.kind}
+    >
+      {note.kind === 'resolved' ? (
+        <TriangleExclamationPoint size={13} />
+      ) : (
+        <CircleCheck size={13} />
+      )}
       <span>{text()}</span>
       {note.kind === 'committed' && (
         <button

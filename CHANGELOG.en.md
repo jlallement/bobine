@@ -9,8 +9,9 @@ What changes for you, version by version. Shown in Settings › About.
 - **Conflict resolved by a task: nothing goes into the main branch without you.** When a merge
   from a card hits a conflict and the task resolves it, the resolution stays on its branch and the
   merge stops: the card says “conflict resolved · to review”, with “Show the resolution” and
-  “Get a review”. The merge only starts when you click, with the usual checks. This state
-  survives closing the app.
+  “Get a review”. Same for “Let the agent resolve” in a worktree’s Git view. The merge only starts
+  when you click, with the usual checks. For a task, this state survives
+  closing the app.
 
 ## 1.2.0-rc.1 — November 26, 2026
 

@@ -69,6 +69,13 @@ function setup(
       kind: 'merge' as const,
       base: 'main'
     })),
+    concludeMerge: vi.fn(
+      async (): Promise<
+        | { status: 'resolved' }
+        | { status: 'conflicts'; files: string[] }
+        | { status: 'not-merging' }
+      > => ({ status: 'resolved' })
+    ),
     mergeAbort: vi.fn(async () => {}),
     pullRequest: vi.fn(async () => ({ url: 'https://x/pull/1', existed: false })),
     orphans: vi.fn(async (roots: readonly string[], known: ReadonlySet<string>) =>
@@ -184,30 +191,67 @@ describe('canaux IPC du cycle des worktrees (fiche 110)', () => {
     expect(await handlers['worktree:mergeAbort']('c1')).toBeUndefined()
   })
 
-  it('laisser l’agent résoudre : consigne envoyée, tour attendu, fusion reprise', async () => {
-    const { handlers, cycle, conversations } = setup({ merging: ['README.md', 'src/a.ts'] })
+  it('laisser l’agent résoudre : consigne envoyée, tour attendu, résolution commitée dans la branche ; rien dans la base sans clic (fiche 289)', async () => {
+    const { handlers, cycle, conversations, posted } = setup({ merging: ['README.md', 'src/a.ts'] })
     const order: string[] = []
     conversations.prompt.mockImplementation(async () => {
       order.push('prompt')
     })
-    cycle.mergeContinue.mockImplementation(async () => {
-      order.push('continue')
-      return { status: 'merged' as const, kind: 'merge' as const, base: 'main' }
+    cycle.concludeMerge.mockImplementation(async () => {
+      order.push('conclude')
+      return { status: 'resolved' as const }
     })
     expect(await handlers['worktree:resolveWithAgent']('c1')).toEqual({
-      status: 'merged',
-      kind: 'merge',
+      status: 'resolved',
+      files: ['README.md', 'src/a.ts'],
       base: 'main'
     })
-    expect(order).toEqual(['prompt', 'continue'])
+    expect(order).toEqual(['prompt', 'conclude'])
+    expect(cycle.mergeContinue).not.toHaveBeenCalled()
+    expect(cycle.merge).not.toHaveBeenCalled()
     const text = String((conversations.prompt.mock.calls as unknown[][])[0]?.[1])
     expect(text).toContain('`main` into `bobine/x`')
     expect(text).toContain('- README.md\n- src/a.ts')
-    // Sans conflit en cours : rien n'est envoyé, la fusion reprend seulement.
+    // Dit chez la mère : la carte et Modifications › Travaux montrent « à relire » (survit au
+    // redémarrage), et la vue Git le relit.
+    expect(posted.at(-1)).toMatchObject({
+      status: 'review',
+      base: 'main',
+      rows: [{ childId: 'c1', state: 'resolved', files: ['README.md', 'src/a.ts'] }]
+    })
+    // La vue Git relue après le commit de la résolution : plus de fusion en cours.
+    const { merging: _merging, ...settled } = await cycle.info()
+    cycle.info.mockResolvedValueOnce(settled)
+    expect(await handlers['worktree:info']('c1')).toMatchObject({
+      review: { files: ['README.md', 'src/a.ts'] }
+    })
+    // Sans conflit en cours (résolu à la main) : rien n'est envoyé, la fusion reprend sur ce clic.
     const quiet = setup()
     await quiet.handlers['worktree:resolveWithAgent']('c1')
     expect(quiet.conversations.prompt).not.toHaveBeenCalled()
+    expect(quiet.cycle.concludeMerge).not.toHaveBeenCalled()
     expect(quiet.cycle.mergeContinue).toHaveBeenCalled()
+  })
+
+  it('laisser l’agent résoudre : marqueurs restants ou fusion abandonnée, dits ; rien dans la base (fiche 289)', async () => {
+    const left = setup({ merging: ['README.md'] })
+    left.cycle.concludeMerge.mockImplementation(async () => ({
+      status: 'conflicts' as const,
+      files: ['README.md']
+    }))
+    expect(await left.handlers['worktree:resolveWithAgent']('c1')).toEqual({
+      status: 'conflicts',
+      files: ['README.md']
+    })
+    const aborted = setup({ merging: ['README.md'] })
+    aborted.cycle.concludeMerge.mockImplementation(async () => ({ status: 'not-merging' as const }))
+    await expect(aborted.handlers['worktree:resolveWithAgent']('c1')).rejects.toThrow(
+      t('childrenMerge.error.notResolved', { title: 'Essai', base: 'main' })
+    )
+    for (const env of [left, aborted]) {
+      expect(env.cycle.mergeContinue).not.toHaveBeenCalled()
+      expect(env.posted).toEqual([])
+    }
   })
 
   it('nettoyage : la conversation quitte le worktree, puis il est supprimé avec sa branche', async () => {
