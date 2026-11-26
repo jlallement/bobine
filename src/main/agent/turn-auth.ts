@@ -13,7 +13,7 @@ import { RequestError, type ContentBlock } from '../../shared/acp-sdk.mts'
 import { modelControl } from './models-seen'
 import { errorMessage } from './process-utils'
 import type { AgentProfile } from './profiles'
-import { currentModel } from './session-controls'
+import { currentModel, sessionChoices } from './session-controls'
 
 /** Message refusé, à renvoyer dans la même session une fois reconnecté. */
 export interface BlockedTurn {
@@ -132,6 +132,22 @@ export function authExpiredNotice(
  * rejoué dans une vieille session.
  */
 export class TurnAuth {
+  /**
+   * Message refusé renvoyé (D10) : l'évènement porte le modèle et le mode de la session au renvoi
+   * (fiche 286) ; un autre modèle choisi sur la carte d'un modèle refusé est celui qui répond, et le
+   * tour est compté sous lui. `fresh` : dans une session neuve (ADR-0030).
+   */
+  static resentEvent(
+    fresh: boolean,
+    controls: readonly SessionControl[]
+  ): Extract<AgentEvent, { type: 'resent' }> {
+    return {
+      type: 'resent',
+      ...(fresh ? { fresh: true as const } : {}),
+      ...sessionChoices(controls)
+    }
+  }
+
   /**
    * Le réglage changé pendant la carte d'un tour refusé est-il le modèle (fiche 210) ? Alors le
    * message refusé repart aussitôt avec le nouveau modèle, dans la même session.

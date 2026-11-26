@@ -1052,7 +1052,10 @@
     "restore_other": "Restore {{count}} files to their state at that point",
     "untouched": "Left untouched, changed since by someone else: {{files}}.",
     "commands_one": "{{count}} command run since this message: its effects remain.",
-    "commands_other": "{{count}} commands run since this message: their effects remain."
+    "commands_other": "{{count}} commands run since this message: their effects remain.",
+    "committedFile": "— committed since",
+    "committedSince_one": "{{count}} of these files was committed since this message: restoring it would undo that commit in the folder, as uncommitted changes.",
+    "committedSince_other": "{{count}} of these files were committed since this message: restoring them would undo those commits in the folder, as uncommitted changes."
   },
   "beside": {
     "makeMain": "Make it the main conversation",

@@ -17,6 +17,7 @@ import { findAndroidSdk } from './android/sdk'
 import { findAxe } from './simulator/axe'
 import { runCommand } from './simulator/run'
 import { gitRun } from './git/git-queue'
+import { committedSince } from './conversations/committed-since'
 import { encodeBgra, resizeJpeg } from './simulator/images'
 import { setupSimulator } from './simulator/simulator-setup'
 import { previewToolsModule } from './preview/preview-tools'
@@ -631,7 +632,9 @@ async function start(): Promise<void> {
     openExternal: (url) => void shell.openExternal(url),
     worktrees,
     approvals: () => approvals.view(),
-    quickEntryStatus: () => quickShortcut.state
+    quickEntryStatus: () => quickShortcut.state,
+    // « Repartir de ce message » : fichiers commités depuis (fiche 286).
+    committedSince: (workspace, paths, since) => committedSince(gitRun, workspace, paths, since)
   })
   // Résumés d'avant la fiche 266 : leur gratuité relue du fil, en arrière-plan.
   void conversations.settleFreeDigests()

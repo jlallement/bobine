@@ -49,6 +49,7 @@ function scene() {
     {
       type: 'user-message',
       text: 'Modifie',
+      at: 1_700_000_000_000,
       attachments: [{ kind: 'file', name: 'notes.md', path: join(root, 'notes.md') }]
     },
     edit('e1', a, 'avant', 'après'),
@@ -72,6 +73,38 @@ describe('branche et annulation (fiche 089, logique des fiches 023 et 021)', () 
       commands: 1
     })
     await expect(previewBranch(transcript.items, 999, root)).rejects.toThrow()
+  })
+
+  it('aperçu : fichiers à remettre commités depuis le message marqués (fiche 286)', async () => {
+    const { root, a, b, transcript, second } = scene()
+    const calls: { paths: readonly string[]; since: number | undefined }[] = []
+    const preview = await previewBranch(
+      transcript.items,
+      second,
+      root,
+      async (ws, paths, since) => {
+        expect(ws).toBe(root)
+        calls.push({ paths, since })
+        return new Set([a])
+      }
+    )
+    expect(preview.files).toEqual([
+      { path: a, status: 'restore', created: false, committedSince: true },
+      { path: b, status: 'restore', created: true }
+    ])
+    // Seuls les fichiers à remettre sont demandés, avec l'heure du message de départ.
+    expect(calls).toEqual([{ paths: [a, b], since: 1_700_000_000_000 }])
+  })
+
+  it('aperçu : un calcul « commité depuis » en échec tient tout pour commité, sans erreur', async () => {
+    const { root, a, b, transcript, second } = scene()
+    const preview = await previewBranch(transcript.items, second, root, () =>
+      Promise.reject(new Error('git'))
+    )
+    expect(preview.files.map((f) => [f.path, f.committedSince])).toEqual([
+      [a, true],
+      [b, true]
+    ])
   })
 
   it('branche préparée : fil repris et marqué, pièces jointes, contexte, titre ; fichiers remis', async () => {

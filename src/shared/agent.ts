@@ -479,6 +479,8 @@ export interface BranchPreview {
     status: 'restore' | 'unchanged' | 'conflict' | 'outside'
     /** Créé par l'agent : il sera supprimé. */
     created: boolean
+    /** À remettre, mais commité depuis le message (fiche 286) : la remise défairait ce commit. */
+    committedSince?: true
   }[]
   /** Commandes lancées depuis ce point (elles ne s'annulent pas). */
   commands: number
@@ -540,8 +542,15 @@ export type AgentEvent =
    * Le dernier message, refusé faute de connexion, renvoyé à l'agent (recette 0.9, D10) : il peut
    * figurer deux fois dans l'historique de l'agent, qu'un rejeu ne doit pas prendre pour un tour
    * venu d'ailleurs. `fresh` : dans une session neuve (ADR-0030), recopié après la bascule.
+   * `model`, `mode` : réglages de la session au renvoi (fiche 286) ; un autre modèle choisi sur la
+   * carte d'un modèle refusé est celui qui répond, et le tour est compté sous lui.
    */
-  | { type: 'resent'; fresh?: true }
+  | {
+      type: 'resent'
+      fresh?: true
+      model?: { id: string; name: string }
+      mode?: { id: string; name: string }
+    }
   /** `at` : heure de fin de la réponse (ms). */
   | {
       type: 'turn-end'

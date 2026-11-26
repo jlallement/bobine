@@ -6,6 +6,8 @@ import type { AgentBlocker, AgentEvent, SessionControl } from '@shared/agent'
 import { emptyTranscript, reduceTranscript } from '@shared/transcript'
 import { RequestError } from '../../shared/acp-sdk.mts'
 import { MOCK_AGENT_ENTRY } from '../../mock-agent/testing.mts'
+import { UsageJournal } from '../usage/journal'
+import type { TurnRow } from '../usage/usage-db'
 import { AgentHost } from './agent-host'
 import { MODEL_UNAVAILABLE } from './opencode-contract'
 import { resolveProfiles, type AgentProfile } from './profiles'
@@ -226,6 +228,32 @@ describe('hôte d’agent : modèle indisponible au tour (agent factice)', () =>
     expect(events.filter((e) => e.type === 'resent')).toHaveLength(1)
     // L'agent a répondu : l'avis du refus n'est plus vrai.
     expect(notices()).toEqual([])
+    host.stop()
+  })
+
+  it('échange rejoué avec un autre modèle : compté sous le modèle qui a répondu (fiche 286)', async () => {
+    // Évaluation « Bricole », séance 4 (1.2.0-beta.2, 01:47) : GPT-5.5 refusé, « Choisir un autre
+    // modèle » → GPT-6.1 Sol répond ; Mon activité comptait l'échange sous GPT-5.5.
+    const { host, events } = setup(mockProfile('modele-indisponible'))
+    const rows = new Map<string, TurnRow>()
+    const journal = new UsageJournal({
+      db: { upsert: (row) => void rows.set(row.id, row) },
+      describe: () => ({ profileId: 'mock' })
+    })
+    await host.start()
+    await host.prompt('Réponds OK')
+    expect(host.snapshot().blocker).toMatchObject({ model: { id: 'factice-rapide' } })
+    await host.setControl('model', 'factice-precis')
+    await waitFor(
+      () => host.snapshot().status === 'ready' && events.some((e) => e.type === 'turn-end')
+    )
+    for (const event of events) journal.onEvent({ conversationId: 'c1', event })
+    expect([...rows.values()].map((r) => [r.model?.id, r.stopReason])).toEqual([
+      ['factice-precis', 'end_turn']
+    ])
+    // Le fil compte le tour de même (consommation par tour, fiche 109).
+    const usage = events.reduce(reduceTranscript, emptyTranscript).usage
+    expect(usage?.turns?.map((turn) => turn.model?.id)).toEqual(['factice-precis'])
     host.stop()
   })
 

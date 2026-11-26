@@ -58,6 +58,46 @@ describe('repartir d’un message (fiche 023)', () => {
     expect(onConfirm).toHaveBeenCalledWith({ restoreFiles: false })
   })
 
+  it('aucun fichier commité depuis : case cochée, pas d’avis (fiche 286)', () => {
+    setup()
+    expect((screen.getByTestId('branch-restore') as HTMLInputElement).checked).toBe(true)
+    expect(screen.queryByTestId('branch-committed')).toBeNull()
+  })
+
+  it('un fichier commité depuis : case décochée, compte dit, fichier marqué (fiche 286)', () => {
+    const { onConfirm } = setup({
+      files: [
+        { path: '/projet/README.md', status: 'restore', created: false, committedSince: true },
+        { path: '/projet/notes.txt', status: 'restore', created: true }
+      ]
+    })
+    const box = screen.getByTestId('branch-restore') as HTMLInputElement
+    expect(box.checked).toBe(false)
+    expect(screen.getByTestId('branch-committed').textContent).toBe(
+      i18next.t('branchDialog.committedSince', { count: 1 })
+    )
+    const files = [...screen.getByTestId('branch-files').querySelectorAll('li')]
+    expect(files[0]?.textContent).toContain(i18next.t('branchDialog.committedFile'))
+    expect(files[1]?.textContent).not.toContain(i18next.t('branchDialog.committedFile'))
+    fireEvent.click(screen.getByTestId('branch-confirm'))
+    expect(onConfirm).toHaveBeenCalledWith({ restoreFiles: false })
+  })
+
+  it('fichiers commités depuis : l’utilisateur peut toujours cocher (fiche 286)', () => {
+    const { onConfirm } = setup({
+      files: [
+        { path: '/projet/a.md', status: 'restore', created: false, committedSince: true },
+        { path: '/projet/b.md', status: 'restore', created: false, committedSince: true }
+      ]
+    })
+    expect(screen.getByTestId('branch-committed').textContent).toBe(
+      i18next.t('branchDialog.committedSince', { count: 2 })
+    )
+    fireEvent.click(screen.getByTestId('branch-restore'))
+    fireEvent.click(screen.getByTestId('branch-confirm'))
+    expect(onConfirm).toHaveBeenCalledWith({ restoreFiles: true })
+  })
+
   it('rien à remettre : pas de case, rien de remis', () => {
     const { onConfirm } = setup({ files: [], commands: 0 })
     expect(screen.queryByTestId('branch-restore')).toBeNull()
