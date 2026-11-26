@@ -48,7 +48,11 @@
 - **You stay in control.** Every edit and command the agent asks for shows up as a card with the
   diff or the exact command, and nothing runs until you answer.
 - **Work in parallel.** Call specialists (`@security-expert`, `@code-reviewer`…) or let the agent
-  split the work: each child conversation runs on its own, in the folder or in a git worktree.
+  split the work: each task runs on its own, in the folder or in a git worktree, and you merge
+  the result.
+- **Several opinions, one synthesis.** Roundtable (`/roundtable`) sends the same question to two
+  to five models, none seeing the others; then the conversation compares their opinions and gives
+  a synthesis that decides.
 - **The agent can see what it builds.** A built-in browser with console and network, terminals,
   the iOS Simulator and the Android emulator, all driven by the agent and shown next to the
   conversation.
@@ -67,8 +71,8 @@ panel shows everything the conversation changed, file by file, next to the git v
 ### Hand work to specialists
 
 Type `@` to call a role: seven are built in (UX/UI expert, security expert, code reviewer, tech
-lead…), and you can write your own, for you or for the project. Each role works in its own child
-conversation, in parallel, and reports back.
+lead…), and you can write your own, for you or for the project. Each role works on its own task,
+in parallel, and reports back.
 
 ![Two roles review the cart in parallel and report back](docs/images/readme/en/roles.gif)
 
@@ -124,9 +128,10 @@ accents, the system font or your own, a compact density and a presentation mode 
 | Agent | Status | Versions tested |
 |---|---|---|
 | IBM Bob (`bob acp`) | main target | 2.0.6, 2.0.9, 2.1.0 |
-| OpenCode (`opencode acp`) | supported | 1.19, 2.0.31, 2.0.32, 2.2.5, 2.3.0 |
+| OpenCode (`opencode acp`) | supported | 1.19, 2.0.31, 2.0.32, 2.2.5, 2.3.0, 2.4.1 |
 
-Other ACP agents can be declared in Settings › Agents, without any guarantee. Details, agent by
+Other ACP agents can be declared in Settings › Agents, without any guarantee. A mock agent is
+used only for development and tests. Details, agent by
 agent: [`docs/agents.md`](docs/agents.md) (French). Settings › Diagnostics warns when an agent
 reports a version that has not been tested.
 
@@ -140,13 +145,13 @@ oldest macOS each release is tried on before it is published; earlier versions r
    are marked as pre-releases).
 
    **Which version?** Several lines share that page: 1.0.x, the stable version, marked
-   « Latest »; 1.1 and 1.2 in release candidates (`-rc.N`). Take the stable
+   “Latest”; 1.1 and 1.2 in release candidates (`-rc.N`). Take the stable
    version by default. Pre-releases are there to try what is coming, with more risk of bugs.
 2. Open the `.dmg` and double-click Bobine in its window. This is the first launch, and **macOS
-   blocks it** (« Apple could not verify… ») because the app is signed ad hoc, not notarized
+   blocks it** (“Apple could not verify…”) because the app is signed ad hoc, not notarized
    (a deliberate choice). The way through, following
    [Apple's instructions](https://support.apple.com/en-us/102445):
-   1. Click **Done** (not « Move to Trash »).
+   1. Click **Done** (not “Move to Trash”).
    2. Open **System Settings › Privacy & Security**, scroll down to the Security section and
       click **Open Anyway** next to the Bobine message.
    3. Confirm with **Open** (macOS may ask for your password or Touch ID).
@@ -167,15 +172,15 @@ oldest macOS each release is tried on before it is published; earlier versions r
    Bobine onto Applications instead: the block of step 2 then comes when you first open it from
    there (`xattr -dr com.apple.quarantine /Applications/Bobine.app` on the command line).
 4. macOS may ask again for Screen Recording or keychain access after each new version (each
-   build is a different app for it): choose « Always Allow ».
+   build is a different app for it): choose “Always Allow”.
 
 Bobine does not update itself, but it tells you when a newer version exists: a line at the
-bottom of the sidebar, « Bobine X.Y.Z is available ». « View » opens that release's page on
+bottom of the sidebar, “Bobine X.Y.Z is available”. “View” opens that release's page on
 GitHub; ✕ hides the line for that version. Nothing is downloaded or installed: you install the new
 `.dmg` over the old one yourself. A stable version is told only of newer stable versions; a
 pre-release also of newer pre-releases of its own line. The check is on by default (see the
 [FAQ](#faq)); turn it off, or check now, in Settings › What's new. You can also watch the
-repository's Releases on GitHub (« Watch › Custom › Releases »). Behind a proxy, without administrator
+repository's Releases on GitHub (“Watch › Custom › Releases”). Behind a proxy, without administrator
 rights, or offline: [`docs/installation.md`](docs/installation.md) (French).
 
 **Linux (preview).** From 1.0.0-beta.6, `Bobine-<version>-amd64.deb` (x64) or `Bobine-<version>-arm64.deb`
@@ -192,7 +197,7 @@ uninstalling, building from source): [`docs/installation.md`](docs/installation.
 (French).
 
 Something does not work? Settings › Diagnostics checks everything at once (agents found, trial
-session, MCP servers, Xcode, simulators), with the fix for each problem, and « Report an issue »
+session, MCP servers, Xcode, simulators), with the fix for each problem, and “Report an issue”
 opens a prefilled GitHub issue.
 
 ## FAQ
@@ -260,7 +265,7 @@ pnpm package      # build Bobine.app and a .dmg
 
 ## Contributing
 
-Bug reports with the diagnostic report (Settings › Diagnostics › « Report an issue ») and small,
+Bug reports with the diagnostic report (Settings › Diagnostics › “Report an issue”) and small,
 well-tested fixes are the most useful contributions right now. Read
 [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md) first; security problems go through
 [SECURITY.md](SECURITY.md), not a public issue.
@@ -274,7 +279,7 @@ agent, without any model or personal data: `pnpm build && pnpm vitrine`.
   Windows installer is not signed (SmartScreen). The iOS Simulator tools need a Mac with Xcode.
 - Ad hoc signature, not notarized (see above); macOS 27 shows no notification banner for an ad
   hoc signed app (the Dock badge and bounce still work).
-- No automatic updates.
+- No automatic updates: Bobine tells you when a newer version exists, you install it yourself.
 - Interface in English and French; project documentation mostly in French.
 
 ## Links

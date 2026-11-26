@@ -6,7 +6,7 @@ human review, and that shapes how contributions work.
 ## Before you start
 
 - **Read [`AGENTS.md`](AGENTS.md).** It is the single source of rules for anyone, human or agent,
-  working on this repository: architecture rules, commands, what « done » means. This page only
+  working on this repository: architecture rules, commands, what “done” means. This page only
   points to it.
 - **Documentation is in French**, in [`docs/`](docs/README.md). Feature sheets
   (`docs/features/`) and architecture decisions (`docs/adr/`) are the project's working memory.
@@ -27,14 +27,14 @@ pnpm dev            # run the app (macOS; Electron is downloaded on first run)
 pnpm mock-agent --list   # the scripted agent that tests run against
 ```
 
-Bobine is in public beta: the most useful contributions right now are bug reports with the
-diagnostic report, and small, well-tested fixes.
+The most useful contributions right now are bug reports with the diagnostic report, and small,
+well-tested fixes.
 
 ## Reporting a bug or proposing a feature
 
 Use the [issue templates](https://github.com/jlallement/bobine/issues/new/choose). For a bug,
-Settings › Diagnostics › « Report an issue » opens the template with your version and the
-diagnostic report already filled in; « Copy report » gives the same text to paste.
+Settings › Diagnostics › “Report an issue” opens the template with your version and the
+diagnostic report already filled in; “Copy report” gives the same text to paste.
 
 Security problems: see [SECURITY.md](SECURITY.md), not a public issue.
 
@@ -54,8 +54,8 @@ Security problems: see [SECURITY.md](SECURITY.md), not a public issue.
    --if-needed` (three suites in parallel, about four minutes, macOS only; nothing to do if it is
    already green for the same sources and build).
 5. **Close**: the sheet is up to date (status, journal, deviations from the plan), the index
-   `docs/features/README.md` too, and a line in `CHANGELOG.md` (« Prochaine version », in French,
-   from the user's point of view) and `CHANGELOG.en.md` (« Next version ») when the user can
+   `docs/features/README.md` too, and a line in `CHANGELOG.md` (“Prochaine version”, in French,
+   from the user's point of view) and `CHANGELOG.en.md` (“Next version”) when the user can
    see the difference.
 
 A change is done only when all of this holds; if a step could not be done, say so in the pull
@@ -66,7 +66,7 @@ request rather than claiming it is green.
 - One pull request per sheet or fix, from a branch of your fork.
 - Commits follow [Conventional Commits](https://www.conventionalcommits.org): `feat:`, `fix:`,
   `docs:`, `refactor:`, `test:`, `chore:`.
-- `verify` runs on every pull request on GitHub (Linux). The end-to-end suites need a Mac: run
+- `verify` runs on every pull request on GitHub (Linux, macOS and Windows). The end-to-end suites need a Mac: run
   them locally, and say in the description which ones you ran.
 - No new dependency without a word about it in the sheet (and an ADR when it is structural).
   When the app ships a new or updated package, refresh the license notices:
@@ -77,7 +77,7 @@ request rather than claiming it is green.
 
 Automated tests never call a real model: they run against the **mock agent**
 (`pnpm mock-agent --list`, [`docs/mock-agent.md`](docs/mock-agent.md)). Anything that touches
-ACP must stay generic (modes **and** configuration options), be checked against the « Bob
-compatibility » section of [`docs/acp.md`](docs/acp.md), and come with a mock-agent scenario for
+ACP must stay generic (modes **and** configuration options), be checked against the “Bob
+compatibility” section of [`docs/acp.md`](docs/acp.md), and come with a mock-agent scenario for
 each documented behaviour. Bob is not available in development: assume nothing about it that is
 not documented there.

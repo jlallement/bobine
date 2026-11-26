@@ -49,8 +49,11 @@
 - **Vous gardez la main.** Chaque modification ou commande que l'agent demande arrive en carte,
   avec le diff ou la commande exacte, et rien ne part avant votre réponse.
 - **Travailler en parallèle.** Appeler des spécialistes (`@security-expert`, `@code-reviewer`…)
-  ou laisser l'agent partager le travail : chaque conversation fille avance de son côté, dans le
-  dossier ou dans un worktree git.
+  ou laisser l'agent partager le travail : chaque travail avance de son côté, dans le dossier ou
+  dans un worktree git, et vous fusionnez le résultat.
+- **Plusieurs avis, une synthèse.** Le tour de table (`/roundtable`) pose la même question à deux
+  à cinq modèles, sans qu'aucun voie les autres ; puis la conversation compare les avis et rend une
+  synthèse qui tranche.
 - **L'agent voit ce qu'il construit.** Navigateur intégré avec console et réseau, terminaux,
   simulateur iOS et émulateur Android, pilotés par l'agent et montrés à côté de la conversation.
 - **Aucun modèle dedans.** Bobine n'embarque ni n'appelle aucun modèle, et n'envoie aucune
@@ -70,7 +73,7 @@ vue git.
 
 Tapez `@` pour appeler un rôle : sept sont fournis (expert UX/UI, expert sécurité, relecteur de
 code, tech lead…), et vous pouvez écrire les vôtres, pour vous ou pour le projet. Chaque rôle
-travaille dans sa conversation fille, en parallèle, et rend compte.
+travaille de son côté, en parallèle, et rend compte.
 
 ![Deux rôles relisent le panier en parallèle et rendent compte](docs/images/readme/fr/roles.gif)
 
@@ -127,7 +130,7 @@ présentation pour les démonstrations.
 | Agent | Statut | Versions essayées |
 |---|---|---|
 | IBM Bob (`bob acp`) | cible principale | 2.0.6, 2.0.9, 2.1.0 |
-| OpenCode (`opencode acp`) | pris en charge | 1.19, 2.0.31, 2.0.32, 2.2.5, 2.3.0 |
+| OpenCode (`opencode acp`) | pris en charge | 1.19, 2.0.31, 2.0.32, 2.2.5, 2.3.0, 2.4.1 |
 
 D'autres agents ACP se déclarent dans Réglages › Agents, sans garantie. Un agent factice sert au
 développement et aux essais seulement. Le détail, agent par agent : [`docs/agents.md`](docs/agents.md).
@@ -284,7 +287,8 @@ scripté, sans modèle ni donnée personnelle : `pnpm build && pnpm vitrine --la
   demandent un Mac avec Xcode.
 - Signature ad hoc, pas notarisée (voir plus haut) ; macOS 27 n'affiche aucune bannière de
   notification pour une app signée ad hoc (le badge et le rebond du Dock marchent).
-- Pas de mise à jour automatique.
+- Pas de mise à jour automatique : Bobine prévient quand une version plus récente existe, vous
+  l'installez vous-même.
 - Interface en français et en anglais ; documentation du projet surtout en français.
 
 ## Liens
