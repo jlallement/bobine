@@ -1,6 +1,6 @@
 # 286 — « Repartir » et fichiers committés depuis ; Mon activité et modèle refusé
 
-- **Statut** : en cours
+- **Statut** : fait
 - **Dépend de** : 023, 130, 259
 - **Agents** : les deux — rien de propre à un agent : git est lu par le main dans le dossier de la
   conversation (1), et le modèle d'un tour vient des réglages de la session annoncés par l'agent (2).
@@ -39,16 +39,16 @@ depuis seraient touchés. L'utilisateur peut toujours la cocher. C'est un écart
 
 ## Critères d'acceptation
 
-- [ ] Aperçu de la branche (`branchPreview`, main) : chaque fichier à remettre dit s'il a été
+- [x] Aperçu de la branche (`branchPreview`, main) : chaque fichier à remettre dit s'il a été
       committé depuis l'heure du message (`committedSince`).
-- [ ] Calcul robuste, jamais d'échec du dialogue : dossier hors dépôt (rien de committé), dépôt sans
+- [x] Calcul robuste, jamais d'échec du dialogue : dossier hors dépôt (rien de committé), dépôt sans
       commit (rien), fichier supprimé, fichier renommé, worktree d'une tâche fille ; heure du message
       inconnue ou erreur de git : « committé depuis » (défaut le plus prudent).
-- [ ] Dialogue : case décochée et compte « N fichiers committés depuis » quand il y en a ; cochée
+- [x] Dialogue : case décochée et compte « N fichiers committés depuis » quand il y en a ; cochée
       sinon ; textes par clés i18n (fr, en).
-- [ ] Mon activité et le fil : le tour rejoué après « Choisir un autre modèle » est compté sous le
+- [x] Mon activité et le fil : le tour rejoué après « Choisir un autre modèle » est compté sous le
       modèle qui a répondu.
-- [ ] Testé contre l'agent factice : e2e `branch` (tour qui modifie, commit, « Repartir » : case
+- [x] Testé contre l'agent factice : e2e `branch` (tour qui modifie, commit, « Repartir » : case
       décochée, compte ; sans commit : cochée) ; hôte d'agent avec `modele-indisponible` rejoué
       jusqu'au journal de consommation.
 
@@ -101,3 +101,22 @@ d'ADR.
 
 - 2026-11-26 : traces relues dans le journal de l'évaluation, causes établies dans le code, plan
   écrit.
+- 2026-11-26 : fait.
+  - Défaut 1 : `committed-since.ts` (nouveau), `previewBranch` le reçoit par l'option
+    `committedSince` du gestionnaire (branchée dans `index.ts` sur `gitRun`) ; `BranchDialog` décoche
+    la case et dit le compte (`branchDialog.committedSince`, `branchDialog.committedFile`).
+    Orthographe « commité » (glossaire et textes existants de l'app).
+  - Écart : dépôt sans commit reconnu à `rev-parse --verify --quiet HEAD` en code 1 sans message de
+    git (`runCommand` rend « Command failed » quand git ne dit rien) ; tout autre échec : doute.
+  - Défaut 2 : cause dans l'évènement `resent` (`AgentHost.resendBlocked`), qui ne portait pas le
+    modèle du renvoi ; `TurnAuth.resentEvent` le joint (méthode statique : `agent-host.ts` et
+    `transcript.ts` sont à leur plafond de lignes ESLint), `UsageJournal` et `resentTurn`
+    (`replay-tail.ts`) le prennent. Le message de l'utilisateur garde le modèle de son premier envoi.
+  - Essais : `committed-since.test.ts` (11, vrais dépôts), `branching.test.ts` (+2),
+    `BranchDialog.test.tsx` (+3), `journal.test.ts` (+1), `turn-model-unavailable.test.ts` (+1,
+    rouge avant le correctif avec exactement la ligne fautive de la trace : `factice-rapide`,
+    `end_turn`), `agent-host-turn-limit.test.ts` (attentes de `resent` complétées) ; e2e `branch`
+    (dossier en dépôt git : case cochée sans commit ; décochée et « 1 de ces fichiers… » après un
+    commit ; annuler ne touche rien), rouge sur l'ancien dialogue, vert sur le nouveau, clair et
+    sombre.
+  - Pas d'ADR (aucun ne fixait « coché par défaut »), aucune dépendance ; rien de changé côté ACP.
