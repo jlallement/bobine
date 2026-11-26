@@ -3,6 +3,11 @@
 Statut : **plan validé, partie « dépôt » en cours** (fiche 225). Rien n'est changé sur GitHub ;
 chaque action publique (réglages du dépôt, publications, listes) attend l'accord de l'utilisateur.
 
+État au 2026-11-26 (audit `docs/audits/2026-11-26-finition-1-2.md`) : README, images, Discussions
+(message d'accueil n° 12) et notes de version illustrées sont en place ; la 1.0.1 est stable,
+Linux et Windows en préversion. Les textes de la section 7 sont mis à jour en conséquence ; ceux
+déjà publiés (accueil des Discussions) sont à reprendre à la main, voir l'audit.
+
 ## 1. Ce qui se fait d'habitude
 
 Relevé sur des applications et outils de développement libres bien présentés (Jan, OpenCode, Zed,
@@ -174,14 +179,14 @@ Titre : **Welcome to Bobine's discussions**
 
 > Hi, and thanks for stopping by!
 >
-> Bobine is a macOS desktop app for ACP coding agents: IBM Bob, OpenCode, or any agent that speaks
-> the [Agent Client Protocol](https://agentclientprotocol.com). It is in public beta, so your
-> feedback shapes what comes next.
+> Bobine is a desktop app for ACP coding agents: IBM Bob, OpenCode, or any agent that speaks the
+> [Agent Client Protocol](https://agentclientprotocol.com). It runs on macOS, with Linux and
+> Windows in preview, and few people use it so far: your feedback shapes what comes next.
 >
 > Where to post:
 >
-> - **Q&A**: installing, setting up an agent, « how do I… ». Please say your macOS version, your
->   agent and its version (Settings › Diagnostics › « Copy report » gives all of it).
+> - **Q&A**: installing, setting up an agent, « how do I… ». Please say your system, your agent
+>   and its version (Settings › Diagnostics › « Copy report » gives all of it).
 > - **Ideas**: what you would like Bobine to do. One idea per thread, with the problem it solves.
 > - **Show and tell**: roles you wrote, workflows, screenshots.
 > - **Bugs** go to [Issues](https://github.com/jlallement/bobine/issues/new/choose) (Settings ›
@@ -202,7 +207,7 @@ section « Desktop and Web », à sa place dans l'ordre alphabétique (après «
 « Braide ») :
 
 ```md
-- [Bobine](https://github.com/jlallement/bobine) — open-source (Apache-2.0) desktop app made first for IBM Bob, also OpenCode and any ACP agent: permission cards with diffs, roles called with `@` that work in parallel child conversations (git worktrees), and a built-in browser, iOS Simulator and Android emulator the agent drives (macOS)
+- [Bobine](https://github.com/jlallement/bobine) — open-source (Apache-2.0) desktop app made first for IBM Bob, also OpenCode and any ACP agent: permission cards with diffs, roles called with `@` that work as parallel tasks (git worktrees), and a built-in browser, iOS Simulator and Android emulator the agent drives (macOS; Linux and Windows in preview)
 ```
 
 ### Liste des clients ACP : la pull request
@@ -211,14 +216,15 @@ Titre : `docs(clients): add Bobine`
 
 > Adds [Bobine](https://github.com/jlallement/bobine) to « Desktop and Web ».
 >
-> Bobine is an open-source (Apache-2.0) macOS desktop client for ACP agents. It was built first
+> Bobine is an open-source (Apache-2.0) desktop client for ACP agents. It was built first
 > for IBM Bob (`bob acp`) and also runs OpenCode (`opencode acp`) and any agent declared by
 > command. It uses the TypeScript SDK on the client side: permission requests with diffs, plans,
 > session config options and modes, elicitation forms (questions with choices), `session/load`
 > and `session/resume`, and it serves an MCP server that gives the agent a built-in browser, the
 > iOS Simulator and the Android emulator.
 >
-> Public beta, macOS 13+ on Apple Silicon. Independent project, not affiliated with IBM.
+> macOS 15+ on Apple Silicon, with Linux and Windows builds in preview. Independent project, not
+> affiliated with IBM.
 
 Avant d'ouvrir la pull request : relire le `CONTRIBUTING.md` du dépôt du protocole (format,
 `npm run spellcheck`, prettier), et vérifier que chaque fonction citée est bien dans la version
