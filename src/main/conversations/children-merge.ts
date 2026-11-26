@@ -280,7 +280,7 @@ export class ChildrenMerger {
   /**
    * Lance la fusion enchaînée de ces filles de `motherId`, dans l'ordre de lancement ; rend son
    * premier état. Refusée si une fusion de cette mère tourne déjà, sans fille, ou si une fille a
-   * été supprimée, archivée ou n'est plus dans un worktree. `commit` (fiche 287) : committé dans le
+   * été supprimée, archivée ou n'est plus dans un worktree. `commit` (fiche 287) : commité dans le
    * dossier principal après tous les refus possibles, jamais avant.
    */
   async start(

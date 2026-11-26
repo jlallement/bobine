@@ -3973,10 +3973,10 @@
       "noWorktree": "Cette conversation n’est pas dans un worktree.",
       "pushed": "Ce commit est déjà poussé : il ne peut plus être défait ici.",
       "emptyTitle_mr": "Le titre de la MR est vide.",
-      "turnRunning": "« {{title}} » répond encore : rien n’a été committé ni fusionné. Réessayez à la fin de son tour.",
-      "mainChanged_one": "Le dossier principal a changé depuis votre choix : {{count}} autre fichier modifié ({{files}}). Rien n’a été committé : relisez la liste, puis recommencez.",
-      "mainChanged_other": "Le dossier principal a changé depuis votre choix : {{count}} autres fichiers modifiés ({{files}}). Rien n’a été committé : relisez la liste, puis recommencez.",
-      "mainChanged_many": "Le dossier principal a changé depuis votre choix : {{count}} autres fichiers modifiés ({{files}}). Rien n’a été committé : relisez la liste, puis recommencez."
+      "turnRunning": "« {{title}} » répond encore : rien n’a été commité ni fusionné. Réessayez à la fin de son tour.",
+      "mainChanged_one": "Le dossier principal a changé depuis votre choix : {{count}} autre fichier modifié ({{files}}). Rien n’a été commité : relisez la liste, puis recommencez.",
+      "mainChanged_other": "Le dossier principal a changé depuis votre choix : {{count}} autres fichiers modifiés ({{files}}). Rien n’a été commité : relisez la liste, puis recommencez.",
+      "mainChanged_many": "Le dossier principal a changé depuis votre choix : {{count}} autres fichiers modifiés ({{files}}). Rien n’a été commité : relisez la liste, puis recommencez."
     },
     "pr": {
       "noGh": "« gh » (GitHub CLI) est introuvable : installez-le (brew install gh) pour ouvrir une PR depuis l’app.",

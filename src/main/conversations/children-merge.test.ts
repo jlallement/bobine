@@ -659,7 +659,7 @@ const motherIn = (root: string, status: ConversationSummary['status']): Conversa
 describe('« Committer puis fusionner » refusé avant tout commit (fiche 287)', () => {
   // Recette Bricole, 21:55 : la mère écrivait encore dans le dossier principal ; le commit partait,
   // puis la fusion était refusée (« le dossier principal a 6 modifications non commitées »).
-  it('un tour de la mère dans le dossier principal : refusé, rien de committé ni de fusionné', async () => {
+  it('un tour de la mère dans le dossier principal : refusé, rien de commité ni de fusionné', async () => {
     const env = await setup(['A'])
     const [a] = env.children as [Child]
     env.commit(a, 'a.txt', 'a\n')

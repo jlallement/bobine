@@ -54,7 +54,7 @@ export interface ChildrenMergeActions {
   plan: (motherId: string, ids?: string[]) => Promise<ChildrenMergePlan>
   /**
    * `stash` : « Mettre de côté » le dossier principal le temps de la fusion (fiche 123) ; `commit` :
-   * « Committer puis fusionner », committé par le main seulement si rien ne refuse la fusion
+   * « Committer puis fusionner », commité par le main seulement si rien ne refuse la fusion
    * (fiche 287).
    */
   start: (

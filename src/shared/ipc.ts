@@ -596,7 +596,7 @@ export interface IpcInvokeContract
    * Fusionne la branche dans la base (ADR-0022) : fait, rien à faire, conflits, à committer, ou
    * dossier principal non commité (fiche 123) ; `stash` : « Mettre de côté » le temps de la fusion.
    * `commit` : « Committer puis fusionner » (fiches 123, 287) — ces fichiers du dossier principal,
-   * committés seulement si rien ne refuse la fusion (tour en cours, autres fichiers…).
+   * commités seulement si rien ne refuse la fusion (tour en cours, autres fichiers…).
    */
   'worktree:merge': {
     args: [id: string, options?: { stash?: boolean; commit?: CommitRequest }]
@@ -662,7 +662,7 @@ export interface IpcInvokeContract
   /**
    * Lance la fusion enchaînée de ces filles dans la base, l'une après l'autre ; son état suit
    * dans le fil de la mère (élément `children-merge`). `cleanup` : « Puis nettoyer » ; `commit` :
-   * « Committer puis fusionner » (fiches 123, 287), committé seulement si rien ne refuse la fusion.
+   * « Committer puis fusionner » (fiches 123, 287), commité seulement si rien ne refuse la fusion.
    */
   'children:merge': {
     args: [

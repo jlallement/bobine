@@ -60,7 +60,7 @@ export async function assertOnlyChecked(
   )
 }
 
-/** Le commit du dossier principal, puis la fusion de la branche ; rien de committé sur un refus. */
+/** Le commit du dossier principal, puis la fusion de la branche ; rien de commité sur un refus. */
 export async function commitThenMerge(
   cycle: Pick<
     WorktreeCycle,
