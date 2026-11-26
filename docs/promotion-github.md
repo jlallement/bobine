@@ -185,12 +185,12 @@ Titre : **Welcome to Bobine's discussions**
 >
 > Where to post:
 >
-> - **Q&A**: installing, setting up an agent, « how do I… ». Please say your system, your agent
->   and its version (Settings › Diagnostics › « Copy report » gives all of it).
+> - **Q&A**: installing, setting up an agent, “how do I…”. Please say your system, your agent
+>   and its version (Settings › Diagnostics › “Copy report” gives all of it).
 > - **Ideas**: what you would like Bobine to do. One idea per thread, with the problem it solves.
 > - **Show and tell**: roles you wrote, workflows, screenshots.
 > - **Bugs** go to [Issues](https://github.com/jlallement/bobine/issues/new/choose) (Settings ›
->   Diagnostics › « Report an issue » fills the template for you), and security problems to the
+>   Diagnostics › “Report an issue” fills the template for you), and security problems to the
 >   [private advisory form](https://github.com/jlallement/bobine/security/advisories/new).
 >
 > Questions in French are welcome too: *les questions en français sont les bienvenues.*
@@ -214,7 +214,7 @@ section « Desktop and Web », à sa place dans l'ordre alphabétique (après «
 
 Titre : `docs(clients): add Bobine`
 
-> Adds [Bobine](https://github.com/jlallement/bobine) to « Desktop and Web ».
+> Adds [Bobine](https://github.com/jlallement/bobine) to “Desktop and Web”.
 >
 > Bobine is an open-source (Apache-2.0) desktop client for ACP agents. It was built first
 > for IBM Bob (`bob acp`) and also runs OpenCode (`opencode acp`) and any agent declared by

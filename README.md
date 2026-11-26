@@ -43,7 +43,7 @@
 
 - **Any ACP agent, one window.** Bobine starts the agent on your Mac and gives it a real desktop
   interface: streamed answers, diffs, permission cards, plans, history.
-- **IBM Bob first.** SSO or API key, folder trust, license and bobcoins spent are handled in the
+- **IBM Bob first.** SSO or API key, folder trust, license and Bobcoins spent are handled in the
   app. [OpenCode](https://opencode.ai) works too, with its free models or your own providers.
 - **You stay in control.** Every edit and command the agent asks for shows up as a card with the
   diff or the exact command, and nothing runs until you answer.
@@ -125,7 +125,7 @@ accents, the system font or your own, a compact density and a presentation mode 
 
 ## Supported agents
 
-| Agent | Status | Versions tested |
+| Agent | Status | Checked versions |
 |---|---|---|
 | IBM Bob (`bob acp`) | main target | 2.0.6, 2.0.9, 2.1.0 |
 | OpenCode (`opencode acp`) | supported | 1.19, 2.0.31, 2.0.32, 2.2.5, 2.3.0, 2.4.1 |
@@ -137,8 +137,9 @@ reports a version that has not been tested.
 
 ## Install
 
-**Requirements:** a Mac with Apple Silicon (M1 or later), **macOS 15 Sequoia or later** (the
-oldest macOS each release is tried on before it is published; earlier versions refuse to open it), and at least one agent installed (`bob` or `opencode` in your `PATH`).
+**Requirements:** a Mac with Apple Silicon (M1 or later), **macOS 15 Sequoia or later** (the oldest
+macOS each release is tried on before it is published; earlier versions refuse to open it), and at
+least one agent installed (`bob` or `opencode` in your `PATH`).
 
 1. Download `Bobine-<version>-arm64.dmg` from the
    [Releases page](https://github.com/jlallement/bobine/releases) (betas and release candidates
@@ -183,18 +184,17 @@ pre-release also of newer pre-releases of its own line. The check is on by defau
 repository's Releases on GitHub (“Watch › Custom › Releases”). Behind a proxy, without administrator
 rights, or offline: [`docs/installation.md`](docs/installation.md) (French).
 
-**Linux (preview).** From 1.0.0-beta.6, `Bobine-<version>-amd64.deb` (x64) or `Bobine-<version>-arm64.deb`
-on the [Releases page](https://github.com/jlallement/bobine/releases), for Ubuntu 24.04 or later and Debian:
-`sudo apt install ./Bobine-<version>-<arch>.deb`. Checksums in `SHA256SUMS-linux-x64.txt` or `-arm64.txt`. No
-iOS Simulator tools. Details, and building from source:
-[`docs/installation.md`](docs/installation.md#linux-préversion) (French).
+**Linux (preview).** From 1.0.0-beta.6, `Bobine-<version>-amd64.deb` (x64) or
+`Bobine-<version>-arm64.deb` on the [Releases page](https://github.com/jlallement/bobine/releases),
+for Ubuntu 24.04 or later and Debian: `sudo apt install ./Bobine-<version>-<arch>.deb`. Checksums in
+`SHA256SUMS-linux-x64.txt` or `-arm64.txt`. No iOS Simulator tools. Details, and building from
+source: [`docs/installation.md`](docs/installation.md#linux-préversion) (French).
 
-**Windows (preview).** From 1.0.0-beta.6, `Bobine-<version>-x64.exe` or
-`Bobine-<version>-arm64.exe` on the same page, for Windows 11: installed for the current user,
-without administrator rights. The installer is not signed: if SmartScreen warns, choose **More
-info › Run anyway**. Checksums in `SHA256SUMS-windows-<arch>.txt`. Details (Smart App Control,
-uninstalling, building from source): [`docs/installation.md`](docs/installation.md#windows-préversion)
-(French).
+**Windows (preview).** From 1.0.0-beta.6, `Bobine-<version>-x64.exe` or `Bobine-<version>-arm64.exe`
+on the same page, for Windows 11: installed for the current user, without administrator rights. The
+installer is not signed: if SmartScreen warns, choose **More info › Run anyway**. Checksums in
+`SHA256SUMS-windows-<arch>.txt`. Details (Smart App Control, uninstalling, building from source):
+[`docs/installation.md`](docs/installation.md#windows-préversion) (French).
 
 Something does not work? Settings › Diagnostics checks everything at once (agents found, trial
 session, MCP servers, Xcode, simulators), with the fix for each problem, and “Report an issue”
@@ -234,8 +234,8 @@ from scratch on Electron, React and the
   [known issues](https://github.com/jlallement/bobine/milestone/1), compatibility with new
   versions of Bob and OpenCode.
 - **1.1, in release candidate:** a Files tab to browse the working folder and comment on a line.
-- **1.2, in release candidate:** Roundtable (`/roundtable`): the same question goes to several models, none
-  seeing the others, then the conversation gives a synthesis.
+- **1.2, in release candidate:** Roundtable (`/roundtable`): the same question goes to several
+  models, none seeing the others, then the conversation gives a synthesis.
 - **Ideas, not scheduled:** rewind a conversation to before a turn; give the same task to two
   agents and keep the best result.
 

@@ -5,9 +5,10 @@ préversion, le `.deb` sous Linux et l'installeur sous Windows, voir leurs secti
 sources, y compris derrière un proxy et sans droits administrateur.
 
 **Prérequis de l'app installable** : sur le Mac, Apple Silicon et macOS 15 Sequoia ou plus récent
-(le plus ancien macOS sur lequel chaque version est essayée avant publication, runner `macos-15`
-de GitHub ; les versions antérieures refusent de l'ouvrir) ; sous Linux et Windows, voir leurs sections. Dans tous les cas, au moins un agent
-(`bob` ou `opencode` dans le `PATH`). Node et pnpm ne servent que pour les sources.
+(le plus ancien macOS sur lequel chaque version est essayée avant publication, runner `macos-15` de
+GitHub ; les versions antérieures refusent de l'ouvrir) ; sous Linux et Windows, voir leurs
+sections. Dans tous les cas, au moins un agent (`bob` ou `opencode` dans le `PATH`). Node et pnpm ne
+servent que pour les sources.
 
 **Quelque chose ne marche pas ?** Réglages › Diagnostic (aussi Aide › Diagnostic…) vérifie tout
 d'un coup : agents trouvés et leur version, session d'essai dans le dossier courant (dossier
@@ -238,7 +239,8 @@ reste dans `scripts/package` pour les mainteneurs). La **première ouverture est
 `.dmg` ou dans Applications. La marche à suivre
 d'Apple ([support.apple.com/fr-fr/102445](https://support.apple.com/fr-fr/102445)) :
 
-1. Ouvrir l'app une fois (ce premier double-clic), puis cliquer sur « Terminé » (pas « Placer dans la corbeille »).
+1. Ouvrir l'app une fois (ce premier double-clic), puis cliquer sur « Terminé » (pas « Placer dans
+   la corbeille »).
 2. Réglages Système › Confidentialité et sécurité, descendre jusqu'à la section Sécurité, et
    cliquer sur « Ouvrir quand même » à côté du message sur Bobine.
 3. Confirmer avec « Ouvrir » (mot de passe ou Touch ID demandé).
@@ -266,17 +268,18 @@ Autre effet de la signature ad hoc : pour macOS, chaque nouvelle version est une
 redemander l'autorisation « Enregistrement de l'écran » et l'accès à l'entrée « Bobine Safe
 Storage » du trousseau (les clés d'API) : « Toujours autoriser ».
 
-**Pas de mise à jour automatique** (ADR-0023) : rien ne se télécharge ni ne s'installe tout seul.
-Au lancement, une fois par jour au plus, l'app demande à GitHub la liste publique des versions
-(seule sa propre version part, dans le `User-Agent` ; ADR-0066, fiche 274) et annonce une version
-plus récente en bas de la barre latérale ; réglage « Vérifier les nouvelles versions » dans
-Réglages › Nouveautés. Sur GitHub, « Watch › Custom › Releases » prévient aussi de chaque
-version. La nouvelle version s'installe comme la première (double-clic dans le `.dmg` : l'ancienne, au même endroit, va à la corbeille). Les nouveautés de chaque
-version sont dans Réglages › Nouveautés (`CHANGELOG.md`), la version installée en tête.
+**Pas de mise à jour automatique** (ADR-0023) : rien ne se télécharge ni ne s'installe tout seul. Au
+lancement, une fois par jour au plus, l'app demande à GitHub la liste publique des versions (seule
+sa propre version part, dans le `User-Agent` ; ADR-0066, fiche 274) et annonce une version plus
+récente en bas de la barre latérale ; réglage « Vérifier les nouvelles versions » dans Réglages ›
+Nouveautés. Sur GitHub, « Watch › Custom › Releases » prévient aussi de chaque version. La nouvelle
+version s'installe comme la première (double-clic dans le `.dmg` : l'ancienne, au même endroit, va à
+la corbeille). Les nouveautés de chaque version sont dans Réglages › Nouveautés (`CHANGELOG.md`), la
+version installée en tête.
 
-**Signer et notariser** (mainteneurs, non utilisé pour les versions publiées) : `pnpm package --dry-run` dit comment l'app serait signée
-avec les variables présentes, sans rien construire. Variables et secrets GitHub : fiche 111 et
-commentaire de `.github/workflows/release.yml`.
+**Signer et notariser** (mainteneurs, non utilisé pour les versions publiées) : `pnpm package
+--dry-run` dit comment l'app serait signée avec les variables présentes, sans rien construire.
+Variables et secrets GitHub : fiche 111 et commentaire de `.github/workflows/release.yml`.
 
 ## Linux (préversion)
 
@@ -402,12 +405,12 @@ bobine .
 bobine ~/Dev/projet "lis le README et propose un plan"
 ```
 
-Réglages › Général › « Commande bobine » installe un petit script `sh` dans `/usr/local/bin` si
-vous pouvez y écrire, sinon dans `~/.local/bin` (à mettre dans le `PATH` : l'app le dit). Il appelle
+Réglages › Général › « Commande bobine » installe un petit script `sh` dans `/usr/local/bin` si vous
+pouvez y écrire, sinon dans `~/.local/bin` (à mettre dans le `PATH` : l'app le dit). Il appelle
 `open -n -a Bobine --args …` (le binaire, sous Linux) ; si Bobine est déjà ouverte, la conversation
 s'ouvre dans sa fenêtre. Déplacée, l'app propose « Réinstaller » ; « Désinstaller » retire le
-script, et seulement le sien. Pas de commande dans l'app lancée depuis les sources (`pnpm dev`).
-Les options de l'app (`--profil-temporaire`, `--reinitialiser`…) ne sont jamais prises pour un dossier.
+script, et seulement le sien. Pas de commande dans l'app lancée depuis les sources (`pnpm dev`). Les
+options de l'app (`--profil-temporaire`, `--reinitialiser`…) ne sont jamais prises pour un dossier.
 
 ## Venir de « Bob Desktop »
 
