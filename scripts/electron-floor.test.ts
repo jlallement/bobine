@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
@@ -70,9 +71,11 @@ describe('plancher d’Electron (fiche 288, ADR-0074)', () => {
     const original = parse(readFileSync(join(root, 'electron-builder.yml'), 'utf8')) as {
       extraResources: { from: string; to: string }[]
     }
-    const config = (await floorBuilderConfig('/tmp/plancher/avis.md')) as typeof original
+    // Chemin absolu de la plateforme (sous Windows : lecteur et `\\`), comme le donne `mktemp`.
+    const avis = join(tmpdir(), 'plancher', 'avis.md')
+    const config = (await floorBuilderConfig(avis)) as typeof original
     const notices = config.extraResources.find((e) => e.to === 'licenses/THIRD-PARTY-NOTICES.md')
-    expect(notices?.from).toBe('/tmp/plancher/avis.md')
+    expect(notices?.from).toBe(avis)
     const withoutNotices = (c: typeof original) =>
       JSON.stringify({
         ...c,
