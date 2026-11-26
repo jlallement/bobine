@@ -91,6 +91,34 @@ vérifié que par sa version : préférer l'archive.
 **À refaire** seulement si `node_modules` est supprimé, ou si une mise à jour du projet change la
 version d'Electron : `pnpm dev` le dit alors, avec l'archive à récupérer.
 
+### Avec une archive d'Electron plus ancienne : le plancher
+
+Si l'archive de la version du projet est introuvable sur la machine, une seule autre version est
+acceptée : le **plancher**, écrit dans `scripts/electron-floor.json` (aujourd'hui **45.2.3**, pour
+un projet sur 45.4.1 ; ADR-0074). Mêmes commandes, sans rien modifier dans les sources :
+
+```bash
+pnpm install
+pnpm electron-local ~/Downloads/electron-v45.2.3-darwin-arm64.zip
+pnpm package --dir
+```
+
+- L'empreinte de l'archive est vérifiée hors ligne contre les empreintes officielles gardées dans
+  `scripts/electron-floor.json`. Toute autre version (entre les deux, plus ancienne, autre
+  majeure) est refusée, avec la raison. Un `Electron.app` du plancher est accepté sur sa version,
+  avec le même avertissement que plus haut.
+- `pnpm dev`, `pnpm e2e` et `pnpm package` rappellent à chaque fois que l'Electron installé est le
+  plancher. **Une app construite sur le plancher n'a pas les correctifs de sécurité de la version
+  du projet** (pour 45.2.3 : ceux de Chromium et V8 repris dans 45.4.1). Le `.dmg` publié, lui,
+  reste sur la version du projet.
+- Le dépôt reste propre (`git status`) : ni `package.json`, ni lockfile, ni
+  `THIRD-PARTY-NOTICES.md` ne changent. Les avis de licence livrés dans l'app nomment l'Electron
+  réellement embarqué ; ils sont écrits hors du dépôt pendant la construction.
+- Pour revenir à la version du projet : `pnpm electron-local <archive de la version du projet>`,
+  ou, avec le réseau, `rm -rf node_modules/electron/dist node_modules/electron/path.txt` puis
+  `pnpm dev`.
+- Le plancher peut monter (annoncé dans les nouveautés) et change à chaque majeure d'Electron.
+
 ## Sans droits administrateur
 
 - L'app dans `~/Applications` plutôt que dans `/Applications` : ouverte depuis le `.dmg`, elle
@@ -138,6 +166,9 @@ pnpm package --dir
 
 Résultat : `dist/mac-arm64/Bobine.app`, à copier dans `~/Applications`. Construite sur la
 machine, elle n'est pas en quarantaine ; signée ad hoc, elle se lance sur ce Mac.
+
+Avec l'Electron du plancher installé (voir « Avec une archive d'Electron plus ancienne »), la même
+commande construit l'app dessus, et le dit.
 
 Sur un Mac Intel, le dossier est `dist/mac` ; sur Apple Silicon, `dist/mac-arm64`.
 L’architecture suit l’Electron installé localement.

@@ -2,6 +2,16 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### New
+
+- **Build Bobine with Electron 45.2.3**: on a Mac that cannot get the project's Electron version
+  (45.4.1), `pnpm electron-local` also accepts the official Electron 45.2.3 archive (checksum
+  verified), then `pnpm package --dir` builds the app without changing anything in the sources.
+  An app built this way lacks the security fixes of Electron 45.4.1: you are told so at install
+  and build time. The published `.dmg` stays on Electron 45.4.1.
+
 ## 1.2.0-beta.3 — November 26, 2026
 
 ### Fixed

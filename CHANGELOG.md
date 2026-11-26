@@ -2,6 +2,17 @@
 
 Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Nouveau
+
+- **Construire Bobine avec Electron 45.2.3** : sur un Mac qui ne peut pas obtenir la version
+  d'Electron du projet (45.4.1), `pnpm electron-local` accepte aussi l'archive officielle
+  d'Electron 45.2.3 (empreinte vérifiée), puis `pnpm package --dir` construit l'app sans rien
+  modifier dans les sources. Une app construite ainsi n'a pas les correctifs de sécurité
+  d'Electron 45.4.1 : c'est dit à l'installation et à la construction. Le `.dmg` publié reste
+  sur Electron 45.4.1.
+
 ## 1.2.0-beta.3 — 26 novembre 2026
 
 ### Corrigé
