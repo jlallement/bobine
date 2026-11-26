@@ -2,6 +2,17 @@
 
 Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Nouveau
+
+- **Autres dossiers : un chemin tapé ou un dossier glissé** : dans l’onglet Session, la ligne
+  « Autres dossiers » accepte un chemin saisi au clavier (ou collé, `~/…` et `file://…` compris)
+  et un dossier glissé depuis le Finder, en plus de la fenêtre du système. Un chemin refusé dit
+  pourquoi (introuvable, fichier, trop large comme le dossier personnel entier, déjà dans le
+  dossier de travail…). Un lien est suivi : l’agent reçoit l’accès au dossier réel, celui que
+  montre la liste.
+
 ## 1.2.0-rc.1 — 26 novembre 2026
 
 ### Nouveau

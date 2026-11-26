@@ -1,5 +1,6 @@
 import { mkdirSync, rmSync, symlinkSync } from 'node:fs'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { AgentStatus } from '@shared/agent'
 import { folderHandlers } from './additional-directories-ipc'
@@ -15,13 +16,14 @@ describe('conversation:addFolder — un seul chemin de vérification (fiche 290)
   let root = ''
   let workspace = ''
   let library = ''
-  beforeAll(() => {
+  beforeAll(async () => {
     root = tempDir('bob-add-folder-')
     mkdirSync(join(root, 'app'))
+    mkdirSync(join(root, 'app', 'src'))
     mkdirSync(join(root, 'lib'))
     symlinkSync(join(root, 'app'), join(root, 'vers-app'), 'junction')
-    workspace = NATIVE_FOLDER_SYSTEM.realpath(join(root, 'app'))
-    library = NATIVE_FOLDER_SYSTEM.realpath(join(root, 'lib'))
+    workspace = await NATIVE_FOLDER_SYSTEM.realpath(join(root, 'app'))
+    library = await NATIVE_FOLDER_SYSTEM.realpath(join(root, 'lib'))
   })
   afterAll(() => rmSync(root, { recursive: true, force: true }))
 
@@ -31,7 +33,7 @@ describe('conversation:addFolder — un seul chemin de vérification (fiche 290)
       record,
       restart: vi.fn(async () => {}),
       updateRecord: vi.fn(
-        (_id: string, change: (r: ConversationRecord, s: AgentStatus | undefined) => void) => {
+        (_id: string, change: (r: ConversationRecord, s: AgentStatus | undefined) => unknown) => {
           change(record, status)
           return status
         }
@@ -55,7 +57,7 @@ describe('conversation:addFolder — un seul chemin de vérification (fiche 290)
     const { manager, dialog, add } = setup(null)
     expect(await add('c1')).toBeNull()
     expect(dialog).toHaveBeenCalledWith(expect.objectContaining({ defaultPath: join(root) }))
-    expect(manager.updateRecord).not.toHaveBeenCalled()
+    expect(manager.record.additionalDirectories).toBeUndefined()
   })
 
   it('fenêtre native : mêmes refus que la saisie (le dossier de travail, par un lien)', async () => {
@@ -73,7 +75,8 @@ describe('conversation:addFolder — un seul chemin de vérification (fiche 290)
     expect(await add('c1', 'lib')).toEqual({ ok: false, reason: 'notAbsolute' })
     expect(await add('c1', '')).toEqual({ ok: false, reason: 'empty' })
     expect(await add('c1', 'x'.repeat(100_000))).toEqual({ ok: false, reason: 'tooLong' })
-    expect(manager.updateRecord).not.toHaveBeenCalled()
+    expect(manager.record.additionalDirectories).toBeUndefined()
+    expect(manager.restart).not.toHaveBeenCalled()
   })
 
   it('arguments venus du renderer : identifiant et chemin vérifiés', async () => {
@@ -84,9 +87,25 @@ describe('conversation:addFolder — un seul chemin de vérification (fiche 290)
     expect(dialog).not.toHaveBeenCalled()
   })
 
-  it('pendant une réponse : erreur levée (la ligne est déjà désactivée), rien ne change', async () => {
+  it('pendant une réponse : `busy`, aucune promesse rejetée, rien ne change', async () => {
     const { manager, add } = setup(null, 'busy')
-    await expect(add('c1', library)).rejects.toThrow()
+    expect(await add('c1', library)).toEqual({ ok: false, reason: 'busy' })
     expect(manager.record.additionalDirectories).toBeUndefined()
+  })
+
+  it('trop large et sous-dossier du dossier de travail : refusés aussi par la fenêtre native', async () => {
+    const broad = setup('~')
+    expect(await broad.add('c1')).toMatchObject({ ok: false, reason: 'tooBroad' })
+    const inside = setup(join(root, 'vers-app', 'src'))
+    expect(await inside.add('c1')).toMatchObject({ ok: false, reason: 'insideWorkspace' })
+    expect(inside.manager.restart).not.toHaveBeenCalled()
+  })
+
+  it('`file://` d’un dossier : accepté comme le chemin', async () => {
+    const { add } = setup(null)
+    expect(await add('c1', pathToFileURL(join(root, 'lib')).href)).toEqual({
+      ok: true,
+      folder: library
+    })
   })
 })

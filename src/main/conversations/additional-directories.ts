@@ -11,8 +11,10 @@ import { t } from 'i18next'
 import type { AddFolderResult } from '@shared/extra-folders'
 import {
   checkExtraFolder,
+  folderKey,
+  isUnder,
   NATIVE_FOLDER_SYSTEM,
-  sameFolder,
+  plainKey,
   type FolderSystem
 } from './extra-folder-check'
 import type { ConversationManager } from './manager'
@@ -20,32 +22,28 @@ import type { ConversationManager } from './manager'
 export type DirectoriesManager = Pick<ConversationManager, 'updateRecord' | 'restart'>
 type Manager = DirectoriesManager
 
-/** Change la liste des autres dossiers ; rouvre la session si l'agent est prêt. */
-async function changeDirectories(
-  manager: Manager,
-  id: string,
-  edit: (current: readonly string[]) => readonly string[]
-): Promise<void> {
-  let changed = false
-  const status = manager.updateRecord(id, (record, current) => {
-    // Pendant une réponse, la session ne peut pas être rouverte : rien ne change.
-    if (current === 'busy') throw new Error(t('conversations.error.busyFolders'))
-    const before = record.additionalDirectories ?? []
-    const workspace = resolve(record.workspace)
-    const kept = normalize(edit(before)).filter((f) => f !== workspace)
-    changed = kept.join('\n') !== before.join('\n')
-    if (kept.length > 0) record.additionalDirectories = kept
-    else delete record.additionalDirectories
+/** Ce qu'il faut de la fiche avant de lire le disque : statut, dossier de travail, liste. */
+function peek(manager: Manager, id: string) {
+  let seen = { workspace: '', folders: [] as readonly string[] }
+  const status = manager.updateRecord(id, (record) => {
+    seen = { workspace: record.workspace, folders: [...(record.additionalDirectories ?? [])] }
+    return false
   })
-  if (changed && status === 'ready') await manager.restart(id)
+  return { status, ...seen }
+}
+
+/** Clés (chemin réel, ou normalisé si absent ou figé) des dossiers déjà là, lues avant l'écriture. */
+async function keysOf(folders: readonly string[], sys: FolderSystem) {
+  return new Map(await Promise.all(folders.map(async (f) => [f, await folderKey(f, sys)] as const)))
 }
 
 /**
  * Ajoute un dossier à la conversation, d'où que vienne le chemin (fenêtre native, saisie, dossier
- * glissé : fiche 290). Vérifié d'abord (`checkExtraFolder` : absolu, existe, dossier, lisible, liens
- * suivis) ; puis, au moment d'écrire la liste, ni le dossier de travail ni un dossier déjà là.
- * Pendant une réponse : erreur levée, comme pour le retrait (ce n'est pas le chemin qui est en
- * cause, et le bouton est déjà désactivé). Agent prêt et liste changée : session rouverte.
+ * glissé : fiche 290). Tout ce qui lit le disque est asynchrone et borné : le chemin
+ * (`checkExtraFolder`), le dossier de travail et les dossiers déjà là (`folderKey`). Puis, dans
+ * la section synchrone d'écriture, une comparaison de chaînes sur la liste fraîche : deux ajouts
+ * concurrents du même dossier ne passent pas tous les deux. Pendant une réponse : `busy` (la
+ * session ne peut pas repartir), rien d'écrit. Agent prêt et liste changée : session rouverte.
  */
 export async function addAdditionalDirectory(
   manager: Manager,
@@ -53,27 +51,58 @@ export async function addAdditionalDirectory(
   input: string,
   sys: FolderSystem = NATIVE_FOLDER_SYSTEM
 ): Promise<AddFolderResult> {
-  const checked = checkExtraFolder(input, sys)
+  const before = peek(manager, id)
+  if (before.status === 'busy') return { ok: false, reason: 'busy' }
+  const checked = await checkExtraFolder(input, sys)
   if (!checked.ok) return checked
   const { folder } = checked
-  let refusal: AddFolderResult | undefined
+  const key = plainKey(folder, sys)
+  const workspaceKey = await folderKey(before.workspace, sys)
+  if (key === workspaceKey) return { ok: false, reason: 'isWorkspace', folder }
+  if (isUnder(key, workspaceKey, sys.path)) return { ok: false, reason: 'insideWorkspace', folder }
+  const keys = await keysOf(before.folders, sys)
+  let result: AddFolderResult = { ok: true, folder }
   const status = manager.updateRecord(id, (record, current) => {
-    if (current === 'busy') throw new Error(t('conversations.error.busyFolders'))
-    const before = record.additionalDirectories ?? []
-    if (sameFolder(folder, record.workspace, sys))
-      refusal = { ok: false, reason: 'isWorkspace', folder }
-    else if (before.some((f) => sameFolder(folder, f, sys)))
-      refusal = { ok: false, reason: 'alreadyAdded', folder }
-    else record.additionalDirectories = [...before, folder]
+    if (current === 'busy') result = { ok: false, reason: 'busy' }
+    else {
+      const list = record.additionalDirectories ?? []
+      // Ajoutés depuis la lecture : déjà réels (fiche 290), comparés sans lire le disque.
+      if (list.some((f) => (keys.get(f) ?? plainKey(f, sys)) === key))
+        result = { ok: false, reason: 'alreadyAdded', folder }
+      else record.additionalDirectories = [...list, folder]
+    }
+    return result.ok
   })
-  if (refusal) return refusal
-  if (status === 'ready') await manager.restart(id)
-  return { ok: true, folder }
+  if (result.ok && status === 'ready') await manager.restart(id)
+  return result
 }
 
-/** Retire un dossier de la conversation. */
-export function removeAdditionalDirectory(manager: Manager, id: string, folder: string) {
-  return changeDirectories(manager, id, (current) => current.filter((f) => f !== folder))
+/**
+ * Retire un dossier de la conversation : la même comparaison que l'ajout (chemin réel, ou
+ * normalisé). Pendant une réponse : erreur levée (le bouton est déjà désactivé avec sa raison).
+ */
+export async function removeAdditionalDirectory(
+  manager: Manager,
+  id: string,
+  folder: string,
+  sys: FolderSystem = NATIVE_FOLDER_SYSTEM
+): Promise<void> {
+  const before = peek(manager, id)
+  if (before.status === 'busy') throw new Error(t('conversations.error.busyFolders'))
+  const target = await folderKey(folder, sys)
+  const keys = await keysOf(before.folders, sys)
+  let changed = false
+  const status = manager.updateRecord(id, (record, current) => {
+    if (current === 'busy') throw new Error(t('conversations.error.busyFolders'))
+    const list = record.additionalDirectories ?? []
+    const kept = list.filter((f) => (keys.get(f) ?? plainKey(f, sys)) !== target)
+    changed = kept.length !== list.length
+    if (!changed) return false
+    if (kept.length > 0) record.additionalDirectories = kept
+    else delete record.additionalDirectories
+    return true
+  })
+  if (changed && status === 'ready') await manager.restart(id)
 }
 
 /** Titre et bouton du dialogue « Ajouter un dossier à la conversation ». */
@@ -140,9 +169,4 @@ export function extraFolderStartOf(
     worktree = undefined
   }
   return extraFolderStart({ ...summary, ...(worktree ? { worktree } : {}) }, readable)
-}
-
-/** Chemins absolus, normalisés, sans doublon, dans l'ordre donné. */
-export function normalize(folders: readonly string[]): string[] {
-  return [...new Set(folders.filter((f) => isAbsolute(f)).map((f) => resolve(f)))]
 }

@@ -15,16 +15,28 @@ export const EXTRA_FOLDER_REFUSALS = [
   'invalid',
   /** Ni absolu ni `~/…` : relatif, `~autre`, `C:dossier`, `\dossier` (Windows). */
   'notAbsolute',
+  /** Adresse d'un autre schéma que `file://` (`http://…`), ou `file://` d'un autre ordinateur. */
+  'notLocal',
+  /** Racine d'un disque, d'un lecteur ou d'un partage, ou le dossier personnel lui-même. */
+  'tooBroad',
   /** Rien à ce chemin (ou un lien qui ne mène nulle part). */
   'notFound',
   /** Un fichier, pas un dossier. */
   'notDirectory',
-  /** Le dossier existe mais ne se lit pas (droits, protection du système). */
+  /** Le dossier existe mais ne se lit pas (droits). */
   'unreadable',
+  /** macOS refuse l'accès (protection des données : Documents, Bureau, disques externes…). */
+  'privacy',
+  /** La vérification n'aboutit pas dans le délai (partage réseau figé). */
+  'timeout',
   /** C'est le dossier de travail de la conversation. */
   'isWorkspace',
+  /** Un sous-dossier du dossier de travail : l'agent y a déjà accès. */
+  'insideWorkspace',
   /** Déjà dans les autres dossiers de la conversation. */
-  'alreadyAdded'
+  'alreadyAdded',
+  /** L'agent répond : la liste ne change pas pendant un tour (la session ne peut pas repartir). */
+  'busy'
 ] as const
 
 export type ExtraFolderRefusal = (typeof EXTRA_FOLDER_REFUSALS)[number]
