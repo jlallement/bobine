@@ -66,3 +66,21 @@ project, not affiliated with IBM. »
   975f98c0) ; le lot les a corrigés plutôt que créés. Aucun changement de l'À propos ni de l'UI.
 - Reste (propriétaire) : description et topics ; release en pré-version ; décider
   `minimumSystemVersion`.
+- 2026-11-26 — Trois écarts corrigés dans `README.md` et `README.fr.md` (documentation seule,
+  rien de visible dans l'app, donc pas de ligne de changelog) :
+  - **Avis de nouvelle version** : le paragraphe « ne se met pas à jour toute seule » dit
+    désormais la ligne en bas de la barre latérale (« Voir », ✕ pour cette version), que rien ne
+    se télécharge ni ne s'installe, les règles stable / préversion et le réglage de Réglages ›
+    Nouveautés (fiche 274, ADR-0066) ; la FAQ renvoie à la barre latérale.
+  - **Lignes de version** : « Quelle version ? » sous l'étape 1 (1.0.x stable « Latest », 1.1 en
+    rc, 1.2 en bêta ; la stable par défaut). Constaté avec `gh release list` : la plus récente
+    est 1.2.0-beta.2, préversion ; le badge `include_prereleases` l'affichait donc comme
+    « release ». Il devient « stable », sans `include_prereleases` (dernière release non
+    préversion de GitHub, 1.0.1).
+  - **Feuille de route** : « Maintenant : version candidate de la 1.0 » remplacé par l'état
+    constaté (1.0.x publiée, 1.1 en rc, 1.2 tour de table en bêta), sans date ni promesse ;
+    `docs/feuille-de-route-v1.md` complétée (lignes 1.0.x, 1.1, 1.2 ; avis de nouvelle version
+    fait).
+    Report sur `main` : les fiches 271, 273, 285 et l'ADR-0073 n'existant que sur les branches
+    `1.1` et `1.2`, la feuille de route de `main` dit « branche `1.1` » ou « branche `1.2` » sans
+    numéro.
