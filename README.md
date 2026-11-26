@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/jlallement/bobine/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/jlallement/bobine?include_prereleases&label=release"></a>
+  <a href="https://github.com/jlallement/bobine/releases"><img alt="Latest stable release" src="https://img.shields.io/github/v/release/jlallement/bobine?label=stable"></a>
   <img alt="macOS 15+ on Apple Silicon" src="https://img.shields.io/badge/macOS-15%2B%20%C2%B7%20Apple%20Silicon-555?logo=apple">
   <a href="LICENSE"><img alt="Apache-2.0" src="https://img.shields.io/github/license/jlallement/bobine"></a>
   <a href="https://github.com/jlallement/bobine/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/jlallement/bobine/actions/workflows/ci.yml/badge.svg"></a>
@@ -138,6 +138,10 @@ oldest macOS each release is tried on before it is published; earlier versions r
 1. Download `Bobine-<version>-arm64.dmg` from the
    [Releases page](https://github.com/jlallement/bobine/releases) (betas and release candidates
    are marked as pre-releases).
+
+   **Which version?** Several lines share that page: 1.0.x, the stable version, marked
+   « Latest »; 1.1 in release candidates (`-rc.N`); 1.2 in betas (`-beta.N`). Take the stable
+   version by default. Pre-releases are there to try what is coming, with more risk of bugs.
 2. Open the `.dmg` and double-click Bobine in its window. This is the first launch, and **macOS
    blocks it** (« Apple could not verify… ») because the app is signed ad hoc, not notarized
    (a deliberate choice). The way through, following
@@ -165,8 +169,13 @@ oldest macOS each release is tried on before it is published; earlier versions r
 4. macOS may ask again for Screen Recording or keychain access after each new version (each
    build is a different app for it): choose « Always Allow ».
 
-Bobine does not update itself: watch the repository's Releases on GitHub (« Watch › Custom ›
-Releases ») and install each new `.dmg` over the old one. Behind a proxy, without administrator
+Bobine does not update itself, but it tells you when a newer version exists: a line at the
+bottom of the sidebar, « Bobine X.Y.Z is available ». « View » opens that release's page on
+GitHub; ✕ hides the line for that version. Nothing is downloaded or installed: you install the new
+`.dmg` over the old one yourself. A stable version is told only of newer stable versions; a
+pre-release also of newer pre-releases of its own line. The check is on by default (see the
+[FAQ](#faq)); turn it off, or check now, in Settings › What's new. You can also watch the
+repository's Releases on GitHub (« Watch › Custom › Releases »). Behind a proxy, without administrator
 rights, or offline: [`docs/installation.md`](docs/installation.md) (French).
 
 **Linux (preview).** From 1.0.0-beta.6, `Bobine-<version>-amd64.deb` (x64) or `Bobine-<version>-arm64.deb`
@@ -194,7 +203,8 @@ Settings › Privacy and Settings › Data show what Bobine keeps on your Mac, a
 up or erase it.
 
 **Does Bobine contact anything else?** One thing only: at launch, at most once a day, it asks
-GitHub's public API for the list of Bobine releases, to tell you when a newer version exists. It
+GitHub's public API for the list of Bobine releases, to tell you in the sidebar when a newer
+version exists. It
 sends nothing about you (just its own version, in the `User-Agent`), and installs nothing. Turn it
 off in Settings › What's new or Settings › Privacy.
 
@@ -215,9 +225,12 @@ from scratch on Electron, React and the
 
 ## Roadmap
 
-- **Now: release candidate for 1.0.** Fixes from real use and testers, [known issues](https://github.com/jlallement/bobine/milestone/1), compatibility with new versions of Bob and OpenCode.
-- **1.0:** the quality bar of the first stable version, a full test pass by a QA role, a second
-  pass of the interface audit.
+- **1.0.x, published:** the stable line. Fixes from real use and testers,
+  [known issues](https://github.com/jlallement/bobine/milestone/1), compatibility with new
+  versions of Bob and OpenCode.
+- **1.1, in release candidate:** a Files tab to browse the working folder and comment on a line.
+- **1.2, in beta:** Roundtable (`/roundtable`): the same question goes to several models, none
+  seeing the others, then the conversation gives a synthesis.
 - **Ideas, not scheduled:** rewind a conversation to before a turn; give the same task to two
   agents and keep the best result.
 

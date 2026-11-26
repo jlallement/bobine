@@ -113,6 +113,8 @@ export class UsageJournal {
     switch (event.type) {
       case 'user-message':
         return this.start(conversationId, track, event)
+      case 'resent':
+        return this.resent(track, event)
       case 'update':
         return this.onUpdate(track, event.update)
       case 'usage-report':
@@ -197,6 +199,17 @@ export class UsageJournal {
       toolIds: new Set(),
       subagents: new Map()
     }
+  }
+
+  /**
+   * Message refusé puis renvoyé (fiche 286) : le même tour continue, mais c'est le modèle (et le mode)
+   * de la session au renvoi qui répond — un autre modèle choisi sur la carte d'un modèle refusé.
+   */
+  private resent(track: Track, event: Extract<AgentEvent, { type: 'resent' }>): void {
+    const row = track.open?.row
+    if (!row) return
+    if (event.model) row.model = { id: event.model.id, name: event.model.name }
+    if (event.mode) row.mode = { id: event.mode.id, name: event.mode.name }
   }
 
   /** Session à part (aparté, message de commit rédigé) : une ligne à elle, rattachée à la conversation. */

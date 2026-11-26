@@ -107,3 +107,12 @@ Corriger un message déjà envoyé et relancer, ou repartir d'un point antérieu
     (`branching.ts`), un champ par fichier, le dialogue (`BranchDialog.tsx`) et leurs essais.
     Option minimale : case décochée par défaut (une ligne et un essai), écart à cette fiche à
     valider.
+
+- 2026-11-26 — **Corrigé par la fiche 286** (écart à cette fiche, décision de l'utilisateur du
+  2026-11-26). La case « Remettre … dans leur état d'alors » n'est plus cochée d'office que si aucun
+  des fichiers à remettre n'a été commité depuis le message ; sinon elle est décochée et le dialogue
+  dit combien de fichiers commités depuis seraient touchés (l'utilisateur peut toujours la cocher).
+  Le main lit git (`committed-since.ts`, appelé par `branchPreview`) : hors dépôt ou dépôt sans
+  commit, rien n'est commité ; heure du message inconnue ou git en échec, tout est tenu pour commité.
+  Aucun ADR ne fixait « coché par défaut » (seulement cette fiche). La remise en état elle-même
+  (`planRestore`, `applyRestore`) n'a pas changé.

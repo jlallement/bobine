@@ -218,6 +218,8 @@ export interface ConversationManagerOptions {
   settleLoaded?: (id: string, items: readonly TranscriptItem[]) => AgentEvent[]
   /** Corbeille des conversations supprimées (fiche 196) ; celle de `conversationsDir` sinon. */
   trash?: ConversationTrash
+  /** Fichiers commités depuis un message, pour « Repartir de ce message » (fiche 286). */
+  committedSince?: import('./branching').CommittedSince
 }
 
 const MAX_IDLE_TRANSCRIPTS = 4
@@ -793,11 +795,9 @@ export class ConversationManager {
    */
   async branchPreview(id: string, itemId: number): Promise<BranchPreview> {
     const conversation = this.get(id)
-    return previewBranch(
-      this.transcriptOf(conversation).items,
-      itemId,
-      conversation.record.workspace
-    )
+    const { workspace } = conversation.record
+    const { items } = this.transcriptOf(conversation)
+    return previewBranch(items, itemId, workspace, this.options.committedSince)
   }
 
   /**

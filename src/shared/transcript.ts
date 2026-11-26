@@ -38,7 +38,7 @@ import {
   type SubagentRun
 } from './subagent'
 import { continuesText, messageMarkOf, type MessageMark } from './reply-boundary'
-import { markResent, replayTail } from './replay-tail'
+import { resentTurn, replayTail } from './replay-tail'
 import { renewalPending } from './session-renewal'
 import type * as Children from './children'
 import { reduceMemoryProposal } from './memory'
@@ -358,7 +358,7 @@ export function reduceTranscript(state: TranscriptState, event: AgentEvent): Tra
     case 'update':
       return applyUpdate(state, event.update)
     case 'resent':
-      return markResent(state, event.fresh === true)
+      return resentTurn(state, event)
     case 'replayed': {
       // Fil gardé (fiche 103) : seuls les tours que le fil n'a pas sont ajoutés, avec un avis.
       const tail = replayTail(state.items, event.items)

@@ -67,3 +67,19 @@ export function markResent(state: TranscriptState, fresh: boolean): TranscriptSt
   items[index] = { ...item, resent: (item.resent ?? 0) + 1 }
   return { ...state, items }
 }
+
+/**
+ * Message refusé renvoyé (D10), marqué comme tel ; le tour en cours est compté sous le modèle de la
+ * session au renvoi (fiche 286) : un autre modèle choisi sur la carte d'un modèle refusé est celui
+ * qui répond.
+ */
+export function resentTurn(
+  state: TranscriptState,
+  event: { fresh?: true; model?: { id: string; name: string } }
+): TranscriptState {
+  const marked = markResent(state, event.fresh === true)
+  const pending = marked.usage?.pending
+  if (!event.model || !pending) return marked
+  const model = { id: event.model.id, name: event.model.name }
+  return { ...marked, usage: { ...marked.usage, pending: { ...pending, model } } }
+}

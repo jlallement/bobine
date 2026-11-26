@@ -82,6 +82,25 @@ describe('journal de consommation : un tour, une ligne (fiche 130)', () => {
     ])
   })
 
+  it('message refusé puis renvoyé avec un autre modèle : une ligne, sous ce modèle (fiche 286)', () => {
+    const { send, rows } = setup()
+    const refused = { id: 'openai/gpt-5.5', name: 'OpenAI/GPT-5.5' }
+    const chosen = { id: 'openai/gpt-6.1-sol', name: 'OpenAI/GPT-6.1 Sol' }
+    const build = { id: 'build', name: 'Build' }
+    send(user(1000, { model: refused, mode: build }))
+    send({ type: 'resent', model: chosen, mode: build })
+    send(end(3000, { inputTokens: 10_174, outputTokens: 5, totalTokens: 10_179 }))
+    expect(rows().map((r) => [r.model, r.mode, r.stopReason, r.tokens.input])).toEqual([
+      [chosen, build, 'end_turn', 10_174]
+    ])
+    // Renvoi sans réglage connu, ou hors d'un tour : rien ne change, rien n'est écrit.
+    send(user(4000, { model: chosen }))
+    send({ type: 'resent' })
+    send(end(5000))
+    send({ type: 'resent', model: refused })
+    expect(rows().map((r) => r.model?.id)).toEqual([chosen.id, chosen.id])
+  })
+
   it('comme OpenCode : coût par tour d’après le coût cumulé, jetons, contexte, outils par genre', () => {
     const { send, rows } = setup()
     send(user(1000))

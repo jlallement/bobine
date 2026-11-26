@@ -1441,6 +1441,7 @@ export const SUITES = [
       `${C}sidebar/HistoryItem.tsx`,
       `${C}dialogs/BranchDialog.tsx`,
       'src/main/conversations/branching.ts',
+      'src/main/conversations/committed-since.ts',
       'src/main/conversations/restore-files.ts',
       'src/shared/branch.ts'
     ]

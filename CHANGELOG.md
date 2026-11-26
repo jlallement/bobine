@@ -6,6 +6,11 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ### Corrigé
 
+- **Repartir de ce message** : si l’un des fichiers à remettre dans leur état d’alors a été commité
+  depuis ce message, la case n’est plus cochée d’office et le dialogue dit combien de fichiers
+  commités seraient touchés (les remettre déferait ces commits). Vous pouvez toujours la cocher.
+- **Mon activité** : un échange renvoyé avec un autre modèle après un refus (« Choisir un autre
+  modèle ») est compté sous le modèle qui a répondu, plus sous le modèle refusé.
 - **Tâches filles lancées ensemble** : deux worktrees créés dans la même minute ne peuvent plus
   tomber sur le même nom ; la création ne finit plus en erreur « branch already exists ».
 - **« Committer puis fusionner »** pendant qu’un agent écrit encore dans le dossier principal (ou
