@@ -127,7 +127,11 @@ export function WorkGroup({
     partial && partial.missing > 0
       ? t('usage.costPartialTip', { count: partial.missing })
       : undefined
-  const head = groupCounts(group, works, (id) => rowMerge(merging, id).mergeState === 'merged')
+  const head = groupCounts(
+    group,
+    works,
+    (id) => rowMerge(merging, id, items).mergeState === 'merged'
+  )
   return (
     <div
       className="work-group"

@@ -436,7 +436,9 @@ function SubtasksCard({ items, info }: { items: readonly TranscriptItem[]; info:
       </div>
       {rows.map(({ child, state, report }) => {
         const usage = usageText(child.usage)
-        const { mergeState, cleaned } = rowMerge(merging, child.id)
+        // Fiche 287 : la dernière fusion qui touche cette ligne (une fusion faite depuis l'onglet
+        // Git d'une autre fille ne cache pas la sienne).
+        const { mergeState, cleaned } = rowMerge(merging, child.id, items)
         const verdict = verdicts.get(child.id)
         return (
           <div

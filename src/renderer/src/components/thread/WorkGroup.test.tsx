@@ -456,6 +456,31 @@ describe('carte de groupe : en cours et finis (fiche 264, écran D, états 2 et 
     ])
   })
 
+  it('fiche 287 : deux fusions (carte, puis onglet Git) ; chaque ligne garde la sienne, nettoyée', async () => {
+    // « a » fusionné et nettoyé par la carte, « b » ensuite depuis son onglet Git : plus de
+    // branche à lire pour l'un ni l'autre (archivés), seules les fusions du fil le disent.
+    const actions = mergeActions([])
+    const items = [
+      ...working(),
+      report(9, 'a'),
+      mergeItem(10, 'done', [{ childId: 'a', state: 'merged', cleaned: true }], {
+        runId: 'carte',
+        endedAt: T0 + 1000
+      }),
+      mergeItem(11, 'done', [{ childId: 'b', state: 'merged', cleaned: true }], {
+        runId: 'onglet-git',
+        endedAt: T0 + 2000
+      })
+    ]
+    view(items, info([child('a'), child('b', { role: front })], { merge: actions }))
+    await screen.findByTestId('subtasks-merge-result')
+    expect(screen.getAllByTestId('subtask-merge-state').map((s) => s.dataset['state'])).toEqual([
+      'merged',
+      'merged'
+    ])
+    expect(screen.getByTestId('work-group-counts').textContent).toContain('2 fusionnés')
+  })
+
   it('en-tête : un fusionné se dit fusionné, un supprimé n’a pas « répondu » (recette rc.4, T7)', async () => {
     const actions = mergeActions([candidate('a', 'merged'), candidate('b', 'ready')])
     const items = [

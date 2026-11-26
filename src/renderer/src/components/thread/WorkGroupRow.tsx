@@ -67,7 +67,9 @@ export function LaunchedRow({
   const { card, child, state } = work
   const [open, setOpen] = useState(false)
   const style = useRoleStyle(card.role?.color ?? AGENT_BADGE.color)
-  const { mergeState } = rowMerge(merging, card.childId)
+  // Fiche 287 : la dernière fusion qui touche ce travail (une fusion faite depuis l'onglet Git
+  // d'un autre travail ne cache pas la sienne).
+  const { mergeState } = rowMerge(merging, card.childId, items)
   const report = currentReport(card)
   const merged = mergeState === 'merged'
   // Sa fusion avance : ni « Répondre », ni « Relancer », ni l'« Arrêter » du tour (revue QA).
