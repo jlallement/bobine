@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/jlallement/bobine/releases"><img alt="Dernière version" src="https://img.shields.io/github/v/release/jlallement/bobine?include_prereleases&label=version"></a>
+  <a href="https://github.com/jlallement/bobine/releases"><img alt="Dernière version stable" src="https://img.shields.io/github/v/release/jlallement/bobine?label=stable"></a>
   <img alt="macOS 15+ sur Apple Silicon" src="https://img.shields.io/badge/macOS-15%2B%20%C2%B7%20Apple%20Silicon-555?logo=apple">
   <a href="LICENSE"><img alt="Apache-2.0" src="https://img.shields.io/github/license/jlallement/bobine"></a>
   <a href="https://github.com/jlallement/bobine/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/jlallement/bobine/actions/workflows/ci.yml/badge.svg"></a>
@@ -143,6 +143,11 @@ antérieures refusent de l'ouvrir), et au moins un agent installé (`bob` ou
 1. Télécharger `Bobine-<version>-arm64.dmg` sur la page des
    [Releases](https://github.com/jlallement/bobine/releases) (bêtas et versions candidates sont
    marquées « pre-release »).
+
+   **Quelle version ?** Plusieurs lignes se partagent cette page : la 1.0.x, version stable,
+   marquée « Latest » ; la 1.1 en versions candidates (`-rc.N`) ; la 1.2 en bêtas (`-beta.N`).
+   Prendre la version stable par défaut. Les préversions servent à essayer ce qui arrive, avec
+   plus de risque de bugs.
 2. Ouvrir le `.dmg` et double-cliquer sur Bobine dans sa fenêtre. C'est le premier lancement, et
    **macOS le bloque** (« Apple n'a pas pu vérifier… ») car l'app est signée ad hoc, pas notarisée
    (choix assumé). Pour passer, selon les [instructions d'Apple](https://support.apple.com/fr-fr/102445) :
@@ -170,8 +175,15 @@ antérieures refusent de l'ouvrir), et au moins un agent installé (`bob` ou
 4. macOS peut redemander « Enregistrement de l'écran » ou l'accès au trousseau à chaque nouvelle
    version (pour lui, chaque version est une autre app) : choisir « Toujours autoriser ».
 
-Bobine ne se met pas à jour toute seule : suivre les Releases du dépôt sur GitHub (« Watch ›
-Custom › Releases ») et installer chaque nouveau `.dmg` à la place de l'ancien. Derrière un proxy,
+Bobine ne se met pas à jour toute seule, mais elle signale qu'une version plus récente existe :
+une ligne en bas de la barre latérale, « Bobine X.Y.Z est disponible ». « Voir » ouvre la page de
+cette version sur GitHub ; ✕ masque la ligne pour cette version. Rien ne se télécharge ni ne
+s'installe : vous installez vous-même le nouveau `.dmg` à la place de l'ancien. Une version stable
+n'est avertie que des versions stables plus récentes ; une préversion l'est aussi des préversions
+plus récentes de sa ligne. La vérification est active par défaut (voir les
+[questions fréquentes](#questions-fréquentes)) ; la couper, ou vérifier tout de suite, dans
+Réglages › Nouveautés. On peut aussi suivre les Releases du dépôt sur GitHub (« Watch › Custom ›
+Releases »). Derrière un proxy,
 sans droits administrateur, ou sans réseau : [`docs/installation.md`](docs/installation.md).
 
 **Linux (préversion).** À partir de la 1.0.0-beta.6, `Bobine-<version>-amd64.deb` (x64) ou
@@ -199,8 +211,8 @@ ce que cet agent envoie à son propre service. Réglages › Confidentialité et
 montrent ce que Bobine garde sur votre Mac, et permettent de le sauvegarder ou de l'effacer.
 
 **Bobine contacte-t-elle autre chose ?** Une seule : au lancement, une fois par jour au plus, elle
-demande à l'API publique de GitHub la liste des versions de Bobine, pour vous dire qu'une version
-plus récente existe. Elle n'envoie rien sur vous (seulement sa propre version, dans le
+demande à l'API publique de GitHub la liste des versions de Bobine, pour vous dire dans la barre
+latérale qu'une version plus récente existe. Elle n'envoie rien sur vous (seulement sa propre version, dans le
 `User-Agent`) et n'installe rien. Le réglage est dans Réglages › Nouveautés ou Réglages ›
 Confidentialité.
 
@@ -222,10 +234,13 @@ et elle est écrite de zéro avec Electron, React et le
 
 ## Feuille de route
 
-- **Maintenant : version candidate de la 1.0.** Corrections venues de l’usage réel et des essayeurs, [problèmes connus](https://github.com/jlallement/bobine/milestone/1), compatibilité avec les
+- **1.0.x, publiée :** la ligne stable. Corrections venues de l’usage réel et des essayeurs,
+  [problèmes connus](https://github.com/jlallement/bobine/milestone/1), compatibilité avec les
   nouvelles versions de Bob et d'OpenCode.
-- **1.0 :** la barre de qualité de la première version stable, une recette complète par un rôle
-  QA, un second passage de l'audit d'interface.
+- **1.1, en version candidate :** un onglet Fichiers pour parcourir le dossier de travail et
+  commenter une ligne.
+- **1.2, en bêta :** le tour de table (`/roundtable`) : la même question part à plusieurs
+  modèles, sans qu'aucun ne voie les autres, puis la conversation en fait la synthèse.
 - **Idées, pas encore prévues :** revenir avant un tour d'une conversation ; donner la même tâche
   à deux agents et garder le meilleur résultat.
 
