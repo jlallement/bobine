@@ -321,6 +321,11 @@ export type RoundtableEvent =
       by?: RoundtableStep['by']
     }
   | { type: 'step-held'; step: RoundtableStepKind }
+  /**
+   * La demande est repartie sur un autre modèle (refusé, puis un autre choisi : `resent`) : le
+   * modèle qui rédige vraiment, pour l'étiquette (testeur de la fiche 292).
+   */
+  | { type: 'step-model'; step: RoundtableStepKind; model: string }
   | {
       type: 'step-answered'
       step: RoundtableStepKind
@@ -714,6 +719,10 @@ function reduceStep(
         : rt
     case 'step-held':
       return running ? withStep(rt, key, { ...step, state: 'held' }) : rt
+    case 'step-model':
+      return step.state === 'sent' && step.by
+        ? withStep(rt, key, { ...step, by: { ...step.by, model: event.model } })
+        : rt
     case 'step-usage':
       // Coût communiqué après coup : à la tentative qu'il vise, même si une autre est en route.
       return withStep(rt, key, withAttempt(step, event, event.attempt))
@@ -868,6 +877,7 @@ export function reduceRoundtable(rt: Roundtable, event: RoundtableEvent): Roundt
     }
     case 'step-sent':
     case 'step-held':
+    case 'step-model':
     case 'step-answered':
     case 'step-failed':
     case 'step-usage':
