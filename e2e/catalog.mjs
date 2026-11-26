@@ -536,6 +536,7 @@ export const SUITES = [
     themes: BOTH,
     sources: [
       `${C}panel/SessionFolders.tsx`,
+      `${C}common/ReasonButton.tsx`,
       `${C}panel/SessionEnvironment.tsx`,
       `${C}panel/SessionTab.tsx`,
       `${R}session-tab.css`,
@@ -1323,6 +1324,37 @@ export const SUITES = [
       'src/main/changes/worktrees.ts',
       'src/shared/children-merge.ts',
       'src/shared/worktree-cycle.ts'
+    ]
+  },
+  {
+    // Retouches de la recette Bricole (fiche 287) : commit puis fusion refusé avant tout commit
+    // pendant un tour, fusion et nettoyage depuis l'onglet Git dits sur la carte, raisons au clavier.
+    name: 'filles-retouches',
+    file: 'filles-retouches.mjs',
+    run: 'fillesRetouchesSuite',
+    themes: BOTH,
+    sources: [
+      `${C}common/ReasonButton.tsx`,
+      `${C}common/Menus.tsx`,
+      `${C}thread/Subtasks.tsx`,
+      `${C}thread/SubtasksMerge.tsx`,
+      `${C}thread/WorkGroup.tsx`,
+      `${C}thread/WorkGroupRow.tsx`,
+      `${C}thread/WorkMerge.tsx`,
+      `${C}panel/MainDirtyCard.tsx`,
+      `${C}panel/CommitChooser.tsx`,
+      `${C}panel/WorktreeBar.tsx`,
+      'src/shared/work-groups.ts',
+      'src/shared/children-merge.ts',
+      'src/shared/worktree-cycle.ts',
+      'src/main/conversations/children-merge*.ts',
+      'src/main/conversations/child-merge-record.ts',
+      'src/main/changes/commit-then-merge.ts',
+      'src/main/changes/folder-turn.ts',
+      'src/main/changes/worktree-cycle.ts',
+      'src/main/changes/worktree-ipc.ts',
+      'src/mock-agent/scenarios-filles.mts',
+      'src/mock-agent/verrou-fin-de-tour.mts'
     ]
   },
   {
