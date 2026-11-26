@@ -1,6 +1,6 @@
 # 288 — Plancher d'Electron : construire avec une archive un peu plus ancienne
 
-- **Statut** : fait (1.2) — nuit sur `1.2` à décider
+- **Statut** : fait (1.2)
 - **Dépend de** : 065, 217, ADR-0057
 - **Agents** : aucun (installation et construction de l'app)
 
@@ -33,9 +33,10 @@ fumée de nuit rejouée sur ce plancher. Pas de version de Bobine ni de `.dmg` �
       réellement livré ; `third-party-notices --check` reste strict pour la version fixée.
 - [x] `check-electron` et `pnpm package` disent que l'Electron installé est le plancher et qu'une
       app construite dessus n'a pas les correctifs de sécurité de la version fixée.
-- [ ] (écrite, lançable à la main ; pas encore jouée sur GitHub) Fumée sur le plancher sur un Mac de GitHub (`electron-floor.yml`, lançable à la main) :
-      plancher installé par la commande de l'utilisateur, journées `parcours-*` (fumée, ADR-0069),
-      `pnpm package --dir`, `pnpm e2e:packaged`. Rien d'ajouté à la CI des pull requests.
+- [x] Fumée sur le plancher sur un Mac de GitHub (`electron-floor.yml`, chaque nuit sur `1.2` et
+      à la main) : plancher installé par la commande de l'utilisateur, journées `parcours-*`
+      (fumée, ADR-0069), `pnpm package --dir`, `pnpm e2e:packaged`. Rien d'ajouté à la CI des
+      pull requests. (Pas encore jouée sur GitHub à la clôture.)
 - [x] Essais : `scripts/electron-local.test.ts` (plancher accepté, sous le plancher refusé, autre
       majeure refusée, empreinte fausse refusée, version fixée inchangée), cohérence du plancher
       avec `package.json`, avis de licence du plancher, configuration de construction.
@@ -124,12 +125,21 @@ Pas de nouvelle dépendance (`yaml`, déjà là, pour la configuration temporair
     n'a **aucune** suite de nuit (`e2e.yml` de nuit joue `main`). `electron-floor.yml` est
     lançable à la main sur `1.2`. Choix restant (Jérôme) : voir « Reste à faire ».
 
+- 2026-11-26 — Nuit. Après la poussée de la branche, `gh workflow run electron-floor.yml --ref
+  1.2-electron-plancher` répond « HTTP 404: workflow electron-floor.yml not found on the default
+  branch » : même lancé à la main, un workflow doit exister sur `main`. Choix de Jérôme
+  (2026-11-26) : **« Workflow seul sur main »**. Un seul fichier, identique octet pour octet sur
+  `main` (commit qui n'ajoute que lui, branche `ci/electron-floor-nuit`) et sur `1.2` :
+  `schedule` à 05:43 UTC (après la nuit d'`e2e.yml` à 03:17 et ses 90 min au plus sur le Mac,
+  hors heure pile) et `workflow_dispatch` ; `checkout` sur `1.2` la nuit (en dur : `schedule` ne
+  part que de `main`, et la ligne 1.2 n'y est jamais fusionnée, ADR-0073), sinon sur la branche
+  choisie ; sans `scripts/electron-floor.json` (cas de `main`), arrêt immédiat qui le dit.
+  L'ADR-0074 (« choix laissé ouvert dans la fiche 288 ») n'est pas modifié : il renvoie à cette
+  fiche, qui porte la réponse.
+
 ## Reste à faire
 
-- **Nuit sur `1.2`** (choix de Jérôme) : le plus simple est un petit workflow sur `main`
-  (`schedule`, `permissions: actions: write`) qui lance `gh workflow run electron-floor.yml --ref
-  1.2` (et, s'il le veut, `e2e.yml --ref 1.2`) : la logique reste sur `1.2`, `main` ne porte qu'un
-  déclencheur. Alternative : un `schedule` dans un workflow de `main` qui fait `actions/checkout`
-  avec `ref: 1.2` (couple le workflow de `main` au contenu de `1.2`).
-- Lancer `electron-floor.yml` une première fois sur GitHub après la poussée de la branche.
-
+- Fusionner `1.2-electron-plancher` dans `1.2` : d'ici là, la nuit (qui joue `1.2`) s'arrête à
+  l'étape « Plancher défini sur cette branche ».
+- Première exécution de `electron-floor.yml` sur GitHub, puis cocher dans le journal.
+- Quand la 1.2 deviendra `main` : retirer la branche `1.2` en dur du `checkout` de la nuit.

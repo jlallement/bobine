@@ -1,15 +1,24 @@
-# Fumée sur le plancher d'Electron (fiche 288, ADR-0074) : l'app doit encore marcher et se
-# construire avec l'Electron minimal du dépôt (`scripts/electron-floor.json`), celui d'un Mac qui
-# ne peut pas obtenir la version fixée. Mêmes commandes que l'utilisateur : archive officielle
-# installée par `pnpm electron-local` (empreinte du dépôt vérifiée), fumée e2e (journées
-# `parcours-*`, ADR-0069, et `about`, qui affiche l'Electron réel), `pnpm package --dir`,
-# `pnpm e2e:packaged` ; puis le dépôt doit rester propre (`git status`).
+# Fumée sur le plancher d'Electron (fiche 288, ADR-0074 ; scripts et décision sur la branche `1.2`) :
+# l'app doit encore marcher et se construire avec l'Electron minimal du dépôt
+# (`scripts/electron-floor.json`), celui d'un Mac qui ne peut pas obtenir la version fixée. Mêmes
+# commandes que l'utilisateur : archive officielle installée par `pnpm electron-local` (empreinte
+# du dépôt vérifiée), fumée e2e (journées `parcours-*`, ADR-0069, `startup` et `about`),
+# `pnpm package --dir`, `pnpm e2e:packaged` ; puis le dépôt doit rester propre (`git status`).
 #
-# Jamais sur les pull requests ni à chaque poussée : à la main (onglet Actions, choisir la
-# branche) ; chaque nuit, selon le choix restant (fiche 288, « Nuit »).
+# Fichier identique sur `main` et sur `1.2` : GitHub ne lance un workflow (nuit ou à la main) que
+# s'il existe sur la branche par défaut (`main`), et `schedule` ne part que d'elle. La nuit joue
+# donc la branche `1.2`, en dur : la ligne 1.2 n'est jamais fusionnée dans `main` (ADR-0073), et
+# c'est elle que l'on construit sur le plancher. À revoir quand la 1.2 deviendra `main`. À la main :
+# la branche choisie au lancement ; sans `scripts/electron-floor.json` (cas de `main` aujourd'hui),
+# le job s'arrête tout de suite en le disant.
+#
+# Jamais sur les pull requests ni à chaque poussée. 05:43 UTC : après la nuit d'`e2e.yml` (03:17,
+# 90 min au plus sur le Mac), hors de l'heure pile.
 name: Electron floor
 
 on:
+  schedule:
+    - cron: '43 5 * * *'
   workflow_dispatch:
 
 permissions:
@@ -23,7 +32,15 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # La nuit : la ligne 1.2 (voir en tête) ; à la main : la branche choisie.
+          ref: ${{ github.event_name == 'schedule' && '1.2' || github.ref }}
           persist-credentials: false
+      - name: Plancher défini sur cette branche
+        run: |
+          if [[ ! -f scripts/electron-floor.json ]]; then
+            echo "::error::Pas de plancher d'Electron sur cette branche (scripts/electron-floor.json absent) : il vit sur la ligne 1.2 (fiche 288, ADR-0074). Lancer ce workflow sur 1.2."
+            exit 1
+          fi
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
