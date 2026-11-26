@@ -137,6 +137,7 @@ every agent:
 | `/review` | Review of the current changes, by the conversation’s agent |
 | `/split [message]` | Split the message into [tasks](conversations-filles.md#taches-proposees) |
 | `/btw [question]` | [Aside](aparte.md): a question on the side, answered outside the conversation |
+| `/roundtable [question]` | [Roundtable](tour-de-table.md): the question goes to several models, then the conversation gives a synthesis |
 | `/help` | List of commands |
 
 The list also shows the agent’s commands and your personal or project commands (Settings ›
@@ -164,7 +165,10 @@ conversation (a branch) that picks up the exchange up to that message; the origi
 history, unchanged. **Try again**, on your last message, does the same without changing it.
 
 If files have changed since that message, Bobine offers to **restore the files to their state at
-that point**. The effects of commands run since then remain.
+that point** (the box is checked for you). The effects of commands run since then remain. If one
+of these files was committed since that message, the box is not checked for you and the dialog
+says how many committed files would be affected: restoring them would undo those commits in the
+folder, as uncommitted changes. You can still check it.
 
 <a id="historique"></a>
 

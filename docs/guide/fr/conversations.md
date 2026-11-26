@@ -140,6 +140,7 @@ tous les agents :
 | `/review` | Revue des modifications en cours, par l'agent de la conversation |
 | `/split [message]` | Découper le message en [travaux](conversations-filles.md#taches-proposees) |
 | `/btw [question]` | [Aparté](aparte.md) : une question à côté, répondue hors du fil |
+| `/roundtable [question]` | [Tour de table](tour-de-table.md) : la question part à plusieurs modèles, puis la conversation en fait la synthèse |
 | `/help` | Liste des commandes |
 
 La liste montre aussi les commandes de l'agent et vos commandes personnelles ou du projet
@@ -168,7 +169,10 @@ dans l'historique, telle quelle. **Réessayer**, sur votre dernier message, fait
 changer.
 
 Si des fichiers ont changé depuis ce message, Bobine propose de **remettre les fichiers dans leur
-état d'alors**. Les effets des commandes lancées depuis restent.
+état d'alors** (la case est cochée d'office). Les effets des commandes lancées depuis restent.
+Si l'un de ces fichiers a été commité depuis ce message, la case n'est pas cochée d'office et le
+dialogue dit combien de fichiers commités seraient touchés : les remettre déferait ces commits
+dans le dossier, en modifications non commitées. Vous pouvez quand même la cocher.
 
 <a id="historique"></a>
 

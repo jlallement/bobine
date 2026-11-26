@@ -135,10 +135,10 @@ Le survol donne la raison. C'est toujours vous qui fusionnez.
 
 ## Fusionner les modifications
 
-Un travail qui écrit se fusionne **depuis sa carte** : **Fusionner dans main**, après **Voir les
+Un travail qui écrit se fusionne **depuis sa carte** : **Fusionner dans main** (ou le nom de votre branche de travail), après **Voir les
 modifications** et, si vous le voulez, **Faire relire** (voir [Faire relire](faire-relire.md)). Une
 carte de groupe propose **Fusionner les N prêts dans main** ; avec un avis de l'agent,
-**Fusionner les N recommandés dans main**, et **Inclure les M autres…** pour les autres, après
+**Fusionner les N travaux recommandés dans main**, et **Inclure les M autres…** pour les autres, après
 confirmation.
 
 **Puis nettoyer (archiver, supprimer les branches)** : une case, avant le bouton. Elle archive la
@@ -152,7 +152,9 @@ conflits : **Réessayer**, **Abandonner** ou **Voir le conflit** (sa vue Git).
 
 **Le dossier principal a des modifications non commitées** : la fusion ne part pas. Comme pour un
 worktree : **Committer d'abord** ou **Mettre de côté**. Voir
-[Fusionner dans `main`](worktrees.md#fusionner).
+[Fusionner dans `main`](worktrees.md#fusionner). Tant qu'un agent écrit encore dans le dossier
+principal, ou qu'un travail répond encore, **Committer puis fusionner** est refusé avant tout
+commit, avec la raison : réessayez quand il a fini.
 
 Rien n'est poussé, et aucune PR n'est ouverte : pour une PR, passez par la
 [vue Git du travail](worktrees.md#pr).
@@ -170,7 +172,8 @@ Réglages › Conversations, rubrique **Travaux délégués** :
   demander**. Ce réglage dit à l'agent s'il doit proposer des travaux ; dans tous les cas, chaque
   proposition passe par la carte des travaux proposés et attend votre accord.
 - **Travaux en même temps, au plus** : de 1 à 10 par conversation (5 par défaut). Au-delà, « Lancer en
-  parallèle… » est grisé. Les relectures comptent dans ce nombre.
+  parallèle… » est grisé. Les relectures et les participants d'un [tour de table](tour-de-table.md)
+comptent dans ce nombre.
 
 Les outils des travaux se coupent dans Réglages › Serveurs MCP › Outils de Bobine, famille
 **Travaux délégués**.

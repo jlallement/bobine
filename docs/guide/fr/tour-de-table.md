@@ -28,14 +28,19 @@ de table », et une ligne grise s'affiche dessous :
 
 Un tour de table ne se lance pas depuis un travail délégué, ni dans l'espace Discussion. Un seul
 tour à la fois par conversation : tant que le premier n'a pas rendu sa synthèse, le bouton est
-grisé et `/roundtable` aussi, dans la liste des commandes, avec sa raison. Une question de plus de 8 000 caractères est refusée aussi : joignez le détail en
-fichier.
+grisé et `/roundtable` aussi, dans la liste des commandes, avec sa raison. Une question de plus de
+8 000 caractères est refusée aussi : joignez le détail en fichier. Une conversation archivée ne
+lance pas de tour de table : désarchivez-la d'abord.
+
+Chaque participant compte dans **Travaux en même temps, au plus** (Réglages › Conversations) :
+s'il manque des places, la ligne le dit (« Trop de travaux à la fois : il en faut 1 de plus ») et
+le tour ne part pas.
 
 <a id="participants"></a>
 
 ## Choisir les participants
 
-« 3 participants ▾ » ouvre un menu à cases : les modèles utilisés récemment d'abord, puis
+« 3 participants ▾ » ouvre un menu à cases : les modèles qui ont répondu récemment d'abord, puis
 **Autres modèles…** pour chercher dans la liste complète. Un agent qui ne laisse pas choisir son
 modèle (IBM Bob) tient sur une ligne. Un agent absent de cet ordinateur n'est pas proposé. De deux
 à cinq participants ; au-delà, les autres cases se désactivent, et la ligne d'état en bas du menu

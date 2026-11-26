@@ -117,6 +117,6 @@ modes, slash commands, usage, resuming, Bobine’s tools.
 
 ## Set up the corporate network
 
-Settings › Agents › **Corporate network**: proxy, hosts that bypass the proxy, and corporate
+Settings › Agents › **Advanced** › **Corporate network**: proxy, hosts that bypass the proxy, and corporate
 certificates, taken from your login shell or entered here. They’re passed to every agent the next
 time it starts.

@@ -1,7 +1,7 @@
 # Panneaux
 
 Le panneau de droite montre ce que fait l'agent, et vous laisse la main : la session, les
-modifications, le navigateur intégré, le terminal, le simulateur iOS, l'émulateur Android, la
+modifications, les fichiers, le navigateur intégré, le terminal, le simulateur iOS, l'émulateur Android, la
 liste de tâches.
 
 Ici, vous pouvez :
@@ -9,6 +9,7 @@ Ici, vous pouvez :
 - [ouvrir, fermer et agrandir le panneau](#panneau) ;
 - lire l'[onglet Session](#session) ;
 - relire et annoter les [modifications](#modifications) ;
+- parcourir les [fichiers](#fichiers) du projet ;
 - utiliser le [navigateur intégré](#navigateur), et [annoter une page](#annoter) ;
 - utiliser le [terminal](#terminal) ;
 - voir le [simulateur iOS](#simulateur-ios) et l'[émulateur Android](#android) ;
@@ -39,7 +40,8 @@ La conversation d'un coup d'œil :
   [autres dossiers](plusieurs-dossiers.md), branche ou worktree ;
 - **Contexte** : la place occupée dans le contexte de l'agent, par catégorie (messages, outils de
   Bobine, autres serveurs MCP, agent, libre). C'est une estimation, sans aucun coût ;
-- **Modifications** : les fichiers modifiés (un clic ouvre la vue Git) ;
+- **Modifications** : ce que la conversation a modifié (ligne **Conversation**) et les fichiers non
+  commités du dossier (ligne **Dossier**) ; un clic ouvre l'onglet Modifications ;
 - **Pull request**, quand il y en a une : voir [Suivi des PR](suivi-pr-ci.md) ;
 - **En cours** : terminaux, serveurs de dev, sous-agents, travaux délégués, avec leur durée et
   un bouton pour les arrêter.
@@ -64,8 +66,32 @@ qui cite le fichier, les lignes et le code. Elles sont gardées jusqu'à l'envoi
 L'icône **Faire relire…** de la barre des vues lance une relecture par un autre agent :
 voir [Faire relire](faire-relire.md).
 
-Un fichier d'une carte d'outil, d'un diff ou d'un lien s'ouvre à la bonne ligne dans votre éditeur
-(VS Code, Cursor, Zed, IDE de JetBrains), choisi dans Réglages › Général.
+Un lien vers un fichier dans une réponse (`chemin:ligne`) l'ouvre dans l'onglet
+[Fichiers](#fichiers), à la ligne ; ⌘-clic l'ouvre dans votre éditeur (VS Code, Cursor, Zed, IDE de
+JetBrains), choisi dans Réglages › Général.
+
+<a id="fichiers"></a>
+
+## Les fichiers
+
+L'onglet **Fichiers** s'ouvre à la demande : menu **+**, ⌘P (le curseur va dans le filtre) ou
+⇧⌘Y (**Voir l'arborescence**). Il montre l'arbre du dossier de la conversation et de ses
+[autres dossiers](plusieurs-dossiers.md). Les fichiers cachés et ceux qu'ignore git y sont,
+atténués ; un point marque ceux que la conversation a modifiés.
+
+- **Filtrer** : par nom ou par chemin ; `chemin:42` va à la ligne 42.
+- Un fichier s'ouvre en **Lecture seule**, coloré et numéroté : Markdown rendu (ou **Source**),
+  images. ⌘F y cherche, ⌃G va à une ligne.
+- **Remarque sur une ligne** : l'icône de bulle, au survol du numéro de ligne (⇧-clic pour une
+  plage) ; la remarque part avec les remarques des [modifications](#modifications), par **Envoyer à
+  l'agent**.
+- Le menu d'un fichier l'ouvre dans votre éditeur ou avec l'app par défaut, l'affiche dans son
+  dossier, le mentionne dans la zone de saisie (vous pouvez aussi glisser sa ligne sur la saisie),
+  copie son chemin ou montre son diff.
+- Agrandi (⇧⌘J), le fichier et l'arbre sont côte à côte.
+
+Sur la ligne d'un travail délégué (Modifications › Travaux), **Parcourir les fichiers** ouvre
+l'onglet sur son worktree.
 
 <a id="navigateur"></a>
 
@@ -89,7 +115,7 @@ Avant d'ouvrir un site, il demande votre accord (voir
   à 100 % d'un clic. Les autres raccourcis : [Raccourcis clavier](raccourcis.md#navigateur).
 - **Taille d'écran.** Quand l'agent impose une taille (mobile…), une puce dans l'adresse le dit ;
   un clic l'annule. Elle s'annule aussi à la fin de son tour.
-- **Joindre la page au message** : l'icône de la barre d'outils joint une capture de la page à
+- **Joindre cette page au message** : l'icône de la barre d'outils joint une capture de la page à
   votre prochain message.
 - **Téléchargements.** Chaque fichier demande « Enregistrer sous », même quand c'est l'agent qui
   clique : rien n'est enregistré sans votre accord.

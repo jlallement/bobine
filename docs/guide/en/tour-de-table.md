@@ -26,14 +26,19 @@ Escape, the cross of the line, or ⌫ at the start of the question take you back
 
 A roundtable does not start from a delegated task, nor in the Chat space. One roundtable at a time
 per conversation: until the first has given its synthesis, the button is greyed out, and so is
-`/roundtable` in the command list, with its reason. A question of
-more than 8,000 characters is refused too: attach the details as a file.
+`/roundtable` in the command list, with its reason. A question of more than 8,000 characters is
+refused too: attach the details as a file. An archived conversation doesn’t start a roundtable:
+unarchive it first.
+
+Each participant counts toward **Max running tasks** (Settings › Conversations): if there aren’t
+enough slots, the line says so (“Too many tasks at once: 1 more needed”) and the roundtable
+doesn’t start.
 
 <a id="participants"></a>
 
 ## Choose the participants
 
-“3 participants ▾” opens a checkbox menu: recently used models first, then **Other models…** to
+“3 participants ▾” opens a checkbox menu: models that answered recently first, then **Other models…** to
 search the whole list. An agent that does not let you choose its model (IBM Bob) takes a single
 line. An agent missing from this computer is not offered. Two to five participants; beyond that,
 the other boxes are disabled, and the status line at the bottom of the menu says why.
@@ -83,7 +88,9 @@ When all have finished with at least two opinions, the conversation receives the
 own, without the model names (“Participant A, B, C”): it judges the arguments, not the brands. Its
 answer carries a single label line, “Roundtable synthesis · <model> · N opinions”, and the card
 folds into two lines: the header and **Used** (a click opens it again; rows are then sorted by
-letter). Hovering or focusing “Participant C” shows the real name.
+letter). Hovering or focusing “Participant C” (or “Participants B and C”) shows the real name;
+on the card, each row carries its letter, to make the link when the synthesis writes the letter
+alone.
 
 The synthesis and the decision are read-only. What is **guaranteed**: an agent that asks for
 permission before writing or running a command (IBM Bob, for instance) is refused automatically
@@ -96,8 +103,6 @@ ordinary message: the intended time for files to change.
 The conversation’s model writes the synthesis: it cannot be a participant (it would judge its own
 opinion). In the menu its box is disabled and says why; if you switch the conversation to a
 participant’s model, the line says so, and the synthesis does not start until that is settled.
-Each row of the card carries its letter, to make the link when the synthesis writes the letter
-alone.
 
 After Bobine restarts, nothing starts again on its own: the card offers **Synthesize with N
 opinions** or **Run the stopped participant again** (**Run the N stopped participants again**).

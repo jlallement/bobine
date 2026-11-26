@@ -45,7 +45,14 @@ Réglages › Diagnostic › **Journal** montre les deux fichiers, avec **Ouvrir
 - `main.log` : démarrage, erreurs, agents lancés et arrêtés, durée des tours ;
 - `agents.log` : les échanges avec les agents, aux niveaux Détaillé et Trace.
 
+<!-- si: finder -->
 Ils sont dans `~/Library/Logs/Bobine/`. Aide › Afficher le journal ouvre `main.log`.
+<!-- si: !finder !explorer
+Ils sont dans `~/.config/bobine/logs/`. Aide › Afficher le journal ouvre `main.log`.
+-->
+<!-- si: explorer
+Ils sont dans `%APPDATA%\bobine\logs\`. Aide › Afficher le journal ouvre `main.log`.
+-->
 
 **Niveau du journal** :
 
@@ -65,7 +72,11 @@ direct.
 Réglages › Diagnostic › **Signaler un problème** ouvre dans votre navigateur une issue GitHub
 préremplie avec la version et le rapport. Rien ne part avant que vous ne la validiez sur GitHub.
 
-La fenêtre Bobine › À propos de Bobine a aussi **Copier les infos techniques** (version, commit,
+<!-- si: appMenu -->
+La fenêtre Bobine › À propos de Bobine a aussi
+<!-- si: !appMenu
+La fenêtre Aide › À propos de Bobine a aussi
+--> **Copier les infos techniques** (version, commit,
 <!-- si: finder -->
 macOS, agents installés), à coller dans un signalement.
 <!-- si: !finder
@@ -87,11 +98,12 @@ Même chose pour « git introuvable » : installez les outils en ligne de comman
 
 ## La connexion d'OpenCode a expiré
 
-Symptôme : une erreur en anglais dans le fil, par exemple
-`Integration.Authorization: Request failed: 400`, alors que l'agent est toujours « Prêt ».
+D'ordinaire, Bobine le reconnaît : l'agent passe à « Connexion expirée » et une carte de connexion
+s'affiche ; une fois reconnecté, **Réessayer** renvoie votre message.
 
-Bobine ne reconnaît pas encore ce cas. Pour vous reconnecter, dans un terminal (celui de Bobine,
-⌃`, convient) :
+Il reste un cas qu'elle ne reconnaît pas : une erreur brute en anglais dans le fil, par exemple
+`Integration.Authorization: Request failed: 400`, alors que l'agent est toujours « Prêt ». Pour
+vous reconnecter, dans un terminal (celui de Bobine, ⌃`, convient) :
 
 ```bash
 opencode auth login

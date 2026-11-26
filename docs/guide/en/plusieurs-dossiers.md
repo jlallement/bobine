@@ -18,14 +18,15 @@ Here, you can:
 
 1. Open the **Session** tab of the side panel (⌘J if the panel is closed).
 2. In **Environment**, under “Folder”, click **Add a folder…**.
-3. Choose the folder, then **Add**.
+3. The picker opens next to the conversation’s folder: choose the folder, then **Add**.
 
 The folder appears in **Other folders**. The agent’s session restarts right away with the new
 list; the conversation is kept. With your next message, Bobine tells the agent which extra folders
 it has.
 
 The “Other folders” line only appears once the agent has started, and only if it supports multiple
-folders. While the agent is responding, adding and removing wait for its response to end.
+folders. While the agent is responding, **Add a folder…** and the cross are greyed out until its
+turn ends; hovering them, or focusing them with the keyboard, says why.
 
 <!-- si: finder -->
 Click a folder’s name to show it in the Finder.
@@ -48,7 +49,8 @@ about it with your next message.
 ## Limits
 
 - `@` mentions and attachments only offer files from the working folder.
-- The Changes tab only follows the working folder.
+- The Changes tab only follows the working folder. The [Files](panneaux.md#fichiers) tab, however,
+  also shows the other folders.
 - Other folders are not carried over to branches (“Branch from this message”) or to delegated
   tasks.
 - If you hand the conversation over to an agent that doesn’t support multiple folders, the list

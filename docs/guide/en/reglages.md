@@ -10,7 +10,7 @@ anywhere except to the agent you use: it has no telemetry. The one exception, wh
 off: [checking for new versions](#nouvelles-versions).
 
 Settings (⌘,) come in three groups: General, Appearance, Notifications, Keyboard shortcuts;
-Conversations, Agents, MCP servers, Commands; Privacy, Data, Diagnostics, What’s new. The search
+Conversations, Agents, Roles, Memory, MCP servers, Commands; Privacy, Data, Diagnostics, What’s new. The search
 field at the top finds any setting (⌘F).
 
 Here you can:
@@ -125,7 +125,7 @@ erases them with their contents, after confirmation. See [Worktrees](worktrees.m
 
 Bobine records each exchange with an agent (agent, model, project, tokens, cost, duration) for the
 **My activity** page (⇧⌘U). Settings › Data › **Reset…** erases it all, after confirmation. This
-can’t be undone: export first (My activity › **Export…** › Entire history) to keep it. Agent
+can’t be undone: export first (My activity › **Export…** › **Entire history**) to keep it. Agent
 quotas, such as IBM Bob’s, aren’t affected.
 
 <a id="recommencer"></a>

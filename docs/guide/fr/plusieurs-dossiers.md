@@ -19,15 +19,16 @@ Ici, vous pouvez :
 
 1. Ouvrez l'onglet **Session** du panneau de droite (⌘J si le panneau est fermé).
 2. Dans **Environnement**, sous « Dossier », cliquez sur **Ajouter un dossier…**.
-3. Choisissez le dossier, puis **Ajouter**.
+3. La fenêtre de choix s'ouvre à côté du dossier de la conversation : choisissez le dossier, puis
+   **Ajouter**.
 
 Le dossier apparaît dans **Autres dossiers**. La session de l'agent repart aussitôt avec la
 nouvelle liste ; le fil de la conversation est gardé. Avec votre message suivant, Bobine dit à
 l'agent quels dossiers il a en plus.
 
 La ligne « Autres dossiers » n'apparaît qu'une fois l'agent démarré, et seulement s'il prend en
-charge plusieurs dossiers. Pendant que l'agent répond, l'ajout et le retrait attendent la fin de sa
-réponse.
+charge plusieurs dossiers. Pendant que l'agent répond, **Ajouter un dossier…** et la croix sont
+grisés jusqu'à la fin de son tour ; le survol, ou le focus au clavier, dit pourquoi.
 
 <!-- si: finder -->
 Un clic sur le nom d'un dossier l'affiche dans le Finder.
@@ -50,7 +51,8 @@ votre message suivant.
 ## Limites
 
 - Les mentions `@` et les pièces jointes ne proposent que les fichiers du dossier de travail.
-- L'onglet Modifications ne suit que le dossier de travail.
+- L'onglet Modifications ne suit que le dossier de travail. L'onglet
+  [Fichiers](panneaux.md#fichiers), lui, montre aussi les autres dossiers.
 - Les autres dossiers ne passent ni aux branches (« Repartir de ce message ») ni aux travaux
   délégués.
 - Si vous passez la conversation à un agent qui ne prend pas plusieurs dossiers, la liste reste

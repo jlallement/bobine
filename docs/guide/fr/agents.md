@@ -58,7 +58,7 @@ Réglages › Agents, puis cliquez sur un agent :
 - **Fournisseurs de modèles** (OpenCode) ;
 - **Ce qu'il annonce** : ce que l'agent dit savoir faire (reprendre une conversation, images,
   fichiers joints, outils de l'app, autres dossiers…), relevé à son dernier démarrage ;
-- **Propre à …** : ce que Bobine fait en plus avec lui, dont les **versions vérifiées**.
+- **Propre à …** : ce que Bobine fait en plus avec lui, dont les **Versions vérifiées**.
 
 Quand un agent annonce une version que Bobine n'a pas vérifiée, Réglages › Diagnostic le dit : ses
 fonctions propres peuvent ne pas marcher.
@@ -117,6 +117,6 @@ modes, commandes « / », consommation, reprise, outils de Bobine.
 
 ## Régler le réseau d'entreprise
 
-Réglages › Agents › **Réseau d'entreprise** : proxy, hôtes sans proxy et certificats de
+Réglages › Agents › **Avancé** › **Réseau d'entreprise** : proxy, hôtes sans proxy et certificats de
 l'entreprise, repris du shell de connexion ou saisis ici. Ils sont transmis à tous les agents à
 leur prochain démarrage.

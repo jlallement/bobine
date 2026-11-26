@@ -38,7 +38,7 @@ You can also drag Bobine onto Applications, like any app. **Later** asks again a
 **Don’t ask again** silences it.
 
 <!-- si: finder -->
-**macOS won’t open the `.dmg`?** Bobine isn’t signed by Apple yet: a `.dmg` downloaded by a
+**macOS won’t open the `.dmg`?** Bobine isn’t notarized by Apple: a `.dmg` downloaded by a
 browser is quarantined. Remove the attribute before opening it:
 
 <!-- si: finder -->
@@ -46,8 +46,10 @@ browser is quarantined. Remove the attribute before opening it:
 xattr -d com.apple.quarantine ~/Downloads/Bobine-*.dmg
 ```
 
-Bobine doesn’t update itself: to hear about a new version, watch the repository’s “Releases” on
-GitHub. What’s new in each version is in Settings › What’s new.
+Bobine doesn’t update itself, but it tells you when a newer version exists: a line at the bottom
+of the sidebar, “Bobine X.Y.Z is available”, and **View** opens its page on GitHub. You install
+the new version yourself; see [Settings](reglages.md#nouvelles-versions). What’s new in each
+version is in Settings › What’s new.
 
 To install it from source, behind a proxy or offline: see
 [docs/installation.md](../../installation.md).
@@ -74,9 +76,15 @@ What each agent can do: see [Agents](agents.md).
 
 ## Choose the project folder
 
-The first time, Bobine asks for the project folder first: **Choose your project folder**, then
-**Choose a folder…**. No agent starts before you choose. The agent will read and change files
-there.
+The first time, a four-step welcome guides you: **Agent**, **Sign-in**, **Folder**, then
+**Test** (a very short test message, to check that everything works end to end). At the
+**Folder** step (“Where to work?”), pick **An existing project** (**Choose…**) or **An empty
+trial folder** (**Create**). Opened with [`bobine <folder>`](#commande-bobine), Bobine offers that
+folder first: “The folder you asked for”, **Use this folder**. The agent will read and change
+files in the folder you chose.
+
+**Skip welcome** skips it. Without a folder, Bobine then asks **Choose your project folder**,
+then **Choose a folder…**.
 
 To change folders later: click the folder below the message box (**Working folder** menu), then
 **Choose a folder…**. The same menu offers

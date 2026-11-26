@@ -1,6 +1,6 @@
 # Panels
 
-The side panel shows what the agent is doing, and lets you take over: the session, changes, the
+The side panel shows what the agent is doing, and lets you take over: the session, changes, files, the
 built-in browser, the terminal, the iOS Simulator, the Android Emulator, the to-do list.
 
 Here you can:
@@ -8,6 +8,7 @@ Here you can:
 - [open, close and maximize the panel](#panneau);
 - read the [Session tab](#session);
 - review and comment on [changes](#modifications);
+- browse the project’s [files](#fichiers);
 - use the [built-in browser](#navigateur), and [annotate a page](#annoter);
 - use the [terminal](#terminal);
 - see the [iOS Simulator](#simulateur-ios) and the [Android Emulator](#android);
@@ -38,7 +39,8 @@ The conversation at a glance:
   [other folders](plusieurs-dossiers.md), branch or worktree;
 - **Context**: how much of the agent’s context is used, by category (Messages, Bobine tools,
   Other MCP servers, Agent, Free). It’s an estimate, at no cost;
-- **Changes**: the changed files (a click opens the Git view);
+- **Changes**: what the conversation changed (**Conversation** line) and the folder’s uncommitted
+  files (**Folder** line); a click opens the Changes tab;
 - **Pull request**, when there is one: see [PR and CI tracking](suivi-pr-ci.md);
 - **Running**: terminals, dev servers, subagents, delegated tasks, with how long they’ve been
   running and a button to stop them.
@@ -63,8 +65,31 @@ that quotes the file, the lines and the code. They’re kept until you send them
 The **Request review…** icon in the view bar starts a review by another agent: see
 [Request review](faire-relire.md).
 
-A file from a tool card, a diff or a link opens at the right line in your editor (VS Code,
-Cursor, Zed, JetBrains IDEs), chosen in Settings › General.
+A link to a file in a response (`path:line`) opens it in the [Files](#fichiers) tab, at that
+line; ⌘-click opens it in your editor (VS Code, Cursor, Zed, JetBrains IDEs), chosen in
+Settings › General.
+
+<a id="fichiers"></a>
+
+## Files
+
+The **Files** tab opens on demand: **+** menu, ⌘P (the cursor goes to the filter) or ⇧⌘Y (**Show
+tree**). It shows the tree of the conversation’s folder and of its
+[other folders](plusieurs-dossiers.md). Hidden files and files ignored by git are there, dimmed; a
+dot marks the ones the conversation changed.
+
+- **Filter**: by name or path; `path:42` goes to line 42.
+- A file opens **Read-only**, highlighted and numbered: Markdown rendered (or **Source**), images.
+  ⌘F searches in it, ⌃G goes to a line.
+- **Comment on a line**: the speech-bubble icon, when hovering the line number (⇧-click for a
+  range); the comment goes
+  with the comments on the [changes](#modifications), through **Send to the agent**.
+- A file’s menu opens it in your editor or in the default app, shows it in its folder, mentions it
+  in the message box (you can also drag its row onto the message box), copies its path or shows
+  its diff.
+- Maximized (⇧⌘J), the file and the tree sit side by side.
+
+On a delegated task’s row (Changes › Tasks), **Browse files** opens the tab on its worktree.
 
 <a id="navigateur"></a>
 

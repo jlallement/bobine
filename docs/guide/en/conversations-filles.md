@@ -130,10 +130,10 @@ Hover to see the reason. You always do the merging.
 
 ## Merge the changes
 
-A task that writes is merged **from its card**: **Merge into main**, after **View changes** and,
+A task that writes is merged **from its card**: **Merge into main** (or the name of your working branch), after **View changes** and,
 if you like, **Get a review** (see [Request review](faire-relire.md)). A group card offers
 **Merge the N ready into main**; with a recommendation from the agent, **Merge the N recommended
-into main**, and **Include the M others…** for the others, after confirmation.
+tasks into main**, and **Include the M others…** for the others, after confirmation.
 
 **Then clean up (archive, delete the branches)**: a checkbox, before the button. It archives the
 conversation of each merged task and deletes its worktree and branch.
@@ -145,7 +145,9 @@ live. **Stop** stops after the current merge.
 remain: **Retry**, **Abort** or **Show the conflict** (its Git view).
 
 **The main folder has uncommitted changes**: the merge doesn’t start. As with a worktree:
-**Commit first** or **Set aside**. See [Merge into `main`](worktrees.md#fusionner).
+**Commit first** or **Set aside**. See [Merge into `main`](worktrees.md#fusionner). While an
+agent is still writing in the main folder, or a task is still responding, **Commit, then merge**
+is refused before anything is committed, with the reason: try again once it has finished.
 
 Nothing is pushed, and no PR is opened: for a PR, use the [task’s Git view](worktrees.md#pr).
 
@@ -162,6 +164,6 @@ Settings › Conversations, **Delegated tasks** section:
   agent whether to propose tasks; in every case, each proposal goes through the proposed tasks card
   and waits for your approval.
 - **Max running tasks**: 1 to 10 per conversation (5 by default). Beyond that, “Run in parallel…” is
-  greyed out. Reviews count toward this number.
+  greyed out. Reviews and [roundtable](tour-de-table.md) participants count toward this number.
 
 Turn off the tasks’ tools in Settings › MCP servers › Bobine tools, **Delegated tasks** family.
