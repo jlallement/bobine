@@ -431,17 +431,20 @@ export function searchEntries(entries: readonly MenuEntry[], query: string): Men
 // Carte : total, lettres, réponses
 
 /**
- * « 47 512 jetons traités · ≈ 0,06 $US + 0,42 Bobcoins » ; rien de communiqué : `undefined`.
- * Jetons en entier, au jeton près, comme « Jetons traités » du compteur de la conversation (fiche
- * 292) ; le coût au format de l'app (`costText` : jamais « ≈ 0,00 », M12). Un total nul de modèles
+ * « 47,5k jetons · ≈ 0,06 $US + 0,42 Bobcoins » ; rien de communiqué : `undefined`. Jetons
+ * traités (entrée + sortie) en abrégé, comme Mon activité et la puce du compteur (fiche 292) ; le
+ * coût au format de l'app (`costText` : jamais « ≈ 0,00 », M12). Un total nul de modèles
  * gratuits se lit « gratuit » ; « coût inconnu » reste pour un coût nul d'un modèle payant (G-B1).
  */
 export function totalText(total: RoundtableTotal): string | undefined {
   const parts: string[] = []
   if (total.tokens !== undefined)
-    parts.push(i18next.t('roundtable.card.tokens', { tokens: formatTokens(total.tokens) }))
-  if (total.costs.length)
-    parts.push(total.costs.map((c) => costText(c, c.free === true)).join(' + '))
+    parts.push(i18next.t('roundtable.card.tokens', { tokens: formatTokens(total.tokens, true) }))
+  if (total.costs.length) {
+    const costs = total.costs.map((c) => costText(c, c.free === true)).join(' + ')
+    // Coût partiel : dit comme au compteur de la conversation (`usage.costPartial`).
+    parts.push(total.partial ? i18next.t('usage.costPartial', { cost: costs }) : costs)
+  }
   return parts.length ? parts.join(' · ') : undefined
 }
 

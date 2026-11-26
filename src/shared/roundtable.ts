@@ -514,7 +514,12 @@ const stepStopped = (step: RoundtableStep | undefined): RoundtableStep | undefin
 const withStep = (rt: Roundtable, kind: RoundtableStepKind, step: RoundtableStep): Roundtable =>
   kind === 'synthesis' ? { ...rt, synthesis: step } : { ...rt, verdict: step }
 
-const round6 = (n: number) => Math.round(n * 1e6) / 1e6
+/**
+ * Arrondi des sommes de coûts (bruit des flottants : 0,1 + 0,2). Au milliardième, pas au
+ * millionième : un tour payant de moins de 0,0000005 $ ne doit pas devenir un coût nul, lu
+ * « coût inconnu » (testeur de la fiche 292).
+ */
+const roundCost = (n: number) => Math.round(n * 1e9) / 1e9
 
 const plus = (a: number | undefined, b: number | undefined) =>
   a === undefined && b === undefined ? undefined : (a ?? 0) + (b ?? 0)
@@ -529,7 +534,7 @@ export function addDigests(a: UsageDigest | undefined, b: UsageDigest | undefine
   }
   const cost =
     a.cost && b.cost && a.cost.currency === b.cost.currency
-      ? { amount: round6(a.cost.amount + b.cost.amount), currency: a.cost.currency }
+      ? { amount: roundCost(a.cost.amount + b.cost.amount), currency: a.cost.currency }
       : (a.cost ?? b.cost)
   return { ...sum, ...(cost ? { cost } : {}) }
 }
@@ -564,7 +569,7 @@ export function attemptsTotal(
       continue
     }
     const start = Math.max(attempt.costStart ?? covered ?? 0, covered ?? -Infinity)
-    const amount = round6(Math.max(0, end.amount - start))
+    const amount = roundCost(Math.max(0, end.amount - start))
     cost = addDigests(cost ? { cost } : undefined, {
       cost: { amount, currency: end.currency }
     })?.cost
@@ -1101,6 +1106,11 @@ export interface RoundtableTotal {
    * compte dans cette unité vient de modèles gratuits (un total nul s'y lit « gratuit »).
    */
   costs: { amount: number; currency: string; free?: true }[]
+  /**
+   * Un tour a communiqué ses jetons mais pas son coût, alors que d'autres l'ont fait : le total
+   * des coûts est partiel (« + coût inconnu », comme le compteur de la conversation).
+   */
+  partial?: true
 }
 
 /**
@@ -1113,17 +1123,26 @@ export function roundtableTotal(digests: readonly (UsageDigest | undefined)[]): 
   let tokens: number | undefined
   const costs: { amount: number; currency: string; free?: true }[] = []
   const paid = new Set<string>()
+  let withoutCost = false
   for (const digest of digests) {
     if (!digest) continue
     if (digest.input !== undefined || digest.output !== undefined)
       tokens = (tokens ?? 0) + processedTokens(digest)
     const cost = digest.cost
-    if (!cost) continue
+    if (!cost) {
+      // Des jetons sans coût : ce tour a consommé, sa dépense n'est pas connue.
+      if (digest.input !== undefined || digest.output !== undefined) withoutCost = true
+      continue
+    }
     if (digest.free !== true) paid.add(cost.currency)
     const same = costs.find((c) => c.currency === cost.currency)
-    if (same) same.amount = round6(same.amount + cost.amount)
-    else costs.push({ amount: round6(cost.amount), currency: cost.currency })
+    if (same) same.amount = roundCost(same.amount + cost.amount)
+    else costs.push({ amount: roundCost(cost.amount), currency: cost.currency })
   }
   const marked = costs.map((c) => (paid.has(c.currency) ? c : { ...c, free: true as const }))
-  return { ...(tokens !== undefined ? { tokens } : {}), costs: marked }
+  return {
+    ...(tokens !== undefined ? { tokens } : {}),
+    costs: marked,
+    ...(withoutCost && marked.length ? { partial: true as const } : {})
+  }
 }

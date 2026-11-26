@@ -1,6 +1,6 @@
 # 292 — « Consommé » : un seul total juste
 
-- **Statut** : fait (1.2)
+- **Statut** : fait (1.2), sauf T7 du testeur (décision demandée, voir le journal)
 - **Dépend de** : 130, 245, 266, 285
 - **Agents** : les deux — rien de propre à un agent : le total additionne ce que chaque agent
   communique de ses tours (`usage` de la réponse à `session/prompt`, coût cumulé), comme le
@@ -53,10 +53,10 @@ main.
 
 - [x] La carte du tour de table a **une seule** ligne « Consommé » (repliée comme dépliée, avant et
       après la réplique) ; la carte « Réplique » n'en a plus.
-- [x] Le total est la somme, **au jeton près**, des jetons traités (entrée + sortie) journalisés
-      dans `usage.sqlite` pour les participants (avis, réplique), la synthèse et la décision ; il
-      s'affiche en entier (« 12 345 jetons traités »), comme « Jetons traités » du compteur de la
-      conversation.
+- [x] Le total est la somme des jetons traités (entrée + sortie) journalisés dans `usage.sqlite`
+      pour les participants (avis, réplique), la synthèse et la décision — égalité exacte vérifiée
+      sur les données ; il s'affiche en abrégé (« 29,7k jetons »), comme Mon activité et la puce du
+      compteur.
 - [x] Le coût suit la règle d'aujourd'hui (par unité, sans conversion ; « gratuit » pour un tour
       tout en modèles gratuits, « coût inconnu » pour 0 d'un modèle payant).
 - [x] Plus de détail au survol ni au focus (ni infobulle, ni `aria-description`, ni arrêt de
@@ -67,7 +67,7 @@ main.
 - [x] Testé contre l'agent factice : `roundtables-consomme.test.ts` (agent factice réel, journal de
       consommation branché sur les évènements : total de la carte = jetons traités journalisés,
       avant et après la réplique et la décision ; « Appliquer » hors total) ; e2e `tour-de-table`
-      (carte = Mon activité, au jeton près, après la synthèse puis après la décision).
+      (carte = jetons traités du journal, abrégés comme dans Mon activité, après la synthèse puis après la décision).
 - [x] Rouge constaté sur le code d'avant le correctif (noté ci-dessous).
 
 ## Plan
@@ -79,7 +79,7 @@ main.
      doit égaler la somme des `input + output` des lignes journalisées du tour.
    - `RoundtableCard.test.tsx` : chiffres réels d'OpenCode (`CHILD_TURN` de la fiche 245, cache
      compris dans `totalTokens`) pour deux participants et la synthèse : « Consommé : N jetons
-     traités · gratuit », N = somme des entrées + sorties ; pas de détail.
+     » (abrégé), N = somme des entrées + sorties ; pas de détail.
    - e2e `tour-de-table` (nominal) : texte de la carte = `window.api.usage.stats` (entrée + sortie)
      après la synthèse, puis après la décision ; une seule ligne « Consommé ».
 2. Correctif :
@@ -132,3 +132,41 @@ Aucune dépendance nouvelle.
   « Consommé : 29 692 jetons traités · ≈ 0,10 $US », égal au journal (29 692 dans le rouge d'avant
   pour le même parcours). Captures d'après : `e2e/captures/292-apres/`. La suite complète reste à
   jouer sur la branche d'intégration.
+- 2026-11-26 (relecture du tech lead) : **écart au plan, format abrégé**. Le nombre entier
+  (« 29 692 jetons traités ») ne se recoupait avec rien que l'utilisateur voit : Mon activité, la
+  puce du compteur et les cartes des tâches filles écrivent les jetons en abrégé
+  (`formatTokens(…, true)`), et le propriétaire veut la forme la moins chargée. La carte dit donc
+  « Consommé : 29,7k jetons · ≈ 0,10 $US » (« Used: 29.7k tokens · ≈ $0.10 ») ; la mesure reste
+  les jetons traités. La justesse au jeton près reste prouvée sur les données
+  (`roundtables-consomme.test.ts`) ; l'e2e compare l'affichage au total du journal abrégé.
+  « Appliquer » hors total et ligne retirée de la carte « Réplique » : confirmés. Aide sous
+  « gratuit » : « {{agent}} annonce un coût nul : modèle gratuit. » (une conversation peut avoir
+  utilisé plusieurs modèles gratuits). `costHintKey` rend la clé, traduite par le `t` du composant.
+- 2026-11-26, rapport du testeur (11 cas, agent factice réel et journal branché : `scratchpad/
+  testeur-292/`) : pied = journal partout, sauf :
+  - **T7, message tapé dans la conversation d'un participant après le tour : compté** (10 430 →
+    11 710 jetons). Contraire à la règle écrite. Cause : un participant compte par le résumé de
+    toute sa conversation (`workUsage` → `child.usage`). **Non corrigé, décision demandée** : les
+    comptes rendus du travail gardent bien le cumul au moment de l'avis et de la réplique, mais
+    jamais le coût relu après coup (Bob) ; les utiliser perdrait le coût du dernier tour de chaque
+    participant chez Bob. Corriger à la cause demande un relevé par place dans le main (jetons à la
+    fin de chaque tour du participant, coût tardif suivi comme pour la synthèse dans `steps.ts`,
+    nouvel évènement du réducteur, conservation au redémarrage, repli pour les anciens tours) :
+    estimé à une demi-journée avec ses essais. Autre voie : écrire la règle telle qu'elle est (« un
+    participant compte avec toute sa conversation »).
+  - **T8, coût partiel présenté comme complet** : corrigé. Un résumé qui donne ses jetons sans coût,
+    alors que d'autres en donnent un, ajoute « + coût inconnu » (`usage.costPartial`, comme le
+    compteur de la conversation) ; `RoundtableTotal.partial`. Limite : un participant qui ne
+    communique rien du tout (ni jetons ni coût, `--sans-usage`) ne se distingue pas d'une place qui
+    n'a pas tourné ; il ne rend pas le total partiel. Rouge d'abord : `roundtable-view.test.ts`
+    (« ≈ 0,025 $US » sans mention).
+  - **Très petits coûts** : l'arrondi des sommes du tour (`round6`) faisait d'un tour payant sous
+    0,0000005 $ un coût nul, lu « coût inconnu » : corrigé localement (arrondi au milliardième,
+    `roundCost`), rouge d'abord dans `roundtable-view.test.ts`. **Reste à faire, hors fiche** : un
+    coût payant de 0,00002 $ s'écrit « ≈ 0,00 $US » ; c'est `formatCost` (partagé par tout
+    l'affichage des coûts de l'app : compteur, Mon activité, cartes), contraire à la règle M12
+    (« jamais ≈ 0,00 ») ; non touché ici.
+  - **T10 (hors fiche)** : après un modèle refusé puis un autre choisi, l'étiquette de la synthèse
+    gardait le modèle refusé. Corrigé dans un commit à part : `resent` du gestionnaire → évènement
+    `step-model` du réducteur, qui suit le modèle tant que l'étape est partie. Rouge d'abord :
+    `roundtables-step-model.test.ts` (« Factice rapide » au lieu de « Factice précis »).

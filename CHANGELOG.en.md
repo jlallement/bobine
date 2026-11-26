@@ -6,11 +6,8 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixed
 
-- **Roundtable, “Used”**: a single line, with a correct total. It counts the processed tokens
-  (input and output, as in My activity and the conversation’s counter, without cache reads) and the
-  cost of the opinions, rebuttals, synthesis and verdict, to the token. No more details on hover,
-  nor a second line on the “Rebuttal” card: the details are in My activity. “Ask … to apply it”
-  still counts with the conversation. Under “free”, the help no longer talks about billing.
+- **Roundtable, “Used”**: a single line, with a total that matches My activity (opinions,
+  rebuttals, synthesis and verdict). The details are in My activity.
 
 ## 1.2.0-rc.1 — November 26, 2026
 

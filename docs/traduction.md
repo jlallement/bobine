@@ -169,7 +169,7 @@ Un terme se traduit toujours de la même façon. Quand un mot français a plusie
 | format non suivi | format not followed | |
 | + synthèse · au moins N fois les jetons d'une question simple | + synthesis · at least N× the tokens of a plain question | Surcoût : ce qui est multiplié, c'est la consommation de **jetons** ; « au moins » : participants qui explorent et synthèse qui relit toute la conversation coûtent plus (recette, G5). |
 | au moins N fois plus de jetons ; ≥ N× jetons | at least N× more tokens ; ≥ N× tokens | Formes courtes, saisie étroite : « jetons » ne disparaît jamais. |
-| Consommé : N jetons traités | Used: N processed tokens | Pied de la carte, une seule ligne : jetons traités (entrée + sortie) et coût des avis, répliques, synthèse et décision (fiche 292). |
+| Consommé : N jetons | Used: N tokens | Pied de la carte, une seule ligne : jetons traités (entrée + sortie) et coût des avis, répliques, synthèse et décision (fiche 292). |
 | place de travaux | task slot | « Il manque 2 places de travaux » → « 2 task slots missing ». |
 | modèle introuvable ; modèle non appliqué | model not found ; model not applied | Jamais de repli silencieux sur un autre modèle. |
 | arrêté : plafond de la conversation atteint | stopped: conversation cost cap reached | Reprend « plafond par conversation ». |

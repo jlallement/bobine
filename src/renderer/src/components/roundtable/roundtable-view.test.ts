@@ -200,7 +200,7 @@ describe('pied « Consommé »', () => {
   /** Espaces insécables de la typographie française ramenées à des espaces. */
   const plain = (text: string | undefined) => (text ?? '').replace(/[\u00a0\u202f]/g, ' ')
 
-  it('jetons traités en entier, au jeton près, et coûts par unité, sans conversion (fiche 292)', () => {
+  it('jetons traités (entrée + sortie) en abrégé, coûts par unité, sans conversion (fiche 292)', () => {
     const total = roundtableTotal([
       { input: 19_000, output: 1_000, total: 60_000, cost: { amount: 0.02, currency: 'USD' } },
       undefined,
@@ -208,7 +208,7 @@ describe('pied « Consommé »', () => {
       { cost: { amount: 0.42, currency: 'bobcoins' } }
     ])
     const text = plain(totalText(total))
-    expect(text).toMatch(/^47 512 jetons traités · /)
+    expect(text).toMatch(/^47,5k jetons · /)
     expect(text).toContain('0,42 Bobcoins')
   })
 
@@ -219,7 +219,7 @@ describe('pied « Consommé »', () => {
       { input: 34_000, output: 0, cost: zero, free: true },
       { input: 69_000, output: 1_000, cost: zero, free: true }
     ])
-    expect(plain(totalText(free))).toBe('134 000 jetons traités · gratuit')
+    expect(plain(totalText(free))).toBe('134k jetons · gratuit')
     // Tour mixte : « gratuit + 0,21 Bobcoins ».
     const mixed = roundtableTotal([
       { input: 30_000, output: 0, cost: zero, free: true },
@@ -232,6 +232,27 @@ describe('pied « Consommé »', () => {
       { input: 10, cost: zero, free: true }
     ])
     expect(totalText(paid)).toContain('coût inconnu')
+  })
+
+  it('coût connu pour certains seulement : « + coût inconnu », comme le compteur (testeur, T8)', () => {
+    const usd = (amount: number) => ({ amount, currency: 'USD' })
+    const total = roundtableTotal([
+      { input: 1_000, output: 200, cost: usd(0.0125) },
+      // Participant qui donne ses jetons, pas son coût (agent sans coût, comme Codex).
+      { input: 1_000, output: 200 },
+      { input: 900, output: 100, cost: usd(0.0125) }
+    ])
+    expect(plain(totalText(total))).toBe('3,4k jetons · ≈ 0,025 $US + coût inconnu')
+    // Personne ne donne de coût : rien de partiel à dire.
+    expect(plain(totalText(roundtableTotal([{ input: 10, output: 0 }])))).toBe('10 jetons')
+  })
+
+  it('très petit coût payant : jamais « coût inconnu » (arrondi du total, testeur)', () => {
+    const tiny = roundtableTotal([
+      { input: 10, output: 5, cost: { amount: 0.0000004, currency: 'USD' } }
+    ])
+    expect(tiny.costs[0]?.amount).toBeGreaterThan(0)
+    expect(totalText(tiny)).not.toContain('coût inconnu')
   })
 
   it('rien de communiqué : pas de pied', () => {

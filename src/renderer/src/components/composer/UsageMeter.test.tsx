@@ -175,8 +175,8 @@ describe('détail de la consommation : le seul endroit où le coût se voit (fic
     render(meter(usage))
     fireEvent.click(screen.getByTestId('usage-meter'))
     expect(screen.getByTestId('usage-cost').textContent).toBe('gratuit')
-    expect(screen.getByTestId('usage-cost-hint').textContent).toBe(
-      'Agent factice annonce un coût nul pour ce modèle gratuit.'
+    expect(plain(screen.getByTestId('usage-cost-hint').textContent)).toBe(
+      'Agent factice annonce un coût nul : modèle gratuit.'
     )
   })
 

@@ -619,7 +619,9 @@ describe('tour de table : total consommé (fiche 292)', () => {
       costs: [
         { amount: 0.03, currency: 'USD' },
         { amount: 0.4, currency: 'bobcoin' }
-      ]
+      ],
+      // Le deuxième a donné ses jetons, pas son coût : total des coûts partiel.
+      partial: true
     })
   })
 

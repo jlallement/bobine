@@ -452,7 +452,7 @@ describe('synthèse', () => {
     expect(head.textContent).toContain('3 avis')
     expect(head.getAttribute('aria-expanded')).toBe('false')
     expect(plain(screen.getByTestId('roundtable-used').textContent)).toMatch(
-      /^Consommé : 47 500 jetons traités · ≈ 0,06 \$US \+ 0,42 Bobcoins$/
+      /^Consommé : 47,5k jetons · ≈ 0,06 \$US \+ 0,42 Bobcoins \+ coût inconnu$/
     )
     fireEvent.click(head)
     expect(screen.getAllByTestId('roundtable-row')).toHaveLength(3)
@@ -649,7 +649,7 @@ describe('revue UX', () => {
     )
   })
 
-  it('fiche 292 : « Consommé », un seul total juste, jetons traités au jeton près, sans détail', () => {
+  it('fiche 292 : « Consommé », un seul total juste (jetons traités, en abrégé), sans détail', () => {
     // Chiffres réels d'OpenCode 2.3.0 (fiche 245, `scenarios-consommation.mts`) : `totalTokens`
     // compte le cache et la réflexion ; Mon activité et le compteur de la conversation comptent
     // entrée + sortie. Tour tout en modèles gratuits (coût annoncé nul).
@@ -674,7 +674,7 @@ describe('revue UX', () => {
     show(synthesized(rt, SYNTHESIS), subtasks)
     // 3 × (5 255 + 262) + (28 149 + 6 906) = 51 606 : participants et synthèse, sans le cache.
     const used = screen.getByTestId('roundtable-used')
-    expect(plain(used.textContent)).toBe('Consommé : 51 606 jetons traités · gratuit')
+    expect(plain(used.textContent)).toBe('Consommé : 51,6k jetons · gratuit')
     // Plus de détail au survol ni au focus : le détail reste dans Mon activité.
     expect(used.getAttribute('tabindex')).toBeNull()
     expect(used.getAttribute('aria-description')).toBeNull()
@@ -910,10 +910,10 @@ describe('réplique et décision', () => {
     show(synthesized(rt, SYNTHESIS), subtasks)
     // Repliée comme dépliée : la carte du tour dit ce qui est connu, jamais rien.
     const used = within(card()).getByTestId('roundtable-used')
-    expect(plain(used.textContent)).toBe('Consommé : 325 311 jetons traités · coût inconnu')
+    expect(plain(used.textContent)).toBe('Consommé : 325,3k jetons · coût inconnu')
     fireEvent.click(screen.getByTestId('roundtable-head-toggle'))
     expect(plain(within(card()).getByTestId('roundtable-used').textContent)).toBe(
-      'Consommé : 325 311 jetons traités · coût inconnu'
+      'Consommé : 325,3k jetons · coût inconnu'
     )
     // Une seule ligne dans le fil : la carte « Réplique » n'a plus la sienne.
     expect(screen.getAllByTestId('roundtable-used')).toHaveLength(1)

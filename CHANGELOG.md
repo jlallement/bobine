@@ -6,12 +6,8 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ### Corrigé
 
-- **Tour de table, « Consommé »** : une seule ligne, et un total juste. Elle compte les jetons
-  traités (entrée et sortie, comme Mon activité et le compteur de la conversation, sans les jetons
-  relus en cache) et le coût des avis, des répliques, de la synthèse et de la décision, au jeton
-  près. Plus de détail au survol, ni de seconde ligne sur la carte « Réplique » : le détail est
-  dans Mon activité. « Demander à … de l’appliquer » reste compté avec la conversation. Sous
-  « gratuit », l’aide ne parle plus de facturation.
+- **Tour de table, « Consommé »** : une seule ligne, et un total qui se recoupe avec Mon activité
+  (avis, répliques, synthèse et décision). Le détail est dans Mon activité.
 
 ## 1.2.0-rc.1 — 26 novembre 2026
 
