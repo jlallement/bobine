@@ -4469,6 +4469,7 @@ export type FrResources = {
     readonly addThisFolder: 'Ajouter ce dossier'
     readonly dropFolder: 'Déposer pour ajouter'
     readonly folderAdded: 'Ajouté ; la session de l’agent repart.'
+    readonly folderRestarting: 'La session de l’agent repart avec la nouvelle liste…'
     readonly oneFolder: 'Un seul dossier à la fois.'
     readonly documents: 'Documents'
     readonly discussionDocuments: 'Documents de la discussion'

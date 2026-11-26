@@ -9,7 +9,9 @@ const props = (over: Partial<SessionFoldersProps> = {}): SessionFoldersProps => 
   busy: false,
   agentLabel: 'IBM Bob',
   finder: true,
-  onAdd: vi.fn(),
+  onAdd: vi.fn(async () => null),
+  pathFor: () => '',
+  onError: vi.fn(),
   onRemove: vi.fn(),
   onReveal: vi.fn(),
   ...over
@@ -47,6 +49,10 @@ describe('onglet « Session » : autres dossiers (fiche 179)', () => {
     wrap(p)
     const add = screen.getByTestId('session-add-folder') as HTMLButtonElement
     const remove = screen.getByTestId('session-remove-folder') as HTMLButtonElement
+    const field = screen.getByTestId('session-folder-path') as HTMLInputElement
+    // Le champ (fiche 290) : en lecture seule, atteignable, il dit pourquoi.
+    expect(field.readOnly).toBe(true)
+    expect(field.getAttribute('aria-disabled')).toBe('true')
     const why =
       'L’agent répond\u00a0: l’ajout et le retrait d’un dossier attendent la fin de son tour.'
     for (const button of [add, remove]) {
@@ -56,6 +62,7 @@ describe('onglet « Session » : autres dossiers (fiche 179)', () => {
       expect(button.getAttribute('aria-description')).toBe(why)
       fireEvent.click(button)
     }
+    expect(field.getAttribute('aria-description')).toBe(why)
     expect(p.onAdd).not.toHaveBeenCalled()
     expect(p.onRemove).not.toHaveBeenCalled()
   })
@@ -63,6 +70,7 @@ describe('onglet « Session » : autres dossiers (fiche 179)', () => {
   it('agent qui ne les prend pas : dossiers gardés, « non transmis », pas d’ajout', () => {
     wrap(props({ folders: ['/projets/lib'], supported: false }))
     expect(screen.queryByTestId('session-add-folder')).toBeNull()
+    expect(screen.queryByTestId('session-folder-path')).toBeNull()
     expect(screen.getByTestId('session-folders-unsupported').textContent).toContain('IBM Bob')
     expect(screen.getByTestId('session-remove-folder')).toBeTruthy()
   })

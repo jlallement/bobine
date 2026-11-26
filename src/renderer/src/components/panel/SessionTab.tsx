@@ -203,7 +203,10 @@ export function SessionTab({
             agentLabel={view.agentLabel}
             finder={platformFeatures().finder}
             explorer={platformFeatures().explorer}
-            onAdd={() => void window.api.conversations.addFolder(conversationId).catch(warn)}
+            key={conversationId}
+            onAdd={(path) => window.api.conversations.addFolder(conversationId, path)}
+            pathFor={(file) => window.api.files.pathFor(file)}
+            onError={warn}
             onRemove={(folder) =>
               void window.api.conversations.removeFolder(conversationId, folder).catch(warn)
             }

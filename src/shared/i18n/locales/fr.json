@@ -4630,6 +4630,7 @@
     "addThisFolder": "Ajouter ce dossier",
     "dropFolder": "Déposer pour ajouter",
     "folderAdded": "Ajouté ; la session de l’agent repart.",
+    "folderRestarting": "La session de l’agent repart avec la nouvelle liste…",
     "oneFolder": "Un seul dossier à la fois.",
     "documents": "Documents",
     "discussionDocuments": "Documents de la discussion",

@@ -4438,6 +4438,7 @@
     "addThisFolder": "Add this folder",
     "dropFolder": "Drop to add",
     "folderAdded": "Added; the agent’s session restarts.",
+    "folderRestarting": "The agent’s session is restarting with the new list…",
     "oneFolder": "One folder at a time.",
     "documents": "Documents",
     "discussionDocuments": "Chat documents",

@@ -184,6 +184,128 @@
   color: var(--muted);
 }
 
+/*
+ * Chemin d'un autre dossier (fiche 290) : champ toujours visible sous la liste, boutons dans sa
+ * marge droite. La zone de dépôt est le champ lui-même (bord en tirets) : rien ne bouge pendant
+ * le glisser. Focus : le `:focus-visible` de l'app ; un refus se dit par le message seul.
+ */
+.session-folder-added {
+  background: var(--ok-soft);
+  transition: background 0.3s;
+}
+
+.folder-path {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  min-width: 0;
+  margin-top: 2px;
+}
+
+.side-panel.maximized .folder-path {
+  max-width: 420px;
+}
+
+.folder-path-box {
+  position: relative;
+  min-width: 0;
+}
+
+.folder-path-input {
+  width: 100%;
+  height: 28px;
+  padding: 0 54px 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font: 12px var(--font-mono);
+}
+
+.folder-path-input::placeholder {
+  color: var(--muted);
+  font: 12.5px var(--font-ui);
+}
+
+.folder-path-input[aria-disabled='true'] {
+  color: var(--muted);
+  background: var(--surface-2);
+}
+
+.folder-path-buttons {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: flex;
+  gap: 2px;
+}
+
+.icon-button.folder-path-button {
+  width: 24px;
+  height: 24px;
+}
+
+.icon-button.folder-path-button[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.icon-button.folder-path-button[aria-disabled='true']:hover {
+  background: none;
+  color: var(--muted);
+}
+
+.folder-path.dropping .folder-path-input {
+  border-style: dashed;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
+}
+
+.folder-path.dropping .folder-path-buttons {
+  visibility: hidden;
+}
+
+.folder-path-drop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 9px;
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.folder-path-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.folder-path-note:not(:empty) {
+  /* Toujours là (région annoncée), sans hauteur quand elle est vide. */
+  margin-top: 4px;
+}
+
+.folder-path-note svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.folder-path-note.refused svg,
+.folder-path-note.several svg {
+  color: var(--err);
+}
+
+.folder-path-note.added svg {
+  color: var(--ok);
+}
+
 .session-folders-note {
   padding: 4px 0;
   color: var(--muted);
