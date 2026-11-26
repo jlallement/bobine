@@ -3934,7 +3934,7 @@ export type FrResources = {
       readonly retry: 'Réessayer'
       readonly abort: 'Abandonner'
       readonly aborted: 'Fusion abandonnée : la branche est comme avant.'
-      readonly resolved: 'Conflit résolu par l’agent dans {{files}}, dans la branche : rien n’est entré dans {{base}}. Relisez la résolution (onglet Conversation, « Faire relire… »), puis fusionnez.'
+      readonly resolved: 'Conflit dans {{files}} résolu par l’agent et commité dans la branche ; rien n’est entré dans {{base}}. Relisez-le (onglet Conversation, « Faire relire… ») avant de fusionner.'
     }
     readonly cleanup: {
       readonly action: 'Nettoyer'
@@ -4078,7 +4078,10 @@ export type FrResources = {
       readonly interrupted_many: 'Fusion interrompue par la fermeture de l’app : {{count}} travaux fusionnés dans {{base}}.'
       readonly conflict: 'Fusion arrêtée sur {{title}} : il reste des conflits dans {{files}}.'
       readonly failed: 'Fusion arrêtée sur {{title}} : {{error}}'
-      readonly review: '{{title}} : son agent a résolu le conflit dans {{files}}, dans sa branche. Rien n’est entré dans {{base}} : relisez la résolution, puis fusionnez.'
+      readonly review: '{{title}} : conflit dans {{files}} résolu par son agent, à relire avant de fusionner. Rien n’en est entré dans {{base}}.'
+      readonly reviewMerged_one: 'Déjà dans {{base}} : {{count}} travail fusionné ; les autres attendent.'
+      readonly reviewMerged_other: 'Déjà dans {{base}} : {{count}} travaux fusionnés ; les autres attendent.'
+      readonly reviewMerged_many: 'Déjà dans {{base}} : {{count}} travaux fusionnés ; les autres attendent.'
     }
     readonly retry: 'Réessayer'
     readonly abort: 'Abandonner'
@@ -6198,6 +6201,9 @@ export type FrResources = {
       readonly started_one: '{{count}} lancé'
       readonly started_other: '{{count}} lancés'
       readonly started_many: '{{count}} lancés'
+      readonly review_one: '{{count}} à relire'
+      readonly review_other: '{{count}} à relire'
+      readonly review_many: '{{count}} à relire'
     }
     readonly startAll: 'Tout lancer'
     readonly startAllLabel: 'Lancer chaque travail encore proposé, avec l’agent et le modèle choisis sur sa ligne'
@@ -6330,7 +6336,7 @@ export type FrResources = {
     readonly stateMerged: 'fusionné · {{time}}'
     readonly commit: 'commit {{commit}}'
     readonly reviewing: 'En relecture : la fusion attend la fin du Code reviewer.'
-    readonly resolved: 'Conflit résolu par {{name}} dans {{files}}, dans sa branche : rien n’est entré dans {{base}}. Relisez la résolution, puis fusionnez.'
+    readonly resolved: 'Conflit dans {{files}} résolu par {{name}}, à relire avant de fusionner. Rien n’en est entré dans {{base}}.'
   }
   readonly controlCategory: {
     readonly model: 'Modèle'

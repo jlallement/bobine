@@ -308,6 +308,16 @@ export async function fillesFusionSuite(scheme) {
             ).includes(conflicted),
           '« Voir la résolution » : les modifications du travail montrent README.md'
         )
+        // Onglet Conversation : toutes les modifications de l'agent dans ce travail, par fichier. Ici
+        // son seul geste est la résolution (son travail d'avant a été commité « à la main ») : un seul
+        // fichier, compté depuis le texte avec ses marques (+1 −5), pas contre la base (+1 −1).
+        const listed = await ui.ev(
+          `[...document.querySelectorAll('[data-testid=changes-file]')].map((f) => f.innerText.replace(/\\s+/g, ' ').trim())`
+        )
+        check(
+          listed.length === 1 && /README\.md \+1 [−-]5/.test(listed[0]),
+          `« Voir la résolution » : un seul fichier, README.md +1 −5 (${JSON.stringify(listed)})`
+        )
         await ui.shot('289-voir-la-resolution')
       },
       userData,

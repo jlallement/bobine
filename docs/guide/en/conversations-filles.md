@@ -143,7 +143,7 @@ live. **Stop** stops after the current merge.
 
 **A conflict.** The task concerned resolves it itself, on its branch, then the merge stops:
 nothing of its resolution goes into `main` without you. Its row says **conflict resolved · to
-review**; **Show the resolution** opens its Git view, **Get a review** hands it to the Code
+review**; **Show the resolution** opens its changes (Conversation tab), **Get a review** hands it to the Code
 reviewer. When you are happy with it, the card’s usual button merges it (with the tasks still
 waiting). If conflicts remain: **Retry**, **Abort** or **Show the conflict** (its Git view).
 

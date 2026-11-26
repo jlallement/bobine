@@ -4093,7 +4093,7 @@
       "retry": "Réessayer",
       "abort": "Abandonner",
       "aborted": "Fusion abandonnée : la branche est comme avant.",
-      "resolved": "Conflit résolu par l’agent dans {{files}}, dans la branche : rien n’est entré dans {{base}}. Relisez la résolution (onglet Conversation, « Faire relire… »), puis fusionnez."
+      "resolved": "Conflit dans {{files}} résolu par l’agent et commité dans la branche ; rien n’est entré dans {{base}}. Relisez-le (onglet Conversation, « Faire relire… ») avant de fusionner."
     },
     "cleanup": {
       "action": "Nettoyer",
@@ -4237,7 +4237,10 @@
       "interrupted_many": "Fusion interrompue par la fermeture de l’app : {{count}} travaux fusionnés dans {{base}}.",
       "conflict": "Fusion arrêtée sur {{title}} : il reste des conflits dans {{files}}.",
       "failed": "Fusion arrêtée sur {{title}} : {{error}}",
-      "review": "{{title}} : son agent a résolu le conflit dans {{files}}, dans sa branche. Rien n’est entré dans {{base}} : relisez la résolution, puis fusionnez."
+      "review": "{{title}} : conflit dans {{files}} résolu par son agent, à relire avant de fusionner. Rien n’en est entré dans {{base}}.",
+      "reviewMerged_one": "Déjà dans {{base}} : {{count}} travail fusionné ; les autres attendent.",
+      "reviewMerged_other": "Déjà dans {{base}} : {{count}} travaux fusionnés ; les autres attendent.",
+      "reviewMerged_many": "Déjà dans {{base}} : {{count}} travaux fusionnés ; les autres attendent."
     },
     "retry": "Réessayer",
     "abort": "Abandonner",
@@ -6414,7 +6417,10 @@
       "pending_many": "{{count}} en attente",
       "started_one": "{{count}} lancé",
       "started_other": "{{count}} lancés",
-      "started_many": "{{count}} lancés"
+      "started_many": "{{count}} lancés",
+      "review_one": "{{count}} à relire",
+      "review_other": "{{count}} à relire",
+      "review_many": "{{count}} à relire"
     },
     "startAll": "Tout lancer",
     "startAllLabel": "Lancer chaque travail encore proposé, avec l’agent et le modèle choisis sur sa ligne",
@@ -6547,7 +6553,7 @@
     "stateMerged": "fusionné · {{time}}",
     "commit": "commit {{commit}}",
     "reviewing": "En relecture : la fusion attend la fin du Code reviewer.",
-    "resolved": "Conflit résolu par {{name}} dans {{files}}, dans sa branche : rien n’est entré dans {{base}}. Relisez la résolution, puis fusionnez."
+    "resolved": "Conflit dans {{files}} résolu par {{name}}, à relire avant de fusionner. Rien n’en est entré dans {{base}}."
   },
   "controlCategory": {
     "model": "Modèle",

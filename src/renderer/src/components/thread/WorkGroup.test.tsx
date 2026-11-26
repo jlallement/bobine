@@ -446,11 +446,19 @@ describe('carte de groupe : en cours et finis (fiche 264, écran D, états 2 et 
     view(items, info([child('a'), child('b', { role: front })], { merge: actions, onReview }))
     const result = await screen.findByTestId('subtasks-merge-result')
     expect(result.dataset['status']).toBe('review')
+    // L'action d'abord, en gras ; puis ce qui est déjà dans main (revue UX/BA).
     expect(plain(result.textContent)).toBe(
-      'Fusion arrêtée : 1 travail fusionné dans main, les autres restent en attente. ' +
-        '« Travail b » : son agent a résolu le conflit dans src/list.ts, dans sa branche. ' +
-        'Rien n’est entré dans main : relisez la résolution, puis fusionnez.'
+      '« Travail b » : conflit dans src/list.ts résolu par son agent, à relire avant de fusionner. ' +
+        'Rien n’en est entré dans main. Déjà dans main : 1 travail fusionné ; les autres attendent.'
     )
+    expect(plain(result.querySelector('strong')?.textContent)).toBe(
+      '« Travail b » : conflit dans src/list.ts résolu par son agent, à relire avant de fusionner. ' +
+        'Rien n’en est entré dans main.'
+    )
+    // « Ne touchent pas les mêmes fichiers » contredirait le conflit : pas de résumé.
+    expect(screen.queryByTestId('subtasks-merge-summary')).toBeNull()
+    // L'en-tête compte le travail à relire, comme les autres états.
+    expect(plain(screen.getByTestId('work-group').textContent)).toContain('1 à relire')
     expect(
       screen.getAllByTestId('subtask-merge-state').map((s) => [s.dataset['state'], s.textContent])
     ).toEqual([
@@ -684,7 +692,7 @@ describe('travail qui écrit : fusion dans sa carte (fiche 264, écran C)', () =
     expect(result.dataset['state']).toBe('resolved')
     expect(result.className).toContain('review')
     expect(plain(result.textContent)).toContain(
-      'Conflit résolu par Développeur front dans src/list.ts, dans sa branche : rien n’est entré dans main. Relisez la résolution, puis fusionnez.'
+      'Conflit dans src/list.ts résolu par Développeur front, à relire avant de fusionner. Rien n’en est entré dans main.'
     )
     expect(actions.start).not.toHaveBeenCalled()
     fireEvent.click(within(result).getByTestId('work-merge-resolution'))

@@ -213,7 +213,7 @@ describe('barre du worktree : départ et fusion (fiches 110, 123)', () => {
     const note = await screen.findByTestId('worktree-note')
     expect(note.dataset['kind']).toBe('resolved')
     expect(note.textContent).toBe(
-      'Conflit résolu par l’agent dans README.md, dans la branche : rien n’est entré dans main. Relisez la résolution (onglet Conversation, « Faire relire… »), puis fusionnez.'
+      'Conflit dans README.md résolu par l’agent et commité dans la branche ; rien n’est entré dans main. Relisez-le (onglet Conversation, « Faire relire… ») avant de fusionner.'
     )
     expect(screen.queryByTestId('worktree-conflicts')).toBeNull()
     expect(merging).not.toHaveBeenCalled()

@@ -2,6 +2,7 @@ import { LoaderCircle, Split } from 'lucide-react'
 import { useContext, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { childState, type ChildProposalItem, type ChildVerdict } from '@shared/children'
+import type { MergeRowState } from '@shared/children-merge'
 import type { TranscriptItem } from '@shared/transcript'
 import { costText, digestsPartial } from '@shared/usage'
 import { groupWorkIds, type WorkGroupData, type WorkGroupRow } from '@shared/work-groups'
@@ -127,11 +128,7 @@ export function WorkGroup({
     partial && partial.missing > 0
       ? t('usage.costPartialTip', { count: partial.missing })
       : undefined
-  const head = groupCounts(
-    group,
-    works,
-    (id) => rowMerge(merging, id, items).mergeState === 'merged'
-  )
+  const head = groupCounts(group, works, (id) => rowMerge(merging, id, items).mergeState)
   return (
     <div
       className="work-group"
@@ -419,6 +416,7 @@ type CountKey =
   | 'workGroup.count.waiting'
   | 'workGroup.count.done'
   | 'workGroup.count.merged'
+  | 'workGroup.count.review'
   | 'workGroup.count.stopped'
   | 'workGroup.count.error'
   | 'workGroup.count.gone'
@@ -435,11 +433,13 @@ type CountKey =
 function groupCounts(
   group: WorkGroupData,
   works: readonly RowWork[],
-  merged: (childId: string) => boolean
+  merge: (childId: string) => MergeRowState | undefined
 ): { key: CountKey; count: number }[] {
-  // Fusionné : la ligne le dit à la place de « a répondu », l'en-tête aussi (recette rc.4, T7).
-  const fused = works.filter((w) => merged(w.card.childId))
-  const rest = works.filter((w) => !fused.includes(w))
+  // Fusionné : la ligne le dit à la place de « a répondu », l'en-tête aussi (recette rc.4, T7) ;
+  // de même un conflit résolu par son agent, à relire (fiche 289).
+  const fused = works.filter((w) => merge(w.card.childId) === 'merged')
+  const toReview = works.filter((w) => merge(w.card.childId) === 'resolved')
+  const rest = works.filter((w) => !fused.includes(w) && !toReview.includes(w))
   const of = (states: WorkState[]) => rest.filter((w) => states.includes(w.state)).length
   // Lancée sans clé (conversation d'avant) : son travail s'affiche comme avant, hors de la carte.
   const outcomes = group.rows.flatMap((row) => {
@@ -453,6 +453,7 @@ function groupCounts(
     { key: 'workGroup.count.waiting', count: of(['waiting']) },
     // Fini, réponse remise à la fin de celle de l'agent (`pending`) : il a répondu (maquette rc4).
     { key: 'workGroup.count.done', count: of(['replied', 'pending', 'silent', 'unknown']) },
+    { key: 'workGroup.count.review', count: toReview.length },
     { key: 'workGroup.count.merged', count: fused.length },
     { key: 'workGroup.count.stopped', count: of(['stopped']) },
     { key: 'workGroup.count.error', count: of(['error']) },

@@ -10,8 +10,8 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   fusion depuis une carte bute sur un conflit et que le travail le résout, la résolution reste dans
   sa branche et la fusion s’arrête : la carte dit « conflit résolu · à relire », avec « Voir la
   résolution » et « Faire relire ». Même chose pour « Laisser l’agent résoudre » dans la vue Git
-  d’un worktree. La fusion ne part que sur votre clic, avec les refus habituels. Pour un travail,
-  cet état survit à la fermeture de l’app.
+  d’un worktree. La fusion ne part que sur votre clic, avec les vérifications habituelles. Pour un
+  travail, cet état survit à la fermeture de l’app.
 
 ## 1.2.0-rc.1 — 26 novembre 2026
 

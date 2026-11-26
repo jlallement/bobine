@@ -3942,7 +3942,7 @@
       "retry": "Retry",
       "abort": "Abort",
       "aborted": "Merge aborted: the branch is as before.",
-      "resolved": "Conflict resolved by the agent in {{files}}, on the branch: nothing went into {{base}}. Review the resolution (Conversation tab, “Request review…”), then merge."
+      "resolved": "Conflict in {{files}} resolved by the agent and committed on the branch; nothing went into {{base}}. Review it (Conversation tab, “Request review…”) before merging."
     },
     "cleanup": {
       "action": "Clean up",
@@ -4059,7 +4059,9 @@
       "interrupted_other": "Merge interrupted when the app was closed: {{count}} tasks merged into {{base}}.",
       "conflict": "Merge stopped on {{title}}: conflicts remain in {{files}}.",
       "failed": "Merge stopped on {{title}}: {{error}}",
-      "review": "{{title}}: its agent resolved the conflict in {{files}}, on its branch. Nothing went into {{base}}: review the resolution, then merge."
+      "review": "{{title}}: its agent resolved the conflict in {{files}}; review it before merging. Nothing of it went into {{base}}.",
+      "reviewMerged_one": "Already in {{base}}: {{count}} task merged; the others are waiting.",
+      "reviewMerged_other": "Already in {{base}}: {{count}} tasks merged; the others are waiting."
     },
     "retry": "Retry",
     "abort": "Abort",
@@ -6141,7 +6143,9 @@
       "pending_one": "{{count}} pending",
       "pending_other": "{{count}} pending",
       "started_one": "{{count}} started",
-      "started_other": "{{count}} started"
+      "started_other": "{{count}} started",
+      "review_one": "{{count}} to review",
+      "review_other": "{{count}} to review"
     },
     "startAll": "Start all",
     "startAllLabel": "Start every task still proposed, with the agent and model chosen on its row",
@@ -6263,7 +6267,7 @@
     "stateMerged": "merged · {{time}}",
     "commit": "commit {{commit}}",
     "reviewing": "Under review: merging waits for the Code reviewer to finish.",
-    "resolved": "Conflict resolved by {{name}} in {{files}}, on its branch: nothing went into {{base}}. Review the resolution, then merge."
+    "resolved": "{{name}} resolved the conflict in {{files}}; review it before merging. Nothing of it went into {{base}}."
   },
   "controlCategory": {
     "model": "Model",

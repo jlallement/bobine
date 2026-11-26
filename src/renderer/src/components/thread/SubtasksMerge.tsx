@@ -506,9 +506,12 @@ export function SubtasksMergeFooter({
         sentences.length > 0 &&
         plan && (
           <>
-            <div className="subtasks-merge-text" data-testid="subtasks-merge-summary">
-              {sentences.map(translate).join(' ')}
-            </div>
+            {/* Fiche 289 : « ne touchent pas les mêmes fichiers » contredirait le conflit à relire. */}
+            {!reviewRow && (
+              <div className="subtasks-merge-text" data-testid="subtasks-merge-summary">
+                {sentences.map(translate).join(' ')}
+              </div>
+            )}
             {advised && (
               <MergeAdvice
                 vocabulary={vocabulary}
@@ -784,8 +787,7 @@ function MergeResult({
       t('childrenMerge.result.failed', { title: titles([failed.title]), error: failed.error ?? '' })
     )
   } else if (review) {
-    // Ce qui est déjà entré, puis la ligne à relire : rien d'elle n'est dans la base.
-    if (merged > 0) sentences.push(t(texts.stopped, { count: merged, base: merge.base }))
+    // L'action d'abord (revue UX/BA) : la ligne à relire, puis ce qui est déjà entré dans la base.
     sentences.push(
       t('childrenMerge.result.review', {
         title: titles([review.title]),
@@ -793,6 +795,9 @@ function MergeResult({
         base: merge.base
       })
     )
+    if (merged > 0) {
+      sentences.push(t('childrenMerge.result.reviewMerged', { count: merged, base: merge.base }))
+    }
   } else if (merge.status === 'done') {
     sentences.push(
       t(texts.done, {
@@ -825,7 +830,13 @@ function MergeResult({
       ) : conflict || failed || review ? (
         <CircleExclamationPoint size={13} />
       ) : null}
-      <span>{sentences.join(' ')}</span>
+      {review ? (
+        <span>
+          <strong>{sentences[0]}</strong> {sentences.slice(1).join(' ')}
+        </span>
+      ) : (
+        <span>{sentences.join(' ')}</span>
+      )}
     </div>
   )
 }

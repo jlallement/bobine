@@ -30,7 +30,7 @@ branche du travail, la carte demande une relecture, et la fusion ne part que sur
       chaîne s'arrête là ; les travaux suivants restent en attente.
 - [x] La carte dit l'état « conflit résolu, à relire » : pastille de la ligne, phrase du pied (qui
       nomme le travail, les fichiers et la base), et donne accès au diff par l'existant : « Voir la
-      résolution » (vue Git du travail, comme « Voir le conflit ») et « Faire relire » (fiche 265)
+      résolution » (ses modifications, onglet Conversation du travail) et « Faire relire » (fiche 265)
       quand la carte le propose.
 - [x] Rien n'entre dans la base sans clic : la fusion repart par les boutons existants de la carte
       (« Fusionner … dans main », « Fusionner dans main » d'un travail), donc par tous leurs refus
@@ -87,7 +87,8 @@ redémarrage : pas de nouveau stockage pour cela. Après redémarrage, rien n'es
    attend désormais, après la résolution : la fusion arrêtée (`data-status="review"`), la ligne
    « conflit résolu · à relire », `main` sans la résolution. Contrôles qui ne lèvent pas : sur le code
    actuel, ils échouent (rouge constaté, noté au journal), la suite va au bout. Puis : redémarrage,
-   l'état est toujours là ; « Voir la résolution » ouvre la vue Git du travail ; clic sur la fusion
+   l'état est toujours là ; « Voir la résolution » ouvre la vue Git du travail (écart : onglet
+   Conversation, voir le journal) ; clic sur la fusion
    (dossier principal non commité : « Mettre de côté ») ; `main` a la résolution.
 2. **Git** (`src/main/changes/worktree-cycle.ts`) : `concludeMerge(target)` — la fusion arrêtée
    dans le worktree est commitée dans sa branche (fichiers sans marqueur ajoutés, commit, puis
@@ -102,7 +103,7 @@ redémarrage : pas de nouveau stockage pour cela. Après redémarrage, rien n'es
 5. **Cartes** (renderer) :
    - `SubtasksMerge.tsx` : pastille `resolved` (couleur d'avertissement), `rowMergeState` la garde
      tant que le travail n'est pas fusionné ; pied : phrase « à relire » dans le résultat, rangée
-     « Voir la résolution » (`openGit`) et « Faire relire » (`onReview`, carte de groupe), puis le pied
+     « Voir la résolution » (`openGit(…, 'conversation')`, onglet Conversation) et « Faire relire » (`onReview`, carte de groupe), puis le pied
      habituel (résumé, `MergeButtons` ou `MainDirtyCard`) qui porte la fusion et ses refus.
    - `WorkGroup.tsx` : passe `onReview` au pied.
    - `WorkMerge.tsx` (carte d'un travail) : issue `resolved` gardée même branche prête, avec « Voir
@@ -172,3 +173,19 @@ nouveau choix structurant ; elle est consignée ici.
   (règle de la nuit : le tech lead joue la suite complète sur la branche d'intégration). Captures
   regardées : `e2e/captures/289-fusion-a-relire-*`, `289-voir-la-resolution-*` (vue Conversation),
   `289-worktree-a-relire-*`.
+- 2026-11-27 : retouches de la revue UX/BA : pied de carte dans l'ordre « à relire », ce qui est déjà
+  fusionné, nettoyage, mise de côté (première phrase en gras ; résumé « ne touchent pas les mêmes
+  fichiers » masqué pendant qu'un travail est à relire) ; « N à relire » dans l'en-tête de la carte de
+  groupe ; textes reformulés pour ne promettre aucun bouton « Fusionner » (quand le dossier principal
+  n'est pas commité, le geste est « Mettre de côté » ou « Committer d'abord ») ; deux entrées
+  publiées du CHANGELOG anglais rétablies (« Request review »).
+- « Voir la résolution » ouvre l'onglet **Conversation** du travail : il montre **toutes** les
+  modifications de l'agent dans cette conversation, regroupées par fichier (`shared/changes.ts`),
+  pas seulement le tour de résolution. Le compte (« +1 −5 » sur README.md dans l'e2e) part du fichier
+  avec ses marques, alors que la ligne de la carte (« +1 −1 ») compare la branche à sa base. Un autre
+  fichier touché pendant ce tour s'y ajouterait, ainsi que tout ce que l'agent a modifié avant.
+
+### Reste à faire, après la 1.2.0
+
+- La barre latérale met une coche verte à un travail « à relire » (elle ne connaît pas l'état de
+  fusion) ; elle devrait le dire comme la carte.

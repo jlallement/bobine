@@ -149,7 +149,7 @@ en direct. **Arrêter** s'arrête après la fusion en cours.
 
 **Un conflit.** Le travail concerné le résout lui-même, dans sa branche, puis la fusion s'arrête :
 rien de sa résolution n'entre dans `main` sans vous. Sa ligne dit **conflit résolu · à relire** ;
-**Voir la résolution** ouvre sa vue Git, **Faire relire** la confie au Code reviewer. Quand elle vous
+**Voir la résolution** ouvre ses modifications (onglet Conversation), **Faire relire** la confie au Code reviewer. Quand elle vous
 convient, le bouton habituel de la carte la fusionne (avec les travaux restés en attente). S'il
 reste des conflits : **Réessayer**, **Abandonner** ou **Voir le conflit** (sa vue Git).
 
