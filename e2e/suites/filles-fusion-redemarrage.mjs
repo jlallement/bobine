@@ -105,7 +105,12 @@ export async function fillesFusionRedemarrageSuite(scheme) {
         writeFileSync(turnLock, '')
         await ui.ev(`${ui.$('work-group')}.scrollIntoView({ block: 'center' }), true`)
         await ui.click(ui.$('subtasks-merge-start'))
-        for (let i = 0; i < 300 && held() <= before; i++) await sleep(100)
+        // Le tour retenu est celui de la résolution : ses écritures faites (un autre tour, le réveil
+        // de la mère, peut être retenu aussi).
+        const resolved = () =>
+          existsSync(join(help, 'README.md')) &&
+          readFileSync(join(help, 'README.md'), 'utf8') === RESOLVED
+        for (let i = 0; i < 600 && !(held() > before && resolved()); i++) await sleep(100)
         mainAtTurn = git(workspace, 'rev-parse', 'main')
         check(
           held() > before && readFileSync(join(help, 'README.md'), 'utf8') === RESOLVED,

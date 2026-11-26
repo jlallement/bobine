@@ -9,6 +9,7 @@ import {
 import { CommandText } from '../common/CommandText'
 import { useEffect, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { currentLocale } from '@shared/i18n/format'
 import {
   mergeBlocker,
@@ -254,15 +255,7 @@ export function WorktreeBar({
     merged: prMerged
   })
   const shownNote = noteOrReview(note, info)
-  const mergeWhy = mergeBlocker(info)
-  const mergeHint =
-    mergeWhy === 'turn'
-      ? t('worktreeCycle.merge.turn')
-      : mergeWhy === 'dirty'
-        ? t('worktreeCycle.merge.dirty', { count: info.dirty })
-        : mergeWhy === 'nothing'
-          ? t('worktreeCycle.merge.nothing', { base: info.baseBranch })
-          : undefined
+  const mergeHint = mergeReason(info, t)
 
   return (
     <div className="worktree-bar" data-testid="worktree-bar">
@@ -623,6 +616,20 @@ function WorktreeForm({
           </div>
         </div>
       )
+  }
+}
+
+/** Pourquoi « Fusionner » ne part pas (tour de l'agent, non commité, rien) ; `undefined` : il part. */
+function mergeReason(info: WorktreeCycleView, t: TFunction): string | undefined {
+  switch (mergeBlocker(info)) {
+    case 'turn':
+      return t('worktreeCycle.merge.turn')
+    case 'dirty':
+      return t('worktreeCycle.merge.dirty', { count: info.dirty })
+    case 'nothing':
+      return t('worktreeCycle.merge.nothing', { base: info.baseBranch })
+    default:
+      return undefined
   }
 }
 
