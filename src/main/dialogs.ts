@@ -45,7 +45,8 @@ export function takePresetFolder(env: NodeJS.ProcessEnv, temporaryProfile: boole
 }
 
 export async function chooseDirectory(
-  labels: { title: string; buttonLabel: string } = {
+  /** `defaultPath` : dossier où la fenêtre s'ouvre (fiche 287) ; absent, macOS choisit. */
+  labels: { title: string; buttonLabel: string; defaultPath?: string } = {
     title: t('dialogs.workspace.title'),
     buttonLabel: t('dialogs.workspace.button')
   }

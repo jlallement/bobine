@@ -17,12 +17,22 @@ const str = (value: unknown, name: string): string => {
 
 export function folderHandlers(
   manager: DirectoriesManager,
-  chooseDirectory: (labels: { title: string; buttonLabel: string }) => Promise<string | null>
+  chooseDirectory: (options: {
+    title: string
+    buttonLabel: string
+    defaultPath?: string
+  }) => Promise<string | null>,
+  /** Où ouvrir la fenêtre de choix (fiche 287) ; `undefined` : là où macOS veut. */
+  startOf: (id: string) => string | undefined = () => undefined
 ): Pick<IpcHandlers, 'conversation:addFolder' | 'conversation:removeFolder'> {
   return {
     'conversation:addFolder': async (id) => {
       const conversation = str(id, 'id')
-      const folder = await chooseDirectory(dialogLabels())
+      const start = startOf(conversation)
+      const folder = await chooseDirectory({
+        ...dialogLabels(),
+        ...(start ? { defaultPath: start } : {})
+      })
       if (folder) await addAdditionalDirectory(manager, conversation, folder)
       return folder
     },

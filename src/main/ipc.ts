@@ -85,6 +85,7 @@ import { exportConversation, exportFileName, type ExportFormat } from '@shared/e
 import { writeFile } from 'node:fs/promises'
 import { t } from 'i18next'
 import { folderHandlers } from './conversations/additional-directories-ipc'
+import { extraFolderStartOf } from './conversations/additional-directories'
 import { memoryHandlers, type MemoryIpcDeps } from './memory/memory-ipc'
 import type { MemoryService } from './memory/service'
 import { rolesHandlers, type RolesIpcDeps } from './roles/ipc'
@@ -156,6 +157,7 @@ export type ConversationController = Pick<
   | 'search'
   | 'createInWorktree'
   | 'worktreeStatus'
+  | 'worktreeOf'
   | 'open'
   | 'release'
   | 'branchPreview'
@@ -346,7 +348,11 @@ export function createHandlers(
       /** Réglages de l'app ; la vue rendue après un changement vient des conversations. */
       settings: SettingsController
       /** Dialogue natif de choix de dossier (injecté : testable sans Electron). */
-      chooseDirectory: (options?: { title: string; buttonLabel: string }) => Promise<string | null>
+      chooseDirectory: (options?: {
+        title: string
+        buttonLabel: string
+        defaultPath?: string
+      }) => Promise<string | null>
       /** Dialogue natif d'enregistrement pour l'export (injecté) : chemin choisi, ou `null`. */
       saveFile?: (defaultName: string, format: ExportFormat) => Promise<string | null>
       /** Écriture de l'export (injectée pour les tests ; `writeFile` sinon). */
@@ -553,7 +559,7 @@ export function createHandlers(
       c.setPinned(str(id, 'id'), pinned)
       return undefined
     },
-    ...folderHandlers(c, deps.chooseDirectory),
+    ...folderHandlers(c, deps.chooseDirectory, (id) => extraFolderStartOf(c, id)),
     'conversations:search': async (query) =>
       typeof query === 'string' ? c.search(query.slice(0, 200)) : [],
     'agent:prompt': async (id, text, attachments, options) => {

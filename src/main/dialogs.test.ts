@@ -13,6 +13,21 @@ vi.mock('./log', () => ({ log: { debug } }))
 
 const { chooseDirectory, saveFile, takePresetFolder } = await import('./dialogs')
 
+describe('fenêtre de choix ouverte à un endroit donné (fiche 287)', () => {
+  it('`defaultPath` passe à la fenêtre de macOS ; absent, rien n’est imposé', async () => {
+    showOpenDialog.mockClear()
+    await chooseDirectory({ title: 'T', buttonLabel: 'B', defaultPath: '/Users/moi/Dev' })
+    expect(showOpenDialog).toHaveBeenLastCalledWith(
+      expect.objectContaining({ title: 'T', buttonLabel: 'B', defaultPath: '/Users/moi/Dev' })
+    )
+    await chooseDirectory({ title: 'T', buttonLabel: 'B' })
+    expect(showOpenDialog).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ defaultPath: expect.anything() })
+    )
+    showOpenDialog.mockClear()
+  })
+})
+
 describe('choix du dossier : BOBINE_PRESET_FOLDER (pilote, fiche 206)', () => {
   it('profil temporaire : rendu une fois, sans la fenêtre de macOS ; ensuite la vraie', async () => {
     switches.add('profil-temporaire')
