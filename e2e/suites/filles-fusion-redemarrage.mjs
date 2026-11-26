@@ -147,6 +147,11 @@ export async function fillesFusionRedemarrageSuite(scheme) {
             readFileSync(join(workspace, 'README.md'), 'utf8') !== RESOLVED,
           'après redémarrage, « Fusionner » s’arrête « à relire » : rien de la résolution dans main'
         )
+        // La carte relue après la conclusion : la ligne dit « à relire », plus rien de non commité.
+        await ui.waitFor(
+          `[...document.querySelectorAll('[data-testid=subtask-merge-state]')].some((b) => b.dataset.state === 'resolved')`,
+          20000
+        )
         await ui.ev(`${ui.$('work-group')}.scrollIntoView({ block: 'center' }), true`)
         await ui.shot('289-redemarrage-a-relire')
         // Après relecture, le clic suivant fusionne.

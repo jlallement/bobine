@@ -204,14 +204,14 @@ export function rowMergeState(
   const candidate = plan?.children.find((c) => c.id === childId)
   if (merge && mergeActive(merge) && row) return row.state
   if (candidate?.state === 'merged') return 'merged'
+  // Fiche 289 : à relire tant qu'il n'est pas fusionné — même lu dans un plan d'avant la
+  // conclusion (« conflit ») ; plus rien à relire si son dossier ou sa branche ont disparu.
+  if (row?.state === 'resolved') {
+    return plan && (!candidate || candidate.state === 'error') ? undefined : 'resolved'
+  }
   if (candidate?.state === 'conflict') return 'conflict'
   if (!row) return undefined
   if (row.state === 'pending') return merge?.status === 'done' ? undefined : 'pending'
-  // Fiche 289 : à relire tant qu'il n'est pas fusionné, même sa branche prête ; plus rien à
-  // relire si son dossier ou sa branche ont disparu (le pied le dit).
-  if (row.state === 'resolved') {
-    return plan && (!candidate || candidate.state === 'error') ? undefined : 'resolved'
-  }
   // Fusion finie : son issue reste sur la ligne, tant que la fille n'a pas de nouveau travail.
   return candidate?.state === 'ready' ? undefined : row.state
 }
