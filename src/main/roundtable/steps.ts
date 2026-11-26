@@ -226,6 +226,17 @@ export class MotherSteps {
         this.host.apply(motherId, ref.roundtableId, { type: 'step-held', step: ref.step })
         return
       }
+      case 'resent': {
+        // Repartie sur un autre modèle (refusé, puis un autre choisi) : l'étiquette le suit.
+        const ref = this.answering.get(motherId)
+        if (!ref || !event.model) return
+        this.host.apply(motherId, ref.roundtableId, {
+          type: 'step-model',
+          step: ref.step,
+          model: shortModelName(event.model.name)
+        })
+        return
+      }
       case 'turn-end':
       case 'turn-error':
         return this.ended(motherId, event)

@@ -12,6 +12,11 @@ What changes for you, version by version. Shown in Settings › About.
   a file, too broad like your whole home folder, already inside the working folder…). A link is
   followed: the agent gets access to the real folder, the one the list shows.
 
+### Fixed
+
+- **Roundtable, “Used”**: a single line, with a total that matches My activity (opinions,
+  rebuttals, synthesis and verdict). The details are in My activity.
+
 ## 1.2.0-rc.1 — November 26, 2026
 
 ### New

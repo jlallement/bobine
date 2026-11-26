@@ -894,10 +894,11 @@ describe('coût tardif de l’échange d’avant : jamais compté dans le tour (
   /** Coût du tour en bobcoins, comme le pied de la carte l'additionne. */
   const tourBobcoins = (env: RoundtableEnv, mother: string) => {
     const rt = env.rt(mother)
-    return roundtableTotal(
-      rt.seats.map((s) => summaryOf(env, s.childId)?.usage),
-      [rt.synthesis?.usage, rt.verdict?.usage]
-    ).costs.find((c) => c.currency === 'bobcoins')?.amount
+    return roundtableTotal([
+      ...rt.seats.map((s) => summaryOf(env, s.childId)?.usage),
+      rt.synthesis?.usage,
+      rt.verdict?.usage
+    ]).costs.find((c) => c.currency === 'bobcoins')?.amount
   }
 
   it('tour lancé avant la relecture du coût de l’échange : la synthèse ne compte que son tour', async () => {

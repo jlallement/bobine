@@ -117,8 +117,12 @@ roundtable.
 Much more than a plain question: each participant, then the synthesis. The line says so before
 sending, with no estimate in money, and it is a minimum: a participant that explores the repository
 with its tools costs more than a question, and the synthesis rereads the whole arbitrating
-conversation (in a long conversation, hundreds of thousands of tokens). At the foot of the card, **Used** gives what the agents
-reported, per unit, without conversion.
+conversation (in a long conversation, hundreds of thousands of tokens). At the foot of the card, **Used** gives in one line what the
+roundtable consumed: the processed tokens (input and output, as in My activity) and the cost of the
+synthesis and verdict, plus everything the participants’ conversations used (opinion, rebuttal, and
+whatever you ask them afterwards), per unit, without conversion. “Ask … to apply it” and your
+messages in the conversation count with it, not in this total. The details, per model or per
+conversation, are in **My activity**.
 
 The per-conversation cost cap, when on, applies to each participant like to any conversation. A
 participant that reaches it stops, and its row says so; the “Cap reached” card is in its

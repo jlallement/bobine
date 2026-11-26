@@ -437,8 +437,10 @@ describe('synthèse', () => {
   it('la carte se replie en une ligne : participants, « 3 avis » ; un clic la rouvre', () => {
     const subtasks = info({
       children: [
-        child('child-A', { usage: { total: 20_000 } }),
-        child('child-B', { usage: { total: 27_500, cost: { amount: 0.06, currency: 'USD' } } }),
+        child('child-A', { usage: { input: 19_000, output: 1_000 } }),
+        child('child-B', {
+          usage: { input: 27_000, output: 500, cost: { amount: 0.06, currency: 'USD' } }
+        }),
         child('child-C')
       ]
     })
@@ -450,7 +452,7 @@ describe('synthèse', () => {
     expect(head.textContent).toContain('3 avis')
     expect(head.getAttribute('aria-expanded')).toBe('false')
     expect(plain(screen.getByTestId('roundtable-used').textContent)).toMatch(
-      /^Consommé : 47,5k jetons · ≈ 0,06 \$US \+ 0,42 Bobcoins$/
+      /^Consommé : 47,5k jetons · ≈ 0,06 \$US \+ 0,42 Bobcoins \+ coût inconnu$/
     )
     fireEvent.click(head)
     expect(screen.getAllByTestId('roundtable-row')).toHaveLength(3)
@@ -647,16 +649,37 @@ describe('revue UX', () => {
     )
   })
 
-  it('A6 : « Consommé », le détail par participant au survol et au focus', () => {
+  it('fiche 292 : « Consommé », un seul total juste (jetons traités, en abrégé), sans détail', () => {
+    // Chiffres réels d'OpenCode 2.3.0 (fiche 245, `scenarios-consommation.mts`) : `totalTokens`
+    // compte le cache et la réflexion ; Mon activité et le compteur de la conversation comptent
+    // entrée + sortie. Tour tout en modèles gratuits (coût annoncé nul).
+    const free = { amount: 0, currency: 'USD' }
+    const childTurn = { input: 5_255, output: 262, total: 35_546, turns: 1, cost: free, free: true }
+    const synthesisTurn = { input: 28_149, output: 6_906, total: 131_886, turns: 1, cost: free }
     const subtasks = info({
-      children: [child('child-A', { usage: { total: 1200 } }), child('child-B'), child('child-C')]
+      children: ['A', 'B', 'C'].map((l) => child(`child-${l}`, { usage: childTurn }))
     })
-    show(thread(roundtable([answered('A'), answered('B'), answered('C')]), OPINIONS), subtasks)
+    const rt = roundtable([
+      answered('A'),
+      answered('B'),
+      answered('C'),
+      { type: 'step-sent', step: 'synthesis', at: T0 },
+      {
+        type: 'step-answered',
+        step: 'synthesis',
+        at: T0 + 1,
+        usage: { ...synthesisTurn, free: true }
+      }
+    ])
+    show(synthesized(rt, SYNTHESIS), subtasks)
+    // 3 × (5 255 + 262) + (28 149 + 6 906) = 51 606 : participants et synthèse, sans le cache.
     const used = screen.getByTestId('roundtable-used')
-    expect(used.getAttribute('tabindex')).toBe('0')
-    expect(used.getAttribute('aria-description')).toBe(
-      'DeepSeek V4.1 Flash : 1,2k jetons\nGLM 5.3 Flash : —\nAgent B : —'
-    )
+    expect(plain(used.textContent)).toBe('Consommé : 51,6k jetons · gratuit')
+    // Plus de détail au survol ni au focus : le détail reste dans Mon activité.
+    expect(used.getAttribute('tabindex')).toBeNull()
+    expect(used.getAttribute('aria-description')).toBeNull()
+    fireEvent.click(screen.getByTestId('roundtable-head-toggle'))
+    expect(screen.getAllByTestId('roundtable-used')).toHaveLength(1)
   })
 
   it('B8 : un tour de table posé après masque les actions du précédent', () => {
@@ -677,15 +700,6 @@ describe('revue UX', () => {
 })
 
 describe('relecture fonctionnelle', () => {
-  it('M5 : seuls les participants finis sans chiffre sont « sans chiffre »', () => {
-    const subtasks = info({
-      children: [child('child-A', { usage: { total: 1000 } }), child('child-B'), child('child-C')]
-    })
-    // A a répondu avec un chiffre, B et C travaillent encore, sans chiffre.
-    show(thread(roundtable([answered('A')]), OPINIONS), subtasks)
-    expect(screen.getByTestId('roundtable-used').textContent).not.toContain('sans chiffre')
-  })
-
   it('M11 : conversation archivée, ni « Appliquer » ni « Faire réagir », aucun geste', () => {
     show(synthesized(done(), SYNTHESIS), info({ motherArchived: true }))
     expect(screen.queryByTestId('roundtable-apply')).toBeNull()
@@ -872,9 +886,9 @@ describe('réplique et décision', () => {
     )
   })
 
-  it('après la réplique, la carte du tour garde sa ligne « Consommé en tout » (E2, abonnement)', () => {
+  it('après la réplique, la carte du tour garde la seule ligne « Consommé » (E2, fiche 292)', () => {
     // OpenCode sur abonnement (évaluation du 2026-11-25) : jetons connus, coût annoncé à 0 $US.
-    const sub = (total: number) => ({ total, cost: { amount: 0, currency: 'USD' } })
+    const sub = (input: number) => ({ input, output: 0, cost: { amount: 0, currency: 'USD' } })
     const subtasks = info({
       children: [
         child('child-A', { usage: sub(46_761) }),
@@ -896,11 +910,14 @@ describe('réplique et décision', () => {
     show(synthesized(rt, SYNTHESIS), subtasks)
     // Repliée comme dépliée : la carte du tour dit ce qui est connu, jamais rien.
     const used = within(card()).getByTestId('roundtable-used')
-    expect(plain(used.textContent)).toBe('Consommé en tout : 325,3k jetons · coût inconnu')
+    expect(plain(used.textContent)).toBe('Consommé : 325,3k jetons · coût inconnu')
     fireEvent.click(screen.getByTestId('roundtable-head-toggle'))
     expect(plain(within(card()).getByTestId('roundtable-used').textContent)).toBe(
-      'Consommé en tout : 325,3k jetons · coût inconnu'
+      'Consommé : 325,3k jetons · coût inconnu'
     )
+    // Une seule ligne dans le fil : la carte « Réplique » n'a plus la sienne.
+    expect(screen.getAllByTestId('roundtable-used')).toHaveLength(1)
+    expect(within(screen.getByTestId('roundtable-rebuttal')).queryByText(/Consommé/)).toBeNull()
   })
 
   it('dossier modifié pendant la réplique : la marque sur la réplique, pas sur l’avis', () => {

@@ -27,7 +27,6 @@ import type { RoundtableGroupData } from '@shared/work-groups'
 import type { WorkCardData } from '@shared/role-request'
 import { ipcErrorText } from '../../ipc-errors'
 import { usePresentation } from '../../presentation'
-import { Tip } from '../common/Menus'
 import { useChildTools } from '../roles/RoleWork'
 import { RoundtableIcon } from '../roundtable/RoundtableIcon'
 import { RoundtableTag } from '../roundtable/RoundtableLine'
@@ -121,28 +120,24 @@ export function GestureRefusal({ text }: { text: string | undefined }) {
   )
 }
 
-/** Total consommé du tour : chaque participant (sa conversation), puis la synthèse et la décision. */
-export function useRoundtableTotal(group: RoundtableGroupData, info: SubtasksInfo | undefined) {
+/**
+ * Total consommé du tour, en une ligne (fiche 292) : la conversation de chaque participant (avis et
+ * réplique), puis la synthèse et la décision. Pas de détail : il est dans Mon activité.
+ */
+export function useRoundtableTotal(
+  group: RoundtableGroupData,
+  info: SubtasksInfo | undefined
+): string | undefined {
   const presenting = usePresentation()
+  // Mode présentation (fiche 159) : aucun montant.
+  if (presenting) return undefined
   const { item } = group
-  // Un participant encore au travail sans chiffre n'est pas « sans chiffre » : il n'a pas fini.
-  const perSeat = item.seats.map((seat) => {
+  const seats = item.seats.map((seat) => {
     const work = group.works.get(seat.letter)
     const child = info?.children.find((c) => c.id === seat.childId)
-    const digest = workUsage(work ? currentReport(work) : undefined, child)
-    return { seat, digest, running: seat.state === 'working' || seat.state === 'waiting' }
+    return workUsage(work ? currentReport(work) : undefined, child)
   })
-  // `null` : encore au travail, ni chiffre ni « sans chiffre » (contrat de `roundtableTotal`, M5).
-  const digests = perSeat.map((p) => (p.running && !p.digest ? null : p.digest))
-  const total = roundtableTotal(digests, [item.synthesis?.usage, item.verdict?.usage])
-  // Détail au survol et au focus : une ligne par participant (A6), ce qu'il a communiqué.
-  const detail = perSeat
-    .map(
-      (p) => `${seatLabel(p.seat)} : ${(p.digest && totalText(roundtableTotal([p.digest]))) || '—'}`
-    )
-    .join('\n')
-  // Mode présentation (fiche 159) : aucun montant.
-  return presenting ? undefined : { text: totalText(total), detail }
+  return totalText(roundtableTotal([...seats, item.synthesis?.usage, item.verdict?.usage]))
 }
 
 /**
@@ -186,22 +181,13 @@ function RoundtableBubble({ group }: { group: RoundtableGroupData }) {
   )
 }
 
-/** Pied « Consommé » : une ligne, le détail par participant au survol et au focus (A6). */
-export function UsedLine({
-  label,
-  detail,
-  testId = 'roundtable-used'
-}: {
-  label: string
-  detail: string
-  testId?: string
-}) {
+/** Pied « Consommé » : une seule ligne, sans détail (fiche 292). */
+export function UsedLine({ total }: { total: string }) {
+  const { t } = useTranslation()
   return (
-    <Tip label={detail} className="roundtable-used-tip">
-      <div className="roundtable-used" tabIndex={0} data-testid={testId} aria-description={detail}>
-        {label}
-      </div>
-    </Tip>
+    <div className="roundtable-used" data-testid="roundtable-used">
+      {t('roundtable.card.used', { total })}
+    </div>
   )
 }
 
@@ -314,7 +300,6 @@ export function RoundtableCard({
   const { gestures, refusal, pending } = useRoundtableGestures(info, item)
   const progress = useProgress(group)
   const used = useRoundtableTotal(group, info)
-  const rebutted = item.seats.some((s) => s.rebuttal)
   const working = item.seats.filter((s) => s.state === 'working' || s.state === 'waiting')
   const activity = useChildTools(working.flatMap((s) => (s.childId ? [s.childId] : [])))
   const names = listText(item.seats.map(seatLabel))
@@ -394,16 +379,9 @@ export function RoundtableCard({
       <FolderChanged files={item.folderChanged?.collecting} stage="collecting" />
       {!collapsed && <RoundtableFoot group={group} gestures={gestures} pending={pending} />}
       <GestureRefusal text={refusal} />
-      {/* Toujours sur la carte du tour, repliée ou non (évaluation du 2026-11-25, E2) : après la
-          réplique, le même total « en tout » que la carte « Réplique », qu'on ne cherche pas. */}
-      {used?.text && (
-        <UsedLine
-          label={t(rebutted ? 'roundtable.card.usedAll' : 'roundtable.card.used', {
-            total: used.text
-          })}
-          detail={used.detail}
-        />
-      )}
+      {/* Toujours sur la carte du tour, repliée ou non (évaluation du 2026-11-25, E2) : la seule
+          ligne « Consommé » du tour, réplique et décision comprises (fiche 292). */}
+      {used && <UsedLine total={used} />}
     </div>
   )
 }

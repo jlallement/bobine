@@ -13,6 +13,11 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   dossier de travail…). Un lien est suivi : l’agent reçoit l’accès au dossier réel, celui que
   montre la liste.
 
+### Corrigé
+
+- **Tour de table, « Consommé »** : une seule ligne, et un total qui se recoupe avec Mon activité
+  (avis, répliques, synthèse et décision). Le détail est dans Mon activité.
+
 ## 1.2.0-rc.1 — 26 novembre 2026
 
 ### Nouveau
