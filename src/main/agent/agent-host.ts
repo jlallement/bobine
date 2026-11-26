@@ -1292,7 +1292,7 @@ export class AgentHost {
       ? [this.options.extraContext?.('', this.appToolNames ?? []), session]
       : []
     this.sessionContextDue = undefined
-    this.options.emit({ type: 'resent', ...(fresh ? { fresh: true as const } : {}) })
+    this.options.emit(TurnAuth.resentEvent(fresh !== undefined, this.snapshot().controls))
     this.setStatus('busy')
     void this.runTurn(connection, sessionId, withContext(turn.blocks, contexts))
   }
