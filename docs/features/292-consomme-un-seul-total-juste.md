@@ -1,6 +1,6 @@
 # 292 — « Consommé » : un seul total juste
 
-- **Statut** : en cours
+- **Statut** : fait (1.2)
 - **Dépend de** : 130, 245, 266, 285
 - **Agents** : les deux — rien de propre à un agent : le total additionne ce que chaque agent
   communique de ses tours (`usage` de la réponse à `session/prompt`, coût cumulé), comme le
@@ -51,24 +51,24 @@ main.
 
 ## Critères d'acceptation
 
-- [ ] La carte du tour de table a **une seule** ligne « Consommé » (repliée comme dépliée, avant et
+- [x] La carte du tour de table a **une seule** ligne « Consommé » (repliée comme dépliée, avant et
       après la réplique) ; la carte « Réplique » n'en a plus.
-- [ ] Le total est la somme, **au jeton près**, des jetons traités (entrée + sortie) journalisés
+- [x] Le total est la somme, **au jeton près**, des jetons traités (entrée + sortie) journalisés
       dans `usage.sqlite` pour les participants (avis, réplique), la synthèse et la décision ; il
       s'affiche en entier (« 12 345 jetons traités »), comme « Jetons traités » du compteur de la
       conversation.
-- [ ] Le coût suit la règle d'aujourd'hui (par unité, sans conversion ; « gratuit » pour un tour
+- [x] Le coût suit la règle d'aujourd'hui (par unité, sans conversion ; « gratuit » pour un tour
       tout en modèles gratuits, « coût inconnu » pour 0 d'un modèle payant).
-- [ ] Plus de détail au survol ni au focus (ni infobulle, ni `aria-description`, ni arrêt de
+- [x] Plus de détail au survol ni au focus (ni infobulle, ni `aria-description`, ni arrêt de
       tabulation) ; le détail reste dans Mon activité, inchangée.
-- [ ] Aucun coût ajouté ailleurs (onglet Session, autres cartes).
-- [ ] Sous « gratuit », l'aide du compteur de la conversation dit seulement ce que l'app sait :
+- [x] Aucun coût ajouté ailleurs (onglet Session, autres cartes).
+- [x] Sous « gratuit », l'aide du compteur de la conversation dit seulement ce que l'app sait :
       l'agent annonce un coût nul pour un modèle gratuit (`usage.freeHint`, fr et en).
-- [ ] Testé contre l'agent factice : `roundtables-consomme.test.ts` (agent factice réel, journal de
+- [x] Testé contre l'agent factice : `roundtables-consomme.test.ts` (agent factice réel, journal de
       consommation branché sur les évènements : total de la carte = jetons traités journalisés,
       avant et après la réplique et la décision ; « Appliquer » hors total) ; e2e `tour-de-table`
       (carte = Mon activité, au jeton près, après la synthèse puis après la décision).
-- [ ] Rouge constaté sur le code d'avant le correctif (noté ci-dessous).
+- [x] Rouge constaté sur le code d'avant le correctif (noté ci-dessous).
 
 ## Plan
 
@@ -124,3 +124,11 @@ Aucune dépendance nouvelle.
   annonce un coût nul pour ce modèle gratuit. »), essayée dans `UsageMeter.test.tsx`.
 - Écarts au plan : aucun sur le fond. Le libellé dit « jetons traités » (vocabulaire de Mon activité
   et du compteur de la conversation) pour que les deux nombres se recoupent à la lecture.
+- 2026-11-26 : `git merge 1.2` (1.2.0-rc.1 ; « Prochaine version » gardée en tête des CHANGELOG).
+  Après le correctif : `./scripts/verify` → 0 ; `pnpm build` → 0 ; suites nommées (consigne du tech
+  lead : pas de `--changed` complet cette nuit) `pnpm e2e tour-de-table tour-de-table-vie
+  parcours-tour-de-table usage-board cout-connexion` → 0 (clair partout, sombre pour
+  `tour-de-table`, seule de ces suites à vérifier un rendu sombre). Carte après la décision :
+  « Consommé : 29 692 jetons traités · ≈ 0,10 $US », égal au journal (29 692 dans le rouge d'avant
+  pour le même parcours). Captures d'après : `e2e/captures/292-apres/`. La suite complète reste à
+  jouer sur la branche d'intégration.
