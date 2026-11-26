@@ -99,3 +99,28 @@ main.
 Aucune dépendance nouvelle.
 
 ## Journal
+- 2026-11-26 : essais écrits d'abord, **rouges constatés** sur `1.2` (1f43ea58) :
+  - `roundtables-consomme.test.ts` (agent factice réel, journal branché) : `expected 10790 to be
+    10430` après deux avis et la synthèse : la carte comptait 360 jetons de trop, les 3 × 120 jetons
+    de réflexion de l'agent factice inclus dans son `totalTokens`.
+  - `RoundtableCard.test.tsx` (chiffres réels d'OpenCode, fiche 245) : reçu « Consommé : 238,5k
+    jetons · gratuit », attendu « Consommé : 51 606 jetons traités · gratuit » (le cache compté).
+  - e2e `tour-de-table` (clair et sombre, `pnpm build && pnpm e2e tour-de-table`) : 3 échecs par
+    thème — après la synthèse `{"journal":17844,"used":["Consommé : 18,3k jetons · ≈ 0,05 $US"]}` ;
+    après la réplique et la décision, deux lignes « Consommé en tout : 30,7k jetons · ≈ 0,10 $US »
+    (carte du tour et carte « Réplique ») pour 29 692 journalisés ; « Appliquer » : total inchangé
+    (307 → 307 en chiffres lus) mais deux lignes. Captures d'avant gardées dans
+    `e2e/captures/292-avant/`.
+- Constat honnête : le total de la carte **comprenait déjà** la synthèse et la décision ; ce qui
+  était faux, c'était l'unité (`total` des agents, cache et réflexion compris) et le détail au survol
+  qui, lui, oubliait la synthèse (séance 5). Le correctif porte sur les deux.
+- Correctif : `roundtableTotal` prend une seule liste de résumés et additionne `processedTokens`
+  (un résumé sans entrée ni sortie ne compte pas de jetons, comme dans Mon activité) ; `silent` et le
+  `null` des participants au travail, morts depuis la simplification 5, retirés ; `totalText` écrit
+  le nombre en entier (« 51 606 jetons traités ») ; `UsedLine` réduit à une ligne sans infobulle,
+  sans `aria-description` ni arrêt de tabulation ; libellé unique « Consommé : … » (clé `usedAll`
+  supprimée, clés `roundtable.card.silent_*` mortes supprimées) ; ligne retirée de la carte
+  « Réplique » ; styles du détail retirés ; aide `usage.freeHint` sous « gratuit » (« OpenCode
+  annonce un coût nul pour ce modèle gratuit. »), essayée dans `UsageMeter.test.tsx`.
+- Écarts au plan : aucun sur le fond. Le libellé dit « jetons traités » (vocabulaire de Mon activité
+  et du compteur de la conversation) pour que les deux nombres se recoupent à la lecture.
