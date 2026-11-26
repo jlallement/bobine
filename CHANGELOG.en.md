@@ -2,6 +2,15 @@
 
 What changes for you, version by version. Shown in Settings › What’s new.
 
+## Next version
+
+### Fixes
+
+- **“Schedule…” tip**: it says “Third day with this message”, which is what it counts (the same
+  message on three different days), no longer “Third time”.
+- **Help**: the guide describes the first-launch welcome, the update notice, the Files tab,
+  `/roundtable` in the command list, and the 1.2 changes to tasks and other folders.
+
 ## 1.2.0-rc.1 — November 26, 2026
 
 ### New

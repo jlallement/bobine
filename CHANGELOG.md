@@ -2,6 +2,16 @@
 
 Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › Nouveautés.
 
+## Prochaine version
+
+### Corrections
+
+- **Astuce « Planifier… »** : elle dit « Troisième jour avec ce message », ce qu’elle compte
+  vraiment (le même message trois jours différents), plus « Troisième fois ».
+- **Aide** : le guide décrit l’accueil du premier lancement, l’avis de nouvelle version, l’onglet
+  Fichiers, `/roundtable` dans la liste des commandes, et les retouches des tâches et des autres
+  dossiers de la 1.2.
+
 ## 1.2.0-rc.1 — 26 novembre 2026
 
 ### Nouveau
