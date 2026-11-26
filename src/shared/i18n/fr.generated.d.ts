@@ -1107,6 +1107,10 @@ export type FrResources = {
     readonly commands_other: '{{count}} commandes lancées depuis ce message : leurs effets restent.'
     readonly restore_many: 'Remettre {{count}} fichiers dans leur état d’alors'
     readonly commands_many: '{{count}} commandes lancées depuis ce message : leurs effets restent.'
+    readonly committedFile: '— commité depuis'
+    readonly committedSince_one: '{{count}} de ces fichiers a été commité depuis ce message : le remettre déferait ce commit dans le dossier, en modifications non commitées.'
+    readonly committedSince_many: '{{count}} de ces fichiers ont été commités depuis ce message : les remettre déferait ces commits dans le dossier, en modifications non commitées.'
+    readonly committedSince_other: '{{count}} de ces fichiers ont été commités depuis ce message : les remettre déferait ces commits dans le dossier, en modifications non commitées.'
   }
   readonly beside: {
     readonly makeMain: 'En faire la conversation principale'

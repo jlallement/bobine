@@ -107,7 +107,14 @@ describe('AgentHost : limite d’étapes de l’agent (fiche 209)', () => {
     await waitFor(() => ends().length === 3 && host.snapshot().status === 'ready')
     host.stop()
     expect(host.currentSessionId).toBeUndefined()
-    expect(events.filter((e) => e.type === 'resent')).toEqual([{ type: 'resent' }])
+    // Renvoyé avec les réglages de la session au renvoi (fiche 286).
+    expect(events.filter((e) => e.type === 'resent')).toEqual([
+      {
+        type: 'resent',
+        model: { id: 'factice-rapide', name: 'Factice rapide' },
+        mode: { id: 'code', name: 'Code' }
+      }
+    ])
     expect(ends()[2]).toEqual({ stop: 'end_turn', limit: undefined })
     expect(users(items()).map((u) => [u.text, u.resent])).toEqual([
       ['Passe à PanacheEntityBase', undefined],
@@ -139,7 +146,9 @@ describe('AgentHost : limite d’étapes de l’agent (fiche 209)', () => {
     expect(ends()[3]).toEqual({ stop: 'end_turn', limit: undefined })
     expect(events.filter((e) => e.type === 'resent').at(-1)).toEqual({
       type: 'resent',
-      fresh: true
+      fresh: true,
+      model: { id: 'factice-rapide', name: 'Factice rapide' },
+      mode: { id: 'code', name: 'Code' }
     })
     const handover = items().find((i) => i.kind === 'handover')
     expect(handover).toMatchObject({ reason: 'turn-limit', resent: 1 })
