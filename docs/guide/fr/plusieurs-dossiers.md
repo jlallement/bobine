@@ -18,17 +18,28 @@ Ici, vous pouvez :
 ## Ajouter un dossier
 
 1. Ouvrez l'onglet **Session** du panneau de droite (⌘J si le panneau est fermé).
-2. Dans **Environnement**, sous « Dossier », cliquez sur **Ajouter un dossier…**.
-3. La fenêtre de choix s'ouvre dans le dossier qui contient celui de la conversation : choisissez
-   le dossier, puis **Ajouter**.
+2. Dans **Environnement**, sur la ligne **Autres dossiers**, au choix :
+   - tapez ou collez le chemin du dossier dans le champ **Chemin d'un dossier…**, puis ↩ (ou
+     **Ajouter ce dossier**) ; un chemin part de la racine, ou de `~` pour votre dossier
+     personnel ;
+   - glissez un dossier sur le champ (« Déposer pour ajouter ») ;
+   - ou cliquez sur **Choisir un dossier…** : la fenêtre de choix s'ouvre dans le dossier qui
+     contient celui de la conversation ; choisissez le dossier, puis **Ajouter**.
+
+Un seul dossier à la fois. Un lien vers un dossier est suivi : c'est le dossier réel qui est
+ajouté et montré. Bobine refuse, en disant pourquoi sous le champ, un dossier trop large (votre
+dossier personnel, tout dossier qui le contient, la racine d'un disque), le dossier de travail ou
+un dossier qu'il contient (l'agent y a déjà accès), un dossier déjà dans la liste, et un chemin
+qui ne mène à aucun dossier.
 
 Le dossier apparaît dans **Autres dossiers**. La session de l'agent repart aussitôt avec la
 nouvelle liste ; le fil de la conversation est gardé. Avec votre message suivant, Bobine dit à
 l'agent quels dossiers il a en plus.
 
 La ligne « Autres dossiers » n'apparaît qu'une fois l'agent démarré, et seulement s'il prend en
-charge plusieurs dossiers. Pendant que l'agent répond, **Ajouter un dossier…** et la croix sont
-grisés jusqu'à la fin de son tour ; le survol, ou le focus au clavier, dit pourquoi.
+charge plusieurs dossiers. Pendant que l'agent répond (ou démarre), le champ est en lecture seule et
+ses boutons, comme la croix, attendent la fin de son tour ; le survol, ou le focus au clavier, dit
+pourquoi.
 
 <!-- si: finder -->
 Un clic sur le nom d'un dossier l'affiche dans le Finder.

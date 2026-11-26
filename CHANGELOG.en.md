@@ -4,8 +4,19 @@ What changes for you, version by version. Shown in Settings › What’s new.
 
 ## Next version
 
+### New
+
+- **Other folders: a typed path or a dragged folder**: in the Session tab, the “Other folders”
+  row accepts a path typed on the keyboard (or pasted, `~/…` and `file://…` included) and a
+  folder dropped onto the field, besides the system window. A refused path says why (not found, a
+  file, too broad like your whole home folder, already inside the working folder…). A link is
+  followed: the agent gets access to the real folder, the one the list shows.
+
 ### Fixes
 
+- **Roundtable, “Used”**: a single line, with a total that matches My activity: synthesis,
+  decision, and everything the participants’ conversations used. “Ask … to apply it” counts with
+  the conversation. The details are in My activity.
 - **“Schedule…” tip**: it says “Same message on three different days”, which is what it really
   counts, no longer “Third time you send this message”.
 - **Help**: the guide describes the first-launch welcome, the update notice, the Files tab,

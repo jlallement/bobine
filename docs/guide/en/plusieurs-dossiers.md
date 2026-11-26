@@ -17,17 +17,25 @@ Here, you can:
 ## Add a folder
 
 1. Open the **Session** tab of the side panel (⌘J if the panel is closed).
-2. In **Environment**, under “Folder”, click **Add a folder…**.
-3. The picker opens in the folder that contains the conversation’s folder: choose the folder,
-   then **Add**.
+2. In **Environment**, on the **Other folders** line, either:
+   - type or paste the folder’s path in the **Folder path…** field, then ↩ (or **Add this
+     folder**); a path starts from the root, or from `~` for your home folder;
+   - drop a folder onto the field (“Drop to add”);
+   - or click **Choose a folder…**: the picker opens in the folder that contains the
+     conversation’s folder; choose the folder, then **Add**.
+
+One folder at a time. A link to a folder is followed: the real folder is added and shown. Bobine
+refuses, saying why below the field, a folder that is too broad (your home folder, any folder
+that contains it, the root of a disk), the working folder or a folder inside it (the agent can
+already reach it), a folder already in the list, and a path that leads to no folder.
 
 The folder appears in **Other folders**. The agent’s session restarts right away with the new
 list; the conversation is kept. With your next message, Bobine tells the agent which extra folders
 it has.
 
 The “Other folders” line only appears once the agent has started, and only if it supports multiple
-folders. While the agent is responding, **Add a folder…** and the cross are greyed out until its
-turn ends; hovering them, or focusing them with the keyboard, says why.
+folders. While the agent is responding (or starting), the field is read-only and its buttons, like
+the cross, wait until its turn ends; hovering them, or focusing them with the keyboard, says why.
 
 <!-- si: finder -->
 Click a folder’s name to show it in the Finder.

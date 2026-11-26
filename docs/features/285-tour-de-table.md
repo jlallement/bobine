@@ -1507,3 +1507,7 @@ le main n'a pas livré l'étape 1) :
   les agents sans choix de modèle, les modèles annoncés restent sous « Autres modèles… » (recherche
   comprise) ; le premier usage (« 2 à 5 modèles ») s'y fait. Essais `roundtable-view.test.ts` (rouges
   avant), e2e `tour-de-table-vie` (`285-menu-arbitre`).
+- 2026-11-26 : pied « Consommé » repris par la fiche 292 (« un seul total juste ») : jetons traités
+  (entrée + sortie) au lieu du `total` des agents, en entier ; une seule ligne (plus sur la carte
+  « Réplique », plus de « Consommé en tout ») ; détail au survol (A6) et « participant sans chiffre »
+  retirés. Le point 3 du surcoût ci-dessus et A6 sont remplacés par la fiche 292.

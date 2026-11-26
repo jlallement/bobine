@@ -9,7 +9,9 @@ const props = (over: Partial<SessionFoldersProps> = {}): SessionFoldersProps => 
   busy: false,
   agentLabel: 'IBM Bob',
   finder: true,
-  onAdd: vi.fn(),
+  onAdd: vi.fn(async () => null),
+  pathFor: () => '',
+  onError: vi.fn(),
   onRemove: vi.fn(),
   onReveal: vi.fn(),
   ...over
@@ -47,6 +49,10 @@ describe('onglet « Session » : autres dossiers (fiche 179)', () => {
     wrap(p)
     const add = screen.getByTestId('session-add-folder') as HTMLButtonElement
     const remove = screen.getByTestId('session-remove-folder') as HTMLButtonElement
+    const field = screen.getByTestId('session-folder-path') as HTMLInputElement
+    // Le champ (fiche 290) : en lecture seule, atteignable, il dit pourquoi.
+    expect(field.readOnly).toBe(true)
+    expect(field.getAttribute('aria-disabled')).toBe('true')
     const why = 'L’agent répond\u00a0: un dossier s’ajoute ou se retire une fois son tour fini.'
     for (const button of [add, remove]) {
       // Atteignable au clavier (pas `disabled`), mais sans effet, et il dit pourquoi.
@@ -55,13 +61,26 @@ describe('onglet « Session » : autres dossiers (fiche 179)', () => {
       expect(button.getAttribute('aria-description')).toBe(why)
       fireEvent.click(button)
     }
+    expect(field.getAttribute('aria-description')).toBe(why)
     expect(p.onAdd).not.toHaveBeenCalled()
+    expect(p.onRemove).not.toHaveBeenCalled()
+  })
+
+  it('agent qui démarre : ajout et retrait attendent, la raison dite (fiche 290)', () => {
+    const p = props({ folders: ['/projets/lib'], starting: true })
+    wrap(p)
+    const field = screen.getByTestId('session-folder-path') as HTMLInputElement
+    expect(field.readOnly).toBe(true)
+    expect(field.getAttribute('aria-description')).toContain('démarre')
+    expect(screen.getByTestId('session-remove-folder').getAttribute('aria-disabled')).toBe('true')
+    fireEvent.click(screen.getByTestId('session-remove-folder'))
     expect(p.onRemove).not.toHaveBeenCalled()
   })
 
   it('agent qui ne les prend pas : dossiers gardés, « non transmis », pas d’ajout', () => {
     wrap(props({ folders: ['/projets/lib'], supported: false }))
     expect(screen.queryByTestId('session-add-folder')).toBeNull()
+    expect(screen.queryByTestId('session-folder-path')).toBeNull()
     expect(screen.getByTestId('session-folders-unsupported').textContent).toContain('IBM Bob')
     expect(screen.getByTestId('session-remove-folder')).toBeTruthy()
   })

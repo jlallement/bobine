@@ -184,9 +184,7 @@ export function UsageMeter({
                 </div>
                 {isEstimate(cost.total.currency) && (
                   <div className="usage-hint" data-testid="usage-cost-hint">
-                    {costNotReported(cost.total, free)
-                      ? t('usage.costNotReportedHint', { agent: agentLabel })
-                      : t('usage.costHint', { agent: agentLabel })}
+                    {t(costHintKey(cost.total, free), { agent: agentLabel })}
                   </div>
                 )}
                 {cost.session && (
@@ -226,6 +224,17 @@ export function UsageMeter({
       </Popover.Root>
     </>
   )
+}
+
+/**
+ * Aide sous le coût estimé (clé de traduction) : « gratuit » (coût nul d'un modèle qui se dit
+ * gratuit) dit seulement ce que l'app sait, l'agent annonce un coût nul (fiche 292) ; un coût nul
+ * d'un autre modèle est inconnu (fiche 266) ; un montant reste celui des tarifs de l'agent.
+ */
+function costHintKey(cost: { amount: number; currency: string }, free: boolean) {
+  if (costNotReported(cost, free)) return 'usage.costNotReportedHint' as const
+  if (cost.amount === 0 && free) return 'usage.freeHint' as const
+  return 'usage.costHint' as const
 }
 
 /**

@@ -85,19 +85,26 @@ describe('plancher d’Electron (fiche 288, ADR-0074)', () => {
   })
 
   it('avis de licence du plancher : ceux du dépôt, nommant l’Electron livré', () => {
-    const committed = readFileSync(join(root, NOTICES), 'utf8')
-    const inventory = readInventory(root)
+    // Partie Electron isolée : sans paquets npm, la génération ne lit que le paquet `electron`,
+    // AXe et les polices (millisecondes, au lieu de 183 paquets cherchés dans le magasin pnpm :
+    // plus de 15 s sur un runner Windows arm64). Les paquets ne dépendent pas de la version
+    // d'Electron livrée ; que les avis du dépôt soient exactement ceux du générateur pour la
+    // version du projet est prouvé par third-party-notices.test.ts.
+    const inventory = { ...readInventory(root), bundled: [], production: [] }
+    const forProject = noticesFor(root, inventory, project)
     const forFloor = noticesFor(root, inventory, floor.version)
     expect(forFloor).toContain(`runs on [Electron](https://www.electronjs.org) ${floor.version} `)
-    expect(forFloor).not.toContain(`electron ${project}`)
-    expect(forFloor).not.toContain(`(https://www.electronjs.org) ${project}`)
-    // Le reste à l'identique : seules les mentions de la version d'Electron changent.
+    expect(forFloor).toContain(`Used by: electron ${floor.version}.`)
+    expect(forFloor).not.toContain(project)
+    // Seules les mentions de la version d'Electron changent.
     const neutral = (text: string, version: string) =>
       text
         .replace(`(https://www.electronjs.org) ${version} `, '(https://www.electronjs.org) X ')
         .replace(`Used by: electron ${version}.`, 'Used by: electron X.')
-    expect(neutral(forFloor, floor.version)).toBe(neutral(committed, project))
-    // Version du projet : exactement le fichier du dépôt (contrôle strict de --check inchangé).
-    expect(noticesFor(root, inventory, project)).toBe(committed)
+    expect(neutral(forFloor, floor.version)).toBe(neutral(forProject, project))
+    // Et ces deux mentions sont bien celles du fichier du dépôt.
+    const committed = readFileSync(join(root, NOTICES), 'utf8')
+    expect(committed).toContain(`runs on [Electron](https://www.electronjs.org) ${project} `)
+    expect(committed).toContain(`Used by: electron ${project}.`)
   })
 })

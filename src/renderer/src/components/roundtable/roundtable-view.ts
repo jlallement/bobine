@@ -430,20 +430,22 @@ export function searchEntries(entries: readonly MenuEntry[], query: string): Men
 // ---------------------------------------------------------------------------------------------
 // Carte : total, lettres, réponses
 
-/** « 47,5k jetons · ≈ 0,06 $US + 0,42 Bobcoin · 1 participant sans chiffre » ; rien : `undefined`. */
+/**
+ * « 47,5k jetons · ≈ 0,06 $US + 0,42 Bobcoins » ; rien de communiqué : `undefined`. Jetons
+ * traités (entrée + sortie) en abrégé, comme Mon activité et la puce du compteur (fiche 292) ; le
+ * coût au format de l'app (`costText` : jamais « ≈ 0,00 », M12). Un total nul de modèles
+ * gratuits se lit « gratuit » ; « coût inconnu » reste pour un coût nul d'un modèle payant (G-B1).
+ */
 export function totalText(total: RoundtableTotal): string | undefined {
   const parts: string[] = []
   if (total.tokens !== undefined)
     parts.push(i18next.t('roundtable.card.tokens', { tokens: formatTokens(total.tokens, true) }))
-  // Le format de coût de l'app (`costText` : jamais « ≈ 0,00 », M12) ; les participants sans
-  // chiffre ne sont plus comptés ici, le détail au survol dit « — » pour eux (simplification 5).
-  // Un total nul de modèles gratuits se lit « gratuit » ; « coût inconnu » reste pour un coût nul
-  // d'un modèle payant (recette de la 1.2.0-beta.1, G-B1).
-  if (total.costs.length)
-    parts.push(total.costs.map((c) => costText(c, c.free === true)).join(' + '))
-  // Seulement des participants muets : rien d'utile à dire en pied.
-  if (total.tokens === undefined && total.costs.length === 0) return undefined
-  return parts.join(' · ')
+  if (total.costs.length) {
+    const costs = total.costs.map((c) => costText(c, c.free === true)).join(' + ')
+    // Coût partiel : dit comme au compteur de la conversation (`usage.costPartial`).
+    parts.push(total.partial ? i18next.t('usage.costPartial', { cost: costs }) : costs)
+  }
+  return parts.length ? parts.join(' · ') : undefined
 }
 
 /** Nom montré au survol d'une lettre : « DeepSeek V4.1 Flash · OpenCode », « IBM Bob ». */

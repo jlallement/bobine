@@ -45,10 +45,11 @@ async function run(options: EnvOptions, motherModel: string | undefined, panel: 
   const footer = () => {
     const rt = env.rt(mother)
     const summary = (id?: string) => env.manager.state().conversations.find((c) => c.id === id)
-    return roundtableTotal(
-      rt.seats.map((s) => summary(s.childId)?.usage),
-      [rt.synthesis?.usage, rt.verdict?.usage]
-    )
+    return roundtableTotal([
+      ...rt.seats.map((s) => summary(s.childId)?.usage),
+      rt.synthesis?.usage,
+      rt.verdict?.usage
+    ])
   }
   return { env, mother, footer }
 }
