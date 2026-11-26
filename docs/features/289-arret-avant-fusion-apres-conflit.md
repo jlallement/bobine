@@ -1,6 +1,6 @@
 # 289 — S'arrêter avant de fusionner un conflit résolu par l'agent
 
-- **Statut** : en cours (1.2) — reprise après le rapport du testeur
+- **Statut** : fait (1.2), à repasser par le testeur
 - **Dépend de** : 110 (conflit renvoyé à l'agent), 120 et 264 (fusion enchaînée depuis la carte,
   carte de groupe, carte d'un travail), 123 et 287 (refus de la fusion), 177 et 265 (« Faire
   relire »)
@@ -218,3 +218,11 @@ nouveau choix structurant ; elle est consignée ici.
   T9, T10, T11), `worktree-ipc-agent.test.ts` (I1, I2, I3, I5, point 7, en vrai dépôt), les 23 essais
   du testeur rejoués tels quels : verts. `toolError` et `lineCounts` sortis dans `git-text.ts` (borne de
   800 lignes de `worktree-cycle.ts`).
+- 2026-11-27 : e2e `filles-fusion-redemarrage` (nouvelle) : l'app fermée pendant le tour de résolution
+  (tour retenu par le verrou de l'agent factice), au redémarrage « Fusionner » s'arrête « à relire »,
+  le clic suivant fusionne. La ligne garde « à relire » même lue dans un plan d'avant la conclusion.
+  **Vert** sur `4d52447e` : `./scripts/verify` 0, `pnpm build` 0, `pnpm e2e --themes both
+  worktree-cycle filles-fusion filles-fusion-redemarrage parcours-deleguer filles-retouches
+  travaux-groupe filles-tech-lead commit-redige` 16/16. Captures regardées : `289-fusion-a-relire-*`
+  (en-tête « 1 à relire »), `289-voir-la-resolution-*`, `289-worktree-a-relire-*`,
+  `289-redemarrage-a-relire-*`.
