@@ -148,15 +148,14 @@
         padding: 24px 16px 48px;
       }
       .page {
-        max-width: 1040px;
+        max-width: 1100px;
         margin: 0 auto;
       }
       .page > h1 {
         font-size: 20px;
         margin: 0 0 6px;
       }
-      .page > p,
-      .note {
+      .page > p {
         color: var(--text-2);
         line-height: 1.5;
         max-width: 760px;
@@ -179,9 +178,10 @@
         border-color: var(--accent);
       }
       .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
-        gap: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        align-items: flex-start;
       }
       figure.state {
         margin: 0;
@@ -190,19 +190,26 @@
         font-size: 12px;
         color: var(--muted);
         margin: 0 0 6px;
+        max-width: 320px;
       }
       figure.state figcaption b {
         color: var(--text);
-        font-weight: 600;
       }
+      .fake-focus {
+        outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+        outline-offset: 2px;
+      }
+      /* Panneau réel : 320 px par défaut, 280 px au minimum ; marge intérieure 16 px. */
       .panel {
-        width: 420px;
-        max-width: 100%;
         background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow);
-        padding: 14px 16px 16px;
+        padding: 16px;
+        position: relative;
+      }
+      .w320 .panel {
+        width: 320px;
+      }
+      .w280 .panel {
+        width: 280px;
       }
       /* Copie des règles de l'onglet Session (src/renderer/src/session-tab.css). */
       .session-section {
@@ -262,7 +269,6 @@
         background: none;
         color: var(--text);
         font: inherit;
-        cursor: pointer;
       }
       .session-link-text {
         overflow: hidden;
@@ -284,9 +290,6 @@
         align-items: flex-start;
         gap: 2px;
       }
-      .folder-add {
-        align-self: stretch;
-      }
       .session-folder {
         display: flex;
         align-items: center;
@@ -305,163 +308,113 @@
         border-radius: var(--radius-xs);
         background: none;
         color: var(--muted);
-        cursor: pointer;
         padding: 0;
+        flex: none;
       }
       .icon-btn svg {
         width: 14px;
         height: 14px;
       }
       /* --- Nouveau (fiche 290) --- */
-      .folder-just-added {
+      .folder-added {
         background: var(--ok-soft);
-        padding-right: 4px;
+        padding-right: 2px;
       }
-      .folder-add {
-        position: relative;
-        margin-top: 4px;
+      .folder-path {
+        align-self: stretch;
         display: flex;
         flex-direction: column;
         gap: 4px;
+        margin-top: 2px;
       }
-      .folder-field {
-        display: flex;
-        align-items: center;
-        height: 30px;
+      .folder-path-box {
+        position: relative;
+        width: 100%;
+      }
+      .folder-path-input {
+        width: 100%;
+        height: 28px;
         border: 1px solid var(--border);
         border-radius: var(--radius-sm);
         background: var(--bg);
-        padding: 0 2px 0 8px;
-        gap: 4px;
-      }
-      .folder-field > svg {
-        flex: none;
-        width: 15px;
-        height: 15px;
-        color: var(--muted);
-      }
-      .folder-field input {
-        flex: 1;
-        min-width: 0;
-        border: none;
-        outline: none;
-        background: none;
         color: var(--text);
         font: 12px var(--font-mono);
-        padding: 0;
+        padding: 0 54px 0 8px;
       }
-      .folder-field input::placeholder {
+      .folder-path-input::placeholder {
         color: var(--muted);
-        font-family: var(--font-ui);
-        font-size: 12.5px;
+        font: 12.5px var(--font-ui);
       }
-      .folder-field.focus {
+      .folder-path-input[aria-disabled='true'] {
+        color: var(--muted);
+        background: var(--surface-2);
+      }
+      .folder-path-buttons {
+        position: absolute;
+        right: 2px;
+        top: 2px;
+        display: flex;
+        gap: 2px;
+      }
+      .folder-path-buttons .icon-btn[aria-disabled='true'] {
+        opacity: 0.55;
+      }
+      .folder-path.dropping .folder-path-input {
+        border-style: dashed;
         border-color: var(--accent);
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+        background: color-mix(in srgb, var(--accent) 8%, var(--bg));
       }
-      .folder-field.refused {
-        border-color: var(--err);
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--err) 18%, transparent);
+      .folder-path.dropping .folder-path-buttons {
+        visibility: hidden;
       }
-      .folder-field.disabled {
-        opacity: 0.6;
-      }
-      .folder-field .browse {
-        width: 26px;
-        height: 26px;
-      }
-      .folder-field .add-btn {
-        height: 24px;
-        padding: 0 9px;
-        border: none;
-        border-radius: var(--radius-xs);
-        background: var(--accent);
-        color: var(--on-accent);
-        font: 500 12px var(--font-ui);
-        cursor: pointer;
-        display: inline-flex;
+      .folder-path-drop {
+        position: absolute;
+        inset: 0;
+        display: flex;
         align-items: center;
-        gap: 4px;
+        padding-left: 9px;
+        color: var(--accent);
+        font-weight: 500;
+        font-size: 12.5px;
+        pointer-events: none;
       }
-      .folder-field .add-btn svg {
-        width: 12px;
-        height: 12px;
-      }
-      .folder-msg {
+      .folder-path-msg {
         display: flex;
         gap: 6px;
         align-items: flex-start;
         font-size: 12px;
         line-height: 1.4;
-        color: var(--muted);
-        padding: 0 2px;
+        color: var(--text-2);
       }
-      .folder-msg svg {
+      .folder-path-msg svg {
         flex: none;
         width: 14px;
         height: 14px;
         margin-top: 1px;
       }
-      .folder-msg.err {
+      .folder-path-msg.refused svg {
         color: var(--err);
       }
-      .folder-msg.ok {
+      .folder-path-msg.added svg {
         color: var(--ok);
       }
-      .folder-msg code {
+      .folder-path-msg code {
         font: 11.5px var(--font-mono);
         overflow-wrap: anywhere;
-        color: inherit;
       }
-      .folder-drop {
+      .tooltip {
         position: absolute;
-        inset: -6px -6px;
-        border: 1.5px dashed var(--accent);
-        border-radius: var(--radius-sm);
-        background: color-mix(in srgb, var(--accent) 9%, var(--surface));
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        color: var(--accent);
-        font-weight: 500;
-      }
-      .folder-drop svg {
-        width: 16px;
-        height: 16px;
-      }
-      .tip {
-        position: absolute;
-        z-index: 2;
         background: var(--text);
         color: var(--bg);
         font-size: 12px;
         padding: 5px 8px;
-        border-radius: var(--radius-xs);
-        white-space: nowrap;
-      }
-      .cursor {
-        display: inline-block;
-        width: 1px;
-        height: 14px;
-        background: var(--text);
-        vertical-align: middle;
-        margin-left: 1px;
-      }
-      table.states {
-        border-collapse: collapse;
-        margin: 8px 0 24px;
-        font-size: 12.5px;
-      }
-      table.states td,
-      table.states th {
-        border-bottom: 1px solid var(--border);
-        padding: 6px 10px 6px 0;
-        text-align: left;
-        vertical-align: top;
+        border-radius: var(--radius-sm);
+        max-width: 240px;
+        line-height: 1.35;
+        z-index: 3;
       }
       body.only {
-        padding: 12px;
+        padding: 0;
       }
       body.only .page > :not(.grid),
       body.only figcaption {
@@ -477,18 +430,12 @@
   </head>
   <body>
     <div class="page">
-      <h1>« Autres dossiers » : chemin saisi ou dossier glissé (fiche 290)</h1>
+      <h1>« Autres dossiers » : chemin saisi ou dossier glissé (fiche 290, v2)</h1>
       <p>
-        Onglet Session du panneau, section Environnement, ligne « Autres dossiers ». Proposition :
-        sous la liste, un champ toujours visible pour un chemin (clavier ou collage), qui reçoit
-        aussi un dossier glissé ; le bouton du bout du champ ouvre la fenêtre du système, comme «
-        Ajouter un dossier… » aujourd’hui. Le main vérifie tout (fiche 290, tableau des règles) et
-        rend la raison d’un refus. Textes en français ; clés i18n dans
-        <code>sessionTab.folderRefusal.*</code>.
-      </p>
-      <p class="note">
-        Variante écartée, à trancher : garder le lien « Ajouter un dossier… » seul, qui déplie le
-        champ au clic (un clic de plus pour saisir, rien de changé pour qui prend la fenêtre).
+        Onglet Session, section Environnement, à la largeur réelle du panneau : 320 px (défaut) et
+        280 px (minimum). Le champ toujours visible remplace la ligne « Ajouter un dossier… » ; la
+        fenêtre du système passe au bouton du bout du champ. Le main vérifie tout (fiche 290) et
+        rend la raison d’un refus.
       </p>
       <div class="theme-switch" role="group" aria-label="Thème">
         <button data-set="system" aria-pressed="true">Système</button
@@ -496,11 +443,10 @@
         ><button data-set="dark" aria-pressed="false">Sombre</button>
       </div>
       <div class="grid">
-        <figure class="state" id="vide">
+        <figure class="state w320" id="vide-320">
           <figcaption>
-            <b>Vide</b> — Aucun autre dossier. Le champ attend un chemin ; le bouton à droite ouvre
-            la fenêtre du système (« Choisir dans une fenêtre… », comme « Ajouter un dossier… »
-            aujourd’hui).
+            <b>Vide — 320 px</b> — Aucun autre dossier : le champ seul, sans ligne d’aide ; à
+            droite, « Choisir un dossier… » (fenêtre du système).
           </figcaption>
           <div class="panel">
             <section class="session-section">
@@ -519,7 +465,6 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      class="lucide"
                       aria-hidden="true"
                     >
                       <path d="M12 8V4H8" />
@@ -535,8 +480,8 @@
               <div class="session-row">
                 <span class="session-row-label">Dossier</span
                 ><span class="session-row-value"
-                  ><button class="session-link">
-                    <svg
+                  ><span class="session-link"
+                    ><svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="16"
                       height="16"
@@ -546,245 +491,53 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      class="lucide"
                       aria-hidden="true"
                     >
                       <path
                         d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
                       /></svg
-                    ><span class="session-link-text">bricole</span>
-                  </button></span
+                    ><span class="session-link-text">bricole</span></span
+                  ></span
                 >
               </div>
-              <div class="session-row session-folders" data-supported>
+              <div class="session-row session-folders">
                 <span class="session-row-label">Autres dossiers</span
                 ><span class="session-row-value session-folder-list"
-                  ><div class="folder-add">
-                    <div class="folder-field">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="15"
-                        height="15"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        class="lucide"
-                        aria-hidden="true"
-                      >
-                        <path d="M12 10v6" />
-                        <path d="M9 13h6" />
-                        <path
-                          d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
-                        /></svg
-                      ><input
+                  ><div class="folder-path">
+                    <div class="folder-path-box">
+                      <input
+                        class="folder-path-input"
                         value=""
-                        placeholder="Chemin d’un dossier, ou glissez-le ici"
-                      /><button class="icon-btn browse" title="Choisir dans une fenêtre…">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          class="lucide"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                    <div class="folder-msg">
-                      <span
-                        >Collez ou tapez un chemin complet, ou glissez un dossier ici. ~/ pour votre
-                        dossier personnel.</span
-                      >
-                    </div>
-                  </div></span
-                >
-              </div>
-            </section>
-          </div>
-        </figure>
-        <figure class="state" id="saisie">
-          <figcaption>
-            <b>Saisie en cours</b> — Un dossier déjà ajouté ; le chemin se tape en police à chasse
-            fixe. « Ajouter » (ou Entrée) l’envoie au main ; Échap vide le champ. Rien n’est vérifié
-            pendant la frappe : le renderer n’a pas accès au disque.
-          </figcaption>
-          <div class="panel">
-            <section class="session-section">
-              <h3 class="session-title">Environnement</h3>
-              <div class="session-row">
-                <span class="session-row-label">Agent</span
-                ><span class="session-row-value"
-                  ><span class="session-value"
-                    ><svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      class="lucide"
-                      aria-hidden="true"
-                    >
-                      <path d="M12 8V4H8" />
-                      <rect width="16" height="12" x="4" y="8" rx="2" />
-                      <path d="M2 14h2" />
-                      <path d="M20 14h2" />
-                      <path d="M15 13v2" />
-                      <path d="M9 13v2" /></svg
-                    ><span class="session-link-text">OpenCode</span></span
-                  ></span
-                >
-              </div>
-              <div class="session-row">
-                <span class="session-row-label">Dossier</span
-                ><span class="session-row-value"
-                  ><button class="session-link">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      class="lucide"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
-                      /></svg
-                    ><span class="session-link-text">bricole</span>
-                  </button></span
-                >
-              </div>
-              <div class="session-row session-folders" data-supported>
-                <span class="session-row-label">Autres dossiers</span
-                ><span class="session-row-value session-folder-list"
-                  ><span class="session-folder"
-                    ><button class="session-link">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        class="lucide"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M2 9.35V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h7"
-                        />
-                        <path d="m8 16 3-3-3-3" /></svg
-                      ><span class="session-link-text">bibliotheque</span></button
-                    ><button class="icon-btn" aria-label="Retirer">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        class="lucide"
-                        aria-hidden="true"
-                      >
-                        <path d="M18 6 6 18" />
-                        <path d="m6 6 12 12" />
-                      </svg></button
-                  ></span>
-                  <div class="folder-add">
-                    <div class="folder-field focus">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="15"
-                        height="15"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        class="lucide"
-                        aria-hidden="true"
-                      >
-                        <path d="M12 10v6" />
-                        <path d="M9 13h6" />
-                        <path
-                          d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
-                        /></svg
-                      ><input
-                        value="~/Dev/serveur-api"
-                        placeholder="Chemin d’un dossier, ou glissez-le ici"
-                      /><button class="add-btn">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          class="lucide"
-                          aria-hidden="true"
-                        >
-                          <path d="M20 4v7a4 4 0 0 1-4 4H4" />
-                          <path d="m9 10-5 5 5 5" /></svg
-                        >Ajouter</button
-                      ><button class="icon-btn browse" title="Choisir dans une fenêtre…">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          class="lucide"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
-                          />
-                        </svg>
-                      </button>
+                        placeholder="Chemin d’un dossier…"
+                        aria-label="Chemin d’un autre dossier"
+                      /><span class="folder-path-buttons"
+                        ><span class="icon-btn" title="Choisir un dossier…"
+                          ><svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
+                            /></svg></span
+                      ></span>
                     </div></div
                 ></span>
               </div>
             </section>
           </div>
         </figure>
-        <figure class="state" id="refus">
+        <figure class="state w320" id="saisie-320">
           <figcaption>
-            <b>Refus avec sa raison</b> — Le main a refusé : la raison (clé
-            sessionTab.folderRefusal.notFound) et le chemin compris (~ développé). Le texte reste
-            dans le champ pour être corrigé ; la raison s’efface à la frappe suivante.
+            <b>Saisie en cours — 320 px</b> — Un dossier déjà là ; focus standard de l’app ; le
+            bouton ↵ « Ajouter ce dossier » n’apparaît que si le champ n’est pas vide.
           </figcaption>
           <div class="panel">
             <section class="session-section">
@@ -803,7 +556,6 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      class="lucide"
                       aria-hidden="true"
                     >
                       <path d="M12 8V4H8" />
@@ -819,8 +571,8 @@
               <div class="session-row">
                 <span class="session-row-label">Dossier</span
                 ><span class="session-row-value"
-                  ><button class="session-link">
-                    <svg
+                  ><span class="session-link"
+                    ><svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="16"
                       height="16"
@@ -830,22 +582,21 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      class="lucide"
                       aria-hidden="true"
                     >
                       <path
                         d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
                       /></svg
-                    ><span class="session-link-text">bricole</span>
-                  </button></span
+                    ><span class="session-link-text">bricole</span></span
+                  ></span
                 >
               </div>
-              <div class="session-row session-folders" data-supported>
+              <div class="session-row session-folders">
                 <span class="session-row-label">Autres dossiers</span
                 ><span class="session-row-value session-folder-list"
                   ><span class="session-folder"
-                    ><button class="session-link">
-                      <svg
+                    ><span class="session-link"
+                      ><svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
                         height="16"
@@ -855,16 +606,15 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        class="lucide"
                         aria-hidden="true"
                       >
                         <path
                           d="M2 9.35V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h7"
                         />
                         <path d="m8 16 3-3-3-3" /></svg
-                      ><span class="session-link-text">bibliotheque</span></button
-                    ><button class="icon-btn" aria-label="Retirer">
-                      <svg
+                      ><span class="session-link-text">bibliotheque</span></span
+                    ><span class="icon-btn"
+                      ><svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
                         height="16"
@@ -874,57 +624,195 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        class="lucide"
                         aria-hidden="true"
                       >
                         <path d="M18 6 6 18" />
-                        <path d="m6 6 12 12" />
-                      </svg></button
+                        <path d="m6 6 12 12" /></svg></span
                   ></span>
-                  <div class="folder-add">
-                    <div class="folder-field refused focus">
-                      <svg
+                  <div class="folder-path">
+                    <div class="folder-path-box">
+                      <input
+                        class="folder-path-input fake-focus"
+                        value="~/Dev/serveur-api"
+                        placeholder="Chemin d’un dossier…"
+                        aria-label="Chemin d’un autre dossier"
+                      /><span class="folder-path-buttons"
+                        ><span class="icon-btn" title="Ajouter ce dossier"
+                          ><svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path d="M20 4v7a4 4 0 0 1-4 4H4" />
+                            <path d="m9 10-5 5 5 5" /></svg></span
+                        ><span class="icon-btn" title="Choisir un dossier…"
+                          ><svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
+                            /></svg></span
+                      ></span>
+                    </div></div
+                ></span>
+              </div>
+            </section>
+          </div>
+        </figure>
+        <figure class="state w320" id="refus-320">
+          <figcaption>
+            <b>Refus — 320 px</b> — Message relié au champ (aria-describedby, role=status), icône ;
+            pas de bord rouge ; chemin compris passé à la ligne ; disparaît à la frappe.
+          </figcaption>
+          <div class="panel">
+            <section class="session-section">
+              <h3 class="session-title">Environnement</h3>
+              <div class="session-row">
+                <span class="session-row-label">Agent</span
+                ><span class="session-row-value"
+                  ><span class="session-value"
+                    ><svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 8V4H8" />
+                      <rect width="16" height="12" x="4" y="8" rx="2" />
+                      <path d="M2 14h2" />
+                      <path d="M20 14h2" />
+                      <path d="M15 13v2" />
+                      <path d="M9 13v2" /></svg
+                    ><span class="session-link-text">OpenCode</span></span
+                  ></span
+                >
+              </div>
+              <div class="session-row">
+                <span class="session-row-label">Dossier</span
+                ><span class="session-row-value"
+                  ><span class="session-link"
+                    ><svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
+                      /></svg
+                    ><span class="session-link-text">bricole</span></span
+                  ></span
+                >
+              </div>
+              <div class="session-row session-folders">
+                <span class="session-row-label">Autres dossiers</span
+                ><span class="session-row-value session-folder-list"
+                  ><span class="session-folder"
+                    ><span class="session-link"
+                      ><svg
                         xmlns="http://www.w3.org/2000/svg"
-                        width="15"
-                        height="15"
+                        width="16"
+                        height="16"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        class="lucide"
                         aria-hidden="true"
                       >
-                        <path d="M12 10v6" />
-                        <path d="M9 13h6" />
                         <path
-                          d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
-                        /></svg
-                      ><input
+                          d="M2 9.35V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h7"
+                        />
+                        <path d="m8 16 3-3-3-3" /></svg
+                      ><span class="session-link-text">bibliotheque</span></span
+                    ><span class="icon-btn"
+                      ><svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 12 12" /></svg></span
+                  ></span>
+                  <div class="folder-path">
+                    <div class="folder-path-box">
+                      <input
+                        class="folder-path-input fake-focus"
                         value="~/Dev/serveur-apu"
-                        placeholder="Chemin d’un dossier, ou glissez-le ici"
-                      /><button class="icon-btn browse" title="Choisir dans une fenêtre…">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          class="lucide"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
-                          />
-                        </svg>
-                      </button>
+                        placeholder="Chemin d’un dossier…"
+                        aria-label="Chemin d’un autre dossier"
+                        aria-invalid="true"
+                      /><span class="folder-path-buttons"
+                        ><span class="icon-btn" title="Ajouter ce dossier"
+                          ><svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path d="M20 4v7a4 4 0 0 1-4 4H4" />
+                            <path d="m9 10-5 5 5 5" /></svg></span
+                        ><span class="icon-btn" title="Choisir un dossier…"
+                          ><svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
+                            /></svg></span
+                      ></span>
                     </div>
-                    <div class="folder-msg err">
+                    <div class="folder-path-msg refused" role="status">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="14"
@@ -935,7 +823,6 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        class="lucide"
                         aria-hidden="true"
                       >
                         <circle cx="12" cy="12" r="10" />
@@ -951,11 +838,8 @@
             </section>
           </div>
         </figure>
-        <figure class="state" id="refus-relatif">
-          <figcaption>
-            <b>Refus : chemin relatif</b> — Autre raison, même place
-            (sessionTab.folderRefusal.notAbsolute). Pas de chemin compris à montrer.
-          </figcaption>
+        <figure class="state w320" id="refus-relatif-320">
+          <figcaption><b>Refus : chemin incomplet — 320 px</b> — Raison notAbsolute.</figcaption>
           <div class="panel">
             <section class="session-section">
               <h3 class="session-title">Environnement</h3>
@@ -973,7 +857,6 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      class="lucide"
                       aria-hidden="true"
                     >
                       <path d="M12 8V4H8" />
@@ -989,8 +872,8 @@
               <div class="session-row">
                 <span class="session-row-label">Dossier</span
                 ><span class="session-row-value"
-                  ><button class="session-link">
-                    <svg
+                  ><span class="session-link"
+                    ><svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="16"
                       height="16"
@@ -1000,22 +883,21 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      class="lucide"
                       aria-hidden="true"
                     >
                       <path
                         d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
                       /></svg
-                    ><span class="session-link-text">bricole</span>
-                  </button></span
+                    ><span class="session-link-text">bricole</span></span
+                  ></span
                 >
               </div>
-              <div class="session-row session-folders" data-supported>
+              <div class="session-row session-folders">
                 <span class="session-row-label">Autres dossiers</span
                 ><span class="session-row-value session-folder-list"
                   ><span class="session-folder"
-                    ><button class="session-link">
-                      <svg
+                    ><span class="session-link"
+                      ><svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
                         height="16"
@@ -1025,16 +907,15 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        class="lucide"
                         aria-hidden="true"
                       >
                         <path
                           d="M2 9.35V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h7"
                         />
                         <path d="m8 16 3-3-3-3" /></svg
-                      ><span class="session-link-text">bibliotheque</span></button
-                    ><button class="icon-btn" aria-label="Retirer">
-                      <svg
+                      ><span class="session-link-text">bibliotheque</span></span
+                    ><span class="icon-btn"
+                      ><svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
                         height="16"
@@ -1044,57 +925,54 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        class="lucide"
                         aria-hidden="true"
                       >
                         <path d="M18 6 6 18" />
-                        <path d="m6 6 12 12" />
-                      </svg></button
+                        <path d="m6 6 12 12" /></svg></span
                   ></span>
-                  <div class="folder-add">
-                    <div class="folder-field refused focus">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="15"
-                        height="15"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        class="lucide"
-                        aria-hidden="true"
-                      >
-                        <path d="M12 10v6" />
-                        <path d="M9 13h6" />
-                        <path
-                          d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
-                        /></svg
-                      ><input
+                  <div class="folder-path">
+                    <div class="folder-path-box">
+                      <input
+                        class="folder-path-input fake-focus"
                         value="../serveur-api"
-                        placeholder="Chemin d’un dossier, ou glissez-le ici"
-                      /><button class="icon-btn browse" title="Choisir dans une fenêtre…">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          class="lucide"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
-                          />
-                        </svg>
-                      </button>
+                        placeholder="Chemin d’un dossier…"
+                        aria-label="Chemin d’un autre dossier"
+                        aria-invalid="true"
+                      /><span class="folder-path-buttons"
+                        ><span class="icon-btn" title="Ajouter ce dossier"
+                          ><svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path d="M20 4v7a4 4 0 0 1-4 4H4" />
+                            <path d="m9 10-5 5 5 5" /></svg></span
+                        ><span class="icon-btn" title="Choisir un dossier…"
+                          ><svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
+                            /></svg></span
+                      ></span>
                     </div>
-                    <div class="folder-msg err">
+                    <div class="folder-path-msg refused" role="status">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="14"
@@ -1105,15 +983,14 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        class="lucide"
                         aria-hidden="true"
                       >
                         <circle cx="12" cy="12" r="10" />
                         <line x1="12" x2="12" y1="8" y2="12" />
                         <line x1="12" x2="12.01" y1="16" y2="16" /></svg
                       ><span
-                        >Saisissez le chemin complet du dossier, depuis la racine (ou ~/ pour votre
-                        dossier personnel).</span
+                        >Chemin incomplet : partez de la racine, ou de ~ pour votre dossier
+                        personnel.</span
                       >
                     </div>
                   </div></span
@@ -1122,10 +999,10 @@
             </section>
           </div>
         </figure>
-        <figure class="state" id="ajoute">
+        <figure class="state w320" id="ajoute-320">
           <figcaption>
-            <b>Dossier ajouté</b> — Le dossier réel est listé (fond vert un instant), le champ se
-            vide et garde le focus pour un autre chemin ; une ligne dit que la session repart.
+            <b>Dossier ajouté — 320 px</b> — Fond vert bref sur le dossier, une ligne courte (≈ 4 s
+            ou jusqu’à la frappe) ; champ vidé.
           </figcaption>
           <div class="panel">
             <section class="session-section">
@@ -1144,7 +1021,6 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      class="lucide"
                       aria-hidden="true"
                     >
                       <path d="M12 8V4H8" />
@@ -1160,8 +1036,8 @@
               <div class="session-row">
                 <span class="session-row-label">Dossier</span
                 ><span class="session-row-value"
-                  ><button class="session-link">
-                    <svg
+                  ><span class="session-link"
+                    ><svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="16"
                       height="16"
@@ -1171,22 +1047,21 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      class="lucide"
                       aria-hidden="true"
                     >
                       <path
                         d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
                       /></svg
-                    ><span class="session-link-text">bricole</span>
-                  </button></span
+                    ><span class="session-link-text">bricole</span></span
+                  ></span
                 >
               </div>
-              <div class="session-row session-folders" data-supported>
+              <div class="session-row session-folders">
                 <span class="session-row-label">Autres dossiers</span
                 ><span class="session-row-value session-folder-list"
                   ><span class="session-folder"
-                    ><button class="session-link">
-                      <svg
+                    ><span class="session-link"
+                      ><svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
                         height="16"
@@ -1196,16 +1071,15 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        class="lucide"
                         aria-hidden="true"
                       >
                         <path
                           d="M2 9.35V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h7"
                         />
                         <path d="m8 16 3-3-3-3" /></svg
-                      ><span class="session-link-text">bibliotheque</span></button
-                    ><button class="icon-btn" aria-label="Retirer">
-                      <svg
+                      ><span class="session-link-text">bibliotheque</span></span
+                    ><span class="icon-btn"
+                      ><svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
                         height="16"
@@ -1215,15 +1089,13 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        class="lucide"
                         aria-hidden="true"
                       >
                         <path d="M18 6 6 18" />
-                        <path d="m6 6 12 12" />
-                      </svg></button></span
-                  ><span class="session-folder folder-just-added"
-                    ><button class="session-link">
-                      <svg
+                        <path d="m6 6 12 12" /></svg></span></span
+                  ><span class="session-folder folder-added"
+                    ><span class="session-link"
+                      ><svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
                         height="16"
@@ -1233,16 +1105,15 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        class="lucide"
                         aria-hidden="true"
                       >
                         <path
                           d="M2 9.35V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h7"
                         />
                         <path d="m8 16 3-3-3-3" /></svg
-                      ><span class="session-link-text">serveur-api</span></button
-                    ><button class="icon-btn" aria-label="Retirer">
-                      <svg
+                      ><span class="session-link-text">serveur-api</span></span
+                    ><span class="icon-btn"
+                      ><svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
                         height="16"
@@ -1252,57 +1123,38 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        class="lucide"
                         aria-hidden="true"
                       >
                         <path d="M18 6 6 18" />
-                        <path d="m6 6 12 12" />
-                      </svg></button
+                        <path d="m6 6 12 12" /></svg></span
                   ></span>
-                  <div class="folder-add">
-                    <div class="folder-field focus">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="15"
-                        height="15"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        class="lucide"
-                        aria-hidden="true"
-                      >
-                        <path d="M12 10v6" />
-                        <path d="M9 13h6" />
-                        <path
-                          d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
-                        /></svg
-                      ><input
+                  <div class="folder-path">
+                    <div class="folder-path-box">
+                      <input
+                        class="folder-path-input fake-focus"
                         value=""
-                        placeholder="Chemin d’un dossier, ou glissez-le ici"
-                      /><button class="icon-btn browse" title="Choisir dans une fenêtre…">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          class="lucide"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
-                          />
-                        </svg>
-                      </button>
+                        placeholder="Chemin d’un dossier…"
+                        aria-label="Chemin d’un autre dossier"
+                      /><span class="folder-path-buttons"
+                        ><span class="icon-btn" title="Choisir un dossier…"
+                          ><svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
+                            /></svg></span
+                      ></span>
                     </div>
-                    <div class="folder-msg ok">
+                    <div class="folder-path-msg added" role="status">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="14"
@@ -1313,13 +1165,662 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        class="lucide"
                         aria-hidden="true"
                       >
                         <path d="M20 6 9 17l-5-5" /></svg
+                      ><span>Ajouté ; la session de l’agent repart.</span>
+                    </div>
+                  </div></span
+                >
+              </div>
+            </section>
+          </div>
+        </figure>
+        <figure class="state w320" id="depot-320">
+          <figcaption>
+            <b>Dossier glissé au-dessus — 320 px</b> — La zone de dépôt est le champ lui-même : même
+            hauteur, bord en tirets ; rien ne bouge autour.
+          </figcaption>
+          <div class="panel">
+            <section class="session-section">
+              <h3 class="session-title">Environnement</h3>
+              <div class="session-row">
+                <span class="session-row-label">Agent</span
+                ><span class="session-row-value"
+                  ><span class="session-value"
+                    ><svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 8V4H8" />
+                      <rect width="16" height="12" x="4" y="8" rx="2" />
+                      <path d="M2 14h2" />
+                      <path d="M20 14h2" />
+                      <path d="M15 13v2" />
+                      <path d="M9 13v2" /></svg
+                    ><span class="session-link-text">OpenCode</span></span
+                  ></span
+                >
+              </div>
+              <div class="session-row">
+                <span class="session-row-label">Dossier</span
+                ><span class="session-row-value"
+                  ><span class="session-link"
+                    ><svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
+                      /></svg
+                    ><span class="session-link-text">bricole</span></span
+                  ></span
+                >
+              </div>
+              <div class="session-row session-folders">
+                <span class="session-row-label">Autres dossiers</span
+                ><span class="session-row-value session-folder-list"
+                  ><span class="session-folder"
+                    ><span class="session-link"
+                      ><svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M2 9.35V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h7"
+                        />
+                        <path d="m8 16 3-3-3-3" /></svg
+                      ><span class="session-link-text">bibliotheque</span></span
+                    ><span class="icon-btn"
+                      ><svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 12 12" /></svg></span
+                  ></span>
+                  <div class="folder-path dropping">
+                    <div class="folder-path-box">
+                      <input
+                        class="folder-path-input"
+                        value=""
+                        placeholder=""
+                        aria-label="Chemin d’un autre dossier"
+                      /><span class="folder-path-drop">Déposer pour ajouter</span
+                      ><span class="folder-path-buttons"
+                        ><span class="icon-btn" title="Choisir un dossier…"
+                          ><svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
+                            /></svg></span
+                      ></span>
+                    </div></div
+                ></span>
+              </div>
+            </section>
+          </div>
+        </figure>
+        <figure class="state w320" id="pendant-tour-320">
+          <figcaption>
+            <b>Pendant un tour — 320 px</b> — Champ readOnly + aria-disabled, atteignable au Tab ;
+            la raison dans l’infobulle (ici au focus) ; aucune ligne ajoutée.
+          </figcaption>
+          <div class="panel">
+            <section class="session-section">
+              <h3 class="session-title">Environnement</h3>
+              <div class="session-row">
+                <span class="session-row-label">Agent</span
+                ><span class="session-row-value"
+                  ><span class="session-value"
+                    ><svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 8V4H8" />
+                      <rect width="16" height="12" x="4" y="8" rx="2" />
+                      <path d="M2 14h2" />
+                      <path d="M20 14h2" />
+                      <path d="M15 13v2" />
+                      <path d="M9 13v2" /></svg
+                    ><span class="session-link-text">OpenCode</span></span
+                  ></span
+                >
+              </div>
+              <div class="session-row">
+                <span class="session-row-label">Dossier</span
+                ><span class="session-row-value"
+                  ><span class="session-link"
+                    ><svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
+                      /></svg
+                    ><span class="session-link-text">bricole</span></span
+                  ></span
+                >
+              </div>
+              <div class="session-row session-folders">
+                <span class="session-row-label">Autres dossiers</span
+                ><span class="session-row-value session-folder-list"
+                  ><span class="session-folder"
+                    ><span class="session-link"
+                      ><svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M2 9.35V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h7"
+                        />
+                        <path d="m8 16 3-3-3-3" /></svg
+                      ><span class="session-link-text">bibliotheque</span></span
+                    ><span class="icon-btn"
+                      ><svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 12 12" /></svg></span
+                  ></span>
+                  <div class="folder-path">
+                    <div class="folder-path-box">
+                      <input
+                        class="folder-path-input fake-focus"
+                        value="~/Dev/serv"
+                        placeholder="Chemin d’un dossier…"
+                        aria-label="Chemin d’un autre dossier"
+                        readonly
+                        aria-disabled="true"
+                      /><span class="folder-path-buttons"
+                        ><span class="icon-btn" aria-disabled="true" title="Choisir un dossier…"
+                          ><svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
+                            /></svg></span
+                      ></span>
+                    </div></div
+                ></span>
+              </div>
+            </section>
+            <div class="tooltip" style="right: 12px; top: 186px">
+              L’agent répond : l’ajout et le retrait d’un dossier attendent la fin de son tour.
+            </div>
+          </div>
+        </figure>
+        <figure class="state w280" id="vide-280">
+          <figcaption>
+            <b>Vide — 280 px</b> — Aucun autre dossier : le champ seul, sans ligne d’aide ; à
+            droite, « Choisir un dossier… » (fenêtre du système).
+          </figcaption>
+          <div class="panel">
+            <section class="session-section">
+              <h3 class="session-title">Environnement</h3>
+              <div class="session-row">
+                <span class="session-row-label">Agent</span
+                ><span class="session-row-value"
+                  ><span class="session-value"
+                    ><svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 8V4H8" />
+                      <rect width="16" height="12" x="4" y="8" rx="2" />
+                      <path d="M2 14h2" />
+                      <path d="M20 14h2" />
+                      <path d="M15 13v2" />
+                      <path d="M9 13v2" /></svg
+                    ><span class="session-link-text">OpenCode</span></span
+                  ></span
+                >
+              </div>
+              <div class="session-row">
+                <span class="session-row-label">Dossier</span
+                ><span class="session-row-value"
+                  ><span class="session-link"
+                    ><svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
+                      /></svg
+                    ><span class="session-link-text">bricole</span></span
+                  ></span
+                >
+              </div>
+              <div class="session-row session-folders">
+                <span class="session-row-label">Autres dossiers</span
+                ><span class="session-row-value session-folder-list"
+                  ><div class="folder-path">
+                    <div class="folder-path-box">
+                      <input
+                        class="folder-path-input"
+                        value=""
+                        placeholder="Chemin d’un dossier…"
+                        aria-label="Chemin d’un autre dossier"
+                      /><span class="folder-path-buttons"
+                        ><span class="icon-btn" title="Choisir un dossier…"
+                          ><svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
+                            /></svg></span
+                      ></span>
+                    </div></div
+                ></span>
+              </div>
+            </section>
+          </div>
+        </figure>
+        <figure class="state w280" id="saisie-280">
+          <figcaption>
+            <b>Saisie en cours — 280 px</b> — Un dossier déjà là ; focus standard de l’app ; le
+            bouton ↵ « Ajouter ce dossier » n’apparaît que si le champ n’est pas vide.
+          </figcaption>
+          <div class="panel">
+            <section class="session-section">
+              <h3 class="session-title">Environnement</h3>
+              <div class="session-row">
+                <span class="session-row-label">Agent</span
+                ><span class="session-row-value"
+                  ><span class="session-value"
+                    ><svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 8V4H8" />
+                      <rect width="16" height="12" x="4" y="8" rx="2" />
+                      <path d="M2 14h2" />
+                      <path d="M20 14h2" />
+                      <path d="M15 13v2" />
+                      <path d="M9 13v2" /></svg
+                    ><span class="session-link-text">OpenCode</span></span
+                  ></span
+                >
+              </div>
+              <div class="session-row">
+                <span class="session-row-label">Dossier</span
+                ><span class="session-row-value"
+                  ><span class="session-link"
+                    ><svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
+                      /></svg
+                    ><span class="session-link-text">bricole</span></span
+                  ></span
+                >
+              </div>
+              <div class="session-row session-folders">
+                <span class="session-row-label">Autres dossiers</span
+                ><span class="session-row-value session-folder-list"
+                  ><span class="session-folder"
+                    ><span class="session-link"
+                      ><svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M2 9.35V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h7"
+                        />
+                        <path d="m8 16 3-3-3-3" /></svg
+                      ><span class="session-link-text">bibliotheque</span></span
+                    ><span class="icon-btn"
+                      ><svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 12 12" /></svg></span
+                  ></span>
+                  <div class="folder-path">
+                    <div class="folder-path-box">
+                      <input
+                        class="folder-path-input fake-focus"
+                        value="~/Dev/serveur-api"
+                        placeholder="Chemin d’un dossier…"
+                        aria-label="Chemin d’un autre dossier"
+                      /><span class="folder-path-buttons"
+                        ><span class="icon-btn" title="Ajouter ce dossier"
+                          ><svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path d="M20 4v7a4 4 0 0 1-4 4H4" />
+                            <path d="m9 10-5 5 5 5" /></svg></span
+                        ><span class="icon-btn" title="Choisir un dossier…"
+                          ><svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
+                            /></svg></span
+                      ></span>
+                    </div></div
+                ></span>
+              </div>
+            </section>
+          </div>
+        </figure>
+        <figure class="state w280" id="refus-280">
+          <figcaption>
+            <b>Refus — 280 px</b> — Message relié au champ (aria-describedby, role=status), icône ;
+            pas de bord rouge ; chemin compris passé à la ligne ; disparaît à la frappe.
+          </figcaption>
+          <div class="panel">
+            <section class="session-section">
+              <h3 class="session-title">Environnement</h3>
+              <div class="session-row">
+                <span class="session-row-label">Agent</span
+                ><span class="session-row-value"
+                  ><span class="session-value"
+                    ><svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 8V4H8" />
+                      <rect width="16" height="12" x="4" y="8" rx="2" />
+                      <path d="M2 14h2" />
+                      <path d="M20 14h2" />
+                      <path d="M15 13v2" />
+                      <path d="M9 13v2" /></svg
+                    ><span class="session-link-text">OpenCode</span></span
+                  ></span
+                >
+              </div>
+              <div class="session-row">
+                <span class="session-row-label">Dossier</span
+                ><span class="session-row-value"
+                  ><span class="session-link"
+                    ><svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
+                      /></svg
+                    ><span class="session-link-text">bricole</span></span
+                  ></span
+                >
+              </div>
+              <div class="session-row session-folders">
+                <span class="session-row-label">Autres dossiers</span
+                ><span class="session-row-value session-folder-list"
+                  ><span class="session-folder"
+                    ><span class="session-link"
+                      ><svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M2 9.35V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h7"
+                        />
+                        <path d="m8 16 3-3-3-3" /></svg
+                      ><span class="session-link-text">bibliotheque</span></span
+                    ><span class="icon-btn"
+                      ><svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 12 12" /></svg></span
+                  ></span>
+                  <div class="folder-path">
+                    <div class="folder-path-box">
+                      <input
+                        class="folder-path-input fake-focus"
+                        value="~/Dev/serveur-apu"
+                        placeholder="Chemin d’un dossier…"
+                        aria-label="Chemin d’un autre dossier"
+                        aria-invalid="true"
+                      /><span class="folder-path-buttons"
+                        ><span class="icon-btn" title="Ajouter ce dossier"
+                          ><svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path d="M20 4v7a4 4 0 0 1-4 4H4" />
+                            <path d="m9 10-5 5 5 5" /></svg></span
+                        ><span class="icon-btn" title="Choisir un dossier…"
+                          ><svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
+                            /></svg></span
+                      ></span>
+                    </div>
+                    <div class="folder-path-msg refused" role="status">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" x2="12" y1="8" y2="12" />
+                        <line x1="12" x2="12.01" y1="16" y2="16" /></svg
                       ><span
-                        >serveur-api ajouté. La session de l’agent repart avec ce dossier ; le fil
-                        est gardé.</span
+                        >Aucun dossier à cet endroit : <code>/Users/moi/Dev/serveur-apu</code></span
                       >
                     </div>
                   </div></span
@@ -1328,11 +1829,171 @@
             </section>
           </div>
         </figure>
-        <figure class="state" id="depot">
+        <figure class="state w280" id="refus-relatif-280">
+          <figcaption><b>Refus : chemin incomplet — 280 px</b> — Raison notAbsolute.</figcaption>
+          <div class="panel">
+            <section class="session-section">
+              <h3 class="session-title">Environnement</h3>
+              <div class="session-row">
+                <span class="session-row-label">Agent</span
+                ><span class="session-row-value"
+                  ><span class="session-value"
+                    ><svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 8V4H8" />
+                      <rect width="16" height="12" x="4" y="8" rx="2" />
+                      <path d="M2 14h2" />
+                      <path d="M20 14h2" />
+                      <path d="M15 13v2" />
+                      <path d="M9 13v2" /></svg
+                    ><span class="session-link-text">OpenCode</span></span
+                  ></span
+                >
+              </div>
+              <div class="session-row">
+                <span class="session-row-label">Dossier</span
+                ><span class="session-row-value"
+                  ><span class="session-link"
+                    ><svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
+                      /></svg
+                    ><span class="session-link-text">bricole</span></span
+                  ></span
+                >
+              </div>
+              <div class="session-row session-folders">
+                <span class="session-row-label">Autres dossiers</span
+                ><span class="session-row-value session-folder-list"
+                  ><span class="session-folder"
+                    ><span class="session-link"
+                      ><svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M2 9.35V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h7"
+                        />
+                        <path d="m8 16 3-3-3-3" /></svg
+                      ><span class="session-link-text">bibliotheque</span></span
+                    ><span class="icon-btn"
+                      ><svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 12 12" /></svg></span
+                  ></span>
+                  <div class="folder-path">
+                    <div class="folder-path-box">
+                      <input
+                        class="folder-path-input fake-focus"
+                        value="../serveur-api"
+                        placeholder="Chemin d’un dossier…"
+                        aria-label="Chemin d’un autre dossier"
+                        aria-invalid="true"
+                      /><span class="folder-path-buttons"
+                        ><span class="icon-btn" title="Ajouter ce dossier"
+                          ><svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path d="M20 4v7a4 4 0 0 1-4 4H4" />
+                            <path d="m9 10-5 5 5 5" /></svg></span
+                        ><span class="icon-btn" title="Choisir un dossier…"
+                          ><svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
+                            /></svg></span
+                      ></span>
+                    </div>
+                    <div class="folder-path-msg refused" role="status">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" x2="12" y1="8" y2="12" />
+                        <line x1="12" x2="12.01" y1="16" y2="16" /></svg
+                      ><span
+                        >Chemin incomplet : partez de la racine, ou de ~ pour votre dossier
+                        personnel.</span
+                      >
+                    </div>
+                  </div></span
+                >
+              </div>
+            </section>
+          </div>
+        </figure>
+        <figure class="state w280" id="ajoute-280">
           <figcaption>
-            <b>Dossier glissé au-dessus</b> — Pendant qu’on glisse un dossier depuis le Finder : la
-            zone d’ajout l’annonce. Au dépôt, le chemin part au main (même vérification) ; un
-            fichier déposé est refusé avec sa raison (notDirectory).
+            <b>Dossier ajouté — 280 px</b> — Fond vert bref sur le dossier, une ligne courte (≈ 4 s
+            ou jusqu’à la frappe) ; champ vidé.
           </figcaption>
           <div class="panel">
             <section class="session-section">
@@ -1351,7 +2012,6 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      class="lucide"
                       aria-hidden="true"
                     >
                       <path d="M12 8V4H8" />
@@ -1367,8 +2027,8 @@
               <div class="session-row">
                 <span class="session-row-label">Dossier</span
                 ><span class="session-row-value"
-                  ><button class="session-link">
-                    <svg
+                  ><span class="session-link"
+                    ><svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="16"
                       height="16"
@@ -1378,22 +2038,21 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      class="lucide"
                       aria-hidden="true"
                     >
                       <path
                         d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
                       /></svg
-                    ><span class="session-link-text">bricole</span>
-                  </button></span
+                    ><span class="session-link-text">bricole</span></span
+                  ></span
                 >
               </div>
-              <div class="session-row session-folders" data-supported>
+              <div class="session-row session-folders">
                 <span class="session-row-label">Autres dossiers</span
                 ><span class="session-row-value session-folder-list"
                   ><span class="session-folder"
-                    ><button class="session-link">
-                      <svg
+                    ><span class="session-link"
+                      ><svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
                         height="16"
@@ -1403,16 +2062,15 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        class="lucide"
                         aria-hidden="true"
                       >
                         <path
                           d="M2 9.35V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h7"
                         />
                         <path d="m8 16 3-3-3-3" /></svg
-                      ><span class="session-link-text">bibliotheque</span></button
-                    ><button class="icon-btn" aria-label="Retirer">
-                      <svg
+                      ><span class="session-link-text">bibliotheque</span></span
+                    ><span class="icon-btn"
+                      ><svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
                         height="16"
@@ -1422,59 +2080,13 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        class="lucide"
                         aria-hidden="true"
                       >
                         <path d="M18 6 6 18" />
-                        <path d="m6 6 12 12" />
-                      </svg></button
-                  ></span>
-                  <div class="folder-add">
-                    <div class="folder-field">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="15"
-                        height="15"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        class="lucide"
-                        aria-hidden="true"
-                      >
-                        <path d="M12 10v6" />
-                        <path d="M9 13h6" />
-                        <path
-                          d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
-                        /></svg
-                      ><input
-                        value=""
-                        placeholder="Chemin d’un dossier, ou glissez-le ici"
-                      /><button class="icon-btn browse" title="Choisir dans une fenêtre…">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          class="lucide"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                    <div class="folder-msg"><span>&nbsp;</span></div>
-                    <div class="folder-drop">
-                      <svg
+                        <path d="m6 6 12 12" /></svg></span></span
+                  ><span class="session-folder folder-added"
+                    ><span class="session-link"
+                      ><svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
                         height="16"
@@ -1484,15 +2096,70 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        class="lucide"
                         aria-hidden="true"
                       >
                         <path
-                          d="M2 9V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1"
+                          d="M2 9.35V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h7"
                         />
-                        <path d="M2 13h10" />
-                        <path d="m9 16 3-3-3-3" /></svg
-                      >Déposez le dossier pour l’ajouter
+                        <path d="m8 16 3-3-3-3" /></svg
+                      ><span class="session-link-text">serveur-api</span></span
+                    ><span class="icon-btn"
+                      ><svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 12 12" /></svg></span
+                  ></span>
+                  <div class="folder-path">
+                    <div class="folder-path-box">
+                      <input
+                        class="folder-path-input fake-focus"
+                        value=""
+                        placeholder="Chemin d’un dossier…"
+                        aria-label="Chemin d’un autre dossier"
+                      /><span class="folder-path-buttons"
+                        ><span class="icon-btn" title="Choisir un dossier…"
+                          ><svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
+                            /></svg></span
+                      ></span>
+                    </div>
+                    <div class="folder-path-msg added" role="status">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M20 6 9 17l-5-5" /></svg
+                      ><span>Ajouté ; la session de l’agent repart.</span>
                     </div>
                   </div></span
                 >
@@ -1500,10 +2167,10 @@
             </section>
           </div>
         </figure>
-        <figure class="state" id="pendant-tour">
+        <figure class="state w280" id="depot-280">
           <figcaption>
-            <b>Pendant un tour de l’agent</b> — Comme le bouton aujourd’hui (fiche 287) : champ et
-            bouton désactivés, la raison écrite dessous (sessionTab.foldersBusy).
+            <b>Dossier glissé au-dessus — 280 px</b> — La zone de dépôt est le champ lui-même : même
+            hauteur, bord en tirets ; rien ne bouge autour.
           </figcaption>
           <div class="panel">
             <section class="session-section">
@@ -1522,7 +2189,6 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      class="lucide"
                       aria-hidden="true"
                     >
                       <path d="M12 8V4H8" />
@@ -1538,8 +2204,8 @@
               <div class="session-row">
                 <span class="session-row-label">Dossier</span
                 ><span class="session-row-value"
-                  ><button class="session-link">
-                    <svg
+                  ><span class="session-link"
+                    ><svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="16"
                       height="16"
@@ -1549,22 +2215,21 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      class="lucide"
                       aria-hidden="true"
                     >
                       <path
                         d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
                       /></svg
-                    ><span class="session-link-text">bricole</span>
-                  </button></span
+                    ><span class="session-link-text">bricole</span></span
+                  ></span
                 >
               </div>
-              <div class="session-row session-folders" data-supported>
+              <div class="session-row session-folders">
                 <span class="session-row-label">Autres dossiers</span
                 ><span class="session-row-value session-folder-list"
                   ><span class="session-folder"
-                    ><button class="session-link">
-                      <svg
+                    ><span class="session-link"
+                      ><svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
                         height="16"
@@ -1574,16 +2239,15 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        class="lucide"
                         aria-hidden="true"
                       >
                         <path
                           d="M2 9.35V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h7"
                         />
                         <path d="m8 16 3-3-3-3" /></svg
-                      ><span class="session-link-text">bibliotheque</span></button
-                    ><button class="icon-btn" aria-label="Retirer">
-                      <svg
+                      ><span class="session-link-text">bibliotheque</span></span
+                    ><span class="icon-btn"
+                      ><svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
                         height="16"
@@ -1593,67 +2257,172 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        class="lucide"
                         aria-hidden="true"
                       >
                         <path d="M18 6 6 18" />
-                        <path d="m6 6 12 12" />
-                      </svg></button
+                        <path d="m6 6 12 12" /></svg></span
                   ></span>
-                  <div class="folder-add">
-                    <div class="folder-field disabled">
-                      <svg
+                  <div class="folder-path dropping">
+                    <div class="folder-path-box">
+                      <input
+                        class="folder-path-input"
+                        value=""
+                        placeholder=""
+                        aria-label="Chemin d’un autre dossier"
+                      /><span class="folder-path-drop">Déposer pour ajouter</span
+                      ><span class="folder-path-buttons"
+                        ><span class="icon-btn" title="Choisir un dossier…"
+                          ><svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
+                            /></svg></span
+                      ></span>
+                    </div></div
+                ></span>
+              </div>
+            </section>
+          </div>
+        </figure>
+        <figure class="state w280" id="pendant-tour-280">
+          <figcaption>
+            <b>Pendant un tour — 280 px</b> — Champ readOnly + aria-disabled, atteignable au Tab ;
+            la raison dans l’infobulle (ici au focus) ; aucune ligne ajoutée.
+          </figcaption>
+          <div class="panel">
+            <section class="session-section">
+              <h3 class="session-title">Environnement</h3>
+              <div class="session-row">
+                <span class="session-row-label">Agent</span
+                ><span class="session-row-value"
+                  ><span class="session-value"
+                    ><svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 8V4H8" />
+                      <rect width="16" height="12" x="4" y="8" rx="2" />
+                      <path d="M2 14h2" />
+                      <path d="M20 14h2" />
+                      <path d="M15 13v2" />
+                      <path d="M9 13v2" /></svg
+                    ><span class="session-link-text">OpenCode</span></span
+                  ></span
+                >
+              </div>
+              <div class="session-row">
+                <span class="session-row-label">Dossier</span
+                ><span class="session-row-value"
+                  ><span class="session-link"
+                    ><svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
+                      /></svg
+                    ><span class="session-link-text">bricole</span></span
+                  ></span
+                >
+              </div>
+              <div class="session-row session-folders">
+                <span class="session-row-label">Autres dossiers</span
+                ><span class="session-row-value session-folder-list"
+                  ><span class="session-folder"
+                    ><span class="session-link"
+                      ><svg
                         xmlns="http://www.w3.org/2000/svg"
-                        width="15"
-                        height="15"
+                        width="16"
+                        height="16"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        class="lucide"
                         aria-hidden="true"
                       >
-                        <path d="M12 10v6" />
-                        <path d="M9 13h6" />
                         <path
-                          d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
-                        /></svg
-                      ><input
-                        value=""
-                        disabled
-                        placeholder="Chemin d’un dossier, ou glissez-le ici"
-                      /><button class="icon-btn browse" title="Choisir dans une fenêtre…">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          class="lucide"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                    <div class="folder-msg">
-                      <span
-                        >L’agent répond : l’ajout et le retrait d’un dossier attendent la fin de son
-                        tour.</span
+                          d="M2 9.35V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h7"
+                        />
+                        <path d="m8 16 3-3-3-3" /></svg
+                      ><span class="session-link-text">bibliotheque</span></span
+                    ><span class="icon-btn"
+                      ><svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
                       >
-                    </div>
-                  </div></span
-                >
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 12 12" /></svg></span
+                  ></span>
+                  <div class="folder-path">
+                    <div class="folder-path-box">
+                      <input
+                        class="folder-path-input fake-focus"
+                        value="~/Dev/serv"
+                        placeholder="Chemin d’un dossier…"
+                        aria-label="Chemin d’un autre dossier"
+                        readonly
+                        aria-disabled="true"
+                      /><span class="folder-path-buttons"
+                        ><span class="icon-btn" aria-disabled="true" title="Choisir un dossier…"
+                          ><svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
+                            /></svg></span
+                      ></span>
+                    </div></div
+                ></span>
               </div>
             </section>
+            <div class="tooltip" style="right: 12px; top: 186px">
+              L’agent répond : l’ajout et le retrait d’un dossier attendent la fin de son tour.
+            </div>
           </div>
         </figure>
       </div>
@@ -1669,7 +2438,7 @@
             other.setAttribute('aria-pressed', String(other === button))
         })
       }
-      // Captures : #only=<état>&theme=<light|dark> n'affiche que cet état.
+      // Captures : #only=<état>-<largeur>&theme=<light|dark> n'affiche que cet état.
       const params = new URLSearchParams(location.hash.slice(1))
       if (params.get('theme')) root.setAttribute('data-theme', params.get('theme'))
       if (params.get('only')) {
