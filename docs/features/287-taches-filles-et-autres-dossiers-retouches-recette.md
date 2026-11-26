@@ -1,6 +1,6 @@
 # 287 — Tâches filles et « Autres dossiers » : retouches de la recette Bricole
 
-- **Statut** : en cours (1.2, lot 1 des retouches)
+- **Statut** : fait (1.2, lot 1 des retouches), en attente de relecture
 - **Dépend de** : 110 et 123 (cycle d'un worktree, « Committer d'abord »), 120 et 264 (fusion
   depuis la carte, carte de groupe, ADR-0022, ADR-0061), 179 (autres dossiers), 244 (fichiers
   cochés), 246 (message rédigé)
@@ -56,19 +56,19 @@ séances 3 à 4) a relevé quatre défauts sur les tâches filles et « Autres d
 
 ## Critères d'acceptation
 
-- [ ] « Committer puis fusionner » (carte de groupe, carte d'un travail, onglet Git d'une fille)
+- [x] « Committer puis fusionner » (carte de groupe, carte d'un travail, onglet Git d'une fille)
   pendant un tour dans le dossier principal, ou du travail à fusionner : refusé **avant** tout commit,
   la raison affichée ; aucun commit créé, ni dans le dossier principal ni dans le worktree.
-- [ ] Les autres refus connus d'avance (relecture en cours, base extraite ailleurs, autres fichiers
+- [x] Les autres refus connus d'avance (relecture en cours, base extraite ailleurs, autres fichiers
   apparus depuis le choix) aussi refusés avant le commit.
-- [ ] Fusion puis « Nettoyer » depuis l'onglet Git d'une fille : sa ligne dans la carte de la mère
+- [x] Fusion puis « Nettoyer » depuis l'onglet Git d'une fille : sa ligne dans la carte de la mère
   et dans Modifications › Travaux dit « fusionné · branche supprimée », plus « À revoir ».
-- [ ] « Fusionner » grisé (carte, onglet Git) et « Ajouter un dossier… » / retrait désactivés :
+- [x] « Fusionner » grisé (carte, onglet Git) et « Ajouter un dossier… » / retrait désactivés :
   la raison au survol **et** au focus clavier (`aria-disabled`, infobulle `Tip`, comme le bouton du
   tour de table, B11 de la fiche 285), une raison par cause tirée de l'état.
-- [ ] « Ajouter un dossier… » ouvre la fenêtre de choix sur le dossier parent du dossier de la
+- [x] « Ajouter un dossier… » ouvre la fenêtre de choix sur le dossier parent du dossier de la
   conversation (dossier principal pour un worktree) ; parent absent ou illisible : comme avant.
-- [ ] Testé contre l'agent factice (verrou de fin de tour `MOCK_AGENT_TURN_LOCK` pour tenir un tour).
+- [x] Testé contre l'agent factice (verrou de fin de tour `MOCK_AGENT_TURN_LOCK` pour tenir un tour).
 
 ## Plan
 
@@ -114,3 +114,39 @@ celle de l'ADR-0061 ; seul le lieu d'où elle part change.
 ## Journal
 
 - 2026-11-26 : fiche, causes et plan.
+- 2026-11-26 : fait, selon le plan.
+  - Point 1 : `changes/commit-then-merge.ts` (`commitThenMerge`, `assertOnlyChecked`,
+    `markersLeft`), `changes/folder-turn.ts` (`turnInFolder`, `inTurn`) ; `ChildrenMerger.start(…,
+    { stash, commit })` ; canaux `children:commitMain` et `worktree:commitMain` retirés ;
+    `children:merge` signale le dépôt changé (vues Git à relire).
+  - Point 2 : `conversations/child-merge-record.ts`, branché dans `worktree-ipc.ts`.
+  - Point 3 : `common/ReasonButton.tsx`, `mergeBlockReasons` ; boutons convertis : pied de la carte
+    (« Fusionner… », « Inclure les autres… » et sa confirmation), onglet Git (« Fusionner dans… »),
+    carte d'un travail (« Fusionner dans… » en relecture), Session (« Ajouter un dossier… »,
+    « Retirer »). Texte `sessionTab.foldersBusy` précisé.
+  - Point 4 : `extraFolderStart` / `extraFolderStartOf`, `chooseDirectory({ …, defaultPath })`.
+  - Essais : unitaires (`folder-turn`, `worktree-cycle` sur un vrai dépôt, `children-merge`,
+    `worktree-ipc`, `additional-directories`, `dialogs`, `children-merge` partagé, composants) ;
+    e2e `filles-retouches` (nouvelle) et `dossiers` (complétée).
+- Écarts au plan :
+  - Le journal (21:55) montre que l'agent qui écrivait était celui de la **conversation
+    principale**, dans le dossier principal, pas celui de la fille. La garde couvre les deux : tour
+    dans le dossier principal (toute conversation hors worktree dont le dossier est dans le dépôt),
+    tour de la fille elle-même (onglet Git), travaux au travail ou en relecture (carte).
+  - Ajout non prévu, à la cause d'une régression que le point 2 aurait ouverte : les lignes de la
+    carte de groupe et de « Sous-tâches » lisaient la **dernière fusion de la carte** ; une fusion
+    faite depuis l'onglet Git (posée à part) aurait caché la pastille d'une fusion d'avant faite par
+    la carte, une fois sa branche nettoyée. Chaque ligne lit maintenant la dernière fusion qui la
+    touche (`rowMerge(…, items)`), comme Modifications › Travaux le faisait déjà.
+  - Sur la carte de groupe, la ligne d'un travail ne dit pas « branche supprimée » (choix de la
+    fiche 264, inchangé) ; Modifications › Travaux le dit.
+- Limites connues, non traitées ici :
+  - Une écriture dans le dossier principal entre la dernière lecture et le `git commit` (quelques
+    millisecondes, hors tour d'agent) peut encore faire refuser la fusion après le commit.
+  - Pendant le tour, la liste de « Committer d'abord » se met à jour et **coche** les fichiers que
+    l'agent vient d'écrire (comportement de la fiche 244, vu sur la capture
+    `287-committer-refuse-tour`) : le refus est maintenant certain pendant le tour, mais après lui
+    un nouveau clic committerait aussi ces fichiers s'ils restent cochés. À trancher (fiche à part).
+  - Le dialogue natif ne se pilote pas : le `defaultPath` est vérifié par les essais unitaires et
+    par la suite `dossiers` (options reçues par le dialogue simulé), pas à l'écran.
+  - Saisie d'un chemin au clavier : reportée (consigne du lot).
