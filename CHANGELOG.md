@@ -13,7 +13,7 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   dans Mon activité. « Demander à … de l’appliquer » reste compté avec la conversation. Sous
   « gratuit », l’aide ne parle plus de facturation.
 
-## 1.2.0-beta.4 — 26 novembre 2026
+## 1.2.0-rc.1 — 26 novembre 2026
 
 ### Nouveau
 

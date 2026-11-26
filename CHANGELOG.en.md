@@ -12,7 +12,7 @@ What changes for you, version by version. Shown in Settings › About.
   nor a second line on the “Rebuttal” card: the details are in My activity. “Ask … to apply it”
   still counts with the conversation. Under “free”, the help no longer talks about billing.
 
-## 1.2.0-beta.4 — November 26, 2026
+## 1.2.0-rc.1 — November 26, 2026
 
 ### New
 
