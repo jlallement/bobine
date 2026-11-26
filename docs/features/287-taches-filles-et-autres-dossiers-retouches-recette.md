@@ -150,3 +150,35 @@ celle de l'ADR-0061 ; seul le lieu d'où elle part change.
   - Le dialogue natif ne se pilote pas : le `defaultPath` est vérifié par les essais unitaires et
     par la suite `dossiers` (options reçues par le dialogue simulé), pas à l'écran.
   - Saisie d'un chemin au clavier : reportée (consigne du lot).
+- 2026-11-26 : recette réelle (séance 6 de l'évaluation Bricole, vrai OpenCode, build de
+  `c876dde6`, dépôt jetable).
+  - Confirmé, « Committer puis fusionner » pendant un tour de la mère : refus au clic, bandeau
+    « … répond encore : rien n'a été commité ni fusionné. Réessayez à la fin de son tour. » ;
+    `git log -1` du dossier principal et des deux worktrees identiques avant et après, fichier
+    toujours modifié. Tour fini, même bouton : commit puis deux fusions, carte « 2 travaux · 2
+    fusionnés ».
+  - Confirmé, fusion et « Nettoyer » depuis l'onglet Git d'une fille : fille non recommandée
+    (Committer, « Fusionné dans main (fast-forward). », Nettoyer) ; fille recommandée puis passée
+    « À revoir » après un tour de plus (le cas de la séance 4) : « Fusionné dans main (commit de
+    fusion). », Nettoyer, la carte de la mère dit « fusionné » (plus « À revoir »).
+    Modifications › Travaux : les deux « fusionné · nettoyé ».
+  - Confirmé, raisons des boutons grisés : « Ajouter un dossier… » pendant un tour (survol souris
+    et focus au clavier : « L'agent répond : l'ajout et le retrait d'un dossier attendent la fin de
+    son tour. ») ; « Fusionner dans main » de l'onglet Git d'une fille non commitée (« Committez
+    d'abord : 1 modification non commitée. », clic sans effet) puis fusionnée (« Rien à fusionner :
+    main a déjà tout. »).
+  - Confirmé, non-régression : fusion de la carte avec conflit renvoyé à la fille (résolu, README
+    sans marqueur, `git status` propre) ; fusion groupée ordinaire de deux travaux en un clic.
+  - Non éprouvé à l'écran : la raison sur le bouton de fusion de la **carte** (aucun état
+    rencontré ne l'a grisé : pas de bouton pendant que les filles tournent, bouton actif avec une
+    fille prête et une autre en cours, actif aussi pendant un tour de la mère) ; la fenêtre native
+    « Ajouter un dossier… » (non pilotable, `defaultPath` écrit dans aucun journal).
+  - Détails relevés : panneau Session « Dossier : 1 fichier non commité +1 −0 » resté affiché
+    après le commit et la fusion faits par Bobine, `git status` vide, corrigé seulement en
+    changeant d'onglet du panneau ; dans Modifications › Travaux, libellé « fusionné · nettoyé »
+    (la fiche annonçait « fusionné · branche supprimée ») coupé en « fusionné · » à la largeur par
+    défaut du panneau ; « 1 fichier +10 −7 » affiché pour une fille de +5 dont le conflit a été
+    résolu.
+  - Remarque : pendant un tour de la mère (dossier principal propre), « Fusionner le travail prêt
+    dans main » de la carte fusionne (fast-forward), alors que « Committer puis fusionner » est
+    refusé dans la même situation : seul le chemin avec commit est gardé.

@@ -120,3 +120,20 @@ d'ADR.
     commit ; annuler ne touche rien), rouge sur l'ancien dialogue, vert sur le nouveau, clair et
     sombre.
   - Pas d'ADR (aucun ne fixait « coché par défaut »), aucune dépendance ; rien de changé côté ACP.
+- 2026-11-26 : recette réelle (séance 6 de l'évaluation Bricole, vrai OpenCode, build de
+  `c876dde6`, dépôt jetable).
+  - Confirmé, « Repartir de ce message » : sans commit, la case de `calc.js` est cochée ; après un
+    `git commit` de `calc.js` dans le dossier, dialogue rouvert sur le même message : case
+    décochée, « calc.js — commité depuis » et le message rouge du compte. « Annuler » : fichier,
+    `git status` et log inchangés. Case cochée à la main puis « Repartir de ce message » : `calc.js`
+    revient à son contenu d'alors en modification non commitée, aucun commit touché, bandeau « … 1
+    fichier remis dans son état d'alors. ».
+  - Confirmé, Mon activité : GPT-5.5 refusé (« Le modèle openai/GPT-5.5 n'a pas répondu »), puis
+    « Choisir un autre modèle » → Hy4 flash Free : le message repart et reçoit une réponse ; Par
+    modèle, Hy4 flash Free passe de 1 à 2, GPT-5.5 reste à 1. Compteur par tour du fil non relu.
+  - Remarque : au premier essai, l'agent a modifié un fichier par commande shell ; le dialogue
+    n'a alors proposé aucun fichier à remettre, seulement « 3 commandes lancées depuis ce message :
+    leurs effets restent. » (comportement de la fiche 023).
+  - Détail relevé : panneau Session de la conversation d'origine, juste après le `git commit` fait
+    hors de Bobine, « Dossier : 2 fichiers non commités +6 −1 » alors que `git status` n'en montre
+    plus qu'un ; à jour après le tour suivant.
