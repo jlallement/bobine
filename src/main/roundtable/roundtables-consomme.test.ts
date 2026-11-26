@@ -74,4 +74,37 @@ describe('« Consommé » = jetons traités journalisés (fiche 292)', () => {
     expect(footer().tokens).toBe(before)
     expect(processed()).toBeGreaterThan(before ?? 0)
   }, 40_000)
+
+  it('un message dans la conversation d’un participant entre dans le total (règle écrite, T7)', async () => {
+    // Décision du tech lead (2026-11-26) : un participant compte avec toute sa conversation ; pas de
+    // relevé par place. Le total reste égal au journal des conversations du tour.
+    const env = await roundtableEnv()
+    envs.push(env)
+    const { processed } = journalOf(env)
+    const mother = env.manager.state().activeId
+    await env.manager.startActive()
+    await env.roundtables.start(mother, {
+      question: 'Quelle piste pour la moyenne de calc.js ?',
+      participants: [choice('panel', 'factice-rapide'), choice('panel', 'factice-precis')]
+    })
+    await env.waitFor(() => env.rt(mother).phase === 'synthesized', 'synthèse rendue')
+    const summary = (id?: string) => env.manager.state().conversations.find((c) => c.id === id)
+    const footer = () => {
+      const rt = env.rt(mother)
+      return roundtableTotal([
+        ...rt.seats.map((s) => summary(s.childId)?.usage),
+        rt.synthesis?.usage,
+        rt.verdict?.usage
+      ])
+    }
+    const before = footer().tokens ?? 0
+    const child = env.seatChild(mother, 'A')
+    await env.manager.prompt(child, 'Peux-tu détailler ta piste ?')
+    await env.waitFor(
+      () => summary(child)?.status !== 'busy' && (summary(child)?.usage?.turns ?? 0) >= 2,
+      'réponse du participant'
+    )
+    await env.waitFor(() => (footer().tokens ?? 0) > before, 'total qui suit le participant')
+    expect(footer().tokens).toBe(processed())
+  }, 30_000)
 })

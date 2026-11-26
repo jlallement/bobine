@@ -1,6 +1,6 @@
 # 292 — « Consommé » : un seul total juste
 
-- **Statut** : fait (1.2), sauf T7 du testeur (décision demandée, voir le journal)
+- **Statut** : fait (1.2)
 - **Dépend de** : 130, 245, 266, 285
 - **Agents** : les deux — rien de propre à un agent : le total additionne ce que chaque agent
   communique de ses tours (`usage` de la réponse à `session/prompt`, coût cumulé), comme le
@@ -38,10 +38,18 @@ oubli de la synthèse dans le total ; l'oubli est dans le détail au survol.
 
 ## Règle retenue
 
-**« Consommé » = les jetons traités (entrée + sortie) et le coût de tous les tours que le tour de
-table a lancés lui-même : l'avis et la réplique de chaque participant, la synthèse et la décision.
-« Demander à … de l'appliquer » est un message ordinaire de la conversation : il n'y entre pas, il
-est compté avec la conversation (compteur de la saisie, Mon activité), comme tout message.**
+**« Consommé » = les jetons traités (entrée + sortie) et le coût de la synthèse et de la
+décision, plus tout ce qu'ont consommé les conversations des participants : leur avis, leur
+réplique, et ce que vous leur demandez ensuite si vous ouvrez leur conversation. « Demander à … de
+l'appliquer » et vos messages dans la conversation du tour de table restent hors du total (comptés
+avec la conversation : compteur de la saisie, Mon activité).**
+
+Décision du tech lead (2026-11-26, T7 du testeur) : un participant compte avec toute sa
+conversation, assumé. Ne compter que ses tours du tour de table demanderait un relevé par place dans
+le main (coût tardif de Bob compris) : une demi-journée et un nouveau mécanisme pour un chiffre
+secondaire, refusé pour garder les coûts simples. Essai qui tient la règle :
+`roundtables-consomme.test.ts` (« un message dans la conversation d'un participant entre dans le
+total »).
 
 Pourquoi « Appliquer » reste dehors : c'est déjà le comportement du code (le relevé de l'étape se
 clôt au message suivant, `steps.ts`), il est confirmé en recette (séance 5) ; c'est une règle qui se
@@ -145,15 +153,15 @@ Aucune dépendance nouvelle.
 - 2026-11-26, rapport du testeur (11 cas, agent factice réel et journal branché : `scratchpad/
   testeur-292/`) : pied = journal partout, sauf :
   - **T7, message tapé dans la conversation d'un participant après le tour : compté** (10 430 →
-    11 710 jetons). Contraire à la règle écrite. Cause : un participant compte par le résumé de
+    11 710 jetons). **Décision : règle écrite** (voir « Règle retenue ») ; essai qui l'affirme ajouté.
+    Analyse d'alors : Cause : un participant compte par le résumé de
     toute sa conversation (`workUsage` → `child.usage`). **Non corrigé, décision demandée** : les
     comptes rendus du travail gardent bien le cumul au moment de l'avis et de la réplique, mais
     jamais le coût relu après coup (Bob) ; les utiliser perdrait le coût du dernier tour de chaque
     participant chez Bob. Corriger à la cause demande un relevé par place dans le main (jetons à la
     fin de chaque tour du participant, coût tardif suivi comme pour la synthèse dans `steps.ts`,
     nouvel évènement du réducteur, conservation au redémarrage, repli pour les anciens tours) :
-    estimé à une demi-journée avec ses essais. Autre voie : écrire la règle telle qu'elle est (« un
-    participant compte avec toute sa conversation »).
+    estimé à une demi-journée avec ses essais. Retenu : écrire la règle telle qu'elle est.
   - **T8, coût partiel présenté comme complet** : corrigé. Un résumé qui donne ses jetons sans coût,
     alors que d'autres en donnent un, ajoute « + coût inconnu » (`usage.costPartial`, comme le
     compteur de la conversation) ; `RoundtableTotal.partial`. Limite : un participant qui ne
@@ -170,3 +178,10 @@ Aucune dépendance nouvelle.
     gardait le modèle refusé. Corrigé dans un commit à part : `resent` du gestionnaire → évènement
     `step-model` du réducteur, qui suit le modèle tant que l'étape est partie. Rouge d'abord :
     `roundtables-step-model.test.ts` (« Factice rapide » au lieu de « Factice précis »).
+
+## Reste à faire
+
+- Un participant qui ne communique ni jetons ni coût ne rend pas le total partiel (il ne se
+  distingue pas d'une place qui n'a pas tourné).
+- `formatCost` (partagé par tout l'affichage des coûts) écrit « ≈ 0,00 $US » pour un coût payant
+  de 0,00002 $, contre la règle M12 (« jamais ≈ 0,00 ») : hors de cette fiche.

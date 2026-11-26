@@ -123,9 +123,10 @@ Nettement plus qu'une question simple : chaque participant, puis la synthèse. L
 avant l'envoi, sans estimation en argent, et c'est un minimum : un participant qui explore le dépôt
 avec ses outils coûte plus qu'une question, et la synthèse relit toute la conversation qui arbitre
 (dans une longue conversation, des centaines de milliers de jetons). Au pied de la carte, **Consommé** donne en une ligne ce que
-le tour a consommé : les jetons traités (entrée et sortie, comme dans Mon activité) et le coût des
-avis, des répliques, de la synthèse et de la décision, par unité, sans conversion. « Demander à …
-de l'appliquer » est un message ordinaire : il compte avec la conversation, pas dans ce total. Le
+le tour a consommé : les jetons traités (entrée et sortie, comme dans Mon activité) et le coût de la
+synthèse et de la décision, plus tout ce qu'ont consommé les conversations des participants (avis,
+réplique, et ce que vous leur demandez ensuite), par unité, sans conversion. « Demander à … de
+l'appliquer » et vos messages dans la conversation comptent avec elle, pas dans ce total. Le
 détail, par modèle ou par conversation, est dans **Mon activité**.
 
 Le plafond par conversation, s'il est activé, s'applique à chaque participant comme à toute
