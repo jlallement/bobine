@@ -211,3 +211,11 @@ dossier de l'utilisateur.
   n'est proposé qu'une fois la branche fusionnée (en local ou par une PR), cas sans objet. Rien à
   perdre : question inchangée. Essais `WorktreeBar.test.tsx` (rouge avant), e2e `worktree-cycle`
   (capture `115b-worktree-nettoyer-non-commite`, rouge avant).
+- 2026-11-26 (fix20, CI Linux du commit candidat de la 1.2.0-beta.2) : `fatal: a branch named
+  'bobine/…' already exists` à la création d'un worktree. Le nom est la minute puis deux octets tirés
+  au hasard : deux worktrees du même dépôt dans la même minute (« Tout lancer » de cinq tâches
+  filles, ou l'essai `family-delete`) pouvaient tirer le même nom (1 sur 65 536 par paire), et
+  `Worktrees.create` échouait. Désormais (`addFresh`) : branche ou dossier déjà là, un autre tirage,
+  cinq au plus ; perdu entre la vérification et `git worktree add` (créations simultanées), de même.
+  Format des noms inchangé. Essais `worktrees.test.ts` : tirage forcé en collision, deux créations
+  simultanées au même premier tirage, collisions à chaque tirage (refus clair).

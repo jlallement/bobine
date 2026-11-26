@@ -73,6 +73,40 @@ describe('worktrees', () => {
     ).toHaveLength(1)
   })
 
+  /** Tirages imposés, dans l'ordre : le nom du worktree est fait de la minute puis du tirage. */
+  const draws = (...values: string[]) => {
+    const queue = [...values]
+    return () => queue.shift() ?? 'ffff'
+  }
+
+  it('même tirage dans la même minute : un autre nom est tiré, la création réussit (fix20)', async () => {
+    const root = repo()
+    const worktrees = new Worktrees(gitCommand, 'git', { draw: draws('abcd', 'abcd', 'beef') })
+    const first = await worktrees.create(root)
+    const second = await worktrees.create(root)
+    expect(first.branch).toMatch(/-abcd$/)
+    expect(second.branch).toMatch(/-beef$/)
+    expect(second.path).not.toBe(first.path)
+  })
+
+  it('deux créations en même temps, même premier tirage : les deux réussissent, noms distincts (fix20)', async () => {
+    const root = repo()
+    const worktrees = new Worktrees(gitCommand, 'git', {
+      draw: draws('abcd', 'abcd', 'c0de', 'f00d')
+    })
+    const [a, b] = await Promise.all([worktrees.create(root), worktrees.create(root)])
+    expect(a.branch).not.toBe(b.branch)
+    expect(new Set([a.path, b.path]).size).toBe(2)
+  })
+
+  it('collisions à chaque tirage : refus clair au bout de quelques essais, rien de créé en plus', async () => {
+    const root = repo()
+    const worktrees = new Worktrees(gitCommand, 'git', { draw: () => 'abcd' })
+    await worktrees.create(root)
+    await expect(worktrees.create(root)).rejects.toThrow()
+    expect(git(root, 'worktree', 'list').split('\n')).toHaveLength(2)
+  })
+
   /** Dépôt jetable et ses outils pour les essais des commits perdus (fiche 280). */
   function lostSetup() {
     const root = repo()

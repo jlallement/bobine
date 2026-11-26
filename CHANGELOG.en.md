@@ -2,6 +2,13 @@
 
 What changes for you, version by version. Shown in Settings › About.
 
+## Next version
+
+### Fixed
+
+- **Child tasks launched together**: two worktrees created in the same minute can no longer get
+  the same name; creating one no longer fails with “branch already exists”.
+
 ## 1.2.0-beta.2 — November 26, 2026
 
 ### Fixed

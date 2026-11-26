@@ -91,3 +91,19 @@ Corriger un message déjà envoyé et relancer, ou repartir d'un point antérieu
   new message is above ») ; le titre de la branche ne peut plus être remplacé par celui de l'agent
   (`titleSource: 'app'`), la carte cite le titre de l'original sans ce que l'app joint au message ;
   dans la liste, repère « branche » non tronqué et titre complet en infobulle.
+
+- 2026-11-26 — Recette de la 1.2.0-beta.1 (N2), **décrit, non corrigé** (hors 1.2.0-beta.2).
+  - Constat : « Repartir de ce message » proposait « Remettre 2 fichiers dans leur état d'alors »,
+    case **cochée par défaut** (décision de cette fiche, sans autre raison écrite), pour deux fichiers
+    **committés** depuis le message. Un clic aurait réécrit leur ancien contenu dans le dossier,
+    défaisant de fait le dernier commit (en modifications non commitées), sans le dire.
+  - Mécanique (`restore-files.ts`, `planRestore`) : pour chaque fichier modifié par l'agent depuis
+    le message, ses modifications sont défaites à partir du contenu actuel ; git n'est pas regardé.
+    Un fichier committé tel que l'agent l'a laissé est donc « à remettre » ; seul un fichier modifié
+    depuis par quelqu'un d'autre est laissé de côté (« conflit »).
+  - Proposition : ne précocher que les fichiers non committés depuis le message ; pour les autres, la
+    case décochée et « committés depuis » dit dans le dialogue. Il faut savoir, par fichier, s'il a été
+    committé depuis l'heure du message : un appel git côté main dans `branchPreview`
+    (`branching.ts`), un champ par fichier, le dialogue (`BranchDialog.tsx`) et leurs essais.
+    Option minimale : case décochée par défaut (une ligne et un essai), écart à cette fiche à
+    valider.

@@ -2,6 +2,13 @@
 
 Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › À propos.
 
+## Prochaine version
+
+### Corrigé
+
+- **Tâches filles lancées ensemble** : deux worktrees créés dans la même minute ne peuvent plus
+  tomber sur le même nom ; la création ne finit plus en erreur « branch already exists ».
+
 ## 1.2.0-beta.2 — 26 novembre 2026
 
 ### Corrigé

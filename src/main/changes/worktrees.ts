@@ -58,6 +58,9 @@ export interface WorktreeStatus {
 
 const text = (buffer: Buffer) => buffer.toString('utf8').trim()
 
+/** Tirages d'un nom de worktree, au plus, avant de laisser l'erreur de git (fix20). */
+const NAME_ATTEMPTS = 5
+
 /** Nom court et unique : date et heure, puis quatre caractères au hasard. */
 export function worktreeName(now = new Date(), random = randomBytes(2).toString('hex')): string {
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -94,6 +97,7 @@ export class Worktrees {
    * projet. Ne doit pas lever ; un échec n'empêche pas la suppression.
    */
   beforeRemove?: (info: WorktreeInfo) => Promise<void>
+  private readonly draw: () => string
 
   private readonly system: ProcessSystem
   /** Attente avant de réessayer une suppression gênée par un fichier ouvert (Windows). */
@@ -108,12 +112,15 @@ export class Worktrees {
       system?: ProcessSystem
       lockedRetryMs?: number
       removeDir?: (path: string) => Promise<void>
+      /** Tirage du suffixe des noms (essais ; quatre caractères hexadécimaux au hasard sinon). */
+      draw?: () => string
     } = {}
   ) {
     this.run = run
     this.git = git
     this.system = options.system ?? launchSystem()
     this.lockedRetryMs = options.lockedRetryMs ?? 2000
+    this.draw = options.draw ?? (() => randomBytes(2).toString('hex'))
     this.removeDir =
       options.removeDir ??
       ((path) => rm(path, { recursive: true, force: true, maxRetries: 3, retryDelay: 500 }))
@@ -191,13 +198,8 @@ export class Worktrees {
     const prefix = await this.exec(workspace, ['rev-parse', '--show-prefix'])
     const start = await this.startOf(workspace)
     await this.exclude(root)
-    const name = worktreeName()
-    // Préfixe au nom de l'app (ADR-0013), quel que soit l'agent. Les branches `bob/…` des worktrees
-    // créés avant restent gérées : la suppression part de la branche gardée avec la conversation.
-    const branch = `${BRANCH_PREFIX}${name}`
-    const path = join(root, WORKTREES_DIR, name)
     await mkdir(join(root, WORKTREES_DIR), { recursive: true })
-    await this.exec(root, ['worktree', 'add', '-b', branch, path, base], 120_000)
+    const { branch, path } = await this.addFresh(root, base)
     return {
       root,
       path,
@@ -205,6 +207,37 @@ export class Worktrees {
       base,
       ...start,
       workspace: prefix ? join(path, prefix.replace(/\/+$/, '')) : path
+    }
+  }
+
+  /**
+   * `git worktree add` sous un nom neuf. Le suffixe est tiré au hasard dans la minute : deux
+   * worktrees du même dépôt dans la même minute (« Tout lancer » de cinq tâches filles) peuvent
+   * tomber sur le même nom (CI Linux du 2026-11-26, fix20). Une branche ou un dossier déjà là : un
+   * autre tirage, quelques fois au plus ; perdu entre la vérification et l'ajout (créations
+   * simultanées), de même. Le format des noms ne change pas.
+   */
+  private async addFresh(root: string, base: string): Promise<{ branch: string; path: string }> {
+    for (let attempt = 1; ; attempt++) {
+      const name = worktreeName(new Date(), this.draw())
+      // Préfixe au nom de l'app (ADR-0013), quel que soit l'agent. Les branches `bob/…` des
+      // worktrees créés avant restent gérées : la suppression part de la branche de la conversation.
+      const branch = `${BRANCH_PREFIX}${name}`
+      const path = join(root, WORKTREES_DIR, name)
+      const taken = async () =>
+        isDirectory(path) ||
+        (await this.run(this.git, ['show-ref', '--verify', '--quiet', `refs/heads/${branch}`], {
+          cwd: root,
+          timeoutMs: 10_000
+        }).then((r) => r.code === 0))
+      const last = attempt >= NAME_ATTEMPTS
+      if (!last && (await taken())) continue
+      try {
+        await this.exec(root, ['worktree', 'add', '-b', branch, path, base], 120_000)
+        return { branch, path }
+      } catch (error) {
+        if (last || !(await taken())) throw error
+      }
     }
   }
 
