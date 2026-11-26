@@ -137,6 +137,17 @@ Pas de nouvelle dépendance (`yaml`, déjà là, pour la configuration temporair
   L'ADR-0074 (« choix laissé ouvert dans la fiche 288 ») n'est pas modifié : il renvoie à cette
   fiche, qui porte la réponse.
 
+- 2026-11-26 — Premier passage sur GitHub (run 45876922524, `1.2-electron-plancher` à
+  `f0b97e25`) : rouge à `pnpm e2e:packaged`, seul contrôle en échec « au moins un agent trouvé
+  avec le PATH du shell de connexion ». Plancher installé, fumée, `pnpm package --dir` et Electron
+  de l'app (45.2.3) verts. Cause : le runner n'a aucun agent ; erreur du workflow, pas du
+  plancher. Correction : l'essai de l'app passe par `node e2e/packaged-ci.mjs`, comme
+  `release.yml` (HOME jetable, OpenCode factice hors de l'app : le contrôle « agent trouvé » reste
+  entier), **sans** `BOBINE_PACKAGED_APP` : l'app de `dist/`, avis comparés strictement.
+  Rejoué en local sur une copie construite sur 45.2.3 : `node e2e/packaged-ci.mjs` 0, avec
+  « nomme l'Electron livré (45.2.3) » et « celui du dépôt pour Electron 45.2.3, plancher » ; sur
+  la construction normale : 0. `packaged*.mjs` inchangés.
+
 ## Reste à faire
 
 - Fusionner `1.2-electron-plancher` dans `1.2` : d'ici là, la nuit (qui joue `1.2`) s'arrête à
