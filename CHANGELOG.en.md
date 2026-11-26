@@ -6,6 +6,12 @@ What changes for you, version by version. Shown in Settings › About.
 
 ### Fixed
 
+- **Branch from this message**: if one of the files to restore to their state at that point was
+  committed since that message, the box is no longer checked for you and the dialog says how many
+  committed files would be touched (restoring them would undo those commits). You can still check
+  it.
+- **My activity**: an exchange resent with another model after a refusal (“Choose another model”)
+  is counted under the model that answered, no longer under the refused one.
 - **Child tasks launched together**: two worktrees created in the same minute can no longer get
   the same name; creating one no longer fails with “branch already exists”.
 
