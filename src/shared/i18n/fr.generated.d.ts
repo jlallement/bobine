@@ -4446,6 +4446,17 @@ export type FrResources = {
     readonly removeFolder: 'Retirer {{name}} de la conversation'
     readonly foldersBusy: 'L’agent répond : l’ajout et le retrait d’un dossier attendent la fin de son tour.'
     readonly foldersUnsupported: 'Non transmis : {{agent}} ne prend pas d’autres dossiers que le dossier de travail.'
+    readonly folderRefusal: {
+      readonly empty: 'Saisissez le chemin d’un dossier, ou glissez-le ici.'
+      readonly tooLong: 'Ce chemin est trop long pour être celui d’un dossier.'
+      readonly invalid: 'Un seul chemin à la fois, sur une ligne.'
+      readonly notAbsolute: 'Saisissez le chemin complet du dossier, depuis la racine (ou ~/ pour votre dossier personnel).'
+      readonly notFound: 'Aucun dossier à cet endroit : {{folder}}'
+      readonly notDirectory: 'C’est un fichier, pas un dossier : {{folder}}'
+      readonly unreadable: 'Bobine ne peut pas lire ce dossier : {{folder}}'
+      readonly isWorkspace: 'C’est déjà le dossier de travail de la conversation.'
+      readonly alreadyAdded: 'Ce dossier est déjà dans la liste.'
+    }
     readonly documents: 'Documents'
     readonly discussionDocuments: 'Documents de la discussion'
     readonly thisDiscussion: 'Cette discussion'

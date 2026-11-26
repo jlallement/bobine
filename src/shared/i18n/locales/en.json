@@ -4415,6 +4415,17 @@
     "removeFolder": "Remove {{name}} from the conversation",
     "foldersBusy": "The agent is replying: adding or removing a folder waits until its turn ends.",
     "foldersUnsupported": "Not sent: {{agent}} only takes its working folder.",
+    "folderRefusal": {
+      "empty": "Type the path of a folder, or drag it here.",
+      "tooLong": "This path is too long to be a folder’s.",
+      "invalid": "One path at a time, on a single line.",
+      "notAbsolute": "Type the folder’s full path, from the root (or ~/ for your home folder).",
+      "notFound": "No folder at this location: {{folder}}",
+      "notDirectory": "This is a file, not a folder: {{folder}}",
+      "unreadable": "Bobine cannot read this folder: {{folder}}",
+      "isWorkspace": "This is already the conversation’s working folder.",
+      "alreadyAdded": "This folder is already in the list."
+    },
     "documents": "Documents",
     "discussionDocuments": "Chat documents",
     "thisDiscussion": "This chat",

@@ -361,8 +361,11 @@ export function createApi(
       /** Descendance d'une conversation (fiche 228). */
       family: (id: string) => invoke('conversation:family', id),
       pin: (id: string, pinned: boolean) => invoke('conversation:pin', id, pinned),
-      /** Autres dossiers de la conversation (fiche 179). */
-      addFolder: (id: string) => invoke('conversation:addFolder', id),
+      /**
+       * Autres dossiers de la conversation (fiche 179). Sans `path` : la fenêtre native ; avec : un
+       * chemin saisi, ou celui d'un dossier glissé (`files.pathFor`), vérifié par le main (fiche 290).
+       */
+      addFolder: (id: string, path?: string) => invoke('conversation:addFolder', id, path),
       removeFolder: (id: string, folder: string) => invoke('conversation:removeFolder', id, folder),
       /** Plafond de coût de la conversation, `null` : celui des réglages (fiche 157). */
       setCostCap: (id: string, cap: ConversationCap | null) =>

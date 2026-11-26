@@ -26,6 +26,9 @@ export async function dossiersSuite(scheme) {
   const library = join(root, 'bibliotheque')
   mkdirSync(workspace)
   mkdirSync(library)
+  // Fiche 290 : le dossier retenu est le dossier réel, liens suivis (sous macOS, le dossier
+  // temporaire `/var/…` est un lien vers `/private/var/…`) ; la fenêtre simulée rend `library`.
+  const libraryReal = realpathSync.native(library)
   const userData = mkdtempSync(join(tmpdir(), 'bob-e2e-dossiers-data-'))
   const turnLock = join(mkdtempSync(join(tmpdir(), 'bob-e2e-dossiers-verrou-')), 'verrou')
   const args = [`--inspect=${MAIN_PORT}`]
@@ -75,14 +78,14 @@ export async function dossiersSuite(scheme) {
         )
         await ui.ready()
         check(
-          (await folders(ui)) === library &&
+          (await folders(ui)) === libraryReal &&
             (await ui.ev(`${ui.$('session-extra-folder')}.innerText`)).includes(basename(library)),
-          'dossier ajouté : listé sous le dossier de travail, par son nom'
+          'dossier ajouté : listé sous le dossier de travail, par son nom (dossier réel, fiche 290)'
         )
         await ui.send('Et maintenant ?')
         await ui.ready()
         check(
-          (await ui.lastAgentText()).includes(library),
+          (await ui.lastAgentText()).includes(libraryReal),
           'session rouverte : l’agent a reçu le dossier ajouté (`additionalDirectories`)'
         )
         await ui.hover({ x: 5, y: 400 })

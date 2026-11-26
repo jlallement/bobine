@@ -4607,6 +4607,17 @@
     "removeFolder": "Retirer {{name}} de la conversation",
     "foldersBusy": "L’agent répond : l’ajout et le retrait d’un dossier attendent la fin de son tour.",
     "foldersUnsupported": "Non transmis : {{agent}} ne prend pas d’autres dossiers que le dossier de travail.",
+    "folderRefusal": {
+      "empty": "Saisissez le chemin d’un dossier, ou glissez-le ici.",
+      "tooLong": "Ce chemin est trop long pour être celui d’un dossier.",
+      "invalid": "Un seul chemin à la fois, sur une ligne.",
+      "notAbsolute": "Saisissez le chemin complet du dossier, depuis la racine (ou ~/ pour votre dossier personnel).",
+      "notFound": "Aucun dossier à cet endroit : {{folder}}",
+      "notDirectory": "C’est un fichier, pas un dossier : {{folder}}",
+      "unreadable": "Bobine ne peut pas lire ce dossier : {{folder}}",
+      "isWorkspace": "C’est déjà le dossier de travail de la conversation.",
+      "alreadyAdded": "Ce dossier est déjà dans la liste."
+    },
     "documents": "Documents",
     "discussionDocuments": "Documents de la discussion",
     "thisDiscussion": "Cette discussion",

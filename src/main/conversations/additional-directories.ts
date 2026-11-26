@@ -8,6 +8,13 @@
 import { accessSync, constants, statSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { t } from 'i18next'
+import type { AddFolderResult } from '@shared/extra-folders'
+import {
+  checkExtraFolder,
+  NATIVE_FOLDER_SYSTEM,
+  sameFolder,
+  type FolderSystem
+} from './extra-folder-check'
 import type { ConversationManager } from './manager'
 
 export type DirectoriesManager = Pick<ConversationManager, 'updateRecord' | 'restart'>
@@ -33,9 +40,35 @@ async function changeDirectories(
   if (changed && status === 'ready') await manager.restart(id)
 }
 
-/** Ajoute un dossier à la conversation (sans doublon, ni le dossier de travail lui-même). */
-export function addAdditionalDirectory(manager: Manager, id: string, folder: string) {
-  return changeDirectories(manager, id, (current) => [...current, folder])
+/**
+ * Ajoute un dossier à la conversation, d'où que vienne le chemin (fenêtre native, saisie, dossier
+ * glissé : fiche 290). Vérifié d'abord (`checkExtraFolder` : absolu, existe, dossier, lisible, liens
+ * suivis) ; puis, au moment d'écrire la liste, ni le dossier de travail ni un dossier déjà là.
+ * Pendant une réponse : erreur levée, comme pour le retrait (ce n'est pas le chemin qui est en
+ * cause, et le bouton est déjà désactivé). Agent prêt et liste changée : session rouverte.
+ */
+export async function addAdditionalDirectory(
+  manager: Manager,
+  id: string,
+  input: string,
+  sys: FolderSystem = NATIVE_FOLDER_SYSTEM
+): Promise<AddFolderResult> {
+  const checked = checkExtraFolder(input, sys)
+  if (!checked.ok) return checked
+  const { folder } = checked
+  let refusal: AddFolderResult | undefined
+  const status = manager.updateRecord(id, (record, current) => {
+    if (current === 'busy') throw new Error(t('conversations.error.busyFolders'))
+    const before = record.additionalDirectories ?? []
+    if (sameFolder(folder, record.workspace, sys))
+      refusal = { ok: false, reason: 'isWorkspace', folder }
+    else if (before.some((f) => sameFolder(folder, f, sys)))
+      refusal = { ok: false, reason: 'alreadyAdded', folder }
+    else record.additionalDirectories = [...before, folder]
+  })
+  if (refusal) return refusal
+  if (status === 'ready') await manager.restart(id)
+  return { ok: true, folder }
 }
 
 /** Retire un dossier de la conversation. */
