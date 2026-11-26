@@ -10,7 +10,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { check, sleep, withApp } from '../lib.mjs'
+import { L, check, sleep, withApp } from '../lib.mjs'
 
 const README = '# Démo\n\nVersion 1\n\n## Utilisation\n'
 /** Ce qu'écrit le scénario `conflits` de l'agent factice quand on lui demande de résoudre. */
@@ -98,8 +98,11 @@ export async function fillesFusionRedemarrageSuite(scheme) {
         await ui.click(`${row}.querySelector('[data-testid=work-open]')`)
         await ui.waitFor(`!!${ui.$('title-origin')}`)
         await ui.click(ui.$('title-origin'))
-        await ui.waitFor(`!!${ui.$('subtasks-merge-start')}`, 20000)
-        await ui.waitFor(`!${ui.$('subtasks-merge-start')}.hasAttribute('aria-disabled')`, 20000)
+        // Les trois branches relues (commits faits) : le bouton les prend toutes.
+        await ui.waitFor(
+          `${ui.$('subtasks-merge-start')}?.innerText === ${JSON.stringify(L('workGroup.merge.action', { count: 3, base: 'main' }))}`,
+          30000
+        )
         // Le tour de résolution sera retenu par le verrou, ses écritures faites.
         const before = held()
         writeFileSync(turnLock, '')
