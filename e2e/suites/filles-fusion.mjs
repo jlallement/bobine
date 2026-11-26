@@ -283,6 +283,9 @@ export async function fillesFusionSuite(scheme) {
             readFileSync(join(workspace, 'TODO.md'), 'utf8') === TODO_DRAFT,
           'fusion arrêtée : les modifications mises de côté de la mère sont revenues'
         )
+        // Le travail a fini son tour de résolution et la mise de côté est revenue : la carte relue
+        // propose la reprise par ses refus habituels (dossier principal non commité).
+        await ui.waitFor(`!!${ui.$('main-dirty')}`, 20000)
         await ui.ev(`${ui.$('work-group')}.scrollIntoView({ block: 'center' }), true`)
         await ui.shot('289-fusion-a-relire')
 

@@ -209,8 +209,10 @@ export async function worktreeCycleSuite(scheme) {
         await ui.click(ui.$('worktree-merge'))
         await ui.waitFor(`!!${ui.$('main-dirty')}`)
         await ui.click(ui.$('main-dirty-stash'))
+        // Fiche 289 : le commit de fusion est déjà dans la branche (fait à la résolution) ; main y
+        // avance en fast-forward, et l'historique est celui d'avant (le sujet « Merge branch… »).
         await ui.waitFor(
-          `${ui.$('worktree-note')}?.innerText === ${JSON.stringify(`${L('worktreeCycle.merge.merge', { base: 'main' })} ${L('worktreeCycle.mainDirty.stashRestored', { count: 1 })}`)}`,
+          `${ui.$('worktree-note')}?.innerText === ${JSON.stringify(`${L('worktreeCycle.merge.fastForward', { base: 'main' })} ${L('worktreeCycle.mainDirty.stashRestored', { count: 1 })}`)}`,
           60000
         )
         const resolved = '# Démo\n\nVersion 2 et 3\n\n## Utilisation\n\nLancer `node src/app.js`.\n'
