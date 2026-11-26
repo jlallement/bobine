@@ -277,7 +277,16 @@ export async function fillesFusionSuite(scheme) {
           'fiche 289 : la carte nomme le travail, le fichier et la base, et demande une relecture'
         )
         // La chaîne finit après avoir posé « à relire » : la mise de côté revient juste après.
-        for (let i = 0; i < 100 && git(workspace, 'stash', 'list') !== ''; i++) await sleep(100)
+        // Lu pendant que l'app retire l'entrée (`git stash drop`) : `refs/stash` peut manquer un instant
+        // et la commande échouer ; on relit.
+        const stashes = () => {
+          try {
+            return git(workspace, 'stash', 'list')
+          } catch {
+            return null
+          }
+        }
+        for (let i = 0; i < 100 && stashes() !== ''; i++) await sleep(100)
         check(
           git(workspace, 'stash', 'list') === '' &&
             readFileSync(join(workspace, 'TODO.md'), 'utf8') === TODO_DRAFT,
