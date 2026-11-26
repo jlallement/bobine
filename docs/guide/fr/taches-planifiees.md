@@ -23,8 +23,9 @@ Pour créer une tâche :
 2. Cliquez sur **Nouvelle tâche**.
 3. Écrivez la **Consigne** : ce que l'agent doit faire à chaque exécution.
 4. Donnez-lui un **Nom**, si vous voulez. Sans nom, elle prend la première ligne de la consigne.
-5. **Dossier** : celui de la conversation ouverte est proposé d'office ; **Changer…** liste les
-   dossiers récents et **Autre dossier…**. Sans dossier proposé, cliquez sur **Choisir…**.
+5. **Dossier** : proposé d'office : celui de la conversation ouverte (la racine du dépôt pour une
+   conversation en worktree), sinon votre dossier le plus récent ; **Changer…** liste les dossiers
+   récents et **Autre dossier…**. Sans dossier proposé, cliquez sur **Choisir…**.
 6. **Agent** : par défaut, celui des nouvelles conversations.
 7. Choisissez la **Fréquence** et l'heure (voir [plus bas](#frequence)).
 8. Cliquez sur **Enregistrer**.
@@ -57,10 +58,10 @@ L'heure est celle de l'ordinateur.
 
 ## Borner le coût
 
-Sous **Plafond par exécution**, donnez un **Montant** (dans la devise de l'agent : Bobcoins pour
-IBM Bob, dollars pour OpenCode) ou un nombre de **Jetons, cache compris** (pour un agent qui ne donne pas son
-coût). Au plafond, le tour s'arrête et la conversation attend votre accord. Laissé vide, c'est le
-plafond de Réglages › Conversations qui s'applique.
+Sous **Plafond par exécution**, donnez un **Montant** (dans la devise de l'agent : Bobcoins pour IBM
+Bob, dollars pour OpenCode) ou un nombre de **Jetons, cache compris** (pour un agent qui ne donne
+pas son coût). Au plafond, le tour s'arrête et la conversation attend votre accord. Laissé vide,
+c'est le plafond de Réglages › Conversations qui s'applique.
 
 Une tâche qui tourne plusieurs fois par jour sans plafond est signalée dans le formulaire : fixez
 un plafond pour borner la dépense.

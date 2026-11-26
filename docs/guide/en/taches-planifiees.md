@@ -23,7 +23,8 @@ To create a task:
 2. Click **New task**.
 3. Write the **Instruction**: what the agent should do on each run.
 4. Give it a **Name** if you like. Without a name, it takes the first line of the instruction.
-5. **Folder**: the open conversation’s folder is filled in for you; **Change…** lists recent
+5. **Folder**: filled in for you: the open conversation’s folder (the repository’s root for a
+   conversation in a worktree), otherwise your most recent folder; **Change…** lists recent
    folders and **Other folder…**. With no folder filled in, click **Choose…**.
 6. **Agent**: by default, the one for new conversations.
 7. Choose the **Frequency** and the time (see [below](#frequence)).
@@ -58,8 +59,8 @@ The time is the computer’s.
 ## Cap the cost
 
 Under **Cap per run**, enter an **Amount** (in the agent’s currency: Bobcoins for IBM Bob, dollars
-for OpenCode) or a number of **Tokens, cache included** (for an agent that doesn’t report its cost). At the cap, the
-turn stops and the conversation waits for your approval. Left empty, the cap from
+for OpenCode) or a number of **Tokens, cache included** (for an agent that doesn’t report its cost).
+At the cap, the turn stops and the conversation waits for your approval. Left empty, the cap from
 Settings › Conversations applies.
 
 A task that runs several times a day without a cap is flagged in the form: set a cap to bound the

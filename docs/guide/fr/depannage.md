@@ -48,10 +48,10 @@ Réglages › Diagnostic › **Journal** montre les deux fichiers, avec **Ouvrir
 <!-- si: finder -->
 Ils sont dans `~/Library/Logs/Bobine/`. Aide › Afficher le journal ouvre `main.log`.
 <!-- si: !finder !explorer
-Ils sont dans `~/.config/bobine/logs/`. Aide › Afficher le journal ouvre `main.log`.
+Ils sont dans `~/.config/bobine/logs/`. ☰ › Aide › Afficher le journal ouvre `main.log`.
 -->
 <!-- si: explorer
-Ils sont dans `%APPDATA%\bobine\logs\`. Aide › Afficher le journal ouvre `main.log`.
+Ils sont dans `%APPDATA%\bobine\logs\`. ☰ › Aide › Afficher le journal ouvre `main.log`.
 -->
 
 **Niveau du journal** :
@@ -75,7 +75,7 @@ préremplie avec la version et le rapport. Rien ne part avant que vous ne la val
 <!-- si: appMenu -->
 La fenêtre Bobine › À propos de Bobine a aussi
 <!-- si: !appMenu
-La fenêtre Aide › À propos de Bobine a aussi
+La fenêtre ☰ › À propos de Bobine a aussi
 --> **Copier les infos techniques** (version, commit,
 <!-- si: finder -->
 macOS, agents installés), à coller dans un signalement.

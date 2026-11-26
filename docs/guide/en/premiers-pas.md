@@ -76,14 +76,14 @@ What each agent can do: see [Agents](agents.md).
 
 ## Choose the project folder
 
-The first time, a four-step welcome guides you: **Agent**, **Sign-in**, **Folder**, then
+On first launch, a four-step welcome guides you: **Agent**, **Sign-in**, **Folder**, then
 **Test** (a very short test message, to check that everything works end to end). At the
 **Folder** step (“Where to work?”), pick **An existing project** (**Choose…**) or **An empty
-trial folder** (**Create**). Opened with [`bobine <folder>`](#commande-bobine), Bobine offers that
-folder first: “The folder you asked for”, **Use this folder**. The agent will read and change
+trial folder** (**Create**). When you open Bobine with [`bobine <folder>`](#commande-bobine), it
+offers that folder first: “The folder you asked for”, **Use this folder**. The agent will read and change
 files in the folder you chose.
 
-**Skip welcome** skips it. Without a folder, Bobine then asks **Choose your project folder**,
+**Skip welcome** skips all four steps. Without a folder, Bobine then asks **Choose your project folder**,
 then **Choose a folder…**.
 
 To change folders later: click the folder below the message box (**Working folder** menu), then

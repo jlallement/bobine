@@ -10,8 +10,8 @@ n'envoie rien ailleurs qu'à l'agent que vous utilisez : elle n'a pas de télém
 exception, que vous pouvez couper : la [vérification des nouvelles versions](#nouvelles-versions).
 
 Les réglages (⌘,) sont rangés en trois groupes : Général, Apparence, Notifications, Raccourcis
-clavier ; Conversations, Agents, Rôles, Mémoire, Serveurs MCP, Commandes ; Confidentialité, Données, Diagnostic,
-Nouveautés. Le champ de recherche, en haut, retrouve chaque réglage (⌘F).
+clavier ; Conversations, Agents, Rôles, Mémoire, Serveurs MCP, Commandes ; Confidentialité, Données,
+Diagnostic, Nouveautés. Le champ de recherche, en haut, retrouve chaque réglage (⌘F).
 
 Ici, vous pouvez :
 

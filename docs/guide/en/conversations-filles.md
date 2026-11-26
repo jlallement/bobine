@@ -81,8 +81,8 @@ conversation says so (“↑ 2 tasks replied · Show”); **Show** scrolls to it
 
 **The cost**, once per card: an amount; **free** when the agent reports a zero cost for a model that
 says it is free (“free” at the end of its name); **cost unknown** when it reports a zero cost for
-another model (a subscription sign-in, for example), or when some tasks have no cost (“≈ $0.05 + cost
-unknown”). Bobine never presents a paid model as free. With an unknown cost, the cost cap can’t
+another model (a subscription sign-in, for example), or when some tasks have no cost (“≈ $0.05 +
+cost unknown”). Bobine never presents a paid model as free. With an unknown cost, the cost cap can’t
 trigger.
 
 **In the sidebar**, each task sits under its source conversation, with its state:
@@ -130,10 +130,11 @@ Hover to see the reason. You always do the merging.
 
 ## Merge the changes
 
-A task that writes is merged **from its card**: **Merge into main** (or the name of your working branch), after **View changes** and,
-if you like, **Get a review** (see [Request review](faire-relire.md)). A group card offers
-**Merge the N ready into main**; with a recommendation from the agent, **Merge the N recommended
-tasks into main**, and **Include the M others…** for the others, after confirmation.
+A task that writes is merged **from its card**: **Merge into main** (the button names your branch if
+it isn’t main), after **View changes** and, if you like, **Get a review** (see [Request
+review](faire-relire.md)). A group card offers **Merge the N ready into main**; with a
+recommendation from the agent, **Merge the N recommended tasks into main**, and **Include the M
+others…** for the others, after confirmation.
 
 **Then clean up (archive, delete the branches)**: a checkbox, before the button. It archives the
 conversation of each merged task and deletes its worktree and branch.
@@ -145,9 +146,11 @@ live. **Stop** stops after the current merge.
 remain: **Retry**, **Abort** or **Show the conflict** (its Git view).
 
 **The main folder has uncommitted changes**: the merge doesn’t start. As with a worktree:
-**Commit first** or **Set aside**. See [Merge into `main`](worktrees.md#fusionner). While an
-agent is still writing in the main folder, or a task is still responding, **Commit, then merge**
-is refused before anything is committed, with the reason: try again once it has finished.
+**Commit first** or **Set aside**. See [Merge into `main`](worktrees.md#fusionner).
+
+While a turn is in progress in the main folder (an agent responding or waiting for your
+approval), or one of the tasks to merge is still responding, **Commit, then merge** is refused
+before anything is committed, with the reason: try again once the turn has ended.
 
 Nothing is pushed, and no PR is opened: for a PR, use the [task’s Git view](worktrees.md#pr).
 

@@ -89,11 +89,11 @@ carte (« conversation à la corbeille ») ; restaurée, sa ligne redevient ce q
 
 Quand tous ont fini avec au moins deux avis, la conversation reçoit d'elle-même les avis, sans le
 nom des modèles (« Participant A, B, C ») : elle juge les arguments, pas les marques. Sa réponse
-porte une seule ligne d'étiquette, « Synthèse du tour de table · <modèle> · N avis », et la carte
-se replie en deux lignes : l'en-tête et **Consommé** (un clic la rouvre ; les lignes y sont alors
-rangées par lettre). Au survol ou au focus de « Participant C » (ou « Participants B et C »), le vrai nom
-s'affiche ; sur la carte, chaque ligne porte sa lettre, pour faire le lien quand la synthèse écrit
-la lettre seule.
+porte une seule ligne d'étiquette, « Synthèse du tour de table · <modèle> · N avis », et la carte se
+replie en deux lignes : l'en-tête et **Consommé** (un clic la rouvre ; les lignes y sont alors
+rangées par lettre). Au survol ou au focus de « Participant C » (ou « Participants B et C »), le
+vrai nom s'affiche ; sur la carte, chaque ligne porte sa lettre, pour faire le lien quand la
+synthèse écrit la lettre seule.
 
 La synthèse et la décision se font en lecture seule. Ce qui est **garanti** : un agent qui demande
 une autorisation avant d'écrire ou de lancer une commande (IBM Bob, par exemple) se la voit refuser
@@ -124,11 +124,11 @@ décision. Une seule réplique par tour.
 
 ## Ce que coûte un tour de table
 
-Nettement plus qu'une question simple : chaque participant, puis la synthèse. La ligne le dit
-avant l'envoi, sans estimation en argent, et c'est un minimum : un participant qui explore le dépôt
-avec ses outils coûte plus qu'une question, et la synthèse relit toute la conversation qui arbitre
-(dans une longue conversation, des centaines de milliers de jetons). Au pied de la carte, **Consommé** donne ce que les
-agents ont communiqué, par unité, sans conversion.
+Nettement plus qu'une question simple : chaque participant, puis la synthèse. La ligne le dit avant
+l'envoi, sans estimation en argent, et c'est un minimum : un participant qui explore le dépôt avec
+ses outils coûte plus qu'une question, et la synthèse relit toute la conversation qui arbitre (dans
+une longue conversation, des centaines de milliers de jetons). Au pied de la carte, **Consommé**
+donne ce que les agents ont communiqué, par unité, sans conversion.
 
 Le plafond par conversation, s'il est activé, s'applique à chaque participant comme à toute
 conversation. Un participant qui l'atteint s'arrête, et sa ligne le dit ; la carte « Plafond

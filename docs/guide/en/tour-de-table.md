@@ -18,9 +18,10 @@ Here you can:
 ## Start a roundtable
 
 Type `/roundtable` followed by your question, or click the roundtable button in the composer bar,
-then write the question. When the window is narrow, the button moves into the 📎 menu
-(“Roundtable”); where 📎 has no menu (no screen capture), the `/roundtable` command remains. The question gets the “Roundtable” tag, and a grey line shows below it:
-“3 participants ▾ + synthesis · at least 4× the tokens of a plain question”. ↩ sends.
+then write the question. When the window is narrow, the button moves into the 📎 menu (“Roundtable”);
+where 📎 has no menu (no screen capture), the `/roundtable` command remains. The question gets the
+“Roundtable” tag, and a grey line shows below it: “3 participants ▾ + synthesis · at least 4× the
+tokens of a plain question”. ↩ sends.
 
 Escape, the cross of the line, or ⌫ at the start of the question take you back to a plain question.
 
@@ -38,10 +39,10 @@ doesn’t start.
 
 ## Choose the participants
 
-“3 participants ▾” opens a checkbox menu: models that answered recently first, then **Other models…** to
-search the whole list. An agent that does not let you choose its model (IBM Bob) takes a single
-line. An agent missing from this computer is not offered. Two to five participants; beyond that,
-the other boxes are disabled, and the status line at the bottom of the menu says why.
+“3 participants ▾” opens a checkbox menu: models that answered recently first, then **Other
+models…** to search the whole list. An agent that does not let you choose its model (IBM Bob) takes
+a single line. An agent missing from this computer is not offered. Two to five participants; beyond
+that, the other boxes are disabled, and the status line at the bottom of the menu says why.
 
 Every box is kept at once, for this roundtable and the next ones: nothing to save. The first time,
 the line says “Choose participants”, and ↩ opens the menu.
@@ -76,9 +77,9 @@ Stopping the whole roundtable waits for each participant to finish stopping: the
 conversation cost cap": **Open its conversation** to choose **Continue**.
 
 During the roundtable, the participants' conversations are in the sidebar, under yours; once it is
-over, they leave it, and you find them from the card (**Open its conversation**) or the search. Moved
-to the trash, a participant's conversation keeps its opinion readable on the card ("conversation in
-the trash"); restored, its row is back as it was.
+over, they leave it, and you find them from the card (**Open its conversation**) or the search.
+Moved to the trash, a participant's conversation keeps its opinion readable on the card
+("conversation in the trash"); restored, its row is back as it was.
 
 <a id="synthese"></a>
 
@@ -122,8 +123,8 @@ roundtable.
 Much more than a plain question: each participant, then the synthesis. The line says so before
 sending, with no estimate in money, and it is a minimum: a participant that explores the repository
 with its tools costs more than a question, and the synthesis rereads the whole arbitrating
-conversation (in a long conversation, hundreds of thousands of tokens). At the foot of the card, **Used** gives what the agents
-reported, per unit, without conversion.
+conversation (in a long conversation, hundreds of thousands of tokens). At the foot of the card,
+**Used** gives what the agents reported, per unit, without conversion.
 
 The per-conversation cost cap, when on, applies to each participant like to any conversation. A
 participant that reaches it stops, and its row says so; the “Cap reached” card is in its

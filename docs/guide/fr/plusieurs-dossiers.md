@@ -19,8 +19,8 @@ Ici, vous pouvez :
 
 1. Ouvrez l'onglet **Session** du panneau de droite (⌘J si le panneau est fermé).
 2. Dans **Environnement**, sous « Dossier », cliquez sur **Ajouter un dossier…**.
-3. La fenêtre de choix s'ouvre à côté du dossier de la conversation : choisissez le dossier, puis
-   **Ajouter**.
+3. La fenêtre de choix s'ouvre dans le dossier qui contient celui de la conversation : choisissez
+   le dossier, puis **Ajouter**.
 
 Le dossier apparaît dans **Autres dossiers**. La session de l'agent repart aussitôt avec la
 nouvelle liste ; le fil de la conversation est gardé. Avec votre message suivant, Bobine dit à

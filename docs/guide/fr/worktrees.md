@@ -185,9 +185,9 @@ Bobine refuse de partir et liste les fichiers. Deux choix :
 - **Mettre de côté** : les modifications sont rangées (`git stash`) le temps de la fusion, puis
   remises.
 
-Tant qu'un agent écrit encore dans le dossier principal, ou qu'un travail répond encore,
-**Committer puis fusionner** est refusé avant tout commit, avec la raison : réessayez quand il a
-fini.
+Tant qu'un tour est en cours dans le dossier principal (agent qui répond ou attend votre accord),
+**Committer puis fusionner** est refusé avant tout commit, avec la raison : réessayez une fois le
+tour fini.
 
 <a id="nettoyer"></a>
 

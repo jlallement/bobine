@@ -137,7 +137,7 @@ every agent:
 | `/review` | Review of the current changes, by the conversation’s agent |
 | `/split [message]` | Split the message into [tasks](conversations-filles.md#taches-proposees) |
 | `/btw [question]` | [Aside](aparte.md): a question on the side, answered outside the conversation |
-| `/roundtable [question]` | [Roundtable](tour-de-table.md): the question goes to several models, then the conversation gives a synthesis |
+| `/roundtable [question]` | [Roundtable](tour-de-table.md): several models, then a synthesis |
 | `/help` | List of commands |
 
 The list also shows the agent’s commands and your personal or project commands (Settings ›

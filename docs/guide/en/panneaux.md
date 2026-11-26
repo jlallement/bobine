@@ -1,7 +1,7 @@
 # Panels
 
-The side panel shows what the agent is doing, and lets you take over: the session, changes, files, the
-built-in browser, the terminal, the iOS Simulator, the Android Emulator, the to-do list.
+The side panel shows what the agent is doing, and lets you take over: the session, changes, files,
+the built-in browser, the terminal, the iOS Simulator, the Android Emulator, the to-do list.
 
 Here you can:
 
@@ -75,15 +75,15 @@ Settings › General.
 
 The **Files** tab opens on demand: **+** menu, ⌘P (the cursor goes to the filter) or ⇧⌘Y (**Show
 tree**). It shows the tree of the conversation’s folder and of its
-[other folders](plusieurs-dossiers.md). Hidden files and files ignored by git are there, dimmed; a
+[other folders](plusieurs-dossiers.md). Hidden files are there; files ignored by git too, dimmed; a
 dot marks the ones the conversation changed.
 
 - **Filter**: by name or path; `path:42` goes to line 42.
 - A file opens **Read-only**, highlighted and numbered: Markdown rendered (or **Source**), images.
   ⌘F searches in it, ⌃G goes to a line.
 - **Comment on a line**: the speech-bubble icon, when hovering the line number (⇧-click for a
-  range); the comment goes
-  with the comments on the [changes](#modifications), through **Send to the agent**.
+  range); it is sent with the comments on the [changes](#modifications), through **Send to the
+  agent**.
 - A file’s menu opens it in your editor or in the default app, shows it in its folder, mentions it
   in the message box (you can also drag its row onto the message box), copies its path or shows
   its diff.

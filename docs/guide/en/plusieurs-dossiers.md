@@ -18,7 +18,8 @@ Here, you can:
 
 1. Open the **Session** tab of the side panel (⌘J if the panel is closed).
 2. In **Environment**, under “Folder”, click **Add a folder…**.
-3. The picker opens next to the conversation’s folder: choose the folder, then **Add**.
+3. The picker opens in the folder that contains the conversation’s folder: choose the folder,
+   then **Add**.
 
 The folder appears in **Other folders**. The agent’s session restarts right away with the new
 list; the conversation is kept. With your next message, Bobine tells the agent which extra folders

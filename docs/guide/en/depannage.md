@@ -47,10 +47,10 @@ Settings › Diagnostics › **Log** shows the two files, with **Open** and
 <!-- si: finder -->
 They’re in `~/Library/Logs/Bobine/`. Help › Show Log opens `main.log`.
 <!-- si: !finder !explorer
-They’re in `~/.config/bobine/logs/`. Help › Show Log opens `main.log`.
+They’re in `~/.config/bobine/logs/`. ☰ › Help › Show Log opens `main.log`.
 -->
 <!-- si: explorer
-They’re in `%APPDATA%\bobine\logs\`. Help › Show Log opens `main.log`.
+They’re in `%APPDATA%\bobine\logs\`. ☰ › Help › Show Log opens `main.log`.
 -->
 
 **Log level**:
@@ -73,7 +73,7 @@ the version and the report. Nothing is sent until you submit it on GitHub.
 <!-- si: appMenu -->
 The Bobine › About Bobine window also has
 <!-- si: !appMenu
-The Help › About Bobine window also has
+The ☰ › About Bobine window also has
 --> **Copy technical info** (version, commit,
 <!-- si: finder -->
 macOS, installed agents), to paste into a report.

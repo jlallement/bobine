@@ -1,8 +1,8 @@
 # Panneaux
 
 Le panneau de droite montre ce que fait l'agent, et vous laisse la main : la session, les
-modifications, les fichiers, le navigateur intégré, le terminal, le simulateur iOS, l'émulateur Android, la
-liste de tâches.
+modifications, les fichiers, le navigateur intégré, le terminal, le simulateur iOS, l'émulateur
+Android, la liste de tâches.
 
 Ici, vous pouvez :
 
@@ -76,8 +76,8 @@ JetBrains), choisi dans Réglages › Général.
 
 L'onglet **Fichiers** s'ouvre à la demande : menu **+**, ⌘P (le curseur va dans le filtre) ou
 ⇧⌘Y (**Voir l'arborescence**). Il montre l'arbre du dossier de la conversation et de ses
-[autres dossiers](plusieurs-dossiers.md). Les fichiers cachés et ceux qu'ignore git y sont,
-atténués ; un point marque ceux que la conversation a modifiés.
+[autres dossiers](plusieurs-dossiers.md). Les fichiers cachés y sont ; ceux qu'ignore git
+aussi, atténués ; un point marque ceux que la conversation a modifiés.
 
 - **Filtrer** : par nom ou par chemin ; `chemin:42` va à la ligne 42.
 - Un fichier s'ouvre en **Lecture seule**, coloré et numéroté : Markdown rendu (ou **Source**),

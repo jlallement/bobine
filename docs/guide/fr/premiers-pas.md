@@ -86,7 +86,7 @@ en bout). À l'étape **Dossier** (« Où travailler ? »), prenez **Un projet e
 [`bobine <dossier>`](#commande-bobine), Bobine propose d'abord ce dossier : « Le dossier
 demandé », **Utiliser ce dossier**. L'agent lira et modifiera les fichiers du dossier choisi.
 
-**Passer l'accueil** le saute. Sans dossier, Bobine demande alors **Choisissez le dossier de votre
+**Passer l'accueil** saute les quatre étapes. Sans dossier, Bobine demande alors **Choisissez le dossier de votre
 projet**, puis **Choisir un dossier…**.
 
 Pour changer de dossier ensuite : cliquez sur le dossier sous la zone de saisie (menu **Dossier de

@@ -10,8 +10,8 @@ anywhere except to the agent you use: it has no telemetry. The one exception, wh
 off: [checking for new versions](#nouvelles-versions).
 
 Settings (⌘,) come in three groups: General, Appearance, Notifications, Keyboard shortcuts;
-Conversations, Agents, Roles, Memory, MCP servers, Commands; Privacy, Data, Diagnostics, What’s new. The search
-field at the top finds any setting (⌘F).
+Conversations, Agents, Roles, Memory, MCP servers, Commands; Privacy, Data, Diagnostics, What’s new.
+The search field at the top finds any setting (⌘F).
 
 Here you can:
 

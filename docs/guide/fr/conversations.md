@@ -140,7 +140,7 @@ tous les agents :
 | `/review` | Revue des modifications en cours, par l'agent de la conversation |
 | `/split [message]` | Découper le message en [travaux](conversations-filles.md#taches-proposees) |
 | `/btw [question]` | [Aparté](aparte.md) : une question à côté, répondue hors du fil |
-| `/roundtable [question]` | [Tour de table](tour-de-table.md) : la question part à plusieurs modèles, puis la conversation en fait la synthèse |
+| `/roundtable [question]` | [Tour de table](tour-de-table.md) : plusieurs modèles, puis une synthèse |
 | `/help` | Liste des commandes |
 
 La liste montre aussi les commandes de l'agent et vos commandes personnelles ou du projet

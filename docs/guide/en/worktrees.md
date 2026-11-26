@@ -182,8 +182,9 @@ ahead and lists the files. Two choices:
 - **Commit first**: a message is suggested, then **Commit, then merge**;
 - **Set aside**: the changes are put away (`git stash`) during the merge, then restored.
 
-While an agent is still writing in the main folder, or a task is still responding, **Commit, then
-merge** is refused before anything is committed, with the reason: try again once it has finished.
+While a turn is in progress in the main folder (an agent responding or waiting for your
+approval), **Commit, then merge** is refused before anything is committed, with the reason: try
+again once the turn has ended.
 
 <a id="nettoyer"></a>
 
