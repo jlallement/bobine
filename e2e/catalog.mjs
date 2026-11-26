@@ -1327,6 +1327,21 @@ export const SUITES = [
     ]
   },
   {
+    // Fiche 289 (testeur, T11) : l'app fermée pendant le tour de résolution d'un conflit ; au
+    // redémarrage, la fusion s'arrête « à relire ».
+    name: 'filles-fusion-redemarrage',
+    file: 'filles-fusion-redemarrage.mjs',
+    run: 'fillesFusionRedemarrageSuite',
+    themes: BOTH,
+    sources: [
+      `${C}thread/SubtasksMerge.tsx`,
+      'src/main/conversations/children-merge*.ts',
+      'src/main/changes/merge-conclude.ts',
+      'src/main/changes/worktree-cycle.ts',
+      'src/shared/children-merge.ts'
+    ]
+  },
+  {
     // Retouches de la recette Bricole (fiche 287) : commit puis fusion refusé avant tout commit
     // pendant un tour, fusion et nettoyage depuis l'onglet Git dits sur la carte, raisons au clavier.
     name: 'filles-retouches',
