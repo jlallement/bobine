@@ -3,7 +3,8 @@
 # (`scripts/electron-floor.json`), celui d'un Mac qui ne peut pas obtenir la version fixée. Mêmes
 # commandes que l'utilisateur : archive officielle installée par `pnpm electron-local` (empreinte
 # du dépôt vérifiée), fumée e2e (journées `parcours-*`, ADR-0069, `startup` et `about`),
-# `pnpm package --dir`, `pnpm e2e:packaged` ; puis le dépôt doit rester propre (`git status`).
+# `pnpm package --dir`, essai de l'app packagée (`e2e/packaged-ci.mjs`) ; puis le dépôt doit
+# rester propre (`git status`).
 #
 # Fichier identique sur `main` et sur `1.2` : GitHub ne lance un workflow (nuit ou à la main) que
 # s'il existe sur la branche par défaut (`main`), et `schedule` ne part que d'elle. La nuit joue
@@ -78,7 +79,12 @@ jobs:
             echo "::error::L'app embarque Electron $built, attendu le plancher $FLOOR."
             exit 1
           fi
-      - run: pnpm e2e:packaged
+      # Aucun agent sur le runner : comme `release.yml`, un HOME jetable expose un OpenCode factice
+      # extérieur à l'app (`e2e/packaged-ci.mjs`), et le contrôle « agent trouvé » reste entier.
+      # Sans `BOBINE_PACKAGED_APP` : l'app de `dist/`, avis de licence comparés strictement
+      # (plancher : régénérés pour l'Electron livré).
+      - name: Essai de l'app construite (agent factice hors de l'app)
+        run: node e2e/packaged-ci.mjs
       # Construire sur le plancher ne modifie aucun fichier suivi (package.json, lockfile, avis).
       - name: Dépôt propre
         run: |
