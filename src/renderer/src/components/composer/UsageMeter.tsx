@@ -18,6 +18,7 @@ import {
   type ConversationUsage,
   type TurnUsage
 } from '@shared/usage'
+import i18next from 'i18next'
 import { useTranslation } from 'react-i18next'
 import { Tip } from '../common/Menus'
 import type { UsageActions } from '../../useTurnGuards'
@@ -184,9 +185,7 @@ export function UsageMeter({
                 </div>
                 {isEstimate(cost.total.currency) && (
                   <div className="usage-hint" data-testid="usage-cost-hint">
-                    {costNotReported(cost.total, free)
-                      ? t('usage.costNotReportedHint', { agent: agentLabel })
-                      : t('usage.costHint', { agent: agentLabel })}
+                    {costHint(cost.total, free, agentLabel)}
                   </div>
                 )}
                 {cost.session && (
@@ -232,6 +231,17 @@ export function UsageMeter({
  * Moyenne par échange (ce que coûtera vraisemblablement le prochain) et une ligne par échange, le
  * plus récent en haut (fiche 109). Rien tant qu'aucun échange n'a rapporté jetons ou coût.
  */
+/**
+ * Aide sous le coût estimé : « gratuit » (coût nul d'un modèle qui se dit gratuit) dit seulement
+ * ce que l'app sait, l'agent annonce un coût nul (fiche 292) ; un coût nul d'un autre modèle est
+ * inconnu (fiche 266) ; un montant reste celui des tarifs de l'agent.
+ */
+function costHint(cost: { amount: number; currency: string }, free: boolean, agent: string) {
+  if (costNotReported(cost, free)) return i18next.t('usage.costNotReportedHint', { agent })
+  if (cost.amount === 0 && free) return i18next.t('usage.freeHint', { agent })
+  return i18next.t('usage.costHint', { agent })
+}
+
 function TurnSections({ usage }: { usage: ConversationUsage }) {
   const { t } = useTranslation()
   const turns = usage.turns ?? []

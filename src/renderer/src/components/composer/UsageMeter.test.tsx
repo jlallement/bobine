@@ -161,6 +161,25 @@ describe('détail de la consommation : le seul endroit où le coût se voit (fic
     expect(screen.getByTestId('usage-meter').textContent).toBe('coût inconnu')
   })
 
+  it('« gratuit » : l’aide dit le coût nul annoncé, sans parler de facturation (fiche 292)', () => {
+    const usage: ConversationUsage = {
+      cost: { amount: 0, currency: 'USD' },
+      turns: [
+        {
+          model: { id: 'opencode/deepseek-v4.1-flash-free', name: 'DeepSeek V4.1 Flash Free' },
+          costStart: 0,
+          costEnd: 0
+        }
+      ]
+    }
+    render(meter(usage))
+    fireEvent.click(screen.getByTestId('usage-meter'))
+    expect(screen.getByTestId('usage-cost').textContent).toBe('gratuit')
+    expect(screen.getByTestId('usage-cost-hint').textContent).toBe(
+      'Agent factice annonce un coût nul pour ce modèle gratuit.'
+    )
+  })
+
   it('bobcoins de Bob : ni « ≈ » ni explication d’estimation (fiche 245)', () => {
     render(meter({ cost: { amount: 0.0632, currency: 'bobcoins' } }))
     fireEvent.click(screen.getByTestId('usage-meter'))

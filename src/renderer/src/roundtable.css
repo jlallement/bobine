@@ -584,15 +584,6 @@
   visibility: hidden;
 }
 
-/* A6 : le détail du pied « Consommé », une ligne par participant. */
-.tooltip.roundtable-used-tip {
-  white-space: pre-line;
-}
-.roundtable-used:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-
 /*
  * Tour de table en bout de fil : un espace réservé sous son pied (76 px : au seuil de « ↓ », 60 px
  * du bas, le pied passe au-dessus du bouton) (« Consommé », confiance des

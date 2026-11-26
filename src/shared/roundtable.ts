@@ -14,7 +14,7 @@
  * `roundtable-ipc.ts`.
  */
 import type { TranscriptItem, TranscriptState } from './transcript'
-import type { UsageDigest } from './usage'
+import { processedTokens, type UsageDigest } from './usage'
 
 /** Participants d'un tour, au moins et au plus (décision 7 de la fiche). */
 export const ROUNDTABLE_MIN_SEATS = 2
@@ -1080,48 +1080,40 @@ export function newSeats(
 
 /** Total d'un tour, par unité, sans conversion : seulement ce que les agents ont communiqué. */
 export interface RoundtableTotal {
-  /** Jetons communiqués, tous tours confondus ; absent si aucun agent n'en donne. */
+  /**
+   * Jetons traités (entrée + sortie, `processedTokens`), tous tours confondus : le nombre de Mon
+   * activité et du compteur de la conversation, cache et réflexion à part (fiches 245, 292) ;
+   * absent si aucun agent n'en donne.
+   */
   tokens?: number
   /**
    * Un montant par unité (« USD », « bobcoin »…), dans l'ordre d'apparition. `free` : tout ce qui
    * compte dans cette unité vient de modèles gratuits (un total nul s'y lit « gratuit »).
    */
   costs: { amount: number; currency: string; free?: true }[]
-  /** Participants qui n'ont rien communiqué (« 1 participant sans chiffre »). */
-  silent: number
 }
 
-const digestTokens = (d: UsageDigest): number | undefined =>
-  d.total ??
-  (d.input !== undefined || d.output !== undefined ? (d.input ?? 0) + (d.output ?? 0) : undefined)
-
 /**
- * Total du pied de la carte : les conversations des participants (avis et répliques) et les tours
- * de l'agent de la conversation marqués « tour de table » (synthèse, décision). Jamais
+ * Total du pied de la carte (fiche 292, « un seul total juste ») : les conversations des
+ * participants (avis et répliques), puis les tours de l'agent de la conversation lancés par le tour
+ * (synthèse, décision). « Demander de l'appliquer », message ordinaire, n'en est pas. Jamais
  * d'addition entre unités (`digestsTotal` de la fiche 266 suit la même règle).
  */
-export function roundtableTotal(
-  /** `null` : participant encore au travail, ni chiffre ni « sans chiffre ». */
-  participants: readonly (UsageDigest | undefined | null)[],
-  steps: readonly (UsageDigest | undefined)[] = []
-): RoundtableTotal {
+export function roundtableTotal(digests: readonly (UsageDigest | undefined)[]): RoundtableTotal {
   let tokens: number | undefined
   const costs: { amount: number; currency: string; free?: true }[] = []
   const paid = new Set<string>()
-  let silent = 0
-  const add = (digest: UsageDigest | undefined, participant: boolean) => {
-    const used = digest ? digestTokens(digest) : undefined
-    const cost = digest?.cost
-    if (participant && used === undefined && !cost) silent++
-    if (used !== undefined) tokens = (tokens ?? 0) + used
-    if (!cost) return
-    if (digest?.free !== true) paid.add(cost.currency)
+  for (const digest of digests) {
+    if (!digest) continue
+    if (digest.input !== undefined || digest.output !== undefined)
+      tokens = (tokens ?? 0) + processedTokens(digest)
+    const cost = digest.cost
+    if (!cost) continue
+    if (digest.free !== true) paid.add(cost.currency)
     const same = costs.find((c) => c.currency === cost.currency)
     if (same) same.amount = round6(same.amount + cost.amount)
     else costs.push({ amount: round6(cost.amount), currency: cost.currency })
   }
-  for (const digest of participants) if (digest !== null) add(digest, true)
-  for (const digest of steps) add(digest, false)
   const marked = costs.map((c) => (paid.has(c.currency) ? c : { ...c, free: true as const }))
-  return { ...(tokens !== undefined ? { tokens } : {}), costs: marked, silent }
+  return { ...(tokens !== undefined ? { tokens } : {}), costs: marked }
 }

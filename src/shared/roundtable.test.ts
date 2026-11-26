@@ -601,30 +601,32 @@ describe('tour de table : élément du fil', () => {
   })
 })
 
-describe('tour de table : total consommé', () => {
-  it('par unité, sans conversion ; participants sans chiffre comptés', () => {
-    const total = roundtableTotal(
-      [
-        { total: 1000, cost: { amount: 0.02, currency: 'USD' } },
-        { input: 300, output: 200 },
-        { cost: { amount: 0.4, currency: 'bobcoin' } },
-        undefined,
-        {}
-      ],
-      [{ total: 500, cost: { amount: 0.01, currency: 'USD' } }, undefined]
-    )
+describe('tour de table : total consommé (fiche 292)', () => {
+  it('jetons traités (entrée + sortie, sans cache ni réflexion) ; coûts par unité, sans conversion', () => {
+    const total = roundtableTotal([
+      // Avis d'OpenCode : `total` compte le cache et la réflexion, pas le total de la carte.
+      { input: 600, output: 400, total: 9_000, cost: { amount: 0.02, currency: 'USD' } },
+      { input: 300, output: 200 },
+      { cost: { amount: 0.4, currency: 'bobcoin' } },
+      undefined,
+      {},
+      // Synthèse, puis décision absente.
+      { input: 450, output: 50, total: 4_000, cost: { amount: 0.01, currency: 'USD' } },
+      undefined
+    ])
     expect(total).toEqual({
       tokens: 2000,
       costs: [
         { amount: 0.03, currency: 'USD' },
         { amount: 0.4, currency: 'bobcoin' }
-      ],
-      silent: 2
+      ]
     })
   })
 
   it('rien de communiqué : ni jetons ni coût inventés', () => {
-    expect(roundtableTotal([undefined, undefined])).toEqual({ costs: [], silent: 2 })
+    expect(roundtableTotal([undefined, undefined])).toEqual({ costs: [] })
+    // Un `total` seul n'est pas un nombre de jetons traités (Mon activité le compte pour 0).
+    expect(roundtableTotal([{ total: 10 }])).toEqual({ costs: [] })
   })
 })
 
@@ -895,16 +897,6 @@ describe('tour de table : arguments IPC', () => {
 
 it('les lettres suivent l’ordre des places', () => {
   expect(letters(roundtable())).toEqual(['A', 'B', 'C'])
-})
-
-describe('tour de table : recette (M5)', () => {
-  it('participant encore au travail : ni chiffre ni « sans chiffre »', () => {
-    expect(roundtableTotal([{ total: 10 }, null, undefined])).toEqual({
-      tokens: 10,
-      costs: [],
-      silent: 1
-    })
-  })
 })
 
 describe('tour de table : recette réelle (S1, S2, S3, G6, C3)', () => {

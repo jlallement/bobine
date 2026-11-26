@@ -197,37 +197,39 @@ describe('menu des participants', () => {
 })
 
 describe('pied « Consommé »', () => {
-  it('jetons et coûts par unité, sans conversion ; participants muets non comptés (simplification 5)', () => {
-    const total = roundtableTotal(
-      [{ total: 20_000, cost: { amount: 0.02, currency: 'USD' } }, undefined, { total: 27_500 }],
-      [{ cost: { amount: 0.42, currency: 'bobcoins' } }]
-    )
-    const text = totalText(total) ?? ''
-    expect(text).toMatch(/^47,5k jetons · /)
+  /** Espaces insécables de la typographie française ramenées à des espaces. */
+  const plain = (text: string | undefined) => (text ?? '').replace(/[\u00a0\u202f]/g, ' ')
+
+  it('jetons traités en entier, au jeton près, et coûts par unité, sans conversion (fiche 292)', () => {
+    const total = roundtableTotal([
+      { input: 19_000, output: 1_000, total: 60_000, cost: { amount: 0.02, currency: 'USD' } },
+      undefined,
+      { input: 27_000, output: 512 },
+      { cost: { amount: 0.42, currency: 'bobcoins' } }
+    ])
+    const text = plain(totalText(total))
+    expect(text).toMatch(/^47 512 jetons traités · /)
     expect(text).toContain('0,42 Bobcoins')
-    expect(text).not.toContain('sans chiffre')
   })
 
   it('modèles gratuits à 0 $ : « gratuit », jamais « coût inconnu » (recette de la 1.2.0-beta.1, G-B1)', () => {
     const zero = { amount: 0, currency: 'USD' }
-    const free = roundtableTotal(
-      [
-        { total: 30_000, cost: zero, free: true },
-        { total: 34_000, cost: zero, free: true }
-      ],
-      [{ total: 70_000, cost: zero, free: true }]
-    )
-    expect(totalText(free)).toBe('134k jetons · gratuit')
+    const free = roundtableTotal([
+      { input: 30_000, output: 0, cost: zero, free: true },
+      { input: 34_000, output: 0, cost: zero, free: true },
+      { input: 69_000, output: 1_000, cost: zero, free: true }
+    ])
+    expect(plain(totalText(free))).toBe('134 000 jetons traités · gratuit')
     // Tour mixte : « gratuit + 0,21 Bobcoins ».
-    const mixed = roundtableTotal(
-      [{ total: 30_000, cost: zero, free: true }],
-      [{ cost: { amount: 0.2134, currency: 'bobcoins' } }]
-    )
+    const mixed = roundtableTotal([
+      { input: 30_000, output: 0, cost: zero, free: true },
+      { cost: { amount: 0.2134, currency: 'bobcoins' } }
+    ])
     expect(totalText(mixed)).toContain('gratuit + 0,21')
     // Un coût nul d'un modèle qui ne se dit pas gratuit reste inconnu.
     const paid = roundtableTotal([
-      { total: 10, cost: zero },
-      { total: 10, cost: zero, free: true }
+      { input: 10, cost: zero },
+      { input: 10, cost: zero, free: true }
     ])
     expect(totalText(paid)).toContain('coût inconnu')
   })
