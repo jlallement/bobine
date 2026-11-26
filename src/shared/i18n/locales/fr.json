@@ -4571,7 +4571,7 @@
     "addFolder": "Ajouter un dossier…",
     "addFolderTip": "L’agent voit aussi ce dossier. Sa session repart aussitôt avec la nouvelle liste ; le fil est gardé.",
     "removeFolder": "Retirer {{name}} de la conversation",
-    "foldersBusy": "L’agent répond : l’ajout et le retrait d’un dossier attendent la fin de son tour.",
+    "foldersBusy": "L’agent répond : un dossier s’ajoute ou se retire une fois son tour fini.",
     "foldersUnsupported": "Non transmis : {{agent}} ne prend pas d’autres dossiers que le dossier de travail.",
     "documents": "Documents",
     "discussionDocuments": "Documents de la discussion",
@@ -5218,7 +5218,7 @@
       "text": "Gros changement : le faire relire par un autre agent avant de fusionner ?"
     },
     "scheduled": {
-      "text": "Troisième jour avec ce message. En faire une tâche planifiée ?",
+      "text": "Même message, trois jours différents. En faire une tâche planifiée ?",
       "plan": "Planifier…"
     }
   },

@@ -6,8 +6,8 @@ What changes for you, version by version. Shown in Settings › What’s new.
 
 ### Fixes
 
-- **“Schedule…” tip**: it says “Third day with this message”, which is what it counts (the same
-  message on three different days), no longer “Third time”.
+- **“Schedule…” tip**: it says “Same message on three different days”, which is what it really
+  counts, no longer “Third time you send this message”.
 - **Help**: the guide describes the first-launch welcome, the update notice, the Files tab,
   `/roundtable` in the command list, and the 1.2 changes to tasks and other folders.
 

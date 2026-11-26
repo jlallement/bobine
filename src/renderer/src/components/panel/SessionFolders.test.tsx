@@ -48,7 +48,7 @@ describe('onglet « Session » : autres dossiers (fiche 179)', () => {
     const add = screen.getByTestId('session-add-folder') as HTMLButtonElement
     const remove = screen.getByTestId('session-remove-folder') as HTMLButtonElement
     const why =
-      'L’agent répond\u00a0: l’ajout et le retrait d’un dossier attendent la fin de son tour.'
+      'L’agent répond\u00a0: un dossier s’ajoute ou se retire une fois son tour fini.'
     for (const button of [add, remove]) {
       // Atteignable au clavier (pas `disabled`), mais sans effet, et il dit pourquoi.
       expect(button.disabled).toBe(false)

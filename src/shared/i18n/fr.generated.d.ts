@@ -4410,7 +4410,7 @@ export type FrResources = {
     readonly addFolder: 'Ajouter un dossier…'
     readonly addFolderTip: 'L’agent voit aussi ce dossier. Sa session repart aussitôt avec la nouvelle liste ; le fil est gardé.'
     readonly removeFolder: 'Retirer {{name}} de la conversation'
-    readonly foldersBusy: 'L’agent répond : l’ajout et le retrait d’un dossier attendent la fin de son tour.'
+    readonly foldersBusy: 'L’agent répond : un dossier s’ajoute ou se retire une fois son tour fini.'
     readonly foldersUnsupported: 'Non transmis : {{agent}} ne prend pas d’autres dossiers que le dossier de travail.'
     readonly documents: 'Documents'
     readonly discussionDocuments: 'Documents de la discussion'
@@ -5048,7 +5048,7 @@ export type FrResources = {
       readonly text: 'Gros changement : le faire relire par un autre agent avant de fusionner ?'
     }
     readonly scheduled: {
-      readonly text: 'Troisième jour avec ce message. En faire une tâche planifiée ?'
+      readonly text: 'Même message, trois jours différents. En faire une tâche planifiée ?'
       readonly plan: 'Planifier…'
     }
   }

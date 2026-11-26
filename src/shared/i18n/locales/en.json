@@ -4384,7 +4384,7 @@
     "addFolder": "Add a folder…",
     "addFolderTip": "The agent sees this folder too. Its session restarts right away with the new list; the thread is kept.",
     "removeFolder": "Remove {{name}} from the conversation",
-    "foldersBusy": "The agent is responding: adding or removing a folder waits until its turn ends.",
+    "foldersBusy": "The agent is responding: you can add or remove a folder once its turn ends.",
     "foldersUnsupported": "Not sent: {{agent}} only takes its working folder.",
     "documents": "Documents",
     "discussionDocuments": "Chat documents",
@@ -4987,7 +4987,7 @@
       "text": "Big change: have another agent review it before merging?"
     },
     "scheduled": {
-      "text": "Third day with this message. Make it a scheduled task?",
+      "text": "Same message on three different days. Make it a scheduled task?",
       "plan": "Schedule…"
     }
   },
