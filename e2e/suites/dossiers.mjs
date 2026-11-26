@@ -82,8 +82,9 @@ export async function dossiersSuite(scheme) {
         // Échap vide le champ ; le chemin complet (non résolu) est ajouté, dossier réel retenu.
         await ui.press('Escape')
         await typePath(ui, library)
+        // La réponse du main arrive une fois la session repartie : la ligne « Ajouté » d'abord.
         await ui.waitFor(
-          `[...document.querySelectorAll('[data-testid=session-extra-folder] [data-folder]')].length === 1`
+          `${ui.$('session-folder-note')}.textContent === ${JSON.stringify(L('sessionTab.folderAdded'))}`
         )
         check(
           (await folders(ui)) === libraryReal &&

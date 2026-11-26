@@ -538,6 +538,7 @@ export const SUITES = [
     sources: [
       `${C}panel/SessionFolders.tsx`,
       `${C}panel/FolderPathField.tsx`,
+      `${C}panel/folder-capability.ts`,
       'src/main/conversations/extra-folder-check.ts',
       'src/shared/extra-folders.ts',
       `${C}common/ReasonButton.tsx`,

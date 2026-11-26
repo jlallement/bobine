@@ -191,6 +191,14 @@ appliquée telle quelle.
     Échap, changement de conversation, pas de complétion.
   - Écart : `updateRecord` (gestionnaire à son plafond de lignes) accepte qu'un changement rende
     `false` plutôt qu'une méthode de lecture de plus.
+- 2026-11-26 — Interface faite. Défaut trouvé par l'e2e et corrigé à la cause : pendant que la
+  session repart après un ajout, l'instantané de l'agent ne dit pas encore la capacité ; la ligne
+  passait à « Non transmis » et le champ disparaissait (avec la ligne « Ajouté »). La dernière
+  capacité vue d'un agent prêt est gardée pour la conversation (`panel/folder-capability.ts`,
+  essai). Vérifié : `./scripts/verify` vert ; `pnpm build` ; suites nommées en clair et en
+  sombre : `dossiers`, `session`, `attachments`, `aparte`, `pr-ci`, `pilote` (celles du catalogue
+  dont les sources touchent l'onglet Session ou le dépôt de fichiers) ; suite complète laissée à la
+  branche d'intégration (consigne du 2026-11-26).
 - Non vérifié : glisser depuis le vrai Finder, Explorateur ou gestionnaire de fichiers Linux ;
   demande d'accès de macOS ; essais du vrai disque sous Windows (jonction) et Linux (casse), qui
   tournent en CI, pas sur ce Mac ; recette avec un vrai OpenCode.

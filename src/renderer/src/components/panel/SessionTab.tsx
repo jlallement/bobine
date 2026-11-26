@@ -16,6 +16,7 @@ import { SessionChanges } from './SessionChanges'
 import { SessionContext } from './SessionContext'
 import { SessionEnvironment } from './SessionEnvironment'
 import { SessionFolders } from './SessionFolders'
+import { useFolderCapability } from './folder-capability'
 import { SessionRunning } from './SessionRunning'
 import { checksLine } from './PrCard'
 import { usePrTrack } from '../../usePrTrack'
@@ -168,6 +169,11 @@ export function SessionTab({
     [items, terminals, usage, appTools, mcp, memory]
   )
   const warn = (error: unknown) => data.onWarn(ipcErrorText(error))
+  const foldersSupported = useFolderCapability(
+    conversationId,
+    !!data.snapshot?.additionalDirectories,
+    view.status
+  )
   const stop = (entry: RunningEntry) => {
     const how = entry.stop
     if (!how) return
@@ -198,7 +204,7 @@ export function SessionTab({
         folders={
           <SessionFolders
             folders={data.additionalDirectories ?? []}
-            supported={!!data.snapshot?.additionalDirectories}
+            supported={foldersSupported}
             busy={view.status === 'busy'}
             agentLabel={view.agentLabel}
             finder={platformFeatures().finder}

@@ -220,6 +220,7 @@
   background: var(--bg);
   color: var(--text);
   font: 12px var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
 }
 
 .folder-path-input::placeholder {
