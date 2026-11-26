@@ -148,6 +148,15 @@ Pas de nouvelle dépendance (`yaml`, déjà là, pour la configuration temporair
   « nomme l'Electron livré (45.2.3) » et « celui du dépôt pour Electron 45.2.3, plancher » ; sur
   la construction normale : 0. `packaged*.mjs` inchangés.
 
+- 2026-11-26 — Publication de la 1.2.0-rc.1 : l'essai « avis de licence du plancher » de
+  `scripts/electron-floor.test.ts` a dépassé 15 s sur le runner Windows arm64 (`release.yml`). Il
+  générait deux fois les avis des 183 paquets (recherche dans le magasin pnpm). Corrigé à la
+  cause : partie Electron isolée (inventaire sans paquets npm, deux générations de quelques
+  millisecondes), même preuve (seules les deux mentions de la version changent, et ce sont
+  celles du fichier du dépôt) ; l'égalité du fichier du dépôt avec le générateur reste prouvée par
+  `third-party-notices.test.ts`. Sur ce Mac : 2830 ms → 9 ms. Les cas d'`electron-local.test.ts`
+  restent sous la seconde chacun.
+
 ## Reste à faire
 
 - Fusionner `1.2-electron-plancher` dans `1.2` : d'ici là, la nuit (qui joue `1.2`) s'arrête à
