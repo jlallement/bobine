@@ -392,6 +392,7 @@ export function SidePanel({
               {...(workspace ? { workspace } : {})}
               {...(onSendDiffNotes ? { onSendNotes: onSendDiffNotes } : {})}
               childWorktrees={childWorktrees}
+              agentStatus={agentStatus}
               onReview={onReview}
               onOpenFile={openFileOf(files)}
               rootsKey={filesWork.rootsKey}

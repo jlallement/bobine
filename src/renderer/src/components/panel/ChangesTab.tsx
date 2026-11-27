@@ -186,6 +186,11 @@ interface ChangesTabProps {
    * « depuis le dernier commit ».
    */
   discussion?: boolean
+  /**
+   * Ce que fait l'agent de la conversation (tour, accord attendu) : la vue Git est relue quand son
+   * tour commence ou finit, « Fusionner » grisé pendant un tour ne le reste pas (fiche 289, rc.2).
+   */
+  agentStatus?: 'busy' | 'request' | undefined
 }
 
 /**
@@ -205,7 +210,8 @@ export function ChangesTab({
   onReview,
   onOpenFile,
   rootsKey,
-  discussion = false
+  discussion = false,
+  agentStatus
 }: ChangesTabProps) {
   const { t } = useTranslation()
   const conversation = useMemo(() => conversationChanges(items), [items])
@@ -276,7 +282,7 @@ export function ChangesTab({
   const finished = items.filter((i) => i.kind === 'tool' && i.status === 'completed').length
   // Conversation en worktree (fiche 110) : barre du cycle ; sinon « Committer » seul (fiche 123).
   // Fichiers à cocher dans la vue git, dans les deux cas.
-  const cycle = useWorktreeCycle(conversationId, finished)
+  const cycle = useWorktreeCycle(conversationId, `${finished}:${agentStatus ?? 'idle'}`)
   const [unchecked, setUnchecked] = useState<Set<string>>(new Set())
   /**
    * État du dépôt relu : les diffs lus avant ne valent plus, ni ceux encore en route (0.11, M2).

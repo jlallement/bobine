@@ -240,6 +240,26 @@ describe('canaux IPC du cycle des worktrees (fiche 110)', () => {
     expect(quiet.cycle.mergeContinue).toHaveBeenCalled()
   })
 
+  it('agent qui démarre (redémarrage de l’app) : pas un tour, « Fusionner » n’est ni grisé ni refusé (rc.2, Mac lent)', async () => {
+    const starting = setup()
+    starting.conversations.state.mockImplementation(() => ({
+      activeId: 'c1',
+      conversations: [
+        {
+          id: 'c1',
+          title: 'Essai',
+          workspace: '/autre',
+          branch: 'bobine/x',
+          status: 'starting',
+          startedFrom: { id: 'm', title: 'Mère' }
+        }
+      ]
+    }))
+    expect((await starting.handlers['worktree:info']('c1'))?.turn).toBeUndefined()
+    await starting.handlers['worktree:merge']('c1')
+    expect(starting.cycle.merge).toHaveBeenCalled()
+  })
+
   it('fusion, reprise ou « Laisser l’agent résoudre » pendant un tour de la conversation : refusés (fiche 289)', async () => {
     const busy = setup({ merging: ['README.md'] })
     busy.conversations.state.mockImplementation(() => ({

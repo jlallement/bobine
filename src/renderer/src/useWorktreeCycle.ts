@@ -10,7 +10,8 @@ import type { WorktreeCycleView } from '@shared/worktree-cycle'
  */
 export function useWorktreeCycle(
   conversationId: string,
-  key: number
+  /** Change quand l'état du dépôt ou le tour de l'agent ont pu changer : la vue est relue. */
+  key: number | string
 ): {
   info: WorktreeCycleView | null
   /** Le main a répondu au moins une fois : `info` à `null` veut alors dire « pas de worktree ». */
