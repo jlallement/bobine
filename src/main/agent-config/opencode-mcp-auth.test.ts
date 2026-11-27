@@ -81,6 +81,26 @@ describe('connexion d’un serveur MCP par OpenCode 2.3.0 (fiche 293, sorties re
     }
   })
 
+  it('hypothèse, non relevée sous Windows (R9) : symboles ASCII de repli, même lecture', () => {
+    // Sans terminal Unicode, la bibliothèque d'invite d'OpenCode remplace ses symboles par de
+    // l'ASCII ; la lecture ne dépend d'aucun symbole de tête (préfixe court, puis le texte).
+    const page = 'https://www.figma.com/oauth/mcp?x=1'
+    for (const prefix of ['•  ', 'o  ', '|  ', '*  ', '']) {
+      expect(OPENCODE_MCP_AUTH.readLine(`${prefix}${page}`), prefix).toEqual({
+        kind: 'url',
+        url: page
+      })
+    }
+    expect(OPENCODE_MCP_AUTH.readLine('*  Connected to figma')).toEqual({ kind: 'connected' })
+    expect(OPENCODE_MCP_AUTH.readLine('x  Authorization expired')).toEqual({ kind: 'expired' })
+    expect(OPENCODE_MCP_AUTH.readLine('—  Failed')).toEqual({ kind: 'failed' })
+    expect(OPENCODE_MCP_AUTH.readLine('—  Cancelled')).toEqual({ kind: 'cancelled' })
+    expect(OPENCODE_MCP_AUTH.readLine('Connected to figma')).toEqual({ kind: 'connected' })
+    // Un mot de plus de trois lettres devant n'est pas un symbole : pas une adresse seule.
+    expect(OPENCODE_MCP_AUTH.readLine(`Open ${page}`)).toBeUndefined()
+    expect(OPENCODE_MCP_AUTH.readLine(`●  ${page} now`)).toBeUndefined()
+  })
+
   it('une adresse de tout schéma est rendue au moteur, qui seul décide (http, javascript…)', () => {
     expect(OPENCODE_MCP_AUTH.readLine('●  http://www.figma.com/oauth')).toEqual({
       kind: 'url',
@@ -110,6 +130,18 @@ describe('état des connexions : `opencode auth list --format json` (fiche 293)'
     expect(read([figma([{ ...oauth, status: { status: 'autre' } }])])).toEqual(
       new Map([['figma', 'unknown']])
     )
+    // Plusieurs connexions, dans tous les ordres : connecté > expiré > inconnu.
+    const needs = { ...oauth, status: { status: 'needs_auth' } }
+    const odd = { ...oauth, status: { status: 'autre' } }
+    for (const [list, expected] of [
+      [[oauth, needs], 'connected'],
+      [[needs, oauth], 'connected'],
+      [[odd, needs], 'expired'],
+      [[needs, odd], 'expired'],
+      [[odd, oauth, needs], 'connected']
+    ] as const) {
+      expect(read([figma([...list])])?.get('figma'), JSON.stringify(list)).toBe(expected)
+    }
     // Plusieurs connexions : une valable suffit.
     expect(
       read([figma([{ ...oauth, status: { status: 'needs_auth' } }, oauth])])?.get('figma')

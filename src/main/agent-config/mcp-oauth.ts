@@ -1,14 +1,18 @@
 /**
- * Connexion OAuth d'un serveur MCP distant faite par l'agent (fiche 293, ADR-0075). Moteur
+ * Connexion OAuth d'un serveur MCP distant faite par l'agent (fiche 293, ADR-0077). Moteur
  * générique : il ne connaît ni l'agent ni le serveur. Le profil dit les arguments et lit les sorties
- * (`McpOAuthSource`) ; le préréglage dit l'hôte attendu de la page (`shared/mcp-presets.ts`).
+ * (`McpOAuthSource`) ; le préréglage dit l'hôte et le chemin attendus de la page
+ * (`shared/mcp-presets.ts`).
  *
  * - **Une seule connexion à la fois** dans l'app (connexion ou déconnexion), refusée ici, pas
- *   seulement grisée.
+ *   seulement grisée, tant que le processus de la précédente vit ou que sa déconnexion tourne.
+ * - **Chaque opération porte un numéro** : une fin périmée (relue après qu'une autre opération est
+ *   partie pour le même serveur, ou après la fermeture de l'app) n'émet rien et ne range rien.
  * - **La page n'est ouverte qu'après vérification** de son adresse (`checkPageUrl`), une fois ; la
  *   première adresse lue décide (une suivante est ignorée : la page a déjà été ouverte, ou la
- *   tentative refusée). Jamais l'adresse complète hors d'ici : seul l'hôte part au journal, à
- *   l'IPC et dans les états.
+ *   tentative refusée). Jamais d'adresse lue après la fin du processus, ni de dernière ligne sans
+ *   retour à la ligne. Jamais l'adresse complète hors d'ici : seul l'hôte part au journal, à l'IPC et
+ *   dans les états ; aucune ligne de sortie n'est journalisée, seulement ce qui a été reconnu.
  * - **Chaque fin n'est traitée qu'une fois** (« Annuler », délai, adresse refusée, pas d'adresse,
  *   fin du processus, fermeture de l'app) ; l'arbre de processus est toujours arrêté (`killTree` :
  *   le serveur privé de l'agent est un enfant, relevé R6).
@@ -24,6 +28,7 @@ import {
   type McpAuthState,
   type McpAuthView,
   type McpConnectResult,
+  type McpDisconnectResult,
   type McpServerEntry
 } from '@shared/mcp'
 import { MCP_PRESETS, presetForUrl, type McpPreset } from '@shared/mcp-presets'
@@ -35,6 +40,7 @@ import { killTree } from '../agent/process-utils'
 import type { McpAuthLine, McpAuthStored, McpOAuthSource } from '../agent/adapters'
 import type { AgentProfile } from '../agent/profiles'
 import { checkPageUrl, scrubUrls, TerminalLines } from './mcp-oauth-output'
+import { runCommand, type CommandOutcome } from './mcp-oauth-command'
 
 export interface McpOAuthLimits {
   /** Durée maximale d'une tentative (proche de celle d'OpenCode, ≈ 10 min). */
@@ -54,8 +60,7 @@ export const MCP_OAUTH_LIMITS: McpOAuthLimits = {
   exitWaitMs: 5_000
 }
 
-/** Sortie d'une commande courte gardée au plus (au-delà : illisible). */
-export const MAX_COMMAND_OUTPUT = 1024 * 1024
+export { MAX_COMMAND_OUTPUT } from './mcp-oauth-command'
 
 type Start = (command: string, args: readonly string[], options: SpawnOptions) => ChildProcess
 
@@ -90,16 +95,23 @@ type Ending =
   | { kind: 'quit' }
 
 interface Attempt {
+  /** Numéro de l'opération (`McpOAuth.latest`). */
+  id: number
   profile: AgentProfile
   source: McpOAuthSource
   name: string
   host: string
+  path: string
   /** Dossier de la conversation au lancement : la commande et la relecture y tournent (R4). */
   workspace: string
   child?: ChildProcess
   /** Adresse vérifiée, gardée en mémoire du main seulement (« Rouvrir la page »). */
   url?: string
   urlSeen: boolean
+  /** Le processus est sorti (`exit`) : plus aucune adresse n'est prise. */
+  processEnded: boolean
+  /** Lignes de sortie non reconnues (comptées, jamais journalisées). */
+  unread: number
   told: Told
   ending?: Ending
   timers: ReturnType<typeof setTimeout>[]
@@ -108,13 +120,18 @@ interface Attempt {
   markExited: () => void
 }
 
-/** Résultat d'une commande courte : sa sortie standard, si elle a pu être lue en entier. */
-interface CommandOutput {
-  stdout?: string
-  missing?: boolean
-}
-
 type Stored = Map<string, McpAuthStored> | undefined
+
+type Target = { profile: AgentProfile; source: McpOAuthSource; preset: McpPreset; enabled: boolean }
+
+/** Ce qu'une ligne reconnue dit, pour le journal (jamais la ligne elle-même). */
+const TOLD_TEXT: Record<keyof Told, string> = {
+  connected: 'connexion dite faite',
+  expired: 'expiration dite',
+  refused: 'refus dit',
+  failed: 'échec dit',
+  cancelled: 'annulation dite'
+}
 
 const key = (profileId: string, name: string) => `${profileId}\u0000${name}`
 
@@ -162,10 +179,13 @@ export class McpOAuth {
   private readonly limits: McpOAuthLimits
   private readonly start: Start
   private readonly stopTree: (child: ChildProcess) => void
-  /** Tentative de connexion en cours (au plus une). */
+  /** Tentative de connexion dont le processus vit (ou va être lancé) : au plus une. */
   private current: Attempt | undefined
   /** Déconnexion en cours (compte aussi comme « une connexion à la fois »). */
   private logout = false
+  /** Numéro de la dernière opération par serveur ; une fin d'un autre numéro est périmée. */
+  private readonly latest = new Map<string, number>()
+  private seq = 0
   /** Fin de la dernière tentative, montrée tant que l'état relu ne dit pas « connecté ». */
   private readonly outcomes = new Map<string, McpAuthState>()
   /** Tout processus lancé et pas encore fini, arrêté à la fermeture de l'app. */
@@ -206,7 +226,8 @@ export class McpOAuth {
   async connect(profileId: string, name: string, workspace: string): Promise<McpConnectResult> {
     const target = this.target(profileId, name, workspace)
     if (!target) return { started: false, reason: 'not-offered' }
-    if (this.quitting || this.current || this.logout) return { started: false, reason: 'busy' }
+    if (!target.enabled) return { started: false, reason: 'disabled' }
+    if (this.busy()) return { started: false, reason: 'busy' }
     const attempt = this.newAttempt(target, name, workspace)
     // Réservée avant toute attente : un second clic pendant la lecture de l'environnement est refusé.
     this.current = attempt
@@ -221,10 +242,11 @@ export class McpOAuth {
       this.finish(attempt, { kind: 'spawn-failed', missing: false })
       return { started: true }
     }
-    if (attempt.ending) return { started: true } // Annulée pendant l'attente.
+    // Annulée (ou app fermée) pendant l'attente : rien n'est lancé.
+    if (attempt.ending) return { started: true }
     if (!this.deps.findCommand(target.profile.command, env)) {
       this.current = undefined
-      this.remember(this.missing(profileId, name))
+      this.remember(attempt.id, this.missing(profileId, name))
       return { started: false, reason: 'agent-missing' }
     }
     this.launch(attempt, env)
@@ -249,26 +271,38 @@ export class McpOAuth {
     return true
   }
 
-  /** « Se déconnecter » : commande de l'agent, puis état relu. */
-  async disconnect(profileId: string, name: string, workspace: string): Promise<McpConnectResult> {
+  /**
+   * « Se déconnecter » : commande de l'agent, puis état relu. Le résultat ne dit « fait » que si
+   * l'état relu ne montre plus la connexion ; le journal de même.
+   */
+  async disconnect(
+    profileId: string,
+    name: string,
+    workspace: string
+  ): Promise<McpDisconnectResult> {
     const target = this.target(profileId, name, workspace)
-    if (!target) return { started: false, reason: 'not-offered' }
-    if (this.quitting || this.current || this.logout) return { started: false, reason: 'busy' }
+    if (!target) return { done: false, reason: 'not-offered' }
+    if (this.busy()) return { done: false, reason: 'busy' }
     this.logout = true
+    const id = this.claim(profileId, name)
     try {
       const env = await this.deps.env(target.profile)
-      const cwd = this.cwd(workspace)
-      const args = target.source.disconnectArgs(name)
-      const result = await this.run(target.profile, args, cwd, env)
-      if (result.missing) {
-        this.remember(this.missing(profileId, name))
-        return { started: false, reason: 'agent-missing' }
+      const outcome = await this.command(
+        target.profile,
+        target.source.disconnectArgs(name),
+        workspace,
+        env
+      )
+      if (outcome.kind === 'missing') {
+        this.remember(id, this.missing(profileId, name))
+        return { done: false, reason: 'agent-missing' }
       }
-      log.info(`MCP : déconnexion de « ${name} » par ${target.profile.label}`)
       this.outcomes.delete(key(profileId, name))
       const stored = await this.readStored(target.profile, target.source, workspace, env)
-      if (!this.quitting) this.deps.onState(this.shown(profileId, name, stored))
-      return { started: true }
+      if (!this.quitting && this.latest.get(key(profileId, name)) === id) {
+        this.deps.onState(this.shown(profileId, name, stored))
+      }
+      return this.disconnected(target.profile, name, outcome, stored)
     } finally {
       this.logout = false
     }
@@ -278,11 +312,23 @@ export class McpOAuth {
   stop(): void {
     this.quitting = true
     if (this.current) this.finish(this.current, { kind: 'quit' })
+    this.current = undefined
     for (const child of this.live) this.stopTree(child)
     this.live.clear()
   }
 
   /* ---------- Cibles ---------- */
+
+  private busy(): boolean {
+    return this.quitting || !!this.current || this.logout
+  }
+
+  /** Nouvelle opération sur ce serveur : les fins des précédentes deviennent périmées. */
+  private claim(profileId: string, name: string): number {
+    const id = ++this.seq
+    this.latest.set(key(profileId, name), id)
+    return id
+  }
 
   private oauthProfile(profileId: string): { profile: AgentProfile; source: McpOAuthSource } {
     const profile = this.deps.profiles().find((p) => p.id === profileId)
@@ -312,11 +358,14 @@ export class McpOAuth {
     return presets.size === 1 ? preset : undefined
   }
 
-  private target(profileId: string, name: string, workspace: string) {
+  private target(profileId: string, name: string, workspace: string): Target | undefined {
     const profile = this.deps.profiles().find((p) => p.id === profileId)
     if (!profile?.mcpOAuth || !MCP_NAME.test(name)) return undefined
-    const preset = this.presetOf(this.deps.servers(profileId, workspace), name)
-    return preset ? { profile, source: profile.mcpOAuth, preset } : undefined
+    const servers = this.deps.servers(profileId, workspace)
+    const preset = this.presetOf(servers, name)
+    if (!preset) return undefined
+    const enabled = servers.filter((s) => s.name === name).every((s) => s.enabled)
+    return { profile, source: profile.mcpOAuth, preset, enabled }
   }
 
   private cwd(workspace: string): string {
@@ -347,9 +396,11 @@ export class McpOAuth {
     return outcome ?? { profileId, name, ...storedState(value) }
   }
 
-  private remember(state: McpAuthState): void {
+  /** Range et émet un état, seulement s'il vient de la dernière opération et que l'app vit. */
+  private remember(id: number, state: McpAuthState): void {
+    if (this.quitting || this.latest.get(key(state.profileId, state.name)) !== id) return
     this.outcomes.set(key(state.profileId, state.name), state)
-    if (!this.quitting) this.deps.onState(state)
+    this.deps.onState(state)
   }
 
   private async readStored(
@@ -359,28 +410,79 @@ export class McpOAuth {
     env: NodeJS.ProcessEnv
   ): Promise<Stored> {
     if (this.quitting) return undefined
-    const result = await this.run(profile, source.statesArgs(), this.cwd(workspace), env)
-    const stored = result.stdout === undefined ? undefined : source.readStates(result.stdout)
-    if (!stored) log.warn(`MCP : état des connexions de ${profile.label} illisible`)
+    const outcome = await this.command(profile, source.statesArgs(), workspace, env)
+    const stored = outcome.kind === 'closed' ? source.readStates(outcome.stdout) : undefined
+    if (!stored && !this.quitting)
+      log.warn(`MCP : état des connexions de ${profile.label} illisible`)
     return stored
+  }
+
+  private disconnected(
+    profile: AgentProfile,
+    name: string,
+    outcome: CommandOutcome,
+    stored: Stored
+  ): McpDisconnectResult {
+    const subject = `MCP : « ${name} » : se déconnecter par ${profile.label}`
+    if (outcome.kind === 'timeout') {
+      log.warn(`${subject} : pas de réponse`)
+      return { done: false, reason: 'timeout' }
+    }
+    if (outcome.kind !== 'closed') {
+      log.warn(`${subject} : commande en échec (${outcome.kind})`)
+      return { done: false, reason: 'failed' }
+    }
+    if (!stored) {
+      log.warn(`${subject} : état non relu, rien de confirmé`)
+      return { done: false, reason: 'unconfirmed' }
+    }
+    if (stored.has(name)) {
+      log.warn(`${subject} : connexion toujours présente selon ${profile.label}`)
+      return { done: false, reason: 'still-connected' }
+    }
+    log.info(`MCP : « ${name} » déconnecté par ${profile.label} (état relu)`)
+    return { done: true }
+  }
+
+  private command(
+    profile: AgentProfile,
+    args: readonly string[],
+    workspace: string,
+    env: NodeJS.ProcessEnv
+  ): Promise<CommandOutcome> {
+    if (this.quitting) return Promise.resolve({ kind: 'failed' })
+    return runCommand({
+      start: this.start,
+      stop: this.stopTree,
+      track: (child) => {
+        this.live.add(child)
+        return () => this.live.delete(child)
+      },
+      command: profile.command,
+      args,
+      cwd: this.cwd(workspace),
+      env,
+      timeoutMs: this.limits.commandMs,
+      label: profile.label
+    })
   }
 
   /* ---------- Tentative ---------- */
 
-  private newAttempt(
-    target: { profile: AgentProfile; source: McpOAuthSource; preset: McpPreset },
-    name: string,
-    workspace: string
-  ): Attempt {
+  private newAttempt(target: Target, name: string, workspace: string): Attempt {
     let markExited = () => {}
     const exited = new Promise<void>((resolve) => (markExited = resolve))
     return {
+      id: this.claim(target.profile.id, name),
       profile: target.profile,
       source: target.source,
       name,
       host: target.preset.pageHost,
+      path: target.preset.pagePath,
       workspace,
       urlSeen: false,
+      processEnded: false,
+      unread: 0,
       told: {},
       timers: [],
       readers: [],
@@ -421,24 +523,28 @@ export class McpOAuth {
   private watch(attempt: Attempt, child: ChildProcess): void {
     for (const stream of [child.stdout, child.stderr]) {
       if (!stream) continue
-      const reader = new TerminalLines((line) => this.onLine(attempt, line))
+      const reader = new TerminalLines((line, complete) => this.onLine(attempt, line, complete))
       attempt.readers.push(reader)
       stream.on('data', (chunk: Buffer) => reader.push(chunk))
       stream.on('error', () => {})
     }
     child.stdin?.on('error', () => {})
     child.once('error', (error: Error & { code?: string }) => {
+      attempt.processEnded = true
       attempt.markExited()
       this.finish(attempt, { kind: 'spawn-failed', missing: error.code === 'ENOENT' })
     })
-    // Fin de la sortie (`close`) : toutes les lignes sont lues. Un petit-enfant qui garderait la
-    // sortie ouverte ne retient pas la fin plus de `exitWaitMs` après celle du processus.
+    // Fin de la sortie (`close`) : toutes les lignes sont lues. Le processus est déjà marqué
+    // sorti (aucune adresse prise désormais) avant de vider les lecteurs.
     child.once('close', () => {
+      attempt.processEnded = true
       for (const reader of attempt.readers) reader.end()
       attempt.markExited()
       this.finish(attempt, { kind: 'exit' })
     })
+    // Un petit-enfant qui garderait la sortie ouverte ne retient pas la fin plus de `exitWaitMs`.
     child.once('exit', () => {
+      attempt.processEnded = true
       if (attempt.ending) {
         attempt.markExited()
         return
@@ -451,14 +557,21 @@ export class McpOAuth {
     })
   }
 
-  private onLine(attempt: Attempt, line: string): void {
+  private onLine(attempt: Attempt, line: string, complete: boolean): void {
     if (attempt.ending) return
-    const text = line.trim()
-    if (text) log.debug(`MCP : sortie de la connexion de « ${attempt.name} » : ${scrubUrls(text)}`)
     const read = attempt.source.readLine(line)
-    if (!read) return
+    if (!read) {
+      if (line.trim()) attempt.unread++
+      return
+    }
     if (read.kind !== 'url') {
       attempt.told[read.kind] = true
+      log.info(`MCP : connexion de « ${attempt.name} » : ${TOLD_TEXT[read.kind]}`)
+      return
+    }
+    // Lue après la fin du processus, ou dernière ligne sans retour : peut-être coupée, jamais prise.
+    if (attempt.processEnded || !complete) {
+      log.warn(`MCP : connexion de « ${attempt.name} » : adresse lue après la fin, ignorée`)
       return
     }
     if (attempt.urlSeen) {
@@ -466,7 +579,7 @@ export class McpOAuth {
       return
     }
     attempt.urlSeen = true
-    const check = checkPageUrl(read.url, attempt.host)
+    const check = checkPageUrl(read.url, { host: attempt.host, path: attempt.path })
     if (!check.ok) {
       log.warn(
         `MCP : connexion de « ${attempt.name} » : page refusée (${check.host ?? 'adresse illisible'}, attendu ${attempt.host})`
@@ -482,12 +595,12 @@ export class McpOAuth {
   }
 
   private open(url: string): void {
-    try {
-      void Promise.resolve(this.deps.openExternal(url)).catch((error: unknown) =>
-        log.warn(`MCP : page non ouverte (${scrubUrls(messageOf(error))})`)
-      )
-    } catch (error) {
+    const failed = (error: unknown) =>
       log.warn(`MCP : page non ouverte (${scrubUrls(messageOf(error))})`)
+    try {
+      void Promise.resolve(this.deps.openExternal(url)).catch(failed)
+    } catch (error) {
+      failed(error)
     }
   }
 
@@ -506,6 +619,11 @@ export class McpOAuth {
     void this.settle(attempt, ending)
   }
 
+  /**
+   * Après la fin : le processus attendu (borné), la place rendue (une autre tentative peut partir),
+   * l'état relu (borné par le délai des commandes courtes), puis l'état final émis s'il n'est pas
+   * périmé.
+   */
   private async settle(attempt: Attempt, ending: Exclude<Ending, { kind: 'quit' }>): Promise<void> {
     const { profile, source, name } = attempt
     if (attempt.child) {
@@ -517,13 +635,12 @@ export class McpOAuth {
       clearTimeout(timer)
       this.live.delete(attempt.child)
     }
-    for (const reader of attempt.readers) reader.end()
     if (this.current === attempt) this.current = undefined
     if (this.quitting) return
-    log.info(`MCP : connexion de « ${name} » par ${profile.label} : fin (${ending.kind})`)
-    const missing = ending.kind === 'spawn-failed' && ending.missing
+    const unread = attempt.unread ? `, ${attempt.unread} ligne(s) non reconnue(s)` : ''
+    log.info(`MCP : connexion de « ${name} » par ${profile.label} : fin (${ending.kind}${unread})`)
     let stored: Stored
-    if (!missing) {
+    if (!(ending.kind === 'spawn-failed' && ending.missing)) {
       try {
         const env = await this.deps.env(profile)
         stored = await this.readStored(profile, source, attempt.workspace, env)
@@ -531,67 +648,16 @@ export class McpOAuth {
         log.warn(`MCP : état de « ${name} » non relu (${scrubUrls(messageOf(error))})`)
       }
     }
-    if (this.quitting) return
     const value = stored === undefined ? undefined : (stored.get(name) ?? 'none')
     const state: McpAuthState = {
       profileId: profile.id,
       name,
       ...attemptOutcome(ending, attempt.told, attempt.urlSeen, value)
     }
-    const relu = value === 'connected' || ending.kind === 'cancel'
-    if (relu) this.outcomes.delete(key(profile.id, name))
-    else this.outcomes.set(key(profile.id, name), state)
-    this.deps.onState(state)
-  }
-
-  /* ---------- Commandes courtes ---------- */
-
-  /** Lance une commande courte de l'agent ; sortie standard bornée, délai, arbre arrêté. */
-  private run(
-    profile: AgentProfile,
-    args: readonly string[],
-    cwd: string,
-    env: NodeJS.ProcessEnv
-  ): Promise<CommandOutput> {
-    if (this.quitting) return Promise.resolve({})
-    return new Promise((resolve) => {
-      let child: ChildProcess
-      try {
-        child = this.start(profile.command, args, { cwd, env, stdio: ['pipe', 'pipe', 'pipe'] })
-      } catch (error) {
-        log.warn(`MCP : commande de ${profile.label} impossible (${scrubUrls(messageOf(error))})`)
-        resolve({})
-        return
-      }
-      this.live.add(child)
-      const chunks: Buffer[] = []
-      let size = 0
-      let done = false
-      const end = (result: CommandOutput) => {
-        if (done) return
-        done = true
-        clearTimeout(timer)
-        this.stopTree(child)
-        this.live.delete(child)
-        resolve(result)
-      }
-      const timer = setTimeout(() => {
-        log.warn(`MCP : commande de ${profile.label} sans réponse en ${this.limits.commandMs} ms`)
-        end({})
-      }, this.limits.commandMs)
-      child.stdout?.on('data', (chunk: Buffer) => {
-        size += chunk.length
-        if (size > MAX_COMMAND_OUTPUT) end({})
-        else chunks.push(chunk)
-      })
-      child.stdout?.on('error', () => {})
-      child.stderr?.on('data', () => {})
-      child.stderr?.on('error', () => {})
-      child.stdin?.on('error', () => {})
-      child.once('error', (error: Error & { code?: string }) =>
-        end(error.code === 'ENOENT' ? { missing: true } : {})
-      )
-      child.once('close', () => end({ stdout: Buffer.concat(chunks).toString('utf8') }))
-    })
+    if (this.quitting || this.latest.get(key(profile.id, name)) !== attempt.id) return
+    if (value === 'connected' || ending.kind === 'cancel') {
+      this.outcomes.delete(key(profile.id, name))
+      this.deps.onState(state)
+    } else this.remember(attempt.id, state)
   }
 }

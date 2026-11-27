@@ -33,7 +33,7 @@ function setup() {
     connect: vi.fn(async () => ({ started: true as const })),
     cancelConnect: vi.fn(() => true),
     reopenPage: vi.fn(() => true),
-    disconnect: vi.fn(async () => ({ started: true as const }))
+    disconnect: vi.fn(async () => ({ done: true as const }))
   }
   return { conversations, mcp, appSettings, handlers: mcpHandlers(mcp, conversations, appSettings) }
 }

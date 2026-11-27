@@ -3722,6 +3722,14 @@
     "failed": "git a échoué",
     "statusFailed": "git status a échoué"
   },
+  "mcpOAuth": {
+    "error": {
+      "notOffered": "{{agent}} ne sait pas connecter lui-même un serveur MCP distant.",
+      "namesTaken": "Les noms « {{first}} » à « {{last}} » sont déjà pris : renommez un serveur.",
+      "unavailable": "La connexion des serveurs MCP n’est pas disponible.",
+      "noTest": "« {{name}} » se connecte par {{agent}} : pas de test par Bobine, son état vient de {{agent}}."
+    }
+  },
   "mcpFiles": {
     "invalidJson": "{{file}} : JSON invalide{{where}} — corrigez-le à la main, l’app n’y touche pas.",
     "exists": "Un serveur « {{name}} » existe déjà."

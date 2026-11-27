@@ -1,7 +1,8 @@
 /**
- * Préréglages de serveurs MCP distants que l'agent sait connecter lui-même (fiche 293, ADR-0075) :
+ * Préréglages de serveurs MCP distants que l'agent sait connecter lui-même (fiche 293, ADR-0077) :
  * des données, jamais un `if` sur leur nom. Le moteur (`agent-config/mcp-oauth.ts`) n'ouvre la page
- * de connexion lue dans la sortie de l'agent que si son hôte est exactement `pageHost`.
+ * de connexion lue dans la sortie de l'agent que si son hôte est exactement `pageHost` et son
+ * chemin exactement `pagePath` (ADR-0077).
  */
 
 export interface McpPreset {
@@ -13,6 +14,11 @@ export interface McpPreset {
   url: string
   /** Hôte exact de la page de connexion (`https:`, sans port ni sous-domaine). */
   pageHost: string
+  /**
+   * Chemin exact de la page de connexion, tel que l'écrit l'agent (ni `..`, ni encodage) : celui de
+   * l'`authorization_endpoint` publié par le serveur d'autorisation.
+   */
+  pagePath: string
 }
 
 export const MCP_PRESETS: readonly McpPreset[] = [
@@ -21,7 +27,8 @@ export const MCP_PRESETS: readonly McpPreset[] = [
     name: 'figma',
     url: 'https://mcp.figma.com/mcp',
     // `authorization_endpoint` de Figma : `https://www.figma.com/oauth/mcp` (relevé 2026-11-27).
-    pageHost: 'www.figma.com'
+    pageHost: 'www.figma.com',
+    pagePath: '/oauth/mcp'
   }
 ]
 

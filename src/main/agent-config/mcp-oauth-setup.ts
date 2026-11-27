@@ -1,6 +1,6 @@
 /**
  * Serveurs MCP des agents dans les réglages (fiche 025), avec la connexion OAuth par l'agent
- * (fiche 293, ADR-0075) branchée sur l'app : environnement de lancement de l'agent (clés, réseau
+ * (fiche 293, ADR-0077) branchée sur l'app : environnement de lancement de l'agent (clés, réseau
  * d'entreprise), commande trouvée comme pour son lancement, page ouverte par `shell.openExternal`,
  * états envoyés aux fenêtres. Sorti d'`index.ts` (taille bornée, fiche 089).
  */

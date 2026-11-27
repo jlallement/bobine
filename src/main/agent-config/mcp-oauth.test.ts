@@ -155,7 +155,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('connexion d’un serveur MCP par l’agent : moteur (fiche 293, ADR-0075)', () => {
+describe('connexion d’un serveur MCP par l’agent : moteur (fiche 293, ADR-0077)', () => {
   it('réussite relevée : commande de l’agent dans le dossier, page ouverte une fois, état relu', async () => {
     const t = setup()
     expect(await t.engine.connect('opencode', 'figma', t.workspace)).toEqual({ started: true })
@@ -516,7 +516,7 @@ describe('connexion d’un serveur MCP par l’agent : moteur (fiche 293, ADR-00
   it('« Se déconnecter » : commande de l’agent avec `--standalone`, puis état relu', async () => {
     const t = setup({ authList: CONNECTED })
     t.world.authList = '[]'
-    expect(await t.engine.disconnect('opencode', 'figma', t.workspace)).toEqual({ started: true })
+    expect(await t.engine.disconnect('opencode', 'figma', t.workspace)).toEqual({ done: true })
     expect(t.commands[0]?.args).toEqual(['mcp', 'logout', 'figma', '--standalone'])
     expect(t.commands[1]?.args).toContain('list')
     expect(t.last()).toEqual({ profileId: 'opencode', name: 'figma', status: 'to-connect' })

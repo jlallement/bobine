@@ -3600,6 +3600,14 @@
     "failed": "git failed",
     "statusFailed": "git status failed"
   },
+  "mcpOAuth": {
+    "error": {
+      "notOffered": "{{agent}} cannot sign in to a remote MCP server by itself.",
+      "namesTaken": "The names “{{first}}” to “{{last}}” are already taken: rename a server.",
+      "unavailable": "MCP server sign-in is not available.",
+      "noTest": "“{{name}}” signs in through {{agent}}: no test by Bobine, its status comes from {{agent}}."
+    }
+  },
   "mcpFiles": {
     "invalidJson": "{{file}}: invalid JSON{{where}} — fix it by hand, the app doesn’t touch it.",
     "exists": "A “{{name}}” server already exists."

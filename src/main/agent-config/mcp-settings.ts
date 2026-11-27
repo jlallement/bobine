@@ -11,10 +11,12 @@ import {
   type McpAgentView,
   type McpAuthView,
   type McpConnectResult,
+  type McpDisconnectResult,
   type McpScope,
   type McpTestResult
 } from '@shared/mcp'
 import { MCP_PRESETS, presetById, presetForUrl, type McpPreset } from '@shared/mcp-presets'
+import { t } from 'i18next'
 import { log } from '../log'
 import { probeMcpServer } from './mcp-probe'
 import type { AgentProfile } from '../agent/profiles'
@@ -75,8 +77,9 @@ export class McpSettings {
     presetId: string,
     workspace: string
   ): { name: string; added: boolean; views: McpAgentView[] } {
-    if (!this.profiles.find((p) => p.id === profileId)?.mcpOAuth) {
-      throw new Error(`Pas de connexion des serveurs MCP pour l’agent « ${profileId} »`)
+    const profile = this.profiles.find((p) => p.id === profileId)
+    if (!profile?.mcpOAuth) {
+      throw new Error(t('mcpOAuth.error.notOffered', { agent: profile?.label ?? profileId }))
     }
     const preset = presetById(presetId, this.presets)
     if (!preset) throw new Error('Paramètre invalide : presetId')
@@ -91,7 +94,12 @@ export class McpSettings {
       (n) => !taken.has(n) && MCP_NAME.test(n)
     )
     if (!name)
-      throw new Error(`Noms « ${preset.name} » à « ${preset.name}-${MAX_NAME_SUFFIX} » pris`)
+      throw new Error(
+        t('mcpOAuth.error.namesTaken', {
+          first: preset.name,
+          last: `${preset.name}-${MAX_NAME_SUFFIX}`
+        })
+      )
     this.config(profileId).save('global', workspace, {
       name,
       transport: 'http',
@@ -118,7 +126,7 @@ export class McpSettings {
     return this.engine().reopen(profileId, name)
   }
 
-  disconnect(profileId: string, name: string, workspace: string): Promise<McpConnectResult> {
+  disconnect(profileId: string, name: string, workspace: string): Promise<McpDisconnectResult> {
     return this.engine().disconnect(profileId, name, workspace)
   }
 
@@ -128,7 +136,7 @@ export class McpSettings {
   }
 
   private engine(): McpOAuth {
-    if (!this.oauth) throw new Error('Connexion des serveurs MCP indisponible')
+    if (!this.oauth) throw new Error(t('mcpOAuth.error.unavailable'))
     return this.oauth
   }
 
@@ -185,7 +193,7 @@ export class McpSettings {
       server.transport === 'http' &&
       presetForUrl(server.url, this.presets)
     ) {
-      throw new Error(`« ${name} » se connecte par ${profile.label} : pas de test de Bobine`)
+      throw new Error(t('mcpOAuth.error.noTest', { name, agent: profile.label }))
     }
     const result = await probeMcpServer(server, {
       cwd: existsSync(workspace) ? workspace : homedir()

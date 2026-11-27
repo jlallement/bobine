@@ -3565,6 +3565,14 @@ export type FrResources = {
     readonly failed: 'git a échoué'
     readonly statusFailed: 'git status a échoué'
   }
+  readonly mcpOAuth: {
+    readonly error: {
+      readonly notOffered: '{{agent}} ne sait pas connecter lui-même un serveur MCP distant.'
+      readonly namesTaken: 'Les noms « {{first}} » à « {{last}} » sont déjà pris : renommez un serveur.'
+      readonly unavailable: 'La connexion des serveurs MCP n’est pas disponible.'
+      readonly noTest: '« {{name}} » se connecte par {{agent}} : pas de test par Bobine, son état vient de {{agent}}.'
+    }
+  }
   readonly mcpFiles: {
     readonly invalidJson: '{{file}} : JSON invalide{{where}} — corrigez-le à la main, l’app n’y touche pas.'
     readonly exists: 'Un serveur « {{name}} » existe déjà.'

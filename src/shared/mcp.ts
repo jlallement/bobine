@@ -37,7 +37,7 @@ export interface McpAgentView {
   /** Fichier illisible (JSON invalide…) : affiché, et rien n'est écrit dedans. */
   error?: string
   /**
-   * L'agent sait connecter lui-même un serveur distant par OAuth (fiche 293, ADR-0075) : posé par
+   * L'agent sait connecter lui-même un serveur distant par OAuth (fiche 293, ADR-0077) : posé par
    * le main d'après le profil (`mcpOAuth`), jamais d'après un identifiant.
    */
   oauth?: true
@@ -68,7 +68,7 @@ export type McpAuthStatus =
  */
 export type McpAuthReason = 'timeout' | 'unexpected-page' | 'stopped' | 'failed'
 
-/** Ce que le renderer reçoit d'une connexion : jamais l'adresse complète de la page (ADR-0075). */
+/** Ce que le renderer reçoit d'une connexion : jamais l'adresse complète de la page (ADR-0077). */
 export interface McpAuthState {
   profileId: string
   /** Nom du serveur dans le fichier de l'agent. */
@@ -88,9 +88,33 @@ export interface McpAuthView {
   servers: McpAuthState[]
 }
 
-/** Réponse à « Se connecter » : lancé, ou pourquoi pas (refus côté main). */
+/**
+ * Réponse à « Se connecter » : lancé, ou pourquoi pas (refus côté main). `disabled` : le serveur
+ * est déclaré mais désactivé, rien n'est lancé.
+ */
 export type McpConnectResult =
-  { started: true } | { started: false; reason: 'busy' | 'not-offered' | 'agent-missing' }
+  | { started: true }
+  | { started: false; reason: 'busy' | 'not-offered' | 'agent-missing' | 'disabled' }
+
+/**
+ * Réponse à « Se déconnecter », sans rien enjoliver : `done` seulement si l'état relu chez l'agent
+ * ne montre plus de connexion. `timeout` : la commande n'a pas répondu ; `failed` : elle n'a pas pu
+ * être lancée ; `still-connected` : l'état relu montre encore la connexion ; `unconfirmed` : l'état
+ * n'a pas pu être relu.
+ */
+export type McpDisconnectResult =
+  | { done: true }
+  | {
+      done: false
+      reason:
+        | 'busy'
+        | 'not-offered'
+        | 'agent-missing'
+        | 'timeout'
+        | 'failed'
+        | 'still-connected'
+        | 'unconfirmed'
+    }
 
 /** Résultat de « Tester » (fiche 060) : l'app s'est connectée au serveur, ou pourquoi pas. */
 export type McpTestResult =

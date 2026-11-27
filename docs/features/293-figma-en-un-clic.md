@@ -1,7 +1,7 @@
 # 293 — Figma en un clic (serveur MCP distant connecté par l'agent)
 
 - **Statut** : spec et maquette validées par Jérôme le 2026-11-27 ; relevés R4, R5, R6 faits (R1,
-  R2, R3, R7 à R9 non) ; ADR-0075 proposé ; lot 1 (moteur, main) codé, sans interface
+  R2, R3, R7 à R9 non) ; ADR-0077 proposé ; lot 1 (moteur, main) codé, sans interface
 - **Dépend de** : 025 (serveurs MCP des agents), 060 (« Tester » un serveur), 079 et 122 (outil
   `execute` d'OpenCode 2), 126 (confirmation dans la ligne), 287 (raison d'un bouton grisé)
 - **Agents** : OpenCode seulement. La connexion OAuth au serveur de Figma est faite **par l'agent**,
@@ -170,14 +170,28 @@ en réel. (Q1)
   lance jamais `opencode auth export`, ne garde ni ne journalise rien de la connexion. L'état vient
   de `auth list` sans secret (relevé : identifiant, nom, type, méthode).
 - **L'adresse est une donnée** (sortie d'un processus). Bobine n'ouvre qu'une adresse qui :
-  se lit en entier par `new URL`, est en `https:`, a pour hôte exactement l'hôte attendu du
-  préréglage, sans identifiants (`user:pass@`), longueur ≤ 4 096. Sinon : rien d'ouvert, état
-  **Erreur** « Page inattendue (<hôte>) », processus tué.
+  est en ASCII imprimable et fait au plus 4 096 caractères ; se lit en entier par `new URL` ; est
+  en `https:` ; a pour hôte exactement l'hôte attendu du préréglage (`pageHost`), écrit tel quel
+  (majuscules et `:443` admis, aucun encodage) ; a pour chemin exactement le chemin attendu du
+  préréglage (`pagePath`, Figma : `/oauth/mcp`, celui de l'`authorization_endpoint` publié),
+  **écrit tel quel** (ni `..`, ni `.`, ni encodage, ni `\`) ; n'a pas d'identifiants
+  (`user:pass@`) ; et, si elle porte un `redirect_uri`, il est **unique** (deux valeurs : refus, on
+  ne parie pas sur celle que lira le serveur), se lit après un seul décodage, et pointe vers cette
+  machine : `http`, `127.0.0.1` ou `localhost`, port explicite, sans identifiants. Sans
+  `redirect_uri` : acceptée. Sinon : rien d'ouvert, état **Erreur** « Page inattendue (<hôte>) »,
+  processus arrêté. C'est l'adresse normalisée par `URL`, celle qui a été vérifiée, qui est ouverte.
+- **Pas d'adresse après la fin** : une adresse lue après la sortie du processus, ou sur une
+  dernière ligne sans retour à la ligne (peut-être coupée), n'est jamais ouverte.
 - **Jamais l'adresse complète au journal ni au renderer** (elle porte `state`, `code_challenge`,
-  `client_id`) : le journal dit l'hôte et l'étape (« MCP : connexion de « figma » par OpenCode :
-  page ouverte (www.figma.com) ») ; la sortie de la commande est filtrée avant d'être journalisée.
+  `client_id`) : **aucune ligne de sortie n'est journalisée**, à aucun niveau ; le journal dit ce
+  qui a été reconnu (page ouverte ou refusée avec l'hôte, connexion, expiration, annulation, échec
+  dits par l'agent) et compte les lignes non reconnues. Les messages d'erreur du système
+  (lancement, ouverture de la page) passent par `scrubUrls`, qui masque tout mot pouvant porter une
+  adresse ou un paramètre (avec ou sans schéma, `https:/`, antislashs, `clé=valeur`).
 - **Une seule connexion à la fois** dans l'app (un second clic est refusé par le main, pas
-  seulement grisé). Le port de retour (`127.0.0.1:<port>/callback`) appartient à OpenCode.
+  seulement grisé) tant que le processus de la tentative vit, ou qu'une déconnexion tourne. Chaque
+  opération porte un numéro : la relecture d'une tentative finie, si une autre opération est partie
+  depuis pour le même serveur (ou si l'app se ferme), n'émet rien et ne range rien. Le port de retour (`127.0.0.1:<port>/callback`) appartient à OpenCode.
 - **Annulation** : « Annuler », le délai ou la fermeture de l'app tuent l'arbre de processus lancé
   (`killTree`, comme « Tester »). Fermer les Réglages ne l'arrête pas (on ferme souvent la fenêtre
   pour aller au navigateur) : la connexion continue dans le main, et la ligne montre son état à la
@@ -287,7 +301,13 @@ la page de Figma), **R3** (outils dans une conversation déjà ouverte). Pas fai
 - **R7** — Deux serveurs de même nom (global et dossier) : lequel `mcp auth` prend-il ?
 - **R8** — OpenCode 1.19 et 2.4.1 : `mcp auth --standalone` et `auth list --format json` existent-ils
   et rendent-ils la même chose ? (Sinon : état « commande non reconnue », pas de version imposée.)
-- **R9** — Windows et Linux : ouverture de la page, fin du processus et de son serveur privé.
+- **R9** — Windows et Linux : ouverture de la page, fin du processus et de son serveur privé ; et
+  la sortie d'OpenCode hors terminal Unicode (cas d'une app graphique sous Windows) : sa
+  bibliothèque d'invite remplacerait `●`, `◆`, `■`, `└` par de l'ASCII. La lecture de l'adaptateur
+  ne dépend d'aucun symbole de tête (préfixe court ignoré, statuts reconnus à leur texte) ; les
+  variantes ASCII sont des essais étiquetés « hypothèse, non relevée sous Windows ». L'essai en vrai
+  processus est écrit pour être portable (aucun signal à un numéro de processus, mort de l'enfant
+  prouvée par un battement qui s'arrête), mais n'a tourné que sur Mac.
 
 ## Appels Figma dans le fil
 
@@ -425,8 +445,11 @@ Figma cautionne Bobine.
 
 - **Canaux en plus** : `mcp:addPreset` (ajout du préréglage, séparé de `mcp:connect` : le renderer
   enchaîne les deux, et l'ajout se fait aussi sans connexion) et `mcp:reopenPage` (« Rouvrir la
-  page » : l'adresse ne quitte jamais le main). `connect` et `disconnect` rendent un
-  `McpConnectResult` (refus `busy`, `not-offered`, `agent-missing`) au lieu de lever une erreur.
+  page » : l'adresse ne quitte jamais le main). `connect` rend un `McpConnectResult` (refus
+  `busy`, `not-offered`, `agent-missing`, `disabled`) et `disconnect` un `McpDisconnectResult`
+  (`done` seulement si l'état relu ne montre plus la connexion ; sinon `timeout`, `failed`,
+  `still-connected`, `unconfirmed`, `agent-missing`, `busy`, `not-offered`) au lieu de lever une
+  erreur.
 - **Raisons d'erreur** : `failed` ajoutée (« La connexion n'a pas abouti » : fin d'échec dite par
   l'agent sans cause reconnue, dont le refus tant que R2 manque) à `timeout`, `unexpected-page`,
   `stopped`. L'expiration dite par OpenCode donne `timeout`.
@@ -440,8 +463,18 @@ Figma cautionne Bobine.
   proposé ni lancé.
 - **Entrée standard** de la commande : un tube jamais écrit (comme l'agent) ; sous Windows, l'arrêt
   de l'arbre commence par le fermer (ADR-0050).
-- **Commande copiée** (« Dans un terminal ») : `terminalArgs` existe dans l'adaptateur, pas encore
-  exposé au renderer (lot 2).
+- **Une seule connexion à la fois, précisé** (relecture du lot 1) : la place est rendue quand le
+  processus de la tentative est fini, pas après la relecture de l'état. Raison : l'essai R1 du
+  testeur exige qu'un second clic pendant cette relecture soit accepté ; la relecture devenue
+  périmée n'émet alors rien et ne range rien (numéro d'opération). La déconnexion, elle, garde la
+  place jusqu'à son état final.
+- **Préréglage déjà déclaré** : rien n'est dupliqué. Déclaré **pour ce dossier seulement**, il est
+  gardé tel quel (pas de second serveur « tous les dossiers ») : c'est une limite de « tous les
+  dossiers », la connexion ne vaudra que là où il est déclaré (relevé R4). Déclaré mais
+  **désactivé** : aucune connexion lancée, refus `disabled` (le lot 2 l'affichera).
+- **Lot 2** (à faire) : exposer la commande à copier (« Dans un terminal », `terminalArgs`) ; une
+  variable d'essai qui impose la fausse commande à la place d'`opencode` pour les e2e ; afficher les
+  refus `disabled` et les résultats de déconnexion.
 
 ## Décisions de Jérôme (2026-11-27)
 
@@ -457,7 +490,7 @@ Réponses à ses questions, avec ses mots :
 
 ## Questions pour Jérôme
 
-- Valider l'ADR-0075 (proposé).
+- Valider l'ADR-0077 (proposé).
 - R2 (refus sur la page de Figma) et R3 (conversation déjà ouverte) : un clic de sa part, avec
   le profil isolé, avant le lot 2 de préférence.
 
@@ -568,7 +601,7 @@ Taille : ≈ 3 j avec le lot 3, relevés compris. **Aucune dépendance nouvelle.
 - 2026-11-27 — **Étape 0** (relevés du tech lead reportés) : R4, R5, R6, « avant connexion » et
   expiration dans « Contrat réel » ; sorties brutes copiées en fixtures
   (`src/main/agent-config/fixtures/opencode-2.3.0-mcp-auth/`) ; R1, R2, R3, R7 à R9 notés « pas
-  faits ». ADR-0075 écrit, statut **proposé**.
+  faits ». ADR-0077 écrit, statut **proposé**.
 - 2026-11-27 — **Lot 1 (moteur, main)** codé, sans interface :
   - `shared/mcp.ts` : `McpAuthStatus`, `McpAuthReason`, `McpAuthState`, `McpAuthView`,
     `McpConnectResult`, `oauth` sur `McpAgentView` ; `shared/mcp-presets.ts` : Figma en donnée
@@ -601,3 +634,31 @@ Taille : ≈ 3 j avec le lot 3, relevés compris. **Aucune dépendance nouvelle.
     `client_id` dans tout ce qui sort), et un essai sur une **fausse commande** réelle
     (`fixtures/fake-agent-mcp-auth.mjs`, Node) : enfant arrêté avec le parent à « Annuler ».
   - Pas d'e2e : aucune interface ne change dans ce lot.
+- 2026-11-27 — **Relecture du lot 1** (testeur adverse : six essais rouges et 46 mutations ; tech
+  lead : deux points de plus et ses décisions). ADR renuméroté **0077** (0075 et 0076 sont pris sur
+  la branche `1.2-291-fichiers-locaux`). Corrigé à la cause :
+  - A : numéro d'opération par serveur ; une fin périmée (autre opération partie, app fermée)
+    n'émet rien et ne range rien ; relecture bornée ; déconnexion occupée jusqu'à son état final ;
+  - B : le processus est marqué sorti avant de vider les lecteurs ; jamais d'adresse lue après la
+    fin ni d'une dernière ligne sans retour à la ligne ;
+  - C : plus aucune ligne de sortie au journal, seulement le genre reconnu et un compteur ;
+    `scrubUrls` élargi (sans schéma, `https:/`, antislashs, `clé=valeur`) pour les seuls messages
+    d'erreur du système ;
+  - D : chemin exact de la page (`pagePath` du préréglage, écrit tel quel), hôte écrit tel quel,
+    `redirect_uri` unique et vers cette machine s'il existe ;
+  - E : déconnexion au résultat typé honnête (`McpDisconnectResult`), « déconnecté » au journal
+    seulement si l'état relu le confirme ;
+  - F : essais ajoutés pour les mutations survivantes (`mcp-oauth-races.test.ts`,
+    `shared/mcp-presets.test.ts`, cas ajoutés aux autres) ;
+  - G : messages montrés à l'utilisateur dans `mcp-settings.ts` traduits (`mcpOAuth.error.*`) ;
+  - H : essai en vrai processus sans aucun signal à un numéro de processus (battement de l'enfant) ;
+    lecture des lignes indépendante du symbole de tête (variantes ASCII : hypothèse) ;
+  - I : serveur désactivé : refus `disabled` ; déclaré pour ce dossier seulement : gardé tel quel.
+  - Les six essais du testeur sont gardés comme essais permanents (`mcp-oauth.revue.test.ts`).
+  - Mutations (script du testeur, élargi aux nouvelles règles) : avant 32 tuées sur 46 ; après
+    58 sur 69. Les 11 survivantes sont des doublons voulus (défense en profondeur) qu'aucune entrée
+    ne peut distinguer : port, identifiants et suffixe d'hôte (déjà refusés par la vérification de
+    l'hôte écrit), chemin normalisé (impliqué par le chemin écrit), « première adresse »
+    (`urlSeen`/`url`), place rendue à la fermeture (deux remises à zéro, et `quitting` refuse tout),
+    garde de péremption de `remember` (aucun appel périmé possible), ligne incomplète et `close`
+    sans `exit` (le processus est toujours marqué sorti avant).

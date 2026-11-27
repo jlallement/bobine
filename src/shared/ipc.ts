@@ -74,6 +74,7 @@ import type {
   McpAuthState,
   McpAuthView,
   McpConnectResult,
+  McpDisconnectResult,
   McpScope,
   McpServer,
   McpTestResult
@@ -221,7 +222,7 @@ export interface IpcInvokeContract
   /** « Rouvrir la page » de la connexion en cours (adresse gardée par le main). */
   'mcp:reopenPage': { args: [profileId: string, name: string]; result: boolean }
   /** « Se déconnecter » : la commande de l'agent, puis l'état relu (événement `mcp:authState`). */
-  'mcp:disconnect': { args: [profileId: string, name: string]; result: McpConnectResult }
+  'mcp:disconnect': { args: [profileId: string, name: string]; result: McpDisconnectResult }
   /** Fournisseurs de modèles des agents (fiche 104), dans leur fichier global. */
   'providers:list': { args: []; result: ProvidersView[] }
   'providers:save': {

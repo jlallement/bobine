@@ -1,5 +1,5 @@
 /**
- * Lecture de la sortie d'une commande de connexion d'agent (fiche 293, ADR-0075), sans rien savoir
+ * Lecture de la sortie d'une commande de connexion d'agent (fiche 293, ADR-0077), sans rien savoir
  * de l'agent : lignes débarrassées des codes de terminal, adresse de la page vérifiée, adresses
  * effacées de tout ce qui part au journal. Pur, sans `electron`.
  *
@@ -47,9 +47,10 @@ export class TerminalLines {
   /** Lignes jetées car trop longues (journal). */
   dropped = 0
 
-  private readonly onLine: (line: string) => void
+  /** `complete` faux : dernière ligne d'un flux fermé, sans retour à la ligne (peut-être coupée). */
+  private readonly onLine: (line: string, complete: boolean) => void
 
-  constructor(onLine: (line: string) => void) {
+  constructor(onLine: (line: string, complete: boolean) => void) {
     this.onLine = onLine
   }
 
@@ -57,10 +58,10 @@ export class TerminalLines {
     this.feed(typeof chunk === 'string' ? chunk : this.decoder.write(chunk))
   }
 
-  /** Fin du flux : la dernière ligne, même sans `\n`. */
+  /** Fin du flux : la dernière ligne, même sans `\n`, marquée incomplète. */
   end(): void {
     this.feed(this.decoder.end())
-    if (!this.overflow && this.pending) this.onLine(renderLine(this.pending))
+    if (!this.overflow && this.pending) this.onLine(renderLine(this.pending), false)
     this.pending = ''
     this.overflow = false
   }
@@ -72,7 +73,7 @@ export class TerminalLines {
       const piece = newline < 0 ? text.slice(from) : text.slice(from, newline)
       if (!this.overflow) this.append(piece)
       if (newline < 0) return
-      if (!this.overflow) this.onLine(renderLine(this.pending))
+      if (!this.overflow) this.onLine(renderLine(this.pending), true)
       this.pending = ''
       this.overflow = false
       from = newline + 1
@@ -95,25 +96,68 @@ export class TerminalLines {
 
 export type PageCheck = { ok: true; url: string; host: string } | { ok: false; host?: string }
 
+/** Page attendue d'un préréglage : hôte et chemin exacts. */
+export interface ExpectedPage {
+  host: string
+  path: string
+}
+
+const ASCII = /^[\x21-\x7e]+$/
+
 /** Hôte lisible d'une adresse (ASCII, punycode pour un nom international), ou `undefined`. */
 function hostOf(raw: string): string | undefined {
   if (raw.length > MAX_URL_CHARS) return undefined
   try {
     const host = new URL(raw).hostname
-    return host && host.length <= 253 && /^[\x21-\x7e]+$/.test(host) ? host : undefined
+    return host && host.length <= 253 && ASCII.test(host) ? host : undefined
   } catch {
     return undefined
   }
 }
 
 /**
- * Adresse de page acceptée seulement si : ASCII imprimable, au plus `MAX_URL_CHARS`, lue en entier
- * par `new URL`, `https:`, hôte **exactement** `expectedHost` (ni sous-domaine, ni suffixe, ni point
- * final), sans port explicite autre que celui par défaut, sans identifiants. Rend l'adresse telle que
- * `URL` l'écrit (c'est elle, vérifiée, qui sera ouverte) ; sinon l'hôte seul, s'il se lit.
+ * Hôte et chemin tels qu'ils sont écrits dans l'adresse, avant toute normalisation par `URL`
+ * (encodage `%2E`, `..`, `\`) : on n'accepte que ce qui est déjà écrit sous sa forme attendue.
  */
-export function checkPageUrl(raw: string, expectedHost: string): PageCheck {
-  if (raw.length > MAX_URL_CHARS || !/^[\x21-\x7e]+$/.test(raw)) {
+function written(raw: string): { host: string; path: string } | undefined {
+  const match = /^https:\/\/([^/?#\\]*)([^?#]*)/i.exec(raw)
+  return match ? { host: (match[1] ?? '').toLowerCase(), path: match[2] ?? '' } : undefined
+}
+
+/**
+ * Retour de la connexion (`redirect_uri`) : absent, accepté ; sinon une seule fois, et vers l'agent
+ * sur cette machine (`http`, `127.0.0.1` ou `localhost`, port explicite, sans identifiants). Deux
+ * valeurs : refusé (le serveur pourrait prendre l'une ou l'autre). Décodé une fois seulement, comme
+ * le lira le serveur : une valeur encodée deux fois ne se lit pas, refusée.
+ */
+function loopbackRedirect(url: URL): boolean {
+  const values = url.searchParams.getAll('redirect_uri')
+  if (values.length === 0) return true
+  if (values.length > 1) return false
+  try {
+    const back = new URL(values[0] ?? '')
+    return (
+      back.protocol === 'http:' &&
+      (back.hostname === '127.0.0.1' || back.hostname === 'localhost') &&
+      back.port !== '' &&
+      !back.username &&
+      !back.password
+    )
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Adresse de page acceptée seulement si : ASCII imprimable, au plus `MAX_URL_CHARS`, lue en entier
+ * par `new URL`, `https:`, hôte **exactement** celui attendu (ni sous-domaine, ni suffixe, ni point
+ * final), sans port explicite autre que celui par défaut, sans identifiants, hôte et chemin **écrits**
+ * exactement comme attendu (ni `..`, ni encodage, ni `\`), retour de connexion vers cette machine
+ * s'il y en a un (`loopbackRedirect`). Rend l'adresse telle que `URL` l'écrit (c'est elle, vérifiée,
+ * qui sera ouverte) ; sinon l'hôte seul, s'il se lit.
+ */
+export function checkPageUrl(raw: string, page: ExpectedPage): PageCheck {
+  if (raw.length > MAX_URL_CHARS || !ASCII.test(raw)) {
     return { ok: false, ...hostField(hostOf(raw)) }
   }
   let url: URL
@@ -122,19 +166,39 @@ export function checkPageUrl(raw: string, expectedHost: string): PageCheck {
   } catch {
     return { ok: false }
   }
-  const host = hostOf(raw)
+  const host = page.host.toLowerCase()
   const exact =
     url.protocol === 'https:' &&
     !url.username &&
     !url.password &&
     !url.port &&
-    url.hostname === expectedHost.toLowerCase()
-  return exact ? { ok: true, url: url.href, host: url.hostname } : { ok: false, ...hostField(host) }
+    url.hostname === host &&
+    [host, `${host}:443`].includes(written(raw)?.host ?? '') &&
+    written(raw)?.path === page.path &&
+    url.pathname === page.path &&
+    loopbackRedirect(url)
+  return exact
+    ? { ok: true, url: url.href, host: url.hostname }
+    : { ok: false, ...hostField(hostOf(raw)) }
 }
 
 const hostField = (host: string | undefined) => (host ? { host } : {})
 
-/** Toute adresse (`schéma://…`) d'un texte remplacée par son seul hôte : pour le journal. */
+/**
+ * Mot d'un message qui pourrait porter une adresse ou ses paramètres : schéma (même mal écrit :
+ * `https:/`, `https:\\`), paramètre (`=`, `?`), ou nom de domaine suivi d'un chemin.
+ */
+const SUSPECT = /:[\\/]|[=?]|[a-z0-9-]\.[a-z]{2,}[\\/#]/i
+
+/**
+ * Messages d'erreur du système (lancement, ouverture de la page) avant le journal : tout mot
+ * suspect remplacé par l'hôte qu'il nomme, s'il se lit, sinon par « <masqué> ». La sortie de la
+ * commande, elle, n'est jamais journalisée (ADR-0077).
+ */
 export function scrubUrls(text: string): string {
-  return text.replace(/[a-z][a-z0-9+.-]*:\/\/\S*/gi, (url) => `<adresse ${hostOf(url) ?? '?'}>`)
+  return text.replace(/\S+/g, (word) => {
+    if (!SUSPECT.test(word)) return word
+    const host = hostOf(word)
+    return host ? `<adresse ${host}>` : '<masqué>'
+  })
 }

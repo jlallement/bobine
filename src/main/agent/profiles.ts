@@ -173,7 +173,7 @@ export interface AgentProfile {
    */
   mcpConfig?: McpConfigSource
   /**
-   * Connexion OAuth d'un serveur MCP distant faite par l'agent (fiche 293, ADR-0075 ; OpenCode :
+   * Connexion OAuth d'un serveur MCP distant faite par l'agent (fiche 293, ADR-0077 ; OpenCode :
    * `opencode mcp auth`) : « Se connecter » des préréglages dans Réglages › Serveurs MCP. Absent :
    * rien n'est proposé ni lancé, rien n'est supposé de l'agent.
    */

@@ -12,6 +12,7 @@ import {
 
 const FIXTURES = join(__dirname, 'fixtures', 'opencode-2.3.0-mcp-auth')
 const HOST = 'www.figma.com'
+const EXPECTED = { host: HOST, path: '/oauth/mcp' }
 const PAGE = 'https://www.figma.com/oauth/mcp?client_id=C&state=S&code_challenge=X'
 
 function collect(chunks: (Buffer | string)[]): string[] {
@@ -81,60 +82,146 @@ describe('lignes d’une sortie de terminal (fiche 293)', () => {
   })
 })
 
-describe('vérification de l’adresse de la page (fiche 293, ADR-0075)', () => {
-  it('acceptée : https, hôte exact, sans port ni identifiants ; rendue normalisée', () => {
-    expect(checkPageUrl(PAGE, HOST)).toEqual({ ok: true, url: PAGE, host: HOST })
+describe('vérification de l’adresse de la page (fiche 293, ADR-0077)', () => {
+  /** Chaque cas adverse garde le bon chemin : son refus vient de la règle qu'il vise, pas d'une autre. */
+  const P = '/oauth/mcp'
+  const LOOP = 'redirect_uri=http%3A%2F%2F127.0.0.1%3A54321%2Fcallback'
+
+  it('acceptée : https, hôte et chemin exacts, sans port ni identifiants ; rendue normalisée', () => {
+    expect(checkPageUrl(PAGE, EXPECTED)).toEqual({ ok: true, url: PAGE, host: HOST })
     // Hôte en majuscules : le même hôte (DNS), écrit en minuscules par `URL` ; c'est lui qui s'ouvre.
-    const upper = checkPageUrl('https://WWW.FIGMA.COM/oauth/mcp?state=S', HOST)
-    expect(upper).toEqual({ ok: true, url: 'https://www.figma.com/oauth/mcp?state=S', host: HOST })
+    const upper = checkPageUrl(`HTTPS://WWW.FIGMA.COM${P}?state=S`, EXPECTED)
+    expect(upper).toEqual({ ok: true, url: `https://www.figma.com${P}?state=S`, host: HOST })
     // Port par défaut écrit : retiré par `URL`, même origine.
-    expect(checkPageUrl('https://www.figma.com:443/oauth', HOST)).toMatchObject({ ok: true })
+    expect(checkPageUrl(`https://www.figma.com:443${P}`, EXPECTED)).toMatchObject({ ok: true })
+    // Retour vers l'agent sur cette machine (relevé), `localhost` aussi ; sans retour : accepté.
+    expect(checkPageUrl(`https://www.figma.com${P}?${LOOP}&state=S`, EXPECTED).ok).toBe(true)
+    const local = `https://www.figma.com${P}?redirect_uri=http%3A%2F%2Flocalhost%3A9%2Fcb`
+    expect(checkPageUrl(local, EXPECTED).ok).toBe(true)
   })
 
   it.each([
-    ['suffixe', 'https://www.figma.com.evil.tld/oauth/mcp', 'www.figma.com.evil.tld'],
-    ['hôte dans la requête', 'https://evil.tld/?x=www.figma.com', 'evil.tld'],
-    ['http', 'http://www.figma.com/oauth/mcp', 'www.figma.com'],
-    ['identifiants et @', 'https://user@www.figma.com@evil.tld/', 'evil.tld'],
-    ['identifiants', 'https://user:pass@www.figma.com/oauth', 'www.figma.com'],
-    ['sous-domaine', 'https://evil.www.figma.com/oauth', 'evil.www.figma.com'],
-    ['domaine parent', 'https://figma.com/oauth', 'figma.com'],
-    ['point final', 'https://www.figma.com./oauth', 'www.figma.com.'],
-    ['autre port', 'https://www.figma.com:8443/oauth', 'www.figma.com'],
-    ['IDN (i cyrillique)', 'https://www.fіgma.com/oauth', 'www.xn--fgma-l9d.com'],
-    ['punycode', 'https://www.xn--fgma-l9d.com/oauth', 'www.xn--fgma-l9d.com'],
-    ['javascript', 'javascript:alert(1)//www.figma.com', undefined],
-    ['file', 'file:///www.figma.com/etc/passwd', undefined],
-    ['coupée par U+FFFD', 'https://www.fig�ma.com/oauth', undefined],
-    ['espace', 'https://www.figma.com/oauth mcp', 'www.figma.com'],
-    ['pas une adresse', 'https://', undefined]
+    ['suffixe', `https://www.figma.com.evil.tld${P}`, 'www.figma.com.evil.tld'],
+    ['hôte dans la requête', `https://evil.tld${P}?x=www.figma.com`, 'evil.tld'],
+    ['http', `http://www.figma.com${P}`, 'www.figma.com'],
+    ['identifiants et @', `https://user@www.figma.com@evil.tld${P}`, 'evil.tld'],
+    ['utilisateur seul', `https://user@www.figma.com${P}`, 'www.figma.com'],
+    ['mot de passe seul', `https://:pw@www.figma.com${P}`, 'www.figma.com'],
+    ['utilisateur et mot de passe', `https://user:pw@www.figma.com${P}`, 'www.figma.com'],
+    ['sous-domaine', `https://evil.www.figma.com${P}`, 'evil.www.figma.com'],
+    ['domaine parent', `https://figma.com${P}`, 'figma.com'],
+    ['point final', `https://www.figma.com.${P}`, 'www.figma.com.'],
+    ['autre port', `https://www.figma.com:8443${P}`, 'www.figma.com'],
+    ['IDN (i cyrillique)', `https://www.fіgma.com${P}`, 'www.xn--fgma-l9d.com'],
+    ['punycode', `https://www.xn--fgma-l9d.com${P}`, 'www.xn--fgma-l9d.com'],
+    ['antislash avant @', `https://www.figma.com\\@evil.tld${P}`, 'www.figma.com'],
+    ['antislash après l’hôte', `https://evil.tld\\@www.figma.com${P}`, 'evil.tld'],
+    ['hôte encodé', `https://www%2Efigma%2Ecom${P}`, 'www.figma.com'],
+    ['javascript', 'javascript:alert(1)//www.figma.com/oauth/mcp', undefined],
+    ['file', 'file:///www.figma.com/oauth/mcp', undefined],
+    ['coupée par U+FFFD', `https://www.fig\uFFFDma.com${P}`, undefined],
+    ['non ASCII dans la requête', `https://www.figma.com${P}?x=é`, HOST],
+    ['contrôle dans la requête', `https://www.figma.com${P}?x=\u0007`, HOST],
+    ['espace', `https://www.figma.com${P} x`, 'www.figma.com'],
+    ['pas une adresse', 'https://', undefined],
+    // Chemin (préréglage : `/oauth/mcp`, exact et tel qu'écrit).
+    ['autre chemin', 'https://www.figma.com/oauth', 'www.figma.com'],
+    ['chemin plus long', `https://www.figma.com${P}/x`, 'www.figma.com'],
+    ['chemin vide, fragment', 'https://www.figma.com#@evil.tld', 'www.figma.com'],
+    ['chemin avec ..', `https://www.figma.com/x/..${P}`, 'www.figma.com'],
+    ['chemin avec . ', `https://www.figma.com/.${P}`, 'www.figma.com'],
+    ['chemin encodé', 'https://www.figma.com/oauth%2Fmcp', 'www.figma.com'],
+    ['.. encodé', `https://www.figma.com/x/%2e%2e${P}`, 'www.figma.com'],
+    ['lettre encodée', 'https://www.figma.com/%6Fauth/mcp', 'www.figma.com'],
+    ['double barre', `https://www.figma.com/${P}`, 'www.figma.com'],
+    // Retour de la connexion (`redirect_uri`).
+    ['retour externe', `https://www.figma.com${P}?redirect_uri=https%3A%2F%2Fevil.tld%2Fcb`, HOST],
+    [
+      'retour http externe avec port',
+      `https://www.figma.com${P}?redirect_uri=http%3A%2F%2Fevil.tld%3A5%2Fcb`,
+      HOST
+    ],
+    [
+      'retour https local',
+      `https://www.figma.com${P}?redirect_uri=https%3A%2F%2F127.0.0.1%3A5%2Fcb`,
+      HOST
+    ],
+    [
+      'retour local sans port',
+      `https://www.figma.com${P}?redirect_uri=http%3A%2F%2F127.0.0.1%2Fcb`,
+      HOST
+    ],
+    [
+      'retour non encodé externe',
+      `https://www.figma.com${P}?redirect_uri=https://evil.tld/cb`,
+      HOST
+    ],
+    [
+      'retour avec identifiants',
+      `https://www.figma.com${P}?redirect_uri=http%3A%2F%2Fu%40127.0.0.1%3A5%2F`,
+      HOST
+    ],
+    [
+      'retour répété (local puis externe)',
+      `https://www.figma.com${P}?${LOOP}&redirect_uri=https%3A%2F%2Fevil.tld`,
+      HOST
+    ],
+    ['retour répété (deux fois local)', `https://www.figma.com${P}?${LOOP}&${LOOP}`, HOST],
+    [
+      'retour encodé deux fois',
+      `https://www.figma.com${P}?redirect_uri=http%253A%252F%252F127.0.0.1%253A5%252Fcb`,
+      HOST
+    ],
+    ['retour vide', `https://www.figma.com${P}?redirect_uri=`, HOST]
   ])('refusée : %s', (_label, raw, host) => {
-    const check = checkPageUrl(raw, HOST)
+    const check = checkPageUrl(raw, EXPECTED)
     expect(check.ok).toBe(false)
     expect(check.ok ? undefined : check.host).toBe(host)
   })
 
   it('refusée : trop longue (au-delà de 4 096 caractères), sans même la lire', () => {
-    const long = `https://www.figma.com/oauth?x=${'a'.repeat(MAX_URL_CHARS)}`
-    expect(checkPageUrl(long, HOST)).toEqual({ ok: false })
-    expect(checkPageUrl(long.slice(0, MAX_URL_CHARS), HOST)).toMatchObject({ ok: true })
+    const long = `https://www.figma.com${P}?x=${'a'.repeat(MAX_URL_CHARS)}`
+    expect(checkPageUrl(long, EXPECTED)).toEqual({ ok: false })
+    expect(checkPageUrl(long.slice(0, MAX_URL_CHARS), EXPECTED)).toMatchObject({ ok: true })
   })
 
   it('adresse coupée par un retour chariot : seule la fin reste, refusée (rien n’est recollé)', () => {
-    const [line] = collect(['https://www.fig\rma.com/oauth/mcp?state=S\n'])
-    expect(line).toBe('ma.com/oauth/mcp?state=S')
+    const [line] = collect([`https://www.fig\rma.com${P}?state=S\n`])
+    expect(line).toBe(`ma.com${P}?state=S`)
     // Couleur au milieu : retirée comme à l'écran ; l'adresse entière est vérifiée ensuite.
-    const [colored] = collect(['https://www.figma.com\u001b[31m.evil.tld/oauth\n'])
-    expect(checkPageUrl(colored ?? '', HOST)).toEqual({ ok: false, host: 'www.figma.com.evil.tld' })
-    const [bell] = collect(['https://www.fig\u0007ma.com/oauth\n'])
-    expect(checkPageUrl(bell ?? '', HOST).ok).toBe(false)
+    const [colored] = collect([`https://www.figma.com\u001b[31m.evil.tld${P}\n`])
+    expect(checkPageUrl(colored ?? '', EXPECTED)).toEqual({
+      ok: false,
+      host: 'www.figma.com.evil.tld'
+    })
+    const [bell] = collect([`https://www.fig\u0007ma.com${P}\n`])
+    expect(checkPageUrl(bell ?? '', EXPECTED).ok).toBe(false)
+    // Retour du curseur de deux colonnes au milieu : tout ce qui précède est effacé.
+    const [left] = collect([`●  https://evil.tld/\u001b[2Dwww.figma.com${P}\n`])
+    expect(left).toBe(`www.figma.com${P}`)
+    // Lien OSC 8 : sa cible cachée est retirée, seul le texte visible reste.
+    const [osc] = collect([
+      `\u001b]8;;https://evil.tld\u0007https://www.figma.com${P}\u001b]8;;\u0007\n`
+    ])
+    expect(osc).toBe(`https://www.figma.com${P}`)
+    // CSI sur un octet (U+009B) : neutralisé, l'adresse ne se lit plus.
+    const [c1] = collect([`\u009b2Dhttps://www.figma.com${P}\n`])
+    expect(checkPageUrl(c1 ?? '', EXPECTED).ok).toBe(false)
   })
 
-  it('journal : toute adresse réduite à son hôte, plus de `state`, `code_challenge`, `client_id`', () => {
-    const text = scrubUrls(`page ${PAGE} puis http://127.0.0.1:54321/callback?code=Z fin`)
-    expect(text).toBe('page <adresse www.figma.com> puis <adresse 127.0.0.1> fin')
-    for (const secret of ['state=', 'code_challenge', 'client_id', 'code=']) {
-      expect(text).not.toContain(secret)
+  it('messages d’erreur : tout mot qui pourrait porter une adresse ou ses paramètres est masqué', () => {
+    const text = scrubUrls(
+      [
+        `page ${PAGE} puis http://127.0.0.1:54321/callback?code=Z fin`,
+        'see www.figma.com/oauth?state=FAKESTATE and https:/www.figma.com?state=X',
+        'and https:\\\\www.figma.com?state=Y, puis client_id=FAKECLIENTID state=FAKESTATE',
+        'C:\\Users\\x\\code_challenge=FAKECHALLENGE spawn opencode ENOENT'
+      ].join(' ')
+    )
+    for (const secret of ['state=', 'code_challenge', 'client_id', 'code=', 'FAKE', '?']) {
+      expect(text, secret).not.toContain(secret)
     }
+    expect(text).toContain('<adresse www.figma.com>')
+    expect(text).toContain('spawn opencode ENOENT')
   })
 })

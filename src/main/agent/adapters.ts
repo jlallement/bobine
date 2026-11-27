@@ -275,7 +275,7 @@ export type McpAuthLine =
 export type McpAuthStored = 'connected' | 'expired' | 'unknown'
 
 /**
- * Connexion OAuth d'un serveur MCP distant faite par l'agent (fiche 293, ADR-0075), telle que son
+ * Connexion OAuth d'un serveur MCP distant faite par l'agent (fiche 293, ADR-0077), telle que son
  * profil la déclare. Arguments seuls : la commande est celle de l'agent (`AgentProfile.command`),
  * trouvée et lancée comme lui. Le moteur (`agent-config/mcp-oauth.ts`) lance, lit, vérifie l'adresse,
  * arrête ; l'adaptateur ne fait que dire les arguments et lire les sorties.

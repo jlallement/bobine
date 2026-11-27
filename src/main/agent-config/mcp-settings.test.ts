@@ -12,6 +12,7 @@ const profiles = resolveProfiles({
   env: {}
 })
 const FIGMA = 'https://mcp.figma.com/mcp'
+const nbsp = (text: string) => text.replace(/~/g, '\u00a0')
 
 function setup(globalText?: string) {
   const home = mkdtempSync(join(tmpdir(), 'mcp-preset-home-'))
@@ -103,6 +104,48 @@ describe('préréglages de serveurs MCP (fiche 293)', () => {
     expect(read()).toBe(text)
   })
 
+  it('fichier du dossier illisible (global lisible) : rien d’écrit dans le global non plus', () => {
+    const { settings, workspace, file } = setup()
+    writeFileSync(join(workspace, 'opencode.json'), '{ cassé ')
+    expect(() => settings.addPreset('opencode', 'figma', workspace)).toThrow()
+    expect(() => readFileSync(file, 'utf8')).toThrow() // jamais créé
+  })
+
+  it('déjà déclaré pour ce dossier seulement : gardé tel quel, pas de second serveur', () => {
+    const { settings, workspace, file } = setup()
+    const project = join(workspace, 'opencode.json')
+    const text =
+      '{ "mcp": { "figma": { "type": "remote", "url": "https://mcp.figma.com/mcp" } } }\n'
+    writeFileSync(project, text)
+    expect(settings.addPreset('opencode', 'figma', workspace)).toMatchObject({
+      name: 'figma',
+      added: false
+    })
+    expect(readFileSync(project, 'utf8')).toBe(text)
+    expect(() => readFileSync(file, 'utf8')).toThrow()
+  })
+
+  it('messages montrés à l’utilisateur : traduits (ADR-0014)', async () => {
+    const { settings, workspace } = setup()
+    expect(() => settings.addPreset('bob', 'figma', workspace)).toThrow(
+      'IBM Bob ne sait pas connecter lui-même un serveur MCP distant.'
+    )
+    const names = ['figma', ...Array.from({ length: 8 }, (_, i) => `figma-${i + 2}`)]
+    const taken = setup(
+      JSON.stringify({
+        mcp: Object.fromEntries(names.map((n) => [n, { type: 'local', command: ['x'] }]))
+      })
+    )
+    expect(() => taken.settings.addPreset('opencode', 'figma', taken.workspace)).toThrow(
+      // Typographie française de l'app : espaces insécables devant « : » et dans les guillemets.
+      nbsp('Les noms «~figma~» à «~figma-9~» sont déjà pris~: renommez un serveur.')
+    )
+    const bare = new McpSettings(profiles, { home: workspace })
+    expect(() => bare.cancelConnect('opencode', 'figma')).toThrow(
+      'La connexion des serveurs MCP n’est pas disponible.'
+    )
+  })
+
   it('agent sans la capacité (IBM Bob), préréglage inconnu : refusé, rien d’écrit ni lancé', () => {
     const { settings, workspace, start } = setup()
     expect(() => settings.addPreset('bob', 'figma', workspace)).toThrow()
@@ -115,7 +158,7 @@ describe('préréglages de serveurs MCP (fiche 293)', () => {
     const { settings, workspace } = setup()
     settings.addPreset('opencode', 'figma', workspace)
     await expect(settings.test('opencode', 'global', workspace, 'figma')).rejects.toThrow(
-      'pas de test de Bobine'
+      'pas de test par Bobine'
     )
   })
 })

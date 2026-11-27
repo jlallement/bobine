@@ -1,34 +1,36 @@
 /**
  * Moteur de connexion (fiche 293) contre une vraie fausse commande (`fixtures/fake-agent-mcp-auth.mjs`,
  * lancée par Node) : vrai lancement (`startProcess`), vrai arrêt de l'arbre (`killTree` : groupes
- * sous macOS et Linux, objets de tâche sous Windows, `test-setup.ts`). Portable : ni signal, ni
- * shell, ni port ; un processus est « vivant » tant que `process.kill(pid, 0)` réussit (Node le
- * permet aussi sous Windows). Jamais le vrai OpenCode, jamais Figma, aucun réseau.
+ * sous macOS et Linux, objets de tâche sous Windows, `test-setup.ts`).
+ *
+ * Portable : ni shell, ni port, et **aucun signal envoyé à un numéro de processus** (Windows
+ * réattribue vite les numéros, `process-group.ts`). Le processus lancé est suivi par son objet
+ * `ChildProcess` (événement `exit`) ; la mort de son enfant se prouve par un battement (fichier
+ * réécrit toutes les 100 ms) qui s'arrête. Nettoyage : par les objets lancés, et un fichier `.stop`
+ * que l'enfant guette (il s'arrête aussi seul au bout d'une minute). Délais larges pour la CI.
  */
-import { existsSync, mkdtempSync, readFileSync } from 'node:fs'
+import type { ChildProcess, SpawnOptions } from 'node:child_process'
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { McpAuthState } from '@shared/mcp'
+import { startProcess } from '../process-tree'
 import { resolveProfiles, type AgentProfile } from '../agent/profiles'
 import { McpOAuth } from './mcp-oauth'
 import { OPENCODE_MCP_AUTH } from './opencode-mcp-auth'
 
 const SCRIPT = join(__dirname, 'fixtures', 'fake-agent-mcp-auth.mjs')
-const launched: number[] = []
-
-const alive = (pid: number): boolean => {
-  try {
-    process.kill(pid, 0)
-    return true
-  } catch {
-    return false
-  }
-}
+const WAIT = { timeout: 20_000, interval: 50 }
+const launched: ChildProcess[] = []
+const beats: string[] = []
 
 afterEach(() => {
   // Filet : un essai rouge ne laisse rien derrière lui (seulement ce que l'essai a lancé).
-  for (const pid of launched.splice(0)) if (alive(pid)) process.kill(pid)
+  for (const child of launched.splice(0)) {
+    if (child.exitCode === null && child.signalCode === null) child.kill()
+  }
+  for (const beat of beats.splice(0)) writeFileSync(`${beat}.stop`, '')
 })
 
 function fakeAgent(): AgentProfile {
@@ -50,10 +52,13 @@ function fakeAgent(): AgentProfile {
   }
 }
 
+const beatOf = (file: string): number => (existsSync(file) ? Number(readFileSync(file, 'utf8')) : 0)
+
 describe('connexion par l’agent : vrai processus, vrai arrêt de l’arbre (fiche 293, R6)', () => {
   it('adresse lue dans le flux réel, page ouverte, « Annuler » arrête le processus et son enfant', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'mcp-oauth-real-'))
-    const pidsFile = join(dir, 'pids.json')
+    const beat = join(dir, 'battement')
+    beats.push(beat)
     const states: McpAuthState[] = []
     const opened: string[] = []
     const profile = fakeAgent()
@@ -70,26 +75,42 @@ describe('connexion par l’agent : vrai processus, vrai arrêt de l’arbre (fi
         }
       ],
       fallbackCwd: dir,
-      env: async () => ({ ...process.env, FAKE_MCP_AUTH_PIDS: pidsFile }),
+      env: async () => ({ ...process.env, FAKE_MCP_AUTH_BEAT: beat }),
       findCommand: (command) => command,
       openExternal: (url) => {
         opened.push(url)
       },
-      onState: (state) => states.push(state)
+      onState: (state) => states.push(state),
+      start: (command: string, args: readonly string[], options: SpawnOptions) => {
+        const child = startProcess(command, args, options).child
+        launched.push(child)
+        return child
+      }
     })
     expect(await engine.connect(profile.id, 'figma', dir)).toEqual({ started: true })
-    await vi.waitFor(() => expect(existsSync(pidsFile)).toBe(true), { timeout: 10_000 })
-    const pids = JSON.parse(readFileSync(pidsFile, 'utf8')) as number[]
-    launched.push(...pids)
-    expect(pids).toHaveLength(2)
-    await vi.waitFor(() => expect(opened).toHaveLength(1), { timeout: 10_000 })
+    const attempt = launched[0]
+    if (!attempt) throw new Error('tentative non lancée')
+    const exited = new Promise<void>((resolve) => attempt.once('exit', () => resolve()))
+    // L'enfant bat (au moins trois fois), la page est ouverte d'après la sortie réelle.
+    await vi.waitFor(() => expect(beatOf(beat)).toBeGreaterThanOrEqual(3), WAIT)
+    await vi.waitFor(() => expect(opened).toHaveLength(1), WAIT)
     expect(opened[0]?.startsWith('https://www.figma.com/oauth/mcp?')).toBe(true)
-    expect(pids.every(alive)).toBe(true)
 
     expect(engine.cancel(profile.id, 'figma')).toBe(true)
-    await vi.waitFor(() => expect(states.at(-1)?.status).toBe('to-connect'), { timeout: 10_000 })
-    // Rien d'orphelin : le processus lancé et son enfant sont arrêtés.
-    await vi.waitFor(() => expect(pids.filter(alive)).toEqual([]), { timeout: 10_000 })
+    await exited
+    await vi.waitFor(() => expect(states.at(-1)?.status).toBe('to-connect'), WAIT)
+    // Rien d'orphelin : le battement de l'enfant s'arrête (inchangé sur 1,5 s ; il bat toutes les
+    // 100 ms tant qu'il vit).
+    let previous = -1
+    await vi.waitFor(
+      () => {
+        const now = beatOf(beat)
+        const still = now === previous
+        previous = now
+        if (!still) throw new Error(`l’enfant bat encore (${now})`)
+      },
+      { timeout: 30_000, interval: 1_500 }
+    )
     expect(states.map((s) => s.status)).toEqual(['connecting', 'to-connect'])
-  })
+  }, 60_000)
 })

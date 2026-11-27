@@ -1,4 +1,4 @@
-# ADR-0075 — Connexion OAuth d'un serveur MCP distant : faite par l'agent, Bobine ouvre la page
+# ADR-0077 — Connexion OAuth d'un serveur MCP distant : faite par l'agent, Bobine ouvre la page
 
 - **Statut** : proposé (Jérôme ne l'a pas encore validé)
 - **Date** : 2026-11-27
@@ -20,18 +20,23 @@ R6 de la fiche 293).
 1. **La connexion est faite par l'agent.** Bobine lance la commande que le profil de l'agent
    déclare (`mcpOAuth`, ADR-0015), dans le dossier et l'environnement de lancement de l'agent,
    `--standalone` toujours ; elle lit l'adresse de la page de connexion dans la sortie.
-2. **Bobine n'ouvre la page qu'après vérification** : `new URL` réussi, `https:`, hôte exactement
-   celui du préréglage (Figma : `www.figma.com`), sans identifiants ni port, longueur bornée,
-   caractères ASCII imprimables seulement. Sinon rien n'est ouvert et la tentative est arrêtée.
-   Ouverture par `shell.openExternal`, depuis le main seulement.
+2. **Bobine n'ouvre la page qu'après vérification** : ASCII imprimable, longueur bornée,
+   `new URL` réussi, `https:`, hôte et chemin **exactement** ceux du préréglage (Figma :
+   `www.figma.com`, `/oauth/mcp`), écrits tels quels (ni encodage, ni `..`), sans identifiants ni
+   port autre que celui par défaut ; un `redirect_uri`, s'il y en a un, est unique et pointe vers
+   cette machine (`http`, `127.0.0.1` ou `localhost`, port explicite). Jamais une adresse lue après
+   la fin du processus ni une dernière ligne sans retour à la ligne. Sinon rien n'est ouvert et la
+   tentative est arrêtée. Ouverture par `shell.openExternal`, depuis le main seulement.
 3. **Le jeton reste chez l'agent.** Bobine ne lit jamais sa base, ne lance jamais d'export, ne
    garde ni ne journalise l'adresse complète (`state`, `code_challenge`, `client_id`) : seul l'hôte
-   sort du moteur (journal, IPC, messages).
+   sort du moteur (journal, IPC, messages) ; aucune ligne de sortie de la commande n'est
+   journalisée, seulement ce qui a été reconnu.
 4. **La fin se juge à la sortie et à l'état relu chez l'agent**, jamais au code de sortie
-   (l'expiration rend 0). Une seule connexion à la fois dans l'app ; « Annuler », le délai et la
-   fermeture de l'app arrêtent l'arbre de processus (`killTree`).
-5. **Préréglages en données** (`shared/mcp-presets.ts`) : adresse du serveur et hôte attendu de la
-   page. Aucun `if figma` dans le code ; le moteur (`agent-config/mcp-oauth.ts`) ne connaît ni
+   (l'expiration rend 0). Une seule connexion à la fois dans l'app ; chaque opération porte un
+   numéro et une fin périmée n'émet rien ; « Annuler », le délai et la fermeture de l'app arrêtent
+   l'arbre de processus (`killTree`).
+5. **Préréglages en données** (`shared/mcp-presets.ts`) : adresse du serveur, hôte et chemin
+   attendus de la page. Aucun `if figma` dans le code ; le moteur (`agent-config/mcp-oauth.ts`) ne connaît ni
    l'agent ni le serveur.
 
 ## Alternatives écartées

@@ -1,8 +1,8 @@
 /**
- * Connexion OAuth d'un serveur MCP distant par OpenCode (fiche 293, ADR-0075), relevée sur 2.3.0
+ * Connexion OAuth d'un serveur MCP distant par OpenCode (fiche 293, ADR-0077), relevée sur 2.3.0
  * (sorties brutes : `fixtures/opencode-2.3.0-mcp-auth/`) :
- * - `opencode mcp auth <nom> --standalone` écrit, avec les glyphes de sa bibliothèque d'invite
- *   (`│`, `●`, `◇`, `◆`, `■`, `└`…) : une consigne, l'adresse de la page **seule sur sa ligne**,
+ * - `opencode mcp auth <nom> --standalone` écrit, avec les symboles de sa bibliothèque d'invite
+ *   (`│`, `●`, `◇`, `◆`, `■`, `└`… ; ASCII sans terminal Unicode) : une consigne, l'adresse de la page **seule sur sa ligne**,
  *   « Waiting for authorization... », puis « Connected to <nom> » et « Done », ou
  *   « Authorization expired » et « Failed » (au bout d'environ 10 min, **code 0**), ou « Cancelled »
  *   à l'interruption (relevé R6) ;
@@ -17,15 +17,23 @@
  */
 import type { McpAuthLine, McpAuthStored, McpOAuthSource } from '../agent/adapters'
 
-/** Glyphes de tête des lignes d'OpenCode (tracés de boîte, formes géométriques) et espaces. */
-const LEADING_GLYPHS = /^[\s─-╿■-◿]+/u
+/**
+ * Préfixe de tête sans importance : un symbole court suivi d'espaces. Sur un terminal Unicode,
+ * OpenCode met `│`, `●`, `◇`, `◆`, `■`, `└` (relevé sur Mac) ; sans Unicode, sa bibliothèque
+ * d'invite les remplace par de l'ASCII (`|`, `•`, `o`, `*`, `x`, `—` : hypothèse, non relevée sous
+ * Windows, R9). La lecture ne dépend donc d'aucun symbole : au plus trois caractères, puis des espaces.
+ */
+const SHORT_PREFIX = /^\S{1,3}\s+/u
 
 /** Une adresse, quel que soit son schéma : le moteur refuse ensuite tout ce qui n'est pas attendu. */
 const URL_LINE = /^[a-z][a-z0-9+.-]*:\/\/\S+$/i
 
 function readLine(raw: string): McpAuthLine | undefined {
-  const line = raw.replace(LEADING_GLYPHS, '').trimEnd()
+  const trimmed = raw.trim()
+  const line = trimmed.replace(SHORT_PREFIX, '')
+  // L'adresse seule sur sa ligne, avec ou sans symbole devant.
   if (URL_LINE.test(line)) return { kind: 'url', url: line }
+  if (URL_LINE.test(trimmed)) return { kind: 'url', url: trimmed }
   if (/^Connected to \S+$/.test(line)) return { kind: 'connected' }
   if (/^Authorization expired$/.test(line)) return { kind: 'expired' }
   if (/^Failed$/.test(line)) return { kind: 'failed' }
