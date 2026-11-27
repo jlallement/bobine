@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { t } from 'i18next'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -215,5 +215,77 @@ describe('marque « résolu par l’agent » (fiche 289, testeur)', () => {
     const cycle = new WorktreeCycle(gitCommand)
     await cycle.mergeAbort(target)
     expect(await cycle.agentResolution(target)).toBeUndefined()
+  }, 30_000)
+})
+
+describe('marque illisible ou périmée (fiche 289, second passage du testeur)', () => {
+  /** B en conflit dans son worktree, la marque posée, l'agent a retiré les marqueurs. */
+  async function marked() {
+    const { env, a, b } = await conflicting()
+    const cycle = new WorktreeCycle(gitCommand)
+    const target = (c: Child) => ({
+      id: c.id,
+      title: c.title,
+      workspace: c.workspace,
+      worktree: c.worktree
+    })
+    await cycle.merge(target(a))
+    await cycle.merge(target(b))
+    await cycle.markAgentResolution(target(b), ['README.md'])
+    const markFile = join(
+      git(b.worktree.path, 'rev-parse', '--absolute-git-dir'),
+      'bobine-agent-resolution.json'
+    )
+    return { env, b, cycle, target: target(b), markFile, main: git(env.root, 'rev-parse', 'main') }
+  }
+
+  it('M3b : marque tronquée (app tuée pendant l’écriture) : « à relire », marque gardée, rien dans main', async () => {
+    const m = await marked()
+    writeFileSync(join(m.b.worktree.path, 'README.md'), 'résolu par agent\n')
+    writeFileSync(m.markFile, readFileSync(m.markFile, 'utf8').slice(0, 20))
+    expect(await m.cycle.merge(m.target)).toMatchObject({
+      status: 'resolved',
+      files: ['README.md']
+    })
+    expect(await m.cycle.merge(m.target)).toMatchObject({ status: 'resolved' })
+    expect(git(m.env.root, 'rev-parse', 'main')).toBe(m.main)
+    expect(readFileSync(m.markFile, 'utf8')).not.toBe('')
+    // L'arrêt dit, la fusion suivante est celle de l'utilisateur.
+    await m.cycle.markReviewed(m.target)
+    expect(await m.cycle.merge(m.target)).toMatchObject({ status: 'merged' })
+  }, 30_000)
+
+  it('M4 : marque aux champs absents ou inconnus : même prudence, aucun message faux', async () => {
+    const m = await marked()
+    writeFileSync(join(m.b.worktree.path, 'README.md'), 'résolu par agent\n')
+    writeFileSync(m.markFile, JSON.stringify({ version: 2, stage: 'checked', tip: 'x' }))
+    expect(await m.cycle.merge(m.target)).toMatchObject({ status: 'resolved' })
+    expect(git(m.env.root, 'rev-parse', 'main')).toBe(m.main)
+  }, 30_000)
+
+  it('M5b : branche refaite et base fusionnée à la main : message vrai, puis un clic fusionne', async () => {
+    const m = await marked()
+    const head = git(m.b.worktree.path, 'rev-parse', 'HEAD')
+    git(m.b.worktree.path, 'merge', '--abort')
+    git(m.b.worktree.path, 'reset', '-q', '--hard', 'HEAD~1')
+    writeFileSync(join(m.b.worktree.path, 'b.txt'), 'b\n')
+    git(m.b.worktree.path, 'add', '.')
+    git(m.b.worktree.path, 'commit', '-q', '-m', 'b')
+    git(m.b.worktree.path, 'merge', '-q', '--no-edit', 'main')
+    await expect(m.cycle.merge(m.target)).rejects.toThrow(
+      t('childrenMerge.error.undone', { title: 'B', head: head.slice(0, 7) })
+    )
+    expect(t('childrenMerge.error.undone', { title: 'B', head: 'x' })).not.toMatch(/défait/)
+    expect(await m.cycle.merge(m.target)).toMatchObject({ status: 'merged' })
+  }, 30_000)
+
+  it('écriture d’un coup : aucun fichier temporaire ne reste à côté de la marque', async () => {
+    const m = await marked()
+    await m.cycle.markReviewed(m.target)
+    const dir = git(m.b.worktree.path, 'rev-parse', '--absolute-git-dir')
+    expect(readdirSync(dir).filter((f) => f.startsWith('bobine-agent-resolution'))).toEqual([
+      'bobine-agent-resolution.json'
+    ])
+    expect(JSON.parse(readFileSync(m.markFile, 'utf8'))).toMatchObject({ stage: 'review' })
   }, 30_000)
 })

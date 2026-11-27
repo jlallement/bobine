@@ -198,6 +198,21 @@ nouveau choix structurant ; elle est consignée ici.
   avec ses marques, alors que la ligne de la carte (« +1 −1 ») compare la branche à sa base. Un autre
   fichier touché pendant ce tour s'y ajouterait, ainsi que tout ce que l'agent a modifié avant.
 
+### Reste à faire avant la 1.2.0 finale (second passage du testeur)
+
+- **N1** : l'agent peut supprimer lui-même la marque pendant son tour (elle est dans le dossier git
+  du worktree, à sa portée) : la ligne passe alors en échec avec un message faux, et « Réessayer »
+  fusionne sa résolution. Limite assumée pour la version candidate : l'app ne fusionne jamais d'elle-
+  même, et un agent qui écrit dans `.git` peut aussi bien fusionner lui-même. Piste : doubler la
+  marque côté app (hors de portée de l'agent), ou conclure prudemment dès qu'une fusion est en cours
+  ou qu'un commit est apparu depuis la consigne.
+- **N4** : consigne refusée avant toute action de l'agent, résolution à la main, « Réessayer » : un
+  arrêt « à relire » de trop (prudent, un clic de plus).
+- **N5** : `rowMergeState` fait passer une ligne `resolved` avant un plan frais en `conflict`
+  (affichage seulement ; le clic relit git).
+- Après redémarrage, le compte « 2 modifications… » de la ligne peut être périmé (affichage seulement,
+  confirmé par le testeur).
+
 ### Reste à faire, après la 1.2.0
 
 - La barre latérale met une coche verte à un travail « à relire » (elle ne connaît pas l'état de
@@ -226,3 +241,11 @@ nouveau choix structurant ; elle est consignée ici.
   travaux-groupe filles-tech-lead commit-redige` 16/16. Captures regardées : `289-fusion-a-relire-*`
   (en-tête « 1 à relire »), `289-voir-la-resolution-*`, `289-worktree-a-relire-*`,
   `289-redemarrage-a-relire-*`.
+- 2026-11-27 : second passage du testeur (`scratchpad/testeur-289b/`) : défauts du premier passage
+  fermés. Corrigés : **N2** marque tronquée ou incomplète (M3b, M4) — écriture d'un coup (fichier
+  temporaire puis `rename`) et, présente mais illisible, elle vaut « l'agent a été sollicité » : arrêt
+  « à relire », marque gardée, aucune tête vide ni « défait » ; **N3** message d'une marque périmée
+  (M5b) — « sa branche n'est plus celle que son agent devait résoudre » (vrai que l'auteur soit
+  l'agent ou l'utilisateur), avec la tête d'alors, et un clic de plus fusionne la branche telle
+  qu'elle est. Rouge constaté : 3 échecs sur 4 dans `children-merge-agent.test.ts` (« second
+  passage ») sur `4cebe2f4`.

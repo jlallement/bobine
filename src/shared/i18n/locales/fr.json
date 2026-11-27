@@ -4275,7 +4275,7 @@
       "cleanupSkipped": "Fusionné, mais pas nettoyé : « {{title}} » a changé depuis la fusion (nouveaux commits, modifications ou travail en cours) ; sa branche et son dossier restent.",
       "reviewing": "« {{title}} » est en cours de relecture : attendez la fin de la relecture pour le fusionner.",
       "notResolved": "« {{title}} » n’a plus de fusion en cours et sa branche n’a pas reçu {{base}} (fusion abandonnée ?) : rien n’a été fusionné.",
-      "undone": "« {{title}} » : son agent a défait le travail de la branche pendant la résolution du conflit ; rien n’a été fusionné. Sa tête d’avant est {{head}} (à retrouver avec git branch <nom> {{head}}).",
+      "undone": "« {{title}} » : sa branche n’est plus celle que son agent devait résoudre (tête d’alors : {{head}}, à retrouver avec git branch <nom> {{head}}) ; rien n’a été fusionné. Un nouveau clic fusionne la branche telle qu’elle est.",
       "enteredBase": "« {{title}} » est entré dans {{base}} pendant la résolution de son conflit, hors de cette fusion : rien n’en a été relu. Vérifiez {{base}}."
     },
     "stashKept_one": "Votre modification est mise de côté le temps de la fusion.",

@@ -14,7 +14,7 @@
  * fait par l'agent), si l'agent a défait la branche, si la branche est entrée dans la base pendant
  * le tour, ou si la fusion a été abandonnée.
  */
-import { readFile, rm, writeFile } from 'node:fs/promises'
+import { readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { t } from 'i18next'
 import { hasConflictMarkers, type ConcludeOutcome, type MergeOutcome } from '@shared/worktree-cycle'
@@ -50,21 +50,38 @@ async function markPath(git: WorktreeGit): Promise<string> {
   return join((await git.exec(['rev-parse', '--absolute-git-dir'])).trim(), MARK)
 }
 
+const SHA = /^[0-9a-f]{40,64}$/
+
+/**
+ * La marque du worktree. Présente mais illisible (tronquée) ou incomplète (champs absents,
+ * inconnus) : elle vaut quand même « l'agent a été sollicité », sans tête ni base connues
+ * (`head` et `baseTip` vides) — testeur, N2.
+ */
 export async function readMark(git: WorktreeGit): Promise<AgentResolution | undefined> {
   const text = await readFile(await markPath(git), 'utf8').catch(() => undefined)
   if (text === undefined) return undefined
+  let mark: Partial<AgentResolution> = {}
   try {
-    const mark = JSON.parse(text) as Partial<AgentResolution>
-    return {
-      head: typeof mark.head === 'string' ? mark.head : '',
-      baseTip: typeof mark.baseTip === 'string' ? mark.baseTip : '',
-      files: Array.isArray(mark.files) ? mark.files.filter((f) => typeof f === 'string') : [],
-      stage: mark.stage === 'review' ? 'review' : 'resolving'
-    }
+    mark = JSON.parse(text) as Partial<AgentResolution>
   } catch {
     // Illisible : la prudence l'emporte, elle compte pour une résolution pas relue.
-    return { head: '', baseTip: '', files: [], stage: 'resolving' }
   }
+  const known = typeof mark.head === 'string' && SHA.test(mark.head)
+  const base = typeof mark.baseTip === 'string' && SHA.test(mark.baseTip)
+  return {
+    head: known && base ? (mark.head as string) : '',
+    baseTip: known && base ? (mark.baseTip as string) : '',
+    files: Array.isArray(mark.files) ? mark.files.filter((f) => typeof f === 'string') : [],
+    stage: mark.stage === 'review' ? 'review' : 'resolving'
+  }
+}
+
+/** Écrite d'un coup (fichier temporaire du même dossier, puis renommé) : jamais à moitié. */
+async function saveMark(git: WorktreeGit, mark: AgentResolution): Promise<void> {
+  const path = await markPath(git)
+  const temporary = `${path}.${process.pid}.tmp`
+  await writeFile(temporary, JSON.stringify(mark), 'utf8')
+  await rename(temporary, path)
 }
 
 /**
@@ -77,8 +94,7 @@ export async function writeMark(git: WorktreeGit, files: readonly string[]): Pro
   if (merging.code !== 0) return false
   const head = (await git.exec(['rev-parse', 'HEAD'])).trim()
   const baseTip = merging.stdout.toString().trim()
-  const mark: AgentResolution = { head, baseTip, files: [...files], stage: 'resolving' }
-  await writeFile(await markPath(git), JSON.stringify(mark), 'utf8')
+  await saveMark(git, { head, baseTip, files: [...files], stage: 'resolving' })
   return true
 }
 
@@ -89,7 +105,7 @@ export async function writeMark(git: WorktreeGit, files: readonly string[]): Pro
 export async function markStage(git: WorktreeGit, stage: AgentResolution['stage']): Promise<void> {
   const mark = await readMark(git)
   if (!mark || mark.stage === stage) return
-  await writeFile(await markPath(git), JSON.stringify({ ...mark, stage }), 'utf8')
+  await saveMark(git, { ...mark, stage })
 }
 
 export async function clearMark(git: WorktreeGit): Promise<void> {
@@ -136,8 +152,13 @@ export async function concludeAgentResolution(
   branch: string,
   base: string
 ): Promise<ConcludeOutcome> {
-  if (!(await isAncestor(git, mark.head, 'HEAD'))) return { status: 'undone', head: mark.head }
-  if (await isAncestor(git, mark.head, base)) return { status: 'entered-base' }
+  // Marque illisible ou incomplète : rien n'est établi sur la branche ; on conclut prudemment, à
+  // relire, sans rien affirmer d'autre (testeur, N2).
+  const known = !!mark.head && !!mark.baseTip
+  if (known && !(await isAncestor(git, mark.head, 'HEAD'))) {
+    return { status: 'undone', head: mark.head }
+  }
+  if (known && (await isAncestor(git, mark.head, base))) return { status: 'entered-base' }
   const merging = (await git.run(['rev-parse', '-q', '--verify', 'MERGE_HEAD'])).code === 0
   if (merging) {
     const unmerged = lines(await git.run(['diff', '--name-only', '--diff-filter=U']))
@@ -151,6 +172,21 @@ export async function concludeAgentResolution(
     if (left.length > 0) return { status: 'conflicts', files: left }
     await commitMerge(git, unmerged)
     await mergeIntoBase((args) => git.exec(args), branch, base)
+  } else if (!known) {
+    // Sans tête connue : seul ce que le dernier commit touche peut encore être contrôlé.
+    const touched = lines(
+      await git.run([
+        'diff-tree',
+        '-r',
+        '-m',
+        '--name-only',
+        '--no-commit-id',
+        '--diff-filter=d',
+        'HEAD'
+      ])
+    )
+    const left = await markersAt(git, 'HEAD', [...new Set(touched)])
+    if (left.length > 0) return { status: 'conflicts', files: left }
   } else {
     if (!(await isAncestor(git, mark.baseTip, 'HEAD'))) return { status: 'not-merging' }
     // L'agent a commité lui-même : ce que son commit touche ne doit garder aucun marqueur.

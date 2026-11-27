@@ -4095,7 +4095,7 @@
       "cleanupSkipped": "Merged, but not cleaned up: “{{title}}” changed since the merge (new commits, changes or work in progress); its branch and folder stay.",
       "reviewing": "“{{title}}” is being reviewed: wait until the review ends to merge it.",
       "notResolved": "“{{title}}” no longer has a merge in progress and its branch did not receive {{base}} (merge aborted?): nothing was merged.",
-      "undone": "“{{title}}”: its agent undid the branch’s work while resolving the conflict; nothing was merged. Its previous head is {{head}} (recover it with git branch <name> {{head}}).",
+      "undone": "“{{title}}”: its branch is no longer the one its agent was to resolve (head then: {{head}}, recover it with git branch <name> {{head}}); nothing was merged. Clicking again merges the branch as it is.",
       "enteredBase": "“{{title}}” went into {{base}} while its conflict was being resolved, outside this merge: none of it was reviewed. Check {{base}}."
     },
     "stashKept_one": "Your change is set aside for the duration of the merge.",
