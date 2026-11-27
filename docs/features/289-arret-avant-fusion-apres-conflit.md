@@ -249,3 +249,22 @@ nouveau choix structurant ; elle est consignée ici.
   l'agent ou l'utilisateur), avec la tête d'alors, et un clic de plus fusionne la branche telle
   qu'elle est. Rouge constaté : 3 échecs sur 4 dans `children-merge-agent.test.ts` (« second
   passage ») sur `4cebe2f4`.
+- 2026-11-27 : **rc.2 rouge sur le Mac de GitHub** (3 cœurs) : `worktree-cycle` clair, « après redémarrage
+  (sans mère) : rien n'est fusionné ; « Fusionner dans main » reste le seul chemin » puis délai dépassé
+  sur `main-dirty`. Capture de l'échec 01 : la vue Git dit « 2 commits sur la branche · Committer ·
+  Fusionner dans main », bouton pâle, sans note ; l'agent dit « Prêt ». **Cause : un vrai défaut de
+  l'app** (hypothèse b). Au redémarrage, l'agent de la conversation du worktree démarre quand on ouvre
+  la conversation ; la vue Git lue à ce moment-là disait `turn` (le statut `starting` comptait pour un
+  tour, via `inTurn`), donc « Fusionner dans main » grisé ; et cette vue n'était relue qu'à la fin
+  d'un outil, jamais quand le tour (ou le démarrage) finit : le bouton restait grisé, le clic sans
+  effet. Sur une machine rapide, l'agent est prêt avant la lecture. Correctif : un agent qui démarre
+  n'est pas un tour (`ownTurn`) ; la vue Git est relue quand le tour de l'agent commence ou finit
+  (`agentStatus` dans la clé de `useWorktreeCycle`). Rouge : `worktree-ipc.test.ts` (« agent qui
+  démarre »), et l'e2e qui tient désormais l'agent du worktree au démarrage (`MOCK_AGENT_START_LOCK`,
+  posé une fois l'app prête) au lieu d'une pause d'une seconde. Sous charge (12 processus qui
+  occupent le processeur) : `worktree-cycle` clair 10 passages verts sur 10.
+  Rouge reproduit en local sur le code de `87336ee1` (même e2e) : « ✗ après redémarrage, l'agent
+  encore au démarrage (starting) : « Fusionner dans main » n'est pas grisé », puis les deux échecs vus
+  sur GitHub. Vert sur `d9420b82` : `./scripts/verify` 0 (sans charge ; sous charge, deux délais sans
+  rapport, `log.test.ts` et `file-tree.test.ts`), `pnpm build` 0, huit suites en clair et en sombre
+  16/16.

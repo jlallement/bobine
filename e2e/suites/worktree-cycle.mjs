@@ -31,6 +31,8 @@ export async function worktreeCycleSuite(scheme) {
   writeFileSync(join(workspace, 'notes.txt'), 'à faire\n')
   /** Profil gardé d'un lancement à l'autre (fiche 289 : redémarrage avec une résolution à relire). */
   const userData = mkdtempSync(join(tmpdir(), 'bob-e2e-cycle-data-'))
+  /** Verrou de démarrage de l'agent factice (`MOCK_AGENT_START_LOCK`) : son agent « démarre ». */
+  const startLock = join(userData, 'verrou-demarrage')
   /** Ce qu'écrit le scénario `conflits` quand on lui demande de résoudre. */
   const resolvedReadme = '# Démo\n\nVersion 2 et 3\n\n## Utilisation\n\nLancer `node src/app.js`.\n'
   try {
@@ -180,9 +182,14 @@ export async function worktreeCycleSuite(scheme) {
 
     // Fiche 289, limite assumée : une conversation en worktree sans mère perd la note « à relire » au
     // redémarrage ; rien n'est fusionné pour autant, « Fusionner dans main » reste le seul chemin.
+    // rc.2, Mac de GitHub : l'agent qui démarre encore (verrou de démarrage de l'agent factice, ce
+    // qu'une machine lente fait d'elle-même) n'est pas un tour ; « Fusionner » n'est pas grisé.
     await withApp(
       scheme,
       async (ui) => {
+        // Posé une fois l'app prête (son premier agent, dans le dossier principal, a démarré) : celui
+        // du worktree, lancé à l'ouverture de sa conversation, reste « au démarrage ».
+        writeFileSync(startLock, '')
         await ui.waitFor(
           `document.querySelectorAll('[data-testid=history-item]').length > 0`,
           20000
@@ -196,7 +203,19 @@ export async function worktreeCycleSuite(scheme) {
         await ui.waitFor(`!!${ui.$('changes-view-git')}`, 20000)
         await ui.click(ui.$('changes-view-git'))
         await ui.waitFor(`!!${ui.$('worktree-merge')}`, 20000)
-        await sleep(1000)
+        const starting = await ui.ev(
+          `window.api.conversations.get().then((s) => s.conversations.find((c) => c.id === document.querySelector('.history-item.active')?.dataset.id)?.status)`
+        )
+        const usable = await ui
+          .waitFor(`!${ui.$('worktree-merge')}.hasAttribute('aria-disabled')`, 5000)
+          .then(
+            () => true,
+            () => false
+          )
+        check(
+          starting === 'starting' && usable,
+          `après redémarrage, l’agent encore au démarrage (${starting}) : « Fusionner dans main » n’est pas grisé`
+        )
         check(
           git('log', '-1', '--format=%s', 'main') === 'v3' &&
             readFileSync(join(workspace, 'README.md'), 'utf8') !== resolvedReadme &&
@@ -209,6 +228,8 @@ export async function worktreeCycleSuite(scheme) {
         await ui.click(ui.$('worktree-merge'))
         await ui.waitFor(`!!${ui.$('main-dirty')}`)
         await ui.click(ui.$('main-dirty-stash'))
+        // L'agent peut finir de démarrer : la suite (nettoyage, réglages) n'a plus besoin du verrou.
+        rmSync(startLock, { force: true })
         // Fiche 289 : le commit de fusion est déjà dans la branche (fait à la résolution) ; main y
         // avance en fast-forward, et l'historique est celui d'avant (le sujet « Merge branch… »).
         await ui.waitFor(
@@ -291,7 +312,7 @@ export async function worktreeCycleSuite(scheme) {
       },
       userData,
       'conflits',
-      { BOBINE_WORKSPACE: workspace }
+      { BOBINE_WORKSPACE: workspace, MOCK_AGENT_START_LOCK: startLock }
     )
   } finally {
     rmSync(workspace, { recursive: true, force: true })

@@ -215,12 +215,16 @@ export function worktreeHandlers(
     const busy = own && inTurn(own) ? own : turnInFolder(conversations, found.worktree.root)
     if (busy) throw new Error(t('worktreeCycle.error.turnRunning', { title: busy.title }))
   }
-  /** La conversation du worktree est-elle au travail (tour en cours, accord attendu) ? */
+  /**
+   * La conversation du worktree est-elle au travail (tour en cours, accord attendu) ? Un agent qui
+   * démarre (`starting`, au redémarrage de l'app) n'écrit rien : ce n'est pas un tour (rc.2 : sur un
+   * Mac lent, la vue Git lue à ce moment restait grisée).
+   */
   const ownTurn = (found: CycleTarget) => {
     const own = available()
       .conversations.state()
       .conversations.find((c) => c.id === found.id)
-    return own && inTurn(own) ? own : undefined
+    return own && own.status !== 'starting' && inTurn(own) ? own : undefined
   }
   /**
    * Fiche 289 (testeur, T10, I2) : pas de fusion pendant un tour de la conversation du worktree ;
