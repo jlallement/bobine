@@ -1,0 +1,1217 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Figma en un clic — maquettes (fiche 293)</title>
+    <style>
+      /*
+       * Fiche 293. Fichier autonome : jetons, classes et mesures recopiés de l'app
+       * (src/renderer/src/themes.generated.css, styles.css : .settings-*, .mcp-*, .btn, .switch,
+       * .segmented, .tool-row, .msg-user), icônes Lucide de l'app en SVG brut. Polices livrées
+       * avec l'app, par chemin relatif dans le dépôt ; polices du système en repli.
+       * Thème : celui du système, ou forcé par les boutons en haut (data-theme).
+       */
+      :root {
+        --bg: #faf9f5;
+        --sidebar: #f3f1ea;
+        --surface: #ffffff;
+        --surface-2: #f0eee6;
+        --surface-3: #e8e5db;
+        --border: #e3e0d6;
+        --border-strong: #8f8b81;
+        --text: #2b2a26;
+        --text-2: #4d4b45;
+        --muted: #6d6b64;
+        --accent: #b75534;
+        --accent-hover: #a34c2e;
+        --on-accent: #ffffff;
+        --ok: #22683a;
+        --ok-soft: #e6f4ea;
+        --warn: #905f18;
+        --warn-soft: #fbf1df;
+        --err: #b3261e;
+        --err-soft: #fbe7e4;
+        --code-bg: #f4f2ec;
+        --backdrop: #b4b3ad;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --bg: #262624;
+          --sidebar: #1f1e1d;
+          --surface: #30302e;
+          --surface-2: #383835;
+          --surface-3: #42413d;
+          --border: #3e3d39;
+          --border-strong: #7d7b74;
+          --text: #f0eee6;
+          --text-2: #d4d1c7;
+          --muted: #a6a39a;
+          --accent: #db8062;
+          --accent-hover: #e3937a;
+          --on-accent: #1a1918;
+          --ok: #7fcb93;
+          --ok-soft: #233a2a;
+          --warn: #e0a84f;
+          --warn-soft: #3d3222;
+          --err: #f08a7a;
+          --err-soft: #432a27;
+          --code-bg: #1f1e1d;
+          --backdrop: #121211;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme='dark'] {
+        --bg: #262624;
+        --sidebar: #1f1e1d;
+        --surface: #30302e;
+        --surface-2: #383835;
+        --surface-3: #42413d;
+        --border: #3e3d39;
+        --border-strong: #7d7b74;
+        --text: #f0eee6;
+        --text-2: #d4d1c7;
+        --muted: #a6a39a;
+        --accent: #db8062;
+        --accent-hover: #e3937a;
+        --on-accent: #1a1918;
+        --ok: #7fcb93;
+        --ok-soft: #233a2a;
+        --warn: #e0a84f;
+        --warn-soft: #3d3222;
+        --err: #f08a7a;
+        --err-soft: #432a27;
+        --code-bg: #1f1e1d;
+        --backdrop: #121211;
+        color-scheme: dark;
+      }
+      :root {
+        --radius-xs: 4px;
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 20px;
+        --radius-pill: 999px;
+        --density-tool-pad: 6px;
+        --font-ui:
+          'Bobine Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+        --font-mono: 'Bobine JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+      }
+      @font-face {
+        font-family: 'Bobine Inter';
+        src: url('../../src/renderer/src/assets/fonts/InterVariable.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      @font-face {
+        font-family: 'Bobine JetBrains Mono';
+        src: url('../../src/renderer/src/assets/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font-ui);
+        font-size: 14px;
+        -webkit-font-smoothing: antialiased;
+      }
+      body {
+        padding: 24px 16px 64px;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+        border: none;
+        background: none;
+        padding: 0;
+      }
+      button:disabled {
+        cursor: default;
+      }
+      svg.i {
+        width: var(--s, 15px);
+        height: var(--s, 15px);
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex-shrink: 0;
+      }
+
+      /* ===== Page de la maquette ===== */
+      .page {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+      .page > h1 {
+        font-size: 20px;
+        margin: 0 0 6px;
+      }
+      .page > p,
+      .page > ul {
+        color: var(--text-2);
+        line-height: 1.55;
+        max-width: 820px;
+        margin: 6px 0;
+      }
+      .theme-switch {
+        display: flex;
+        gap: 6px;
+        margin: 14px 0 6px;
+      }
+      .planche {
+        margin: 40px 0 0;
+        padding: 18px 0 0;
+        border-top: 1px solid var(--border);
+      }
+      .planche > h2 {
+        font-size: 15px;
+        margin: 0 0 4px;
+      }
+      .planche > .legend {
+        color: var(--text-2);
+        font-size: 13px;
+        line-height: 1.55;
+        margin: 0 0 12px;
+        max-width: 860px;
+      }
+      .legend code,
+      .page code {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        background: var(--code-bg);
+        padding: 1px 4px;
+        border-radius: var(--radius-xs);
+      }
+      .frame-label {
+        font-size: 11.5px;
+        color: var(--muted);
+        margin: 14px 0 6px;
+      }
+      .new {
+        outline: 2px dashed color-mix(in srgb, var(--accent) 70%, transparent);
+        outline-offset: 3px;
+        border-radius: var(--radius-sm);
+      }
+      .no-marks .new {
+        outline: none;
+      }
+      /* Fond de la fenêtre principale derrière la feuille des Réglages. */
+      .shot {
+        display: inline-block;
+        padding: 18px;
+        background: var(--backdrop);
+        border-radius: 10px;
+      }
+      .shot.thread-shot {
+        background: var(--bg);
+        border: 1px solid var(--border);
+      }
+
+      /* ===== Réglages (copie de styles.css) ===== */
+      .settings-dialog {
+        display: flex;
+        overflow: clip;
+        background: var(--surface);
+        border-radius: 14px;
+        box-shadow: 0 10px 40px rgb(0 0 0 / 0.18);
+        min-height: 470px;
+      }
+      .settings-nav {
+        width: 210px;
+        flex-shrink: 0;
+        background: var(--sidebar);
+        border-right: 1px solid var(--border);
+        padding: 18px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .settings-title {
+        font-size: 15px;
+        font-weight: 600;
+        margin: 0 8px 12px;
+      }
+      .settings-search {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        margin: 0 2px 10px;
+        padding: 6px 9px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .settings-nav-gap {
+        height: 14px;
+      }
+      .settings-nav-item {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        color: var(--text-2);
+        font-size: 13.5px;
+        padding: 7px 10px;
+        border-radius: var(--radius-sm);
+      }
+      .settings-nav-item.active {
+        background: var(--surface-3);
+        color: var(--text);
+        font-weight: 500;
+      }
+      .settings-nav-item.active svg {
+        color: var(--accent);
+      }
+      .settings-main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .settings-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 14px 10px 32px;
+      }
+      .settings-heading {
+        flex: 1;
+        margin: 0;
+        font-size: 17px;
+        font-weight: 600;
+      }
+      .settings-body {
+        flex: 1;
+        padding: 6px 32px 32px;
+      }
+      .icon-button {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-sm);
+        display: inline-grid;
+        place-items: center;
+        color: var(--muted);
+        flex-shrink: 0;
+      }
+      .icon-button.small {
+        width: 26px;
+        height: 26px;
+      }
+      .settings-fold {
+        margin: 4px 0 10px;
+        font-size: 12.5px;
+        color: var(--muted);
+      }
+      .settings-row-hint {
+        font-size: 12.5px;
+        color: var(--muted);
+        margin: 3px 0 0;
+        line-height: 1.45;
+      }
+      .settings-row-hint a {
+        color: var(--accent);
+        text-decoration: none;
+        white-space: nowrap;
+      }
+      .settings-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+      }
+      .settings-list li {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 16px;
+        font-size: 13.5px;
+      }
+      .settings-list li + li {
+        border-top: 1px solid var(--border);
+      }
+      .settings-list li.wrap {
+        flex-wrap: wrap;
+      }
+      .confirm-row {
+        flex: 1 1 100%;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-top: 6px;
+        padding: 8px 10px;
+        border-radius: var(--radius-sm);
+        background: var(--err-soft);
+        font-size: 12.5px;
+      }
+      .confirm-row > span {
+        flex: 1 1 auto;
+        min-width: 0;
+        color: var(--text);
+      }
+      .icon-button.pressed {
+        background: var(--surface-3);
+        color: var(--err);
+      }
+      .segmented {
+        display: inline-flex;
+        padding: 2px;
+        border-radius: var(--radius-sm);
+        background: var(--surface-2);
+      }
+      .segmented button {
+        white-space: nowrap;
+        color: var(--text-2);
+        font-size: 12px;
+        padding: 3px 10px;
+        border-radius: var(--radius-sm);
+      }
+      .segmented button.active {
+        background: var(--surface);
+        color: var(--text);
+        box-shadow:
+          0 1px 2px rgb(0 0 0 / 0.12),
+          inset 0 0 0 1px var(--border);
+      }
+      .segmented .count {
+        color: var(--muted);
+        margin-left: 3px;
+      }
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 38px;
+        height: 22px;
+        flex-shrink: 0;
+      }
+      .switch span {
+        position: absolute;
+        inset: 0;
+        border-radius: var(--radius-pill);
+        background: var(--accent);
+      }
+      .switch span::after {
+        content: '';
+        position: absolute;
+        left: 2px;
+        top: 2px;
+        width: 18px;
+        height: 18px;
+        border-radius: var(--radius-pill);
+        background: #fff;
+        box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+        transform: translateX(16px);
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 32px;
+        padding: 6px 14px;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        font-weight: 500;
+        border: 1px solid var(--border-strong);
+        background: var(--surface);
+        color: var(--text);
+        white-space: nowrap;
+      }
+      .btn.small {
+        padding: 4px 10px;
+        font-size: 12px;
+        min-height: 28px;
+      }
+      .btn.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--on-accent);
+      }
+      .btn.primary:disabled {
+        background: var(--surface-3);
+        border-color: var(--surface-3);
+        color: var(--muted);
+      }
+      .btn.ghost {
+        border-color: transparent;
+        background: transparent;
+        color: var(--text-2);
+      }
+      .btn.danger {
+        background: var(--err);
+        border-color: var(--err);
+        color: var(--surface);
+      }
+      .mcp-settings {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+      }
+      .mcp-settings > .settings-list,
+      .mcp-settings > .settings-row-hint {
+        align-self: stretch;
+      }
+      .mcp-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .mcp-server-text {
+        flex: 1;
+        min-width: 0;
+      }
+      .mcp-server-name {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+      }
+      .mcp-badge {
+        font-size: 11px;
+        font-weight: 400;
+        padding: 1px 6px;
+        border-radius: var(--radius-sm);
+        background: var(--surface-2);
+        color: var(--muted);
+      }
+      .mcp-server-detail {
+        font-size: 11.5px;
+        color: var(--muted);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-family: var(--font-mono);
+      }
+      .mcp-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: var(--radius-pill);
+        flex-shrink: 0;
+        background: var(--border-strong);
+      }
+      .mcp-dot.ok {
+        background: var(--ok);
+      }
+      .mcp-dot.error {
+        background: var(--err);
+      }
+      .mcp-dot.testing,
+      .mcp-dot.warn {
+        background: var(--warn);
+      }
+      .mcp-test {
+        display: flex;
+        align-items: flex-start;
+        gap: 5px;
+        margin-top: 2px;
+        font-size: 11.5px;
+        line-height: 1.4;
+        color: var(--muted);
+      }
+      .mcp-test.error {
+        color: var(--err);
+      }
+      .mcp-test.ok {
+        color: var(--ok);
+      }
+      .mcp-test svg {
+        margin-top: 2px;
+      }
+
+      /* ===== Nouveau (fiche 293) : sur les mêmes jetons ===== */
+      /* État de connexion sous l'adresse : une phrase, puis ses boutons (passent à la ligne). */
+      .mcp-auth {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 10px;
+        margin-top: 6px;
+        font-size: 12px;
+        line-height: 1.45;
+        color: var(--text-2);
+      }
+      .mcp-auth > .mcp-auth-text {
+        flex: 1 1 240px;
+        min-width: 0;
+        display: flex;
+        gap: 6px;
+        align-items: flex-start;
+      }
+      .mcp-auth > .mcp-auth-text svg {
+        margin-top: 2px;
+      }
+      .mcp-auth-actions {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .mcp-auth.ok .mcp-auth-text {
+        color: var(--ok);
+      }
+      .mcp-auth.err .mcp-auth-text {
+        color: var(--err);
+      }
+      .mcp-auth.warn .mcp-auth-text {
+        color: var(--warn);
+      }
+      .mcp-auth small {
+        display: block;
+        color: var(--muted);
+        font-size: 11.5px;
+      }
+      .mcp-auth code,
+      .mcp-preset code {
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        background: var(--surface-2);
+        padding: 1px 5px;
+        border-radius: var(--radius-xs);
+        color: var(--text);
+      }
+      .spin {
+        animation: spin 1.2s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .pulse {
+        animation: pulse 1s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        50% {
+          opacity: 0.35;
+        }
+      }
+      /* Préréglage « Figma » : une ligne sous la liste des serveurs. */
+      .mcp-preset {
+        align-self: stretch;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        border: 1px dashed var(--border-strong);
+        border-radius: var(--radius-md);
+      }
+      .mcp-preset li {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        padding: 10px 16px;
+      }
+      .mcp-preset-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: var(--radius-sm);
+        background: var(--surface-2);
+        color: var(--text-2);
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+      }
+      .mcp-preset-text {
+        flex: 1 1 220px;
+        min-width: 0;
+      }
+      .mcp-preset-name {
+        font-weight: 500;
+        font-size: 13.5px;
+      }
+      .mcp-preset-summary {
+        font-size: 12.5px;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+      .mcp-preset-reason {
+        font-size: 12px;
+        color: var(--muted);
+        flex: 1 1 100%;
+        padding-left: 40px;
+      }
+      .settings-row-hint.new {
+        padding: 2px 4px;
+      }
+      .tools + .thought,
+      .tools {
+        margin-top: 0;
+      }
+      .tip-sep {
+        color: var(--muted);
+      }
+
+      /* ===== Fil (copie de styles.css) ===== */
+      .thread {
+        width: 640px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        font-size: 15px;
+      }
+      .thread.narrow {
+        width: 420px;
+      }
+      .msg-user {
+        align-self: flex-end;
+        max-width: 85%;
+        padding: 10px 16px;
+        border-radius: var(--radius-lg);
+        background: var(--surface-2);
+        line-height: 1.5;
+        font-size: 14px;
+      }
+      .thought {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .tools {
+        display: flex;
+        flex-direction: column;
+      }
+      .tool-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: var(--density-tool-pad) 10px;
+        margin: 0 -10px;
+        border-radius: var(--radius-sm);
+        color: var(--text-2);
+        font-size: 13.5px;
+      }
+      .tool-icon {
+        color: var(--muted);
+      }
+      .tool-title {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .tool-title .srv {
+        color: var(--muted);
+      }
+      .tool-state {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .msg-agent {
+        font-size: 15px;
+        line-height: 1.65;
+      }
+      .side-by-side {
+        display: flex;
+        gap: 18px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <h1>Figma en un clic — maquettes</h1>
+      <p>
+        Fiche <code>docs/features/293-figma-en-un-clic.md</code> (statut : proposé). Réglages ›
+        Serveurs MCP, onglet OpenCode : la connexion à Figma est faite
+        <strong>par OpenCode</strong> (<code>opencode mcp auth</code>), qui garde le jeton ; Bobine
+        lance la commande, ouvre la page de Figma après avoir vérifié son hôte, et relit l'état chez
+        OpenCode.
+      </p>
+      <ul>
+        <li>
+          Fenêtre des Réglages à sa largeur réelle (940 px) puis à la plus étroite (736 px : fenêtre
+          de 800 px, la plus petite permise). Fond de la fenêtre principale autour.
+        </li>
+        <li>
+          Pointillés orange : ce qui est nouveau. Tout le reste existe déjà, avec les mêmes classes.
+        </li>
+        <li>Textes en français ; les clés et l'anglais sont dans la fiche.</li>
+      </ul>
+      <div class="theme-switch">
+        <button class="btn small" data-set-theme="light">Clair</button>
+        <button class="btn small" data-set-theme="dark">Sombre</button>
+        <button class="btn small" data-set-theme="">Système</button>
+        <button class="btn small" data-toggle-marks>Pointillés</button>
+      </div>
+      <div id="planches"></div>
+    </div>
+    <script>
+      const ICONS = {
+        'plug-zap':
+          '<path d="M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Z"/><path d="m2 22 3-3"/><path d="M7.5 13.5 10 11"/><path d="M10.5 16.5 13 14"/><path d="m18 3-4 4h6l-4 4"/>',
+        pencil:
+          '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+        copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+        'trash-2':
+          '<path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+        plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+        globe:
+          '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+        'square-terminal':
+          '<path d="m7 11 2-2-2-2"/><path d="M11 13h4"/><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>',
+        x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+        check: '<path d="M20 6 9 17l-5-5"/>',
+        'rotate-cw':
+          '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
+        'external-link':
+          '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+        'loader-circle': '<path d="M21 12a9 9 0 1 1-6.219-8.56"/>',
+        'log-in':
+          '<path d="m10 17 5-5-5-5"/><path d="M15 12H3"/><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>',
+        'log-out':
+          '<path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>',
+        wrench:
+          '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"/>',
+        'chevron-right': '<path d="m9 18 6-6-6-6"/>',
+        info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+        settings:
+          '<path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/>',
+        palette:
+          '<path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>',
+        bell: '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',
+        keyboard:
+          '<path d="M10 8h.01"/><path d="M12 12h.01"/><path d="M14 8h.01"/><path d="M16 12h.01"/><path d="M18 8h.01"/><path d="M6 8h.01"/><path d="M7 16h10"/><path d="M8 12h.01"/><rect width="20" height="16" x="2" y="4" rx="2"/>',
+        'messages-square':
+          '<path d="M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/><path d="M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1"/>',
+        bot: '<path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>',
+        users:
+          '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/>',
+        bookmark:
+          '<path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"/>',
+        plug: '<path d="M12 22v-5"/><path d="M15 8V2"/><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z"/><path d="M9 8V2"/>',
+        'square-slash':
+          '<rect width="18" height="18" x="3" y="3" rx="2"/><line x1="9" x2="15" y1="15" y2="9"/>',
+        shield:
+          '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+        'hard-drive':
+          '<path d="M10 16h.01"/><path d="M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><path d="M21.946 12.013H2.054"/><path d="M6 16h.01"/>',
+        stethoscope:
+          '<path d="M11 2v2"/><path d="M5 2v2"/><path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1"/><path d="M8 15a6 6 0 0 0 12 0v-3"/><circle cx="20" cy="10" r="2"/>',
+        sparkles:
+          '<path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/>',
+        search: '<path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/>',
+        'circle-alert':
+          '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+        'clipboard-copy':
+          '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M16 4h2a2 2 0 0 1 2 2v4"/><path d="M21 14H11"/><path d="m15 10-4 4 4 4"/>'
+      }
+      const icon = (name, size = 15, cls = '') =>
+        `<svg class="i ${cls}" style="--s:${size}px" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] ?? ''}</svg>`
+
+      const NAV = [
+        ['settings', 'Général'],
+        ['palette', 'Apparence'],
+        ['bell', 'Notifications'],
+        ['keyboard', 'Raccourcis clavier'],
+        null,
+        ['messages-square', 'Conversations'],
+        ['bot', 'Agents'],
+        ['users', 'Rôles'],
+        ['bookmark', 'Mémoire'],
+        ['plug', 'Serveurs MCP', true],
+        ['square-slash', 'Commandes'],
+        null,
+        ['shield', 'Confidentialité'],
+        ['hard-drive', 'Données'],
+        ['stethoscope', 'Diagnostic'],
+        ['sparkles', 'Nouveautés']
+      ]
+
+      function dialog(width, body) {
+        const nav = NAV.map((item) =>
+          item
+            ? `<div class="settings-nav-item${item[2] ? ' active' : ''}">${icon(item[0], 16)}${item[1]}</div>`
+            : '<div class="settings-nav-gap"></div>'
+        ).join('')
+        return `<div class="shot"><div class="settings-dialog" style="width:${width}px">
+          <nav class="settings-nav"><div class="settings-title">Réglages</div>
+            <div class="settings-search">${icon('search', 14)}Rechercher</div>${nav}</nav>
+          <div class="settings-main">
+            <div class="settings-header"><h2 class="settings-heading">Serveurs MCP</h2>
+              <button class="icon-button">${icon('x', 16)}</button></div>
+            <div class="settings-body">${body}</div>
+          </div></div></div>`
+      }
+
+      function tabs(active, counts) {
+        const names = [
+          ['bobine', 'Outils de Bobine', 62],
+          ['bob', 'IBM Bob', counts.bob],
+          ['opencode', 'OpenCode', counts.opencode]
+        ]
+        return `<div class="segmented">${names
+          .map(
+            ([id, label, n]) =>
+              `<button class="${id === active ? 'active' : ''}">${label}<span class="count">${n}</span></button>`
+          )
+          .join('')}</div>`
+      }
+
+      const fold = (agent) => `<div class="settings-fold">▸ Fichiers d’${agent}</div>`
+
+      /** Une ligne de serveur, comme McpSettings.tsx ; `auth` : la ligne d'état nouvelle. */
+      function server({
+        name,
+        scope,
+        web,
+        detail,
+        dot = '',
+        test = '',
+        auth = '',
+        noTest = false,
+        confirm = '',
+        pressed = false
+      }) {
+        return `<li class="${confirm ? 'wrap' : ''}">
+          <label class="switch"><span></span></label>
+          <div class="mcp-server-text">
+            <div class="mcp-server-name"><span class="mcp-dot ${dot}"></span>${name}
+              <span class="mcp-badge">${scope}</span>${web ? '<span class="mcp-badge">web</span>' : ''}</div>
+            <div class="mcp-server-detail" title="${detail}">${detail}</div>
+            ${test}${auth}
+          </div>
+          ${noTest ? '' : `<button class="icon-button small">${icon('plug-zap', 13)}</button>`}
+          <button class="icon-button small">${icon('pencil', 13)}</button>
+          <button class="icon-button small">${icon('copy', 13)}</button>
+          <button class="icon-button small${pressed ? ' pressed' : ''}">${icon('trash-2', 13)}</button>
+          ${confirm}
+        </li>`
+      }
+
+      const recherche = server({
+        name: 'recherche',
+        scope: 'tous les dossiers',
+        detail: 'npx -y @acme/recherche-web · 1 variable(s)',
+        dot: 'ok',
+        test: `<div class="mcp-test ok">${icon('check', 12)} Joignable · recherche-web 1.4.0 · 3 outils · 0,8 s</div>`
+      })
+
+      const actions = (all = true) =>
+        `<div class="mcp-actions"><button class="btn small">${icon('plus', 13)} Ajouter un serveur</button>${
+          all ? `<button class="btn small">${icon('plug-zap', 13)} Tout tester</button>` : ''
+        }</div>`
+
+      const FIGMA_URL = 'https://mcp.figma.com/mcp'
+      const figma = (opts) =>
+        server({
+          name: 'figma',
+          scope: 'tous les dossiers',
+          web: true,
+          detail: FIGMA_URL,
+          noTest: true,
+          ...opts
+        })
+
+      const auth = (cls, iconName, text, buttons = '', spin = false) =>
+        `<div class="mcp-auth ${cls} new"><div class="mcp-auth-text">${iconName ? icon(iconName, 13, spin ? 'spin' : '') : ''}<div>${text}</div></div>${
+          buttons ? `<div class="mcp-auth-actions">${buttons}</div>` : ''
+        }</div>`
+
+      const preset = (button, reason = '') =>
+        `<ul class="mcp-preset new"><li>
+          <span class="mcp-preset-icon">${icon('globe', 15)}</span>
+          <div class="mcp-preset-text"><div class="mcp-preset-name">Figma</div>
+            <div class="mcp-preset-summary">Serveur officiel de Figma. La connexion se fait dans votre navigateur, avec OpenCode.</div></div>
+          ${button}
+          ${reason ? `<div class="mcp-preset-reason">${reason}</div>` : ''}
+        </li></ul>`
+
+      const opencodeTab = (list, after = '', counts = { bob: 1, opencode: 2 }, all = true) =>
+        `<div class="mcp-settings">${tabs('opencode', counts)}${fold('OpenCode')}
+          <ul class="settings-list">${list}</ul>${after}${actions(all)}</div>`
+
+      const newConv =
+        '<p class="settings-row-hint new">Pour les nouvelles conversations avec OpenCode ; relancez une conversation ouverte pour qu’elle reçoive ces outils.</p>'
+
+      const PLANCHES = [
+        {
+          id: 'aujourdhui',
+          title: '0 — Aujourd’hui (pour comparer)',
+          legend:
+            'L’onglet OpenCode tel qu’il est : on ajoute un serveur « Adresse web » à la main, puis la connexion se fait dans un terminal (<code>opencode mcp auth figma</code>), sans retour dans Bobine.',
+          body: () => opencodeTab(recherche, '', { bob: 1, opencode: 1 })
+        },
+        {
+          id: 'aujourdhui-figma-a-la-main',
+          title: '0 bis — Aujourd’hui, Figma ajouté à la main',
+          legend:
+            'Constat : « Tester » (fiche 060) se connecte sans jeton, Figma répond <strong>401</strong> (relevé) : pastille rouge et « en erreur », même quand OpenCode est connecté. La fiche retire « Tester » pour un serveur connecté par l’agent.',
+          body: () =>
+            opencodeTab(
+              recherche +
+                server({
+                  name: 'figma',
+                  scope: 'ce dossier',
+                  web: true,
+                  detail: FIGMA_URL,
+                  dot: 'error',
+                  test: `<div class="mcp-test error">${icon('x', 12)} initialize : HTTP 401</div>`
+                })
+            )
+        },
+        {
+          id: 'a-ajouter',
+          title: '1 — Figma à ajouter',
+          legend:
+            'Une ligne sous la liste, en pointillés : nom, une phrase, icône neutre (pas de logo). Un seul bouton : il ajoute le serveur (tous les dossiers, Q2) et lance aussitôt la connexion. Absente si l’adresse de Figma est déjà déclarée, sous n’importe quel nom.',
+          body: () =>
+            opencodeTab(
+              recherche,
+              preset('<button class="btn small primary">Connecter Figma</button>'),
+              { bob: 1, opencode: 1 }
+            )
+        },
+        {
+          id: 'a-connecter',
+          title: '2 — Ajouté, à connecter',
+          legend:
+            'Serveur ordinaire (interrupteur, crayon, copie, corbeille) ; pas de « Tester ». Sous l’adresse : l’état lu chez OpenCode et « Se connecter ». Cas : connexion annulée, ou serveur ajouté à la main.',
+          body: () =>
+            opencodeTab(
+              recherche +
+                figma({
+                  auth: auth(
+                    '',
+                    'info',
+                    'À connecter : la connexion se fait dans votre navigateur, avec OpenCode.',
+                    `<button class="btn small primary">${icon('log-in', 13)} Se connecter</button>`
+                  )
+                })
+            )
+        },
+        {
+          id: 'en-cours',
+          title: '3 — Connexion en cours',
+          legend:
+            'La page de Figma est ouverte dans le navigateur par défaut (hôte vérifié : <code>www.figma.com</code>, montré). « Rouvrir la page » la rouvre (l’adresse reste dans le main) ; « Annuler » tue la commande. Fermer les Réglages n’arrête rien. Les autres « Se connecter » sont grisés (une seule connexion à la fois).',
+          body: () =>
+            opencodeTab(
+              recherche +
+                figma({
+                  dot: 'testing pulse',
+                  auth: auth(
+                    '',
+                    'loader-circle',
+                    'Page de connexion ouverte dans votre navigateur (www.figma.com). Autorisez l’accès, puis revenez ici.<small>Sans réponse, abandon au bout de 10 min.</small>',
+                    `<button class="btn small">${icon('external-link', 13)} Rouvrir la page</button><button class="btn small ghost">Annuler</button>`,
+                    true
+                  )
+                })
+            )
+        },
+        {
+          id: 'connecte',
+          title: '4 — Connecté',
+          legend:
+            'État relu chez OpenCode (<code>opencode auth list</code>), jamais déduit du code de sortie. « Se déconnecter » reste discret. Ligne d’aide sous la liste tant que le relevé R3 n’a pas montré que les conversations ouvertes reçoivent les outils.',
+          body: () =>
+            opencodeTab(
+              recherche +
+                figma({
+                  dot: 'ok',
+                  auth: auth(
+                    'ok',
+                    'check',
+                    'Connecté par OpenCode. Bobine ne voit jamais le jeton.',
+                    `<button class="btn small ghost">${icon('log-out', 13)} Se déconnecter</button>`
+                  )
+                }),
+              newConv
+            )
+        },
+        {
+          id: 'deconnexion',
+          title: '4 bis — Se déconnecter : confirmation dans la ligne',
+          legend:
+            'Même règle que toute révocation des Réglages (fiche 126). Puis <code>opencode mcp logout figma</code> ; le serveur reste déclaré, état « à connecter ».',
+          body: () =>
+            opencodeTab(
+              recherche +
+                figma({
+                  dot: 'ok',
+                  auth: auth(
+                    'ok',
+                    'check',
+                    'Connecté par OpenCode. Bobine ne voit jamais le jeton.',
+                    `<button class="btn small ghost" style="background:var(--surface-3)">${icon('log-out', 13)} Se déconnecter</button>`
+                  ),
+                  confirm:
+                    '<div class="confirm-row new"><span>Se déconnecter de Figma ? OpenCode oubliera l’accès ; il faudra vous reconnecter.</span><button class="btn small ghost">Garder</button><button class="btn small danger">Se déconnecter</button></div>'
+                })
+            )
+        },
+        {
+          id: 'expire',
+          title: '5 — Connexion expirée',
+          legend:
+            'Lue chez OpenCode à l’ouverture de l’onglet (forme exacte : relevé R1). « Se reconnecter » relance la même commande ; OpenCode ne pose pas de question hors terminal.',
+          body: () =>
+            opencodeTab(
+              recherche +
+                figma({
+                  dot: 'warn',
+                  auth: auth(
+                    'warn',
+                    'circle-alert',
+                    'Connexion expirée.',
+                    `<button class="btn small primary">${icon('rotate-cw', 13)} Se reconnecter</button>`
+                  )
+                })
+            )
+        },
+        {
+          id: 'refuse',
+          title: '6 — Accès refusé sur la page de Figma',
+          legend:
+            'Texte de la sortie d’OpenCode à relever (R2). « Réessayer » relance la connexion.',
+          body: () =>
+            opencodeTab(
+              recherche +
+                figma({
+                  dot: 'error',
+                  auth: auth(
+                    'err',
+                    'x',
+                    'Accès refusé sur la page de Figma.',
+                    `<button class="btn small">${icon('rotate-cw', 13)} Réessayer</button>`
+                  )
+                })
+            )
+        },
+        {
+          id: 'erreur',
+          title: '6 bis — Erreur (délai, page inattendue, OpenCode arrêté)',
+          legend:
+            'Raison courte, détail au survol sans l’adresse. « Faire dans un terminal » montre la commande à copier (dans un vrai terminal, OpenCode ouvre lui-même le navigateur).',
+          body: () =>
+            opencodeTab(
+              recherche +
+                figma({
+                  dot: 'error',
+                  auth: auth(
+                    'err',
+                    'x',
+                    'La connexion n’a pas abouti : pas de réponse en 10 min',
+                    `<button class="btn small">${icon('rotate-cw', 13)} Réessayer</button><button class="btn small ghost">${icon('square-terminal', 13)} Faire dans un terminal</button>`
+                  )
+                })
+            )
+        },
+        {
+          id: 'commande-non-reconnue',
+          title: '6 ter — Commande non reconnue (OpenCode trop ancien, ou sortie qui a changé)',
+          legend:
+            'Aucune adresse lue en 30 s, ou commande inconnue : rien d’ouvert, la commande à lancer soi-même. Pas de version minimale supposée : seule la 2.3.0 est relevée.',
+          body: () =>
+            opencodeTab(
+              recherche +
+                figma({
+                  dot: '',
+                  auth: auth(
+                    '',
+                    'info',
+                    'OpenCode n’a pas proposé de page de connexion. Faites-le dans un terminal : <code>opencode mcp auth figma</code>',
+                    `<button class="btn small">${icon('clipboard-copy', 13)} Copier la commande</button><button class="btn small ghost">${icon('rotate-cw', 13)} Réessayer</button>`
+                  )
+                })
+            )
+        },
+        {
+          id: 'agent-absent',
+          title: '6 quater — OpenCode absent',
+          legend:
+            'Le bouton grisé dit pourquoi (au survol et en clair dessous, comme les boutons grisés de la fiche 287). Rien n’est lancé.',
+          body: () =>
+            opencodeTab(
+              recherche,
+              preset(
+                '<button class="btn small primary" disabled>Connecter Figma</button>',
+                'OpenCode n’est pas installé.'
+              ),
+              { bob: 1, opencode: 1 }
+            )
+        },
+        {
+          id: 'onglet-bob',
+          title: '7 — Onglet IBM Bob',
+          legend:
+            'Pas de ligne Figma ni de bouton. Une ligne d’aide (Q3), d’après la documentation publique de Figma seulement : rien n’est dit ni supposé de Bob. Le lien ouvre la liste de Figma dans le navigateur.',
+          body: () =>
+            `<div class="mcp-settings">${tabs('bob', { bob: 1, opencode: 2 })}${fold('IBM Bob')}
+              <ul class="settings-list">${server({
+                name: 'recherche',
+                scope: 'tous les dossiers',
+                detail: 'npx -y @acme/recherche-web · 1 variable(s)',
+                dot: 'ok',
+                test: `<div class="mcp-test ok">${icon('check', 12)} Joignable · recherche-web 1.4.0 · 3 outils · 0,8 s</div>`
+              })}</ul>
+              <p class="settings-row-hint new">Figma : pas proposé pour IBM Bob. Figma n’accepte que les applications de sa liste ; Bobine ne sait le connecter que par OpenCode. <a href="#">Liste de Figma ${icon('external-link', 11)}</a></p>
+              ${actions()}</div>`
+        }
+      ]
+
+      // Fil : avant (aujourd'hui, relevé) et après la proposition du lot 3.
+      const toolRow = (title, isNew = false) =>
+        `<div class="tool-row${isNew ? ' new' : ''}"><span class="tool-icon">${icon('wrench', 14)}</span><span class="tool-title">${title}</span><span class="tool-state">${icon('check', 13)}</span></div>`
+      const thread = (
+        rows,
+        narrow
+      ) => `<div class="shot thread-shot"><div class="thread${narrow ? ' narrow' : ''}">
+        <div class="msg-user">Liste les outils Figma que tu as, puis appelle whoami une fois et dis-moi seulement si ça a marché.</div>
+        <div class="thought">${icon('chevron-right', 13)}Réflexion</div>
+        <div class="tools">${rows[0]}</div>
+        <div class="thought">${icon('chevron-right', 13)}Réflexion</div>
+        <div class="tools">${rows[1]}</div>
+        <div class="thought">${icon('chevron-right', 13)}Réflexion</div>
+        <div class="tools">${rows[2]}</div>
+        <div class="msg-agent">add_code_connect_map create_branch … get_design_context get_screenshot get_variable_defs … use_figma whoami<br />whoami : réussi.</div>
+      </div></div>`
+      const BEFORE = [toolRow('execute'), toolRow('execute'), toolRow('execute')]
+      const AFTER = [
+        toolRow('Cherche parmi les outils de figma', true),
+        toolRow('Cherche parmi les outils de figma', true),
+        toolRow('<span class="srv">figma ·</span> whoami', true)
+      ]
+
+      const root = document.getElementById('planches')
+      let html = ''
+      for (const p of PLANCHES) {
+        html += `<section class="planche" id="${p.id}"><h2>${p.title}</h2><p class="legend">${p.legend}</p>
+          <div class="frame-label">Largeur réelle (940 px)</div><div class="frame" data-shot="${p.id}-940">${dialog(940, p.body())}</div>
+          <div class="frame-label">Fenêtre la plus étroite (736 px)</div><div class="frame" data-shot="${p.id}-736">${dialog(736, p.body())}</div></section>`
+      }
+      html += `<section class="planche" id="fil"><h2>8 — Un appel Figma dans le fil, avant / après (lot 3, Q4)</h2>
+        <p class="legend">Avant : relevé du 2026-11-27 (OpenCode 2.3.0) — trois cartes « execute ». Après : le titre vient de ce qu’OpenCode dit lui-même à la fin de la carte (<code>rawOutput.metadata.toolCalls[].tool</code> : <code>search</code> de l’espace <code>figma</code>, puis <code>figma.whoami</code>). Pendant l’appel, la carte garde « execute ». Vaut pour tout serveur MCP appelé ainsi.</p>
+        <div class="frame-label">Avant</div><div class="frame" data-shot="fil-avant-640">${thread(BEFORE)}</div>
+        <div class="frame-label">Après</div><div class="frame" data-shot="fil-apres-640">${thread(AFTER)}</div>
+        <div class="frame-label">Après, fil étroit (420 px)</div><div class="frame" data-shot="fil-apres-420">${thread(AFTER, true)}</div></section>`
+      root.innerHTML = html
+
+      for (const b of document.querySelectorAll('[data-set-theme]')) {
+        b.addEventListener('click', () => {
+          const v = b.dataset.setTheme
+          if (v) document.documentElement.dataset.theme = v
+          else delete document.documentElement.dataset.theme
+        })
+      }
+      document
+        .querySelector('[data-toggle-marks]')
+        .addEventListener('click', () => document.body.classList.toggle('no-marks'))
+    </script>
+  </body>
+</html>
