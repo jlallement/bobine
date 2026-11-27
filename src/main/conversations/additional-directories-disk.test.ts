@@ -4,7 +4,7 @@ import path, { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { AgentStatus } from '@shared/agent'
 import { addAdditionalDirectory, removeAdditionalDirectory } from './additional-directories'
-import { NATIVE_FOLDER_SYSTEM, type FolderSystem } from './extra-folder-check'
+import type { FolderSystem } from './extra-folder-check'
 import type { ConversationRecord } from './store'
 import { tempDir } from '../test-platform'
 
@@ -126,12 +126,16 @@ describe('fiche 290, relevés du testeur : vrai disque', () => {
   })
 
   it('M2 : dossier de travail et dossiers déjà là figés : un seul délai pour tout l’ajout', async () => {
+    // Système POSIX complet, simulé (chemins `/…` en dur) : la règle du délai unique ne dépend
+    // pas de la plateforme, l'essai tourne aussi sous Windows.
     const frozen: FolderSystem = {
-      ...NATIVE_FOLDER_SYSTEM,
+      path: path.posix,
       home: '/Users/moi',
       timeoutMs: 200,
       realpath: (p) =>
-        p.startsWith('/figé') ? new Promise<string>(() => {}) : Promise.resolve(path.resolve(p)),
+        p.startsWith('/figé')
+          ? new Promise<string>(() => {})
+          : Promise.resolve(path.posix.resolve(p)),
       stat: async (p) => ({ dir: true, dev: '1', ino: String(p.length) }),
       access: async () => 'ok'
     }
