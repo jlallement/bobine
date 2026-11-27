@@ -184,10 +184,12 @@ export async function worktreeCycleSuite(scheme) {
     // redémarrage ; rien n'est fusionné pour autant, « Fusionner dans main » reste le seul chemin.
     // rc.2, Mac de GitHub : l'agent qui démarre encore (verrou de démarrage de l'agent factice, ce
     // qu'une machine lente fait d'elle-même) n'est pas un tour ; « Fusionner » n'est pas grisé.
-    writeFileSync(startLock, '')
     await withApp(
       scheme,
       async (ui) => {
+        // Posé une fois l'app prête (son premier agent, dans le dossier principal, a démarré) : celui
+        // du worktree, lancé à l'ouverture de sa conversation, reste « au démarrage ».
+        writeFileSync(startLock, '')
         await ui.waitFor(
           `document.querySelectorAll('[data-testid=history-item]').length > 0`,
           20000
