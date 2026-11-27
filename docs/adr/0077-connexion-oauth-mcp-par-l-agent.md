@@ -60,3 +60,8 @@ R6 de la fiche 293).
   (R2), l'état expiré dans `auth list` (R1) et les autres versions (R8) restent à relever.
 - Chaque nouveau préréglage déclare son hôte de page ; un serveur quelconque ne peut pas être
   connecté par ce chemin tant que la fiche des métadonnées n'existe pas.
+- **Essais de bout en bout (lot 2)** : une fausse commande remplace celle de l'agent, imposée par
+  `BOBINE_FAKE_MCP_AUTH` (script Node lancé par l'exécutable de l'app, `ELECTRON_RUN_AS_NODE=1` ;
+  vide : agent absent) et `BOBINE_FAKE_MCP_AUTH_MS` (délai raccourci). Surface nouvelle, **gardée** :
+  sans effet dans l'app installée (`app.isPackaged`, `mcp-oauth-forced.ts`, essai unitaire), au
+  contraire de `BOBINE_GH`. La page est notée par `BOBINE_OPEN_LOG` au lieu d'être ouverte.

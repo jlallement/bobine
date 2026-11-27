@@ -1,7 +1,8 @@
 # 293 — Figma en un clic (serveur MCP distant connecté par l'agent)
 
 - **Statut** : spec et maquette validées par Jérôme le 2026-11-27 ; relevés R4, R5, R6 faits (R1,
-  R2, R3, R7 à R9 non) ; ADR-0077 proposé ; lot 1 (moteur, main) codé, sans interface
+  R2, R3, R7 à R9 non) ; ADR-0077 proposé ; lot 1 (moteur, main) et lot 2 (interface) codés, en
+  attente de relecture ; lot 3 (fil) et recette réelle à faire
 - **Dépend de** : 025 (serveurs MCP des agents), 060 (« Tester » un serveur), 079 et 122 (outil
   `execute` d'OpenCode 2), 126 (confirmation dans la ligne), 287 (raison d'un bouton grisé)
 - **Agents** : OpenCode seulement. La connexion OAuth au serveur de Figma est faite **par l'agent**,
@@ -483,6 +484,64 @@ Figma cautionne Bobine.
   variable d'essai qui impose la fausse commande à la place d'`opencode` pour les e2e ; afficher les
   refus `disabled` et les résultats de déconnexion.
 
+## Écarts au plan (lot 2)
+
+- **Pas d'état « Refusé »** : le refus sur la page de Figma n'est pas relevé (R2) ; le main ne rend
+  jamais `refused`. S'il le rendait, la ligne dit l'échec générique (« La connexion n'a pas
+  abouti »), sans texte inventé. La planche « refusé » de la maquette reste à brancher avec le
+  relevé (`TODO(R2)` dans `McpAuth.tsx` et `opencode-mcp-auth.ts`).
+- **R3 non relevé** : rien n'affirme si les outils arrivent dans une conversation déjà ouverte.
+  L'info-bulle de « Connecté par OpenCode » dit seulement « Le jeton reste chez OpenCode : Bobine
+  ne le voit jamais. » (la fin prévue, « Vaut pour les nouvelles conversations ; relancez… », est
+  retirée de `mcp.auth.connectedTip`) ; le guide n'en dit rien non plus.
+- **Textes** : en plus de la table, `mcp.auth.expiredTip`, `unknownTip`, `reasonTip.*` (détail de
+  l'info-bulle d'une erreur), `disabled`, `notOffered`, `copyFailed`, `signOut.*` (résultats de
+  « Se déconnecter » : délai, échec, toujours connecté, non confirmé), `mcp.preset.listLinkTip`,
+  `mcp.state.toConnect|connecting|connected|expired|authUnknown|authError` (pastilles). « Retirer le
+  serveur » de la fiche devient « Supprimer le serveur « figma » ? OpenCode garde l'accès… » : même
+  verbe que le bouton et la confirmation existante (fiche 126).
+- **Page inattendue** : l'hôte refusé vient de la sortie de l'agent, de longueur quelconque. Au-delà
+  de 14 caractères il est raccourci **par le début** (« …com.evil.test » : la fin, le domaine, est
+  ce qui se vérifie), en entier au survol (`title`) et pour un lecteur d'écran ; sans cela, deux
+  lignes au plus à 736 px n'étaient pas tenables.
+- **Serveur désactivé** : « Serveur désactivé : activez-le pour vous connecter. », sans action (le
+  main refuse aussi, `disabled`) ; connecté, « Se déconnecter » reste proposé.
+- **Résultats de « Se déconnecter » et refus de « Se connecter »** (`busy`, `disabled`,
+  `not-offered`) : dits à la place du texte de l'état, en rouge, avec les mêmes actions, tant que
+  l'état du serveur ne change pas (une note par serveur, jamais un état inventé).
+- **Commande copiée** : la pastille garde l'état de la connexion (rouge après une erreur), là où la
+  maquette la montrait grise : la copie ne change pas l'état.
+- **Confirmation de déconnexion** : le gabarit existant de l'app (`ConfirmRow`, fiche 126 : phrase,
+  bouton rouge puis « Garder » à côté) ; la maquette avait « Garder » à droite et le bouton dessous.
+- **IPC** : canal `mcp:openPresetList` (« Liste de Figma » ouverte par le main, adresse en donnée du
+  préréglage, `listUrl`) ; `McpAuthView.terminal` (commande à copier, `cd` du dossier si le serveur
+  n'est déclaré que là) ; `McpServerEntry.authPreset` posé par le main (serveur connecté par
+  l'agent : logo, ligne d'état, ni « Tester » ni « Tout tester », ni test automatique à l'ouverture,
+  y compris dans « Réglages de la session » et Diagnostic). Préréglage : `logo`, `listUrl`,
+  `McpPresetId`. `declaredPreset` déplacé du moteur vers `shared/mcp-presets.ts` (même règle).
+- **« Réglages de la session »** (menu ⚙) : ces serveurs n'y sont plus testés ; leur pastille y
+  reste grise (« pas encore testé ») : l'état de connexion n'y est pas montré (hors lot 2).
+- **Commande copiée sous Windows** : `cd "<dossier>" && opencode mcp auth <nom>` pour un serveur
+  « ce dossier » ; `&&` ne passe pas dans Windows PowerShell 5 (R9, non vérifié). « Connecter
+  Figma » ajoute toujours pour tous les dossiers : pas de `cd`.
+- **Essais de bout en bout** : `BOBINE_FAKE_MCP_AUTH` (script Node lancé par l'exécutable de l'app,
+  `ELECTRON_RUN_AS_NODE=1` ; vide : agent absent) et `BOBINE_FAKE_MCP_AUTH_MS` (délai raccourci),
+  **gardées** : sans effet dans l'app installée (`mcp-oauth-forced.ts`, `app.isPackaged`, essai
+  unitaire), contrairement à `BOBINE_GH`. La page est notée par `BOBINE_OPEN_LOG` (existant) au lieu
+  d'être ouverte. Fausse commande : `e2e/fake-opencode-mcp.mjs` (sorties d'OpenCode 2.3.0 imitées,
+  état dans un fichier JSON, appels notés à part). L'essai e2e a un agent de plus (l'agent factice) :
+  sa copie (36 px) rétrécit la colonne ; la mesure « une ligne à 940, deux au plus à 736 » la masque
+  le temps de mesurer (les captures la montrent).
+- **Mention de marque** : dans `THIRD-PARTY-NOTICES.md` (« Interface fonts, icons and artwork »,
+  écrit par `scripts/third-party/render.mts`, livré dans `Contents/Resources/licenses/`) : « Figma and
+  the Figma logo are trademarks of Figma, Inc. (« Figma et le logo Figma sont des marques de Figma,
+  Inc. ») ». Aucun écran de l'app ne liste ces avis aujourd'hui (fiche 217 : « À propos › Licences :
+  plus tard ») : rien d'ajouté à l'interface.
+- **Fins de ligne** : `.gitattributes` (nouveau) marque `src/renderer/src/assets/brands/**` `-text`,
+  pour que `core.autocrlf` (Windows) ne change pas l'empreinte du logo. Le logo est livré comme un
+  fichier à part (`?no-inline`), pas réécrit en adresse `data:` par Vite (empreinte vérifiée dans le
+  build par l'e2e).
+
 ## Décisions de Jérôme (2026-11-27)
 
 Réponses à ses questions, avec ses mots :
@@ -503,27 +562,28 @@ Réponses à ses questions, avec ses mots :
 
 ## Critères d'acceptation
 
-- [ ] Onglet OpenCode : « Connecter Figma » ajoute `figma` (portée de Q2) dans le fichier
+- [x] Onglet OpenCode : « Connecter Figma » ajoute `figma` (portée de Q2) dans le fichier
       d'OpenCode, au format déjà présent (`mcp.servers` ou `mcp`), puis lance la connexion ;
       ligne cachée si l'adresse est déjà déclarée, sous n'importe quel nom.
-- [ ] La page n'est ouverte que si l'adresse lue est `https://www.figma.com/…`, sans identifiants ;
+- [x] La page n'est ouverte que si l'adresse lue est `https://www.figma.com/…`, sans identifiants ;
       toute autre adresse : rien d'ouvert, état Erreur avec l'hôte, processus tué.
-- [ ] Chaque état du tableau s'affiche avec ses boutons, clair et sombre, français et anglais, à la
-      largeur réelle et étroite des Réglages ; rien de tronqué sans `title`.
-- [ ] Une seule connexion à la fois (refus côté main, bouton grisé avec raison).
-- [ ] « Annuler » ou quitter l'app tue l'arbre de processus (vérifié : plus de processus après
+- [x] Chaque état du tableau s'affiche avec ses boutons, clair et sombre, français et anglais, à la
+      largeur réelle et étroite des Réglages ; rien de tronqué sans `title`. (Sauf « Refusé » : R2 ;
+      anglais vérifié par les essais unitaires et les textes, captures en français seulement.)
+- [x] Une seule connexion à la fois (refus côté main, bouton grisé avec raison).
+- [x] « Annuler » ou quitter l'app tue l'arbre de processus (vérifié : plus de processus après
       2 s) ; fermer puis rouvrir les Réglages pendant la connexion retrouve l'état « en cours ».
-- [ ] Délai : processus tué à 10 min (raccourci en essai), état Erreur « pas de réponse ».
-- [ ] État final relu par `auth list` ; code de sortie jamais utilisé pour juger la fin.
-- [ ] Aucune adresse complète dans `agents.log`, l'IPC ou le DOM (essai : recherche de
+- [x] Délai : processus tué à 10 min (raccourci en essai), état Erreur « pas de réponse ».
+- [x] État final relu par `auth list` ; code de sortie jamais utilisé pour juger la fin.
+- [x] Aucune adresse complète dans `agents.log`, l'IPC ou le DOM (essai : recherche de
       `code_challenge` et `state=` dans le journal et le DOM après un parcours).
-- [ ] « Tester » n'est pas lancé pour un serveur à connexion par l'agent ; pastille selon l'état.
-- [ ] Onglet Bob : ligne d'aide (Q3), aucun bouton.
-- [ ] **Un état = une ligne** sous l'adresse à 940 px (deux au plus à 736 px, jamais un « · » seul
+- [x] « Tester » n'est pas lancé pour un serveur à connexion par l'agent ; pastille selon l'état.
+- [x] Onglet Bob : ligne d'aide (Q3), aucun bouton.
+- [x] **Un état = une ligne** sous l'adresse à 940 px (deux au plus à 736 px, jamais un « · » seul
       en début de ligne) ; actions en liens atteignables au clavier (focus visible), contraste
       suffisant en clair et en sombre ; icône + texte, jamais la couleur seule ; rien de tronqué sans
       `title`. Seul bouton plein : « Connecter Figma ».
-- [ ] Logo de Figma **non modifié** : le fichier livré a la même empreinte sha256 que celui de
+- [x] Logo de Figma **non modifié** : le fichier livré a la même empreinte sha256 que celui de
       l'archive officielle (`9798b710…`) ; lisible dans ses deux tailles (boîtes de 56 et 28 px, dessins ≈ 26 et 13 px),
       en clair et en sombre (captures regardées).
 - [x] `specificItems` et `docs/agents.md` : repère `mcp-oauth` (test existant des repères).
@@ -533,10 +593,10 @@ Réponses à ses questions, avec ses mots :
       to », « Authorization expired », erreur, sortie inconnue), vérification d'adresse (http, autre
       hôte, `user@`, trop longue, adresse coupée), lecture de `auth list` (connecté, expiré, absent,
       JSON invalide), machine d'états (une seule connexion, annulation, délai).
-- [ ] **E2e** contre une **fausse commande** (`e2e/fake-opencode-mcp.mjs`, imposée par une variable
+- [x] **E2e** contre une **fausse commande** (`e2e/fake-opencode-mcp.mjs`, imposée par une variable
       d'essai comme `BOBINE_GH`) : parcours connexion réussie, refus, délai (raccourci), page
       inattendue, déconnexion, retrait ; captures clair et sombre regardées. Jamais le vrai
-      OpenCode ni Figma en test automatisé.
+      OpenCode ni Figma en test automatisé. (Sans « refus » : R2 non relevé.)
 - [ ] **Recette réelle manuelle** (Mac, OpenCode 2.3.0, profil isolé `XDG_*`, compte Figma de
       Jérôme) : connecter, appeler `whoami` dans une nouvelle conversation, se déconnecter,
       reconnecter ; R1 à R7 relevés et reportés ici et dans `docs/acp.md`.
@@ -691,3 +751,27 @@ Taille : ≈ 3 j avec le lot 3, relevés compris. **Aucune dépendance nouvelle.
   **un seul** état (essai qui rougit si l'on retire `!emitted` du `finally`) ; (3) commentaire
   corrigé : `redirect%5Furi` seul est accepté (même nom une fois décodé, valeur vérifiée), essai
   qui le fixe.
+- 2026-11-27 — **Lot 2 (interface)** codé :
+  - `components/settings/McpAuth.tsx` (nouveau) : ligne d'état sous l'adresse (un état = une ligne,
+    actions en liens, détail en info-bulle et description accessible, `role="status"` poli), pastille
+    d'après l'état, ligne « Figma » à ajouter (logo de 56 px, « Connecter Figma », agent absent :
+    grisé et raison dessous), ligne d'aide d'un agent sans la capacité (d'après les profils, lien
+    « Liste de Figma » ouvert par le main), confirmation de déconnexion dans la ligne ;
+    `mcp-auth.ts` (état relu à l'ouverture, après chaque action, au changement de dossier ou de
+    serveurs ; événement `mcp:authState` ; une relecture plus ancienne qu'un événement ne l'écrase
+    pas ; notes des refus et résultats) ; `brand-logos.ts` ; `mcp-auth.css` ;
+  - `McpSettings.tsx` : logo devant le nom, ligne d'état à la place de « Tester », carte et ligne
+    d'aide sous la liste ; `mcp-status.ts` : ces serveurs jamais testés ;
+  - main : `authPreset` dans la vue, `terminal` dans `McpAuthView`, `mcp:openPresetList`,
+    `mcp-oauth-forced.ts` (fausse commande gardée), page par `fileOpeners` (`BOBINE_OPEN_LOG`) ;
+  - logo copié octet pour octet (`assets/brands/figma/`), empreinte vérifiée (unitaire et e2e sur le
+    fichier livré) ; mention de marque dans `THIRD-PARTY-NOTICES.md` ;
+  - essais : `McpAuth.test.tsx` (39), `mcp-oauth-forced.test.ts`, `mcp-preset-logos.test.ts`, cas
+    ajoutés à `mcp-settings`, `mcp-ipc`, `mcp-oauth` ; e2e `mcp-figma` (clair et sombre ; captures
+    `e2e/captures/c0…c12-figma-*-{940,736}-{light,dark}.png`, avant : `avant-293-opencode-*`) ;
+  - contrastes mesurés par l'e2e (WCAG, ≥ 4,5 partout) : clair — phrase 5,33, « Connecter Figma »
+    4,81, état neutre 5,33, lien 4,81, « · » 5,33, connecté 6,75, expiré 5,47, erreur 6,54 ; sombre —
+    5,24, 6,08, 5,24, 4,58, 5,24, 6,84, 6,22, 5,43 ;
+  - documentation : guide (Agents › Connecter Figma à OpenCode, fr et en), `docs/architecture.md`,
+    ADR-0077 (surface d'essai), `CHANGELOG.md` et `CHANGELOG.en.md`.
+

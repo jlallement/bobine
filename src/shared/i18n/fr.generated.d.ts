@@ -2073,6 +2073,12 @@ export type FrResources = {
       readonly testing: 'test en cours'
       readonly ok: 'joignable'
       readonly error: 'en erreur'
+      readonly toConnect: 'à connecter'
+      readonly connecting: 'connexion en cours'
+      readonly connected: 'connecté'
+      readonly expired: 'connexion expirée'
+      readonly authUnknown: 'état de la connexion inconnu'
+      readonly authError: 'connexion en erreur'
     }
     readonly files: {
       readonly global: 'Déclarés dans les fichiers de {{agent}} : <code>{{global}}</code> (tous les dossiers). Ils valent aussi quand vous utilisez {{agent}} dans un terminal. Un changement compte pour les nouvelles conversations ; relancez une conversation ouverte pour qu’elle en tienne compte.'
@@ -2107,6 +2113,66 @@ export type FrResources = {
       readonly settingOn: 'Activée'
       readonly settingOff: 'Désactivée'
       readonly settingPath: { readonly memory: 'Réglages › Mémoire' }
+    }
+    readonly preset: {
+      readonly figma: {
+        readonly name: 'Figma'
+        readonly summary: 'Serveur officiel de Figma. La connexion se fait dans votre navigateur, avec {{agent}}.'
+      }
+      readonly connect: 'Connecter {{name}}'
+      readonly notOffered: '{{name}} : pas proposé pour {{agent}}. {{name}} n’accepte que les applications de sa liste ; Bobine ne sait le connecter que par {{agents}}.'
+      readonly listLink: 'Liste de {{name}}'
+      readonly listLinkTip: 'Ouvre la liste de {{name}} dans votre navigateur'
+    }
+    readonly auth: {
+      readonly toConnect: 'À connecter'
+      readonly toConnectTip: 'La connexion se fait dans votre navigateur, avec {{agent}}.'
+      readonly connect: 'Se connecter'
+      readonly pending: 'Connexion en cours ({{host}})'
+      readonly pendingTip: 'Page de connexion ouverte dans votre navigateur : autorisez l’accès, puis revenez ici. Sans réponse, abandon au bout de {{minutes}} min.'
+      readonly reopen: 'Rouvrir la page'
+      readonly connected: 'Connecté par {{agent}}'
+      readonly connectedTip: 'Le jeton reste chez {{agent}} : Bobine ne le voit jamais.'
+      readonly disconnect: 'Se déconnecter'
+      readonly disconnectAsk: 'Se déconnecter de {{name}} ? {{agent}} oubliera l’accès ; il faudra vous reconnecter.'
+      readonly expired: 'Connexion expirée'
+      readonly expiredTip: '{{agent}} demande une nouvelle connexion.'
+      readonly reconnect: 'Se reconnecter'
+      readonly failedTip: 'La connexion n’a pas abouti : {{detail}}'
+      readonly reason: {
+        readonly timeout: 'Pas de réponse en {{minutes}} min'
+        readonly unexpectedPage: 'Page inattendue (<host>{{host}}</host>)'
+        readonly stopped: '{{agent}} s’est arrêté'
+        readonly failed: 'La connexion n’a pas abouti'
+      }
+      readonly reasonTip: {
+        readonly timeout: '{{agent}} n’a pas reçu l’accord en {{minutes}} min ; la commande a été arrêtée.'
+        readonly unexpectedPage: 'la page proposée n’était pas sur {{expected}} ; rien n’a été ouvert, la commande a été arrêtée.'
+        readonly stopped: '{{agent}} s’est arrêté sans dire si la connexion avait abouti.'
+        readonly failed: '{{agent}} a signalé un échec.'
+      }
+      readonly retry: 'Réessayer'
+      readonly noPage: 'Pas de page de connexion'
+      readonly noPageTip: '{{agent}} n’a pas proposé de page de connexion.'
+      readonly inTerminal: 'Dans un terminal'
+      readonly inTerminalTip: 'Copie « {{command}} » ; dans un terminal, {{agent}} ouvre lui-même la page.'
+      readonly copied: 'Copiée : <code>{{command}}</code>'
+      readonly copiedTip: 'À coller dans un terminal : {{agent}} y ouvre lui-même la page de {{name}}.'
+      readonly copyFailed: 'Copie impossible'
+      readonly retryHere: 'Réessayer ici'
+      readonly unknown: 'État de la connexion inconnu'
+      readonly unknownTip: 'L’état n’a pas pu être relu chez {{agent}}.'
+      readonly busy: 'Une connexion est déjà en cours.'
+      readonly agentMissing: '{{agent}} n’est pas installé.'
+      readonly disabled: 'Serveur désactivé : activez-le pour vous connecter.'
+      readonly notOffered: '{{agent}} ne sait pas connecter ce serveur.'
+      readonly removeAskConnected: 'Supprimer le serveur « {{name}} » ? {{agent}} garde l’accès tant que vous ne vous déconnectez pas.'
+      readonly signOut: {
+        readonly timeout: 'Pas de réponse de {{agent}} pour la déconnexion'
+        readonly failed: 'Déconnexion impossible : {{agent}} n’a pas pu être lancé'
+        readonly stillConnected: 'Toujours connecté selon {{agent}}'
+        readonly unconfirmed: 'Déconnexion non confirmée : état illisible'
+      }
     }
   }
   readonly app: {

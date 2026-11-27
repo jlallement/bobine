@@ -9,6 +9,7 @@ Ici, vous pouvez :
 - lire la [page d'un agent](#page-agent) dans les réglages ;
 - [donner une clé d'API à IBM Bob](#cle-bob) ;
 - [déclarer un fournisseur de modèles pour OpenCode](#fournisseurs) ;
+- [connecter Figma à OpenCode](#figma) ;
 - [ajouter un autre agent ACP](#autre-agent) ;
 - [régler le réseau d'entreprise](#reseau).
 
@@ -101,6 +102,28 @@ jamais écrite dans `opencode.json`.
 <!-- si: explorer
 La clé est chiffrée par Windows (DPAPI), jamais écrite dans `opencode.json`.
 -->
+
+<a id="figma"></a>
+
+## Connecter Figma à OpenCode
+
+Réglages › Serveurs MCP › OpenCode › **Connecter Figma** : Bobine ajoute le serveur officiel de
+Figma (`https://mcp.figma.com/mcp`) pour tous les dossiers, puis OpenCode ouvre la page de
+connexion de Figma dans votre navigateur. Autorisez l'accès, puis revenez dans Bobine. Sous
+l'adresse du serveur, une ligne dit où en est la connexion :
+
+- **Connexion en cours (www.figma.com)** : la page est ouverte ; **Rouvrir la page** si vous
+  l'avez fermée, **Annuler** pour arrêter. Sans réponse, la tentative s'arrête au bout de 10 min ;
+- **Connecté par OpenCode** : **Se déconnecter** fait oublier l'accès à OpenCode ;
+- **Connexion expirée** : **Se reconnecter** ;
+- une erreur, avec sa raison : **Réessayer**, ou **Dans un terminal**, qui copie la commande
+  d'OpenCode (`opencode mcp auth figma`) à coller dans un terminal.
+
+Le jeton de Figma reste chez OpenCode : Bobine ne le voit jamais. Bobine n'ouvre que la page de
+Figma (`www.figma.com`) : une autre adresse est refusée et la tentative arrêtée. Supprimer le
+serveur n'enlève que sa déclaration ; pour qu'OpenCode oublie l'accès, déconnectez-vous d'abord.
+
+Figma n'accepte que les applications de sa liste : IBM Bob n'y est pas, son onglet le dit.
 
 <a id="autre-agent"></a>
 

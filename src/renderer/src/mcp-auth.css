@@ -1,0 +1,147 @@
+/*
+ * Connexion des serveurs MCP distants par l'agent (fiche 293), d'après la maquette validée
+ * (`docs/maquettes/293-figma-en-un-clic.html`), sur les jetons de l'app.
+ */
+
+/* État de connexion sous l'adresse : une ligne, au poids du résultat de « Tester » (fiche 060).
+   En flux de texte : la ligne ne se coupe qu'entre deux éléments (espace du balisage), et chaque
+   « · » est collé à ce qui le précède, donc jamais en début de ligne. */
+.mcp-auth {
+  margin-top: 2px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.mcp-auth .st svg {
+  display: inline-block;
+  vertical-align: -2px;
+  margin-right: 5px;
+}
+.mcp-auth.ok .st {
+  color: var(--ok);
+}
+.mcp-auth.err .st {
+  color: var(--err);
+}
+.mcp-auth.warn .st {
+  color: var(--warn);
+}
+.mcp-auth .sep {
+  margin-left: 6px;
+  color: var(--muted);
+}
+.mcp-auth .act {
+  display: inline-block;
+  margin-left: 2px;
+  white-space: nowrap;
+}
+/* Hôte refusé (« Page inattendue ») : jamais coupé en deux. */
+.mcp-auth-host {
+  white-space: nowrap;
+}
+.mcp-auth code {
+  white-space: nowrap;
+  word-break: normal;
+  font-family: var(--font-mono);
+  font-variant-ligatures: var(--code-ligatures, none);
+  font-size: 11px;
+  background: var(--surface-2);
+  padding: 0 4px;
+  border-radius: var(--radius-xs);
+  color: var(--text);
+}
+
+/* Action dans une ligne : bouton plat, à la hauteur du texte, atteignable au clavier. */
+.mcp-auth .link,
+.mcp-preset-help .link {
+  font-size: inherit;
+  line-height: inherit;
+  color: var(--accent);
+  font-weight: 500;
+  border-radius: var(--radius-xs);
+  white-space: nowrap;
+}
+.mcp-auth .link:hover:not([aria-disabled='true']),
+.mcp-preset-help .link:hover {
+  text-decoration: underline;
+}
+.mcp-auth .link:focus-visible,
+.mcp-preset-help .link:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline-offset: 2px;
+}
+/* Lien qui a ouvert la confirmation (« Se déconnecter ») : marqué, comme la corbeille. */
+.mcp-auth .link[aria-expanded='true'] {
+  color: var(--err);
+  text-decoration: underline;
+}
+/* Grisé avec sa raison (fiche 287) : la raison est dans l'info-bulle et la description. */
+.mcp-auth .link[aria-disabled='true'] {
+  color: var(--muted);
+}
+
+/* Pastille « connexion expirée » : ambre fixe (l'ambre qui pulse dit « en cours »). */
+.mcp-dot.warn {
+  background: var(--warn);
+}
+
+/* Logo officiel du préréglage : seulement mis à l'échelle (hauteur de la boîte du fichier). */
+.mcp-preset-logo {
+  display: block;
+  width: auto;
+  flex-shrink: 0;
+}
+.mcp-preset-logo.size-56 {
+  height: 56px;
+}
+/* Devant le nom : la marge de protection transparente du fichier est rattrapée de 4 px de chaque
+   côté ; remonté de 1 px pour s'aligner sur les capitales et la ligne de base du nom. */
+.mcp-server-name .mcp-preset-logo.size-28 {
+  height: 28px;
+  position: relative;
+  top: -1px;
+  margin: 0 -4px;
+}
+
+/* Ligne « <préréglage> » sous la liste des serveurs : carte pleine, logo, bouton principal. */
+.mcp-settings > .mcp-preset,
+.mcp-settings > .mcp-preset-help {
+  align-self: stretch;
+}
+.mcp-preset li {
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+/* Boîte de 56 px (dessin ≈ 26 px) : marges négatives pour que le dessin, et non sa boîte,
+   s'aligne sur le bord, et que la carte garde la hauteur d'une ligne de serveur. */
+.mcp-preset-icon {
+  display: inline-flex;
+  margin: -10px -6px -10px -10px;
+}
+.mcp-preset-text {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.mcp-preset-name {
+  font-weight: 500;
+  font-size: 13.5px;
+}
+.mcp-preset-summary {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+.mcp-preset-reason {
+  flex: 1 1 100%;
+  padding-left: 40px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.mcp-preset-help .link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}

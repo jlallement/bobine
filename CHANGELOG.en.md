@@ -2,6 +2,16 @@
 
 What changes for you, version by version. Shown in Settings › What’s new.
 
+## Next version
+
+### New
+
+- **Figma in one click, with OpenCode**: Settings › MCP servers › OpenCode offers “Connect Figma”.
+  Figma’s official server is added for all folders, and Figma’s sign-in page opens in your
+  browser: you allow access, Bobine shows where sign-in stands (signing in, signed in, expired,
+  error) and lets you sign out. The token stays with OpenCode. Figma doesn’t accept IBM Bob: its
+  tab says why.
+
 ## 1.2.0-rc.2 — November 27, 2026
 
 ### New

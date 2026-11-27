@@ -223,6 +223,8 @@ export interface IpcInvokeContract
   'mcp:reopenPage': { args: [profileId: string, name: string]; result: boolean }
   /** « Se déconnecter » : la commande de l'agent, puis l'état relu (événement `mcp:authState`). */
   'mcp:disconnect': { args: [profileId: string, name: string]; result: McpDisconnectResult }
+  /** Ouvre dans le navigateur la liste publique du préréglage (adresse gardée par le main). */
+  'mcp:openPresetList': { args: [presetId: string]; result: undefined }
   /** Fournisseurs de modèles des agents (fiche 104), dans leur fichier global. */
   'providers:list': { args: []; result: ProvidersView[] }
   'providers:save': {
@@ -952,6 +954,7 @@ export const IPC_CHANNELS = [
   'mcp:cancelConnect',
   'mcp:reopenPage',
   'mcp:disconnect',
+  'mcp:openPresetList',
   'providers:list',
   'providers:save',
   'providers:remove',

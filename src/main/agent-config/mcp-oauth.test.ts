@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { McpAuthState, McpServerEntry } from '@shared/mcp'
 import { log } from '../log'
 import { resolveProfiles } from '../agent/profiles'
+import { joinCommandLine } from '@shared/mcp'
 import { McpOAuth, attemptOutcome } from './mcp-oauth'
 
 const FIXTURES = join(__dirname, 'fixtures', 'opencode-2.3.0-mcp-auth')
@@ -421,6 +422,21 @@ describe('connexion d’un serveur MCP par l’agent : moteur (fiche 293, ADR-00
     expect(t.engine.reopen('opencode', 'figma')).toBe(false)
   })
 
+  it('« Dans un terminal » : commande de l’agent sans `--standalone`, `cd` du dossier si le serveur n’est déclaré que là', async () => {
+    const both = setup({
+      servers: [figma(), figma({ scope: 'project', file: '/p/opencode.json' })]
+    })
+    expect((await both.engine.view('opencode', both.workspace)).terminal).toEqual({
+      figma: 'opencode mcp auth figma'
+    })
+    const here = setup({ servers: [figma({ scope: 'project', file: '/p/opencode.json' })] })
+    const view = here.engine.view('opencode', here.workspace)
+    const { terminal } = await view
+    expect(terminal['figma']).toBe(
+      `${joinCommandLine(['cd', here.workspace])} && opencode mcp auth figma`
+    )
+  })
+
   it('agent absent : rien de lancé, état « agent absent » ; commande disparue au lancement aussi', async () => {
     const t = setup({ agentFound: false })
     expect(await t.engine.connect('opencode', 'figma', t.workspace)).toEqual({
@@ -432,7 +448,8 @@ describe('connexion d’un serveur MCP par l’agent : moteur (fiche 293, ADR-00
     expect(await t.engine.view('opencode', t.workspace)).toEqual({
       profileId: 'opencode',
       agentFound: false,
-      servers: [{ profileId: 'opencode', name: 'figma', status: 'agent-missing' }]
+      servers: [{ profileId: 'opencode', name: 'figma', status: 'agent-missing' }],
+      terminal: { figma: 'opencode mcp auth figma' }
     })
     const u = setup()
     await u.engine.connect('opencode', 'figma', u.workspace)

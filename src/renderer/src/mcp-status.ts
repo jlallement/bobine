@@ -54,7 +54,9 @@ export async function testMcpServers(
   onlyStale = false
 ): Promise<void> {
   for (const server of servers) {
-    if (!server.enabled) continue
+    // Serveur connecté par l'agent (fiche 293) : sans son jeton, il répond toujours 401 ; son état
+    // vient de l'agent, jamais de « Tester ».
+    if (!server.enabled || server.authPreset) continue
     const known = cache.get(mcpKey(profileId, server))
     if (onlyStale && known && (known.status === 'testing' || Date.now() - known.at < FRESH_MS)) {
       continue

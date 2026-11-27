@@ -29,11 +29,17 @@ function setup() {
     setEnabled: vi.fn((): McpAgentView[] => []),
     test: vi.fn(async () => ({ ok: false as const, error: 'x', ms: 1 })),
     addPreset: vi.fn(() => ({ name: 'figma', added: true, views: [] as McpAgentView[] })),
-    authStates: vi.fn(async (profileId: string) => ({ profileId, agentFound: true, servers: [] })),
+    authStates: vi.fn(async (profileId: string) => ({
+      profileId,
+      agentFound: true,
+      servers: [],
+      terminal: {}
+    })),
     connect: vi.fn(async () => ({ started: true as const })),
     cancelConnect: vi.fn(() => true),
     reopenPage: vi.fn(() => true),
-    disconnect: vi.fn(async () => ({ done: true as const }))
+    disconnect: vi.fn(async () => ({ done: true as const })),
+    openPresetList: vi.fn(async () => undefined)
   }
   return { conversations, mcp, appSettings, handlers: mcpHandlers(mcp, conversations, appSettings) }
 }
@@ -82,6 +88,9 @@ describe('canaux de Réglages › Serveurs MCP (fiche 099)', () => {
     expect(() => handlers['mcp:addPreset']('', 'figma')).toThrow('profileId')
     expect(() => handlers['mcp:reopenPage']('opencode', '')).toThrow('name')
     expect(mcp.connect).toHaveBeenCalledTimes(1)
+    await handlers['mcp:openPresetList']('figma')
+    expect(mcp.openPresetList).toHaveBeenCalledWith('figma')
+    expect(() => handlers['mcp:openPresetList']('')).toThrow('presetId')
   })
 
   it('sans réglages MCP (essais) : erreur claire, les outils de Bobine restent lisibles', () => {

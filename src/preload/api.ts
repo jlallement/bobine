@@ -241,6 +241,8 @@ export function createApi(
         invoke('mcp:cancelConnect', profileId, name),
       reopenPage: (profileId: string, name: string) => invoke('mcp:reopenPage', profileId, name),
       disconnect: (profileId: string, name: string) => invoke('mcp:disconnect', profileId, name),
+      /** Liste publique du préréglage, ouverte par le main dans le navigateur. */
+      openPresetList: (presetId: string) => invoke('mcp:openPresetList', presetId),
       onAuthState: (listener: (state: IpcEventContract['mcp:authState']) => void) =>
         subscribe('mcp:authState', listener)
     },

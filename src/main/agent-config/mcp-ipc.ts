@@ -24,6 +24,7 @@ type McpChannels =
   | 'mcp:cancelConnect'
   | 'mcp:reopenPage'
   | 'mcp:disconnect'
+  | 'mcp:openPresetList'
   | 'conversation:appTools'
 
 /* Les arguments IPC viennent du renderer : on ne fait confiance qu'à ce qu'on vérifie. */
@@ -52,6 +53,7 @@ export type McpIpcSettings = Pick<
   | 'cancelConnect'
   | 'reopenPage'
   | 'disconnect'
+  | 'openPresetList'
 >
 
 export function mcpHandlers(
@@ -105,6 +107,7 @@ export function mcpHandlers(
       settings().reopenPage(str(profileId, 'profileId'), str(name, 'name')),
     'mcp:disconnect': (profileId, name) =>
       settings().disconnect(str(profileId, 'profileId'), str(name, 'name'), workspace()),
+    'mcp:openPresetList': (presetId) => settings().openPresetList(str(presetId, 'presetId')),
     'mcp:appTools': () => conversations.appToolsCatalog(),
     'mcp:setAppToolFamily': (id, enabled) => {
       if (typeof enabled !== 'boolean') throw new Error('Paramètre invalide : enabled')

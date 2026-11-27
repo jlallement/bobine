@@ -25,6 +25,14 @@ export interface McpServer {
 export interface McpServerEntry extends McpServer {
   scope: McpScope
   file: string
+  /**
+   * Serveur que l'agent connecte lui-même (fiche 293) : identifiant de son préréglage
+   * (`shared/mcp-presets.ts`). Posé par le main seulement pour un agent qui a la capacité, et
+   * seulement si toutes les déclarations de ce nom sont à l'adresse de ce préréglage. Pas de
+   * « Tester » de Bobine pour lui (sans le jeton de l'agent, il répond toujours 401) : son état
+   * vient de l'agent.
+   */
+  authPreset?: string
 }
 
 /** Configuration MCP d'un agent, pour les réglages. */
@@ -86,7 +94,16 @@ export interface McpAuthView {
   agentFound: boolean
   /** Un état par serveur déclaré dont l'adresse est celle d'un préréglage. */
   servers: McpAuthState[]
+  /**
+   * Par nom de serveur, la commande à copier pour se connecter dans un terminal (« Dans un
+   * terminal ») : celle de l'agent, sans `--standalone` ; précédée du `cd` du dossier si le serveur
+   * n'est déclaré que pour ce dossier.
+   */
+  terminal: Record<string, string>
 }
+
+/** Durée maximale d'une tentative de connexion (proche de celle d'OpenCode, ≈ 10 min, fiche 293). */
+export const MCP_AUTH_MINUTES = 10
 
 /**
  * Réponse à « Se connecter » : lancé, ou pourquoi pas (refus côté main). `disabled` : le serveur

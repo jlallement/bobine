@@ -2015,7 +2015,13 @@
       "unknown": "not tested yet",
       "testing": "testing",
       "ok": "reachable",
-      "error": "error"
+      "error": "error",
+      "toConnect": "not signed in",
+      "connecting": "signing in",
+      "connected": "signed in",
+      "expired": "sign-in expired",
+      "authUnknown": "sign-in status unknown",
+      "authError": "sign-in error"
     },
     "files": {
       "global": "Declared in {{agent}}’s files: <code>{{global}}</code> (all folders). They also apply when you use {{agent}} in a terminal. A change applies to new conversations; restart an open conversation for it to take effect.",
@@ -2050,6 +2056,66 @@
       "settingOff": "Off",
       "settingPath": {
         "memory": "Settings › Memory"
+      }
+    },
+    "preset": {
+      "figma": {
+        "name": "Figma",
+        "summary": "Figma’s official server. You sign in in your browser, through {{agent}}."
+      },
+      "connect": "Connect {{name}}",
+      "notOffered": "{{name}}: not available for {{agent}}. {{name}} only accepts the apps on its list; Bobine can only connect it through {{agents}}.",
+      "listLink": "{{name}}’s list",
+      "listLinkTip": "Opens {{name}}’s list in your browser"
+    },
+    "auth": {
+      "toConnect": "Not signed in",
+      "toConnectTip": "You sign in in your browser, through {{agent}}.",
+      "connect": "Sign in",
+      "pending": "Signing in ({{host}})",
+      "pendingTip": "Sign-in page opened in your browser: allow access, then come back here. With no answer, it stops after {{minutes}} min.",
+      "reopen": "Reopen the page",
+      "connected": "Signed in through {{agent}}",
+      "connectedTip": "The token stays with {{agent}}: Bobine never sees it.",
+      "disconnect": "Sign out",
+      "disconnectAsk": "Sign out of {{name}}? {{agent}} will forget the access; you will need to sign in again.",
+      "expired": "Sign-in expired",
+      "expiredTip": "{{agent}} asks for a new sign-in.",
+      "reconnect": "Sign in again",
+      "failedTip": "Sign-in did not complete: {{detail}}",
+      "reason": {
+        "timeout": "No answer within {{minutes}} min",
+        "unexpectedPage": "Unexpected page (<host>{{host}}</host>)",
+        "stopped": "{{agent}} stopped",
+        "failed": "Sign-in did not complete"
+      },
+      "reasonTip": {
+        "timeout": "{{agent}} did not get the approval within {{minutes}} min; the command was stopped.",
+        "unexpectedPage": "the page offered was not on {{expected}}; nothing was opened, the command was stopped.",
+        "stopped": "{{agent}} stopped without saying whether sign-in completed.",
+        "failed": "{{agent}} reported a failure."
+      },
+      "retry": "Try again",
+      "noPage": "No sign-in page",
+      "noPageTip": "{{agent}} did not offer a sign-in page.",
+      "inTerminal": "In a terminal",
+      "inTerminalTip": "Copies “{{command}}”; in a terminal, {{agent}} opens the page itself.",
+      "copied": "Copied: <code>{{command}}</code>",
+      "copiedTip": "Paste it in a terminal: {{agent}} opens the {{name}} page there.",
+      "copyFailed": "Could not copy",
+      "retryHere": "Try again here",
+      "unknown": "Sign-in status unknown",
+      "unknownTip": "The status could not be read from {{agent}}.",
+      "busy": "A sign-in is already in progress.",
+      "agentMissing": "{{agent}} is not installed.",
+      "disabled": "Server turned off: turn it on to sign in.",
+      "notOffered": "{{agent}} cannot connect this server.",
+      "removeAskConnected": "Delete the “{{name}}” server? {{agent}} keeps the access until you sign out.",
+      "signOut": {
+        "timeout": "No answer from {{agent}} to sign out",
+        "failed": "Could not sign out: {{agent}} could not start",
+        "stillConnected": "Still signed in according to {{agent}}",
+        "unconfirmed": "Sign-out not confirmed: status unreadable"
       }
     }
   },

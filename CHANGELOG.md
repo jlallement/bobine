@@ -2,6 +2,16 @@
 
 Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › Nouveautés.
 
+## Prochaine version
+
+### Nouveau
+
+- **Figma en un clic, avec OpenCode** : Réglages › Serveurs MCP › OpenCode propose « Connecter
+  Figma ». Le serveur officiel de Figma est ajouté pour tous les dossiers, et la page de connexion
+  de Figma s’ouvre dans votre navigateur : vous autorisez l’accès, Bobine montre où en est la
+  connexion (en cours, connecté, expirée, erreur) et permet de se déconnecter. Le jeton reste chez
+  OpenCode. Figma n’accepte pas IBM Bob : son onglet dit pourquoi.
+
 ## 1.2.0-rc.2 — 27 novembre 2026
 
 ### Nouveau

@@ -70,6 +70,8 @@ export const READ_ONLY_SAFE = [
   'mcp:authStates',
   'mcp:reopenPage',
   'mcp:cancelConnect',
+  // Ouvre une page publique du préréglage dans le navigateur (fiche 293) : rien d'écrit.
+  'mcp:openPresetList',
   'providers:list',
   'providers:test',
   'providers:diagnose',

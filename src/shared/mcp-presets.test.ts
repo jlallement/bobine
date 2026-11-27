@@ -11,7 +11,9 @@ describe('préréglages de serveurs MCP (fiche 293)', () => {
       url: 'https://mcp.figma.com/mcp',
       pageHost: 'www.figma.com',
       pagePath: '/oauth/mcp',
-      pageLoopbackRedirect: true
+      pageLoopbackRedirect: true,
+      logo: 'figma/Figma Icon (Full-color).svg',
+      listUrl: 'https://developers.figma.com/docs/figma-mcp-server/'
     })
     expect(MCP_PRESETS).toHaveLength(1)
     expect(presetById('inconnu')).toBeUndefined()

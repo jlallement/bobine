@@ -23,6 +23,7 @@ function setup(globalText?: string) {
     writeFileSync(file, globalText)
   }
   const start = vi.fn()
+  const openExternal = vi.fn()
   const settings = new McpSettings(
     profiles,
     { home },
@@ -30,13 +31,21 @@ function setup(globalText?: string) {
       fallbackCwd: home,
       env: async () => ({}),
       findCommand: () => undefined,
-      openExternal: vi.fn(),
+      openExternal,
       onState: vi.fn(),
       start
     }
   )
   const opencode = () => settings.list(workspace).find((v) => v.profileId === 'opencode')
-  return { settings, workspace, file, start, opencode, read: () => readFileSync(file, 'utf8') }
+  return {
+    settings,
+    workspace,
+    file,
+    start,
+    openExternal,
+    opencode,
+    read: () => readFileSync(file, 'utf8')
+  }
 }
 
 describe('préréglages de serveurs MCP (fiche 293)', () => {
@@ -160,5 +169,36 @@ describe('préréglages de serveurs MCP (fiche 293)', () => {
     await expect(settings.test('opencode', 'global', workspace, 'figma')).rejects.toThrow(
       'pas de test par Bobine'
     )
+  })
+
+  it('serveurs connectés par l’agent marqués par leur préréglage, seulement chez l’agent qui sait', () => {
+    const { settings, workspace, opencode } = setup()
+    settings.addPreset('opencode', 'figma', workspace)
+    settings.save('opencode', 'global', workspace, {
+      name: 'local',
+      transport: 'stdio',
+      command: 'npx'
+    })
+    settings.save('bob', 'global', workspace, { name: 'figma', transport: 'http', url: FIGMA })
+    const byName = Object.fromEntries((opencode()?.servers ?? []).map((s) => [s.name, s]))
+    expect(byName['figma']?.authPreset).toBe('figma')
+    expect(byName['local']?.authPreset).toBeUndefined()
+    const bob = settings.list(workspace).find((v) => v.profileId === 'bob')
+    expect(bob?.servers.find((s) => s.name === 'figma')?.authPreset).toBeUndefined()
+    // Même nom déclaré ailleurs à une autre adresse (R7 non relevé) : rien de supposé.
+    settings.save('opencode', 'project', workspace, {
+      name: 'figma',
+      transport: 'http',
+      url: 'https://exemple.test/mcp'
+    })
+    expect(opencode()?.servers.filter((s) => s.authPreset)).toEqual([])
+  })
+
+  it('« Liste de Figma » : adresse du préréglage ouverte par le main ; préréglage inconnu refusé', async () => {
+    const { settings, openExternal } = setup()
+    await settings.openPresetList('figma')
+    expect(openExternal).toHaveBeenCalledWith('https://developers.figma.com/docs/figma-mcp-server/')
+    await expect(settings.openPresetList('inconnu')).rejects.toThrow('presetId')
+    expect(openExternal).toHaveBeenCalledTimes(1)
   })
 })

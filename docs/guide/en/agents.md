@@ -9,6 +9,7 @@ Here you can:
 - read an [agent’s page](#page-agent) in Settings;
 - [give IBM Bob an API key](#cle-bob);
 - [add a model provider for OpenCode](#fournisseurs);
+- [connect Figma to OpenCode](#figma);
 - [add another ACP agent](#autre-agent);
 - [set up the corporate network](#reseau).
 
@@ -101,6 +102,28 @@ written to `opencode.json`.
 <!-- si: explorer
 The key is encrypted by Windows (DPAPI), never written to `opencode.json`.
 -->
+
+<a id="figma"></a>
+
+## Connect Figma to OpenCode
+
+Settings › MCP servers › OpenCode › **Connect Figma**: Bobine adds Figma’s official server
+(`https://mcp.figma.com/mcp`) for all folders, then OpenCode opens Figma’s sign-in page in your
+browser. Allow access, then come back to Bobine. Under the server’s address, a line says where
+sign-in stands:
+
+- **Signing in (www.figma.com)**: the page is open; **Reopen the page** if you closed it,
+  **Cancel** to stop. With no answer, the attempt stops after 10 min;
+- **Signed in through OpenCode**: **Sign out** makes OpenCode forget the access;
+- **Sign-in expired**: **Sign in again**;
+- an error, with its reason: **Try again**, or **In a terminal**, which copies OpenCode’s command
+  (`opencode mcp auth figma`) to paste in a terminal.
+
+Figma’s token stays with OpenCode: Bobine never sees it. Bobine only opens Figma’s page
+(`www.figma.com`): any other address is refused and the attempt stopped. Deleting the server only
+removes its declaration; for OpenCode to forget the access, sign out first.
+
+Figma only accepts the apps on its list: IBM Bob isn’t on it, and its tab says so.
 
 <a id="autre-agent"></a>
 

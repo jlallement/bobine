@@ -2110,7 +2110,13 @@
       "unknown": "pas encore testé",
       "testing": "test en cours",
       "ok": "joignable",
-      "error": "en erreur"
+      "error": "en erreur",
+      "toConnect": "à connecter",
+      "connecting": "connexion en cours",
+      "connected": "connecté",
+      "expired": "connexion expirée",
+      "authUnknown": "état de la connexion inconnu",
+      "authError": "connexion en erreur"
     },
     "files": {
       "global": "Déclarés dans les fichiers de {{agent}} : <code>{{global}}</code> (tous les dossiers). Ils valent aussi quand vous utilisez {{agent}} dans un terminal. Un changement compte pour les nouvelles conversations ; relancez une conversation ouverte pour qu’elle en tienne compte.",
@@ -2146,6 +2152,66 @@
       "settingOff": "Désactivée",
       "settingPath": {
         "memory": "Réglages › Mémoire"
+      }
+    },
+    "preset": {
+      "figma": {
+        "name": "Figma",
+        "summary": "Serveur officiel de Figma. La connexion se fait dans votre navigateur, avec {{agent}}."
+      },
+      "connect": "Connecter {{name}}",
+      "notOffered": "{{name}} : pas proposé pour {{agent}}. {{name}} n’accepte que les applications de sa liste ; Bobine ne sait le connecter que par {{agents}}.",
+      "listLink": "Liste de {{name}}",
+      "listLinkTip": "Ouvre la liste de {{name}} dans votre navigateur"
+    },
+    "auth": {
+      "toConnect": "À connecter",
+      "toConnectTip": "La connexion se fait dans votre navigateur, avec {{agent}}.",
+      "connect": "Se connecter",
+      "pending": "Connexion en cours ({{host}})",
+      "pendingTip": "Page de connexion ouverte dans votre navigateur : autorisez l’accès, puis revenez ici. Sans réponse, abandon au bout de {{minutes}} min.",
+      "reopen": "Rouvrir la page",
+      "connected": "Connecté par {{agent}}",
+      "connectedTip": "Le jeton reste chez {{agent}} : Bobine ne le voit jamais.",
+      "disconnect": "Se déconnecter",
+      "disconnectAsk": "Se déconnecter de {{name}} ? {{agent}} oubliera l’accès ; il faudra vous reconnecter.",
+      "expired": "Connexion expirée",
+      "expiredTip": "{{agent}} demande une nouvelle connexion.",
+      "reconnect": "Se reconnecter",
+      "failedTip": "La connexion n’a pas abouti : {{detail}}",
+      "reason": {
+        "timeout": "Pas de réponse en {{minutes}} min",
+        "unexpectedPage": "Page inattendue (<host>{{host}}</host>)",
+        "stopped": "{{agent}} s’est arrêté",
+        "failed": "La connexion n’a pas abouti"
+      },
+      "reasonTip": {
+        "timeout": "{{agent}} n’a pas reçu l’accord en {{minutes}} min ; la commande a été arrêtée.",
+        "unexpectedPage": "la page proposée n’était pas sur {{expected}} ; rien n’a été ouvert, la commande a été arrêtée.",
+        "stopped": "{{agent}} s’est arrêté sans dire si la connexion avait abouti.",
+        "failed": "{{agent}} a signalé un échec."
+      },
+      "retry": "Réessayer",
+      "noPage": "Pas de page de connexion",
+      "noPageTip": "{{agent}} n’a pas proposé de page de connexion.",
+      "inTerminal": "Dans un terminal",
+      "inTerminalTip": "Copie « {{command}} » ; dans un terminal, {{agent}} ouvre lui-même la page.",
+      "copied": "Copiée : <code>{{command}}</code>",
+      "copiedTip": "À coller dans un terminal : {{agent}} y ouvre lui-même la page de {{name}}.",
+      "copyFailed": "Copie impossible",
+      "retryHere": "Réessayer ici",
+      "unknown": "État de la connexion inconnu",
+      "unknownTip": "L’état n’a pas pu être relu chez {{agent}}.",
+      "busy": "Une connexion est déjà en cours.",
+      "agentMissing": "{{agent}} n’est pas installé.",
+      "disabled": "Serveur désactivé : activez-le pour vous connecter.",
+      "notOffered": "{{agent}} ne sait pas connecter ce serveur.",
+      "removeAskConnected": "Supprimer le serveur « {{name}} » ? {{agent}} garde l’accès tant que vous ne vous déconnectez pas.",
+      "signOut": {
+        "timeout": "Pas de réponse de {{agent}} pour la déconnexion",
+        "failed": "Déconnexion impossible : {{agent}} n’a pas pu être lancé",
+        "stillConnected": "Toujours connecté selon {{agent}}",
+        "unconfirmed": "Déconnexion non confirmée : état illisible"
       }
     }
   },

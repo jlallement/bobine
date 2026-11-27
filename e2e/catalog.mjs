@@ -1558,7 +1558,38 @@ export const SUITES = [
       'src/main/agent-config/*-mcp.ts',
       ...APP_TOOLS,
       'src/shared/mcp.ts',
+      `${C}settings/McpAuth.tsx`,
+      `${R}mcp-auth.ts`,
+      `${R}mcp-auth.css`,
       'e2e/fixtures/mcp-serveur.mjs'
+    ]
+  },
+  {
+    // Figma en un clic (fiche 293, lot 2) : connexion d'un serveur MCP distant par l'agent, contre
+    // une fausse commande (`BOBINE_FAKE_MCP_AUTH`), page interceptée (`BOBINE_OPEN_LOG`).
+    name: 'mcp-figma',
+    file: 'mcp-figma.mjs',
+    run: 'mcpFigmaSuite',
+    themes: BOTH,
+    // Contrastes des états et des liens mesurés dans les deux thèmes.
+    dark: true,
+    sources: [
+      ...SETTINGS,
+      `${C}settings/McpSettings.tsx`,
+      `${C}settings/McpAuth.tsx`,
+      `${C}settings/ConfirmRow.tsx`,
+      `${C}common/ReasonButton.tsx`,
+      `${R}mcp-auth.ts`,
+      `${R}mcp-auth.css`,
+      `${R}brand-logos.ts`,
+      `${R}mcp-status.ts`,
+      'src/renderer/src/assets/brands/',
+      'src/main/agent-config/mcp-*.ts',
+      'src/main/agent-config/opencode-mcp-auth.ts',
+      'src/main/file-openers.ts',
+      'src/shared/mcp.ts',
+      'src/shared/mcp-presets.ts',
+      'e2e/fake-opencode-mcp.mjs'
     ]
   },
   {

@@ -5,9 +5,12 @@
  * chemin exactement `pagePath` (ADR-0077).
  */
 
+/** Identifiants des préréglages : leurs textes sont les clés `mcp.preset.<id>.*` (ADR-0014). */
+export type McpPresetId = 'figma'
+
 export interface McpPreset {
-  /** Identifiant stable (textes : `mcp.preset.<id>.*`, logo : lot 2). */
-  id: string
+  /** Identifiant stable (textes : `mcp.preset.<id>.*`). */
+  id: McpPresetId
   /** Nom proposé pour le serveur dans le fichier de l'agent. */
   name: string
   /** Adresse du serveur MCP. */
@@ -24,6 +27,17 @@ export interface McpPreset {
    * `localhost`, port) : sans lui, ce pourrait être la page de consentement du client d'un tiers.
    */
   pageLoopbackRedirect: boolean
+  /**
+   * Logo du serveur montré par l'interface : chemin du fichier sous `renderer/src/assets/brands/`,
+   * copié tel quel depuis les fichiers officiels du propriétaire de la marque (jamais modifié,
+   * seulement mis à l'échelle ; empreinte vérifiée par un essai).
+   */
+  logo: string
+  /**
+   * Page publique où le propriétaire du serveur dit quelles applications il accepte : ouverte par
+   * le main (`mcp:openPresetList`) depuis la ligne d'aide d'un agent qui n'a pas la capacité.
+   */
+  listUrl: string
 }
 
 export const MCP_PRESETS: readonly McpPreset[] = [
@@ -35,7 +49,11 @@ export const MCP_PRESETS: readonly McpPreset[] = [
     pageHost: 'www.figma.com',
     pagePath: '/oauth/mcp',
     // Relevé : `redirect_uri=http://127.0.0.1:<port>/callback` (sortie réelle d'OpenCode 2.3.0).
-    pageLoopbackRedirect: true
+    pageLoopbackRedirect: true,
+    // Archive officielle « Download our logos » de la page de marque de Figma (fiche 293).
+    logo: 'figma/Figma Icon (Full-color).svg',
+    // Liste des clients acceptés par le serveur MCP distant de Figma (relue le 2026-11-27).
+    listUrl: 'https://developers.figma.com/docs/figma-mcp-server/'
   }
 ]
 
@@ -68,4 +86,21 @@ export function presetById(
   presets: readonly McpPreset[] = MCP_PRESETS
 ): McpPreset | undefined {
   return presets.find((p) => p.id === id)
+}
+
+/**
+ * Préréglage du serveur de ce nom : toutes ses déclarations (tous les dossiers, ce dossier) sont
+ * distantes et à l'adresse du même préréglage ; sinon, rien (pas de connexion devinée, R7).
+ */
+export function declaredPreset(
+  servers: readonly { name: string; transport: string; url?: string | undefined }[],
+  name: string,
+  presets: readonly McpPreset[] = MCP_PRESETS
+): McpPreset | undefined {
+  const named = servers.filter((s) => s.name === name)
+  const found = new Set(
+    named.map((s) => (s.transport === 'http' ? presetForUrl(s.url, presets) : undefined))
+  )
+  const [preset] = [...found]
+  return found.size === 1 ? preset : undefined
 }

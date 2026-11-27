@@ -23,6 +23,17 @@ import { useDisplayPath } from '../../presentation'
 import { ipcErrorText } from '../../ipc-errors'
 import { AppToolsTab, appToolCount } from './AppToolsTab'
 import { ConfirmRow, useConfirm } from './ConfirmRow'
+import { useMcpAuth } from '../../mcp-auth'
+import {
+  authPresetOf,
+  McpAuthConfirm,
+  McpAuthDot,
+  McpAuthLine,
+  McpPresetHelp,
+  McpPresetRows,
+  PresetLogo
+} from './McpAuth'
+import type { McpPreset } from '@shared/mcp-presets'
 import { folderName } from '@shared/windows-paths'
 
 const seconds = (ms: number) => `${numberFormat({ maximumFractionDigits: 1 }).format(ms / 1000)} s`
@@ -338,11 +349,25 @@ function AgentServers({
   const key = (s: McpServerEntry) => `${s.scope}:${s.name}`
   const status = (s: McpServerEntry) => mcpStatus(mcpKey(view.profileId, s))
   const test = (server: McpServerEntry) => testMcpServer(view.profileId, server)
+  // Serveurs connectés par l'agent (fiche 293) : pas de « Tester », leur état vient de l'agent.
+  const testable = view.servers.filter((s) => !s.authPreset)
   const testAll = () =>
     testMcpServers(
       view.profileId,
-      view.servers.map((s) => ({ ...s, enabled: true }))
+      testable.map((s) => ({ ...s, enabled: true }))
     )
+  const auth = useMcpAuth(view, workspace)
+  // « Connecter <préréglage> » : ajouté pour tous les dossiers, puis la connexion part aussitôt.
+  const addPreset = (preset: McpPreset) => {
+    setError(null)
+    window.api.mcp
+      .addPreset(view.profileId, preset.id)
+      .then(({ name, views: list }) => {
+        onViews(list)
+        void auth.connect(name)
+      })
+      .catch((e: unknown) => setError(ipcErrorText(e)))
+  }
 
   return (
     <>
@@ -377,118 +402,154 @@ function AgentServers({
         <p className="settings-row-hint">{t('mcp.none', { agent: view.label })}</p>
       ) : (
         <ul className="settings-list mcp-list" data-testid="mcp-list">
-          {view.servers.map((server) => (
-            <li key={key(server)} data-testid="mcp-server" data-name={server.name}>
-              <label
-                className="switch"
-                title={server.enabled ? t('mcp.server.disable') : t('mcp.server.enable')}
-              >
-                <input
-                  type="checkbox"
-                  checked={server.enabled}
-                  onChange={(e) =>
-                    run(
-                      window.api.mcp.setEnabled(
-                        view.profileId,
-                        server.scope,
-                        server.name,
-                        e.target.checked
+          {view.servers.map((server) => {
+            const preset = authPresetOf(server)
+            const askingAuth = confirm.asking === `auth:${key(server)}`
+            return (
+              <li key={key(server)} data-testid="mcp-server" data-name={server.name}>
+                <label
+                  className="switch"
+                  title={server.enabled ? t('mcp.server.disable') : t('mcp.server.enable')}
+                >
+                  <input
+                    type="checkbox"
+                    checked={server.enabled}
+                    onChange={(e) =>
+                      run(
+                        window.api.mcp.setEnabled(
+                          view.profileId,
+                          server.scope,
+                          server.name,
+                          e.target.checked
+                        )
                       )
-                    )
-                  }
-                  aria-label={t('mcp.server.enabledLabel', { name: server.name })}
-                  data-testid="mcp-enabled"
-                />
-                <span />
-              </label>
-              <div className="mcp-server-text">
-                <div className="mcp-server-name">
-                  <McpDot server={server} status={status(server)} />
-                  {server.name}
-                  <span className="mcp-badge">
-                    {server.scope === 'global' ? t('mcp.server.global') : t('mcp.server.folder')}
-                  </span>
-                  {server.transport === 'http' && (
-                    <span className="mcp-badge">{t('mcp.server.web')}</span>
+                    }
+                    aria-label={t('mcp.server.enabledLabel', { name: server.name })}
+                    data-testid="mcp-enabled"
+                  />
+                  <span />
+                </label>
+                <div className="mcp-server-text">
+                  <div className="mcp-server-name">
+                    {preset ? (
+                      <McpAuthDot server={server} state={auth.states[server.name]} />
+                    ) : (
+                      <McpDot server={server} status={status(server)} />
+                    )}
+                    {preset && <PresetLogo preset={preset} size={28} />}
+                    {server.name}
+                    <span className="mcp-badge">
+                      {server.scope === 'global' ? t('mcp.server.global') : t('mcp.server.folder')}
+                    </span>
+                    {server.transport === 'http' && (
+                      <span className="mcp-badge">{t('mcp.server.web')}</span>
+                    )}
+                  </div>
+                  <div className="mcp-server-detail mono" title={summary(server)}>
+                    {summary(server)}
+                    {server.env &&
+                      ` · ${t('mcp.server.variables', { n: Object.keys(server.env).length })}`}
+                    {server.headers &&
+                      ` · ${t('mcp.server.headers', { n: Object.keys(server.headers).length })}`}
+                  </div>
+                  {preset ? (
+                    <McpAuthLine
+                      view={view}
+                      server={server}
+                      model={auth}
+                      asking={askingAuth}
+                      onAskDisconnect={() => confirm.ask(`auth:${key(server)}`)}
+                    />
+                  ) : (
+                    <TestLine result={status(server)} />
                   )}
                 </div>
-                <div className="mcp-server-detail mono" title={summary(server)}>
-                  {summary(server)}
-                  {server.env &&
-                    ` · ${t('mcp.server.variables', { n: Object.keys(server.env).length })}`}
-                  {server.headers &&
-                    ` · ${t('mcp.server.headers', { n: Object.keys(server.headers).length })}`}
-                </div>
-                <TestLine result={status(server)} />
-              </div>
-              <button
-                className="icon-button small"
-                aria-label={t('mcp.server.testLabel', { name: server.name })}
-                title={t('mcp.server.test')}
-                disabled={status(server) === 'testing'}
-                onClick={() => void test(server)}
-                data-testid="mcp-test"
-              >
-                <PlugZap size={13} />
-              </button>
-              <button
-                className="icon-button small"
-                aria-label={t('mcp.server.editLabel', { name: server.name })}
-                title={t('mcp.server.edit')}
-                onClick={() => setDraft(toDraft(view.profileId, server))}
-                data-testid="mcp-edit"
-              >
-                <Pencil size={13} />
-              </button>
-              {others.map((other) => (
+                {!preset && (
+                  <button
+                    className="icon-button small"
+                    aria-label={t('mcp.server.testLabel', { name: server.name })}
+                    title={t('mcp.server.test')}
+                    disabled={status(server) === 'testing'}
+                    onClick={() => void test(server)}
+                    data-testid="mcp-test"
+                  >
+                    <PlugZap size={13} />
+                  </button>
+                )}
                 <button
-                  key={other.profileId}
                   className="icon-button small"
-                  aria-label={t('mcp.server.copyLabel', { name: server.name, agent: other.label })}
-                  title={t('mcp.server.copy', { agent: other.label })}
-                  onClick={() => {
-                    if (
-                      other.servers.some((s) => s.name === server.name && s.scope === server.scope)
-                    ) {
-                      setError(
-                        t('mcp.server.copyExists', { agent: other.label, name: server.name })
-                      )
-                      return
-                    }
-                    run(window.api.mcp.save(other.profileId, server.scope, fromEntry(server)), () =>
-                      setError(null)
-                    )
-                  }}
-                  data-testid="mcp-copy"
+                  aria-label={t('mcp.server.editLabel', { name: server.name })}
+                  title={t('mcp.server.edit')}
+                  onClick={() => setDraft(toDraft(view.profileId, server))}
+                  data-testid="mcp-edit"
                 >
-                  <Copy size={13} />
+                  <Pencil size={13} />
                 </button>
-              ))}
-              <button
-                className="icon-button small"
-                aria-label={t('mcp.server.removeLabel', { name: server.name })}
-                aria-expanded={confirm.asking === key(server)}
-                title={t('mcp.server.remove')}
-                onClick={() => confirm.ask(key(server))}
-                data-testid="mcp-remove"
-              >
-                <Trash2 size={13} />
-              </button>
-              {confirm.asking === key(server) && (
-                <ConfirmRow
-                  message={t('mcp.server.removeAsk', { name: server.name })}
-                  action={t('mcp.server.remove')}
-                  onConfirm={() => {
-                    confirm.done()
-                    run(window.api.mcp.remove(view.profileId, server.scope, server.name))
-                  }}
-                  onCancel={confirm.done}
-                />
-              )}
-            </li>
-          ))}
+                {others.map((other) => (
+                  <button
+                    key={other.profileId}
+                    className="icon-button small"
+                    aria-label={t('mcp.server.copyLabel', {
+                      name: server.name,
+                      agent: other.label
+                    })}
+                    title={t('mcp.server.copy', { agent: other.label })}
+                    onClick={() => {
+                      if (
+                        other.servers.some(
+                          (s) => s.name === server.name && s.scope === server.scope
+                        )
+                      ) {
+                        setError(
+                          t('mcp.server.copyExists', { agent: other.label, name: server.name })
+                        )
+                        return
+                      }
+                      run(
+                        window.api.mcp.save(other.profileId, server.scope, fromEntry(server)),
+                        () => setError(null)
+                      )
+                    }}
+                    data-testid="mcp-copy"
+                  >
+                    <Copy size={13} />
+                  </button>
+                ))}
+                <button
+                  className="icon-button small"
+                  aria-label={t('mcp.server.removeLabel', { name: server.name })}
+                  aria-expanded={confirm.asking === key(server)}
+                  title={t('mcp.server.remove')}
+                  onClick={() => confirm.ask(key(server))}
+                  data-testid="mcp-remove"
+                >
+                  <Trash2 size={13} />
+                </button>
+                {askingAuth && (
+                  <McpAuthConfirm view={view} server={server} model={auth} onDone={confirm.done} />
+                )}
+                {confirm.asking === key(server) && (
+                  <ConfirmRow
+                    message={
+                      preset && auth.states[server.name]?.status === 'connected'
+                        ? t('mcp.auth.removeAskConnected', { name: server.name, agent: view.label })
+                        : t('mcp.server.removeAsk', { name: server.name })
+                    }
+                    action={t('mcp.server.remove')}
+                    onConfirm={() => {
+                      confirm.done()
+                      run(window.api.mcp.remove(view.profileId, server.scope, server.name))
+                    }}
+                    onCancel={confirm.done}
+                  />
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
+      <McpPresetRows view={view} model={auth} onConnect={addPreset} />
+      <McpPresetHelp view={view} views={views} />
 
       {draft ? (
         <McpForm
@@ -523,11 +584,11 @@ function AgentServers({
           >
             <Plus size={13} /> {t('mcp.add')}
           </button>
-          {view.servers.length > 0 && (
+          {testable.length > 0 && (
             <button
               className="btn small"
               onClick={() => void testAll()}
-              disabled={view.servers.some((s) => status(s) === 'testing')}
+              disabled={testable.some((s) => status(s) === 'testing')}
               data-testid="mcp-test-all"
             >
               <PlugZap size={13} /> {t('mcp.testAll')}

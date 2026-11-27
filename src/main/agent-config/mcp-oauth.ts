@@ -23,6 +23,8 @@
  */
 import type { ChildProcess, ChildProcessWithoutNullStreams, SpawnOptions } from 'node:child_process'
 import {
+  joinCommandLine,
+  MCP_AUTH_MINUTES,
   MCP_NAME,
   type McpAuthReason,
   type McpAuthState,
@@ -31,7 +33,7 @@ import {
   type McpDisconnectResult,
   type McpServerEntry
 } from '@shared/mcp'
-import { MCP_PRESETS, presetForUrl, type McpPreset } from '@shared/mcp-presets'
+import { declaredPreset, MCP_PRESETS, type McpPreset } from '@shared/mcp-presets'
 import { messageOf } from '@shared/errors'
 import { isDirectory } from '../is-directory'
 import { log } from '../log'
@@ -54,7 +56,7 @@ export interface McpOAuthLimits {
 }
 
 export const MCP_OAUTH_LIMITS: McpOAuthLimits = {
-  attemptMs: 10 * 60_000,
+  attemptMs: MCP_AUTH_MINUTES * 60_000,
   noPageMs: 30_000,
   commandMs: 30_000,
   exitWaitMs: 5_000
@@ -207,11 +209,13 @@ export class McpOAuth {
     const servers = this.connectable(profileId, workspace)
     const env = await this.deps.env(profile)
     const agentFound = !!this.deps.findCommand(profile.command, env)
+    const terminal = this.terminalCommands(profile, source, workspace, servers)
     if (!agentFound) {
       return {
         profileId,
         agentFound,
-        servers: servers.map((name) => this.missing(profileId, name))
+        servers: servers.map((name) => this.missing(profileId, name)),
+        terminal
       }
     }
     const stored = servers.length
@@ -220,8 +224,31 @@ export class McpOAuth {
     return {
       profileId,
       agentFound,
-      servers: servers.map((name) => this.shown(profileId, name, stored))
+      servers: servers.map((name) => this.shown(profileId, name, stored)),
+      terminal
     }
+  }
+
+  /**
+   * « Dans un terminal » : la commande de l'agent, à lancer par l'utilisateur (OpenCode y ouvre
+   * lui-même la page). Un serveur déclaré pour ce dossier seulement n'est vu que de ce dossier
+   * (relevé R4) : la commande commence alors par son `cd`.
+   */
+  private terminalCommands(
+    profile: AgentProfile,
+    source: McpOAuthSource,
+    workspace: string,
+    names: readonly string[]
+  ): Record<string, string> {
+    const servers = this.deps.servers(profile.id, workspace)
+    const commands: Record<string, string> = {}
+    for (const name of names) {
+      const line = joinCommandLine([profile.command, ...source.terminalArgs(name)])
+      const global = servers.some((s) => s.name === name && s.scope === 'global')
+      commands[name] =
+        global || !workspace ? line : `${joinCommandLine(['cd', workspace])} && ${line}`
+    }
+    return commands
   }
 
   /** « Se connecter » : lance la commande de l'agent, ou dit pourquoi pas. */
@@ -363,19 +390,8 @@ export class McpOAuth {
     return [...names].filter((name) => this.presetOf(servers, name))
   }
 
-  /**
-   * Préréglage du serveur de ce nom : toutes ses déclarations (tous les dossiers, ce dossier) sont
-   * distantes et à l'adresse du même préréglage ; sinon, rien (pas de connexion devinée).
-   */
   private presetOf(servers: readonly McpServerEntry[], name: string): McpPreset | undefined {
-    const named = servers.filter((s) => s.name === name)
-    const presets = new Set(
-      named.map((s) =>
-        s.transport === 'http' ? presetForUrl(s.url, this.deps.presets ?? MCP_PRESETS) : undefined
-      )
-    )
-    const [preset] = [...presets]
-    return presets.size === 1 ? preset : undefined
+    return declaredPreset(servers, name, this.deps.presets ?? MCP_PRESETS)
   }
 
   private target(profileId: string, name: string, workspace: string): Target | undefined {

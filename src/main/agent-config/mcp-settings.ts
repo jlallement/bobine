@@ -15,7 +15,13 @@ import {
   type McpScope,
   type McpTestResult
 } from '@shared/mcp'
-import { MCP_PRESETS, presetById, presetForUrl, type McpPreset } from '@shared/mcp-presets'
+import {
+  declaredPreset,
+  MCP_PRESETS,
+  presetById,
+  presetForUrl,
+  type McpPreset
+} from '@shared/mcp-presets'
 import { t } from 'i18next'
 import { log } from '../log'
 import { probeMcpServer } from './mcp-probe'
@@ -34,6 +40,7 @@ export class McpSettings {
   private readonly profiles: readonly AgentProfile[]
   private readonly presets: readonly McpPreset[]
   private readonly oauth: McpOAuth | undefined
+  private readonly openExternal: ((url: string) => Promise<void> | void) | undefined
 
   constructor(
     profiles: readonly AgentProfile[],
@@ -48,6 +55,7 @@ export class McpSettings {
         ? [{ profile, config: new AgentMcpConfig(profile.mcpConfig, locations) }]
         : []
     )
+    this.openExternal = oauth?.openExternal
     this.oauth = oauth
       ? new McpOAuth({
           ...oauth,
@@ -60,10 +68,28 @@ export class McpSettings {
   }
 
   list(workspace: string): McpAgentView[] {
-    return this.configs.map(({ profile, config }) => ({
-      ...config.view(profile.id, profile.label, workspace),
-      ...(profile.mcpOAuth ? { oauth: true as const } : {})
-    }))
+    return this.configs.map(({ profile, config }) => {
+      const view = config.view(profile.id, profile.label, workspace)
+      if (!profile.mcpOAuth) return view
+      // Serveurs que l'agent connecte lui-même (fiche 293) : marqués par leur préréglage.
+      const servers = view.servers.map((server) => {
+        const preset = declaredPreset(view.servers, server.name, this.presets)
+        return preset ? { ...server, authPreset: preset.id } : server
+      })
+      return { ...view, servers, oauth: true as const }
+    })
+  }
+
+  /**
+   * Lien « Liste de <préréglage> » de la ligne d'aide d'un agent sans la capacité (fiche 293) :
+   * l'adresse est une donnée du préréglage, ouverte par le main ; le renderer ne donne que l'id.
+   */
+  async openPresetList(presetId: string): Promise<undefined> {
+    const preset = presetById(presetId, this.presets)
+    if (!preset) throw new Error('Paramètre invalide : presetId')
+    if (!this.openExternal) throw new Error(t('mcpOAuth.error.unavailable'))
+    await this.openExternal(preset.listUrl)
+    return undefined
   }
 
   /**

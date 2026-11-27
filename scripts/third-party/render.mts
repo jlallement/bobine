@@ -177,6 +177,10 @@ const OTHER = `## Interface fonts, icons and artwork
 - **Icons**: [Lucide](https://lucide.dev) (\`lucide-react\`, listed above).
 - **App icon** (\`build/icon.svg\`) and **install background** (\`build/background.svg\`): the
   project's own work, under Bobine's license.
+- **Figma logo** (\`Figma Icon (Full-color).svg\`, from Figma's official brand assets, unmodified,
+  only scaled): shown next to Figma's MCP server in Settings › MCP servers, to name it. Figma and
+  the Figma logo are trademarks of Figma, Inc. (« Figma et le logo Figma sont des marques de
+  Figma, Inc. »). Their use does not imply any affiliation with or endorsement by Figma.
 
 ## Not bundled
 
