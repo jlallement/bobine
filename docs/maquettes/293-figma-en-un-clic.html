@@ -558,7 +558,7 @@
       .mcp-auth .sep {
         color: var(--muted);
       }
-      /* Le point et son action passent à la ligne ensemble : jamais un « · » seul en début de ligne. */
+      /* Le point reste en fin de ligne, avec ce qui le précède : jamais un « · » en début de ligne. */
       .mcp-auth .act {
         display: inline-flex;
         gap: 6px;
@@ -1033,8 +1033,11 @@
       const link = (label, title = '') =>
         `<button class="link"${title ? ` title="${title}"` : ''}>${label}</button>`
       const auth = (cls, iconName, text, links = [], title = '', spin = false) =>
-        `<div class="mcp-auth ${cls} new"${title ? ` title="${title}"` : ''}><span class="st">${icon(iconName, 12, spin ? 'spin' : '')}<span>${text}</span></span>${links
-          .map((l) => `<span class="act"><span class="sep" aria-hidden="true">·</span>${l}</span>`)
+        `<div class="mcp-auth ${cls} new"${title ? ` title="${title}"` : ''}><span class="st">${icon(iconName, 12, spin ? 'spin' : '')}<span>${text}</span>${links.length ? '<span class="sep" aria-hidden="true">·</span>' : ''}</span>${links
+          .map(
+            (l, i) =>
+              `<span class="act">${l}${i < links.length - 1 ? '<span class="sep" aria-hidden="true">·</span>' : ''}</span>`
+          )
           .join('')}</div>`
 
       const preset = (button, reason = '') =>
@@ -1118,7 +1121,7 @@
           id: 'en-cours',
           title: '3 — Connexion en cours',
           legend:
-            '<strong>Nouveau</strong> : une ligne « En cours (www.figma.com) · Rouvrir la page · Annuler », roue qui tourne et pastille qui pulse ; l’hôte vérifié reste visible, « dans votre navigateur » est dans l’info-bulle. La consigne et le délai de 10 min sont dans l’info-bulle de la ligne. « Annuler » tue la commande ; fermer les Réglages n’arrête rien ; les autres « Se connecter » sont grisés.',
+            '<strong>Nouveau</strong> : une ligne « Connexion en cours (www.figma.com) · Rouvrir la page · Annuler », roue qui tourne et pastille qui pulse ; l’hôte vérifié reste visible, « dans votre navigateur » est dans l’info-bulle. La consigne et le délai de 10 min sont dans l’info-bulle de la ligne. « Annuler » tue la commande ; fermer les Réglages n’arrête rien ; les autres « Se connecter » sont grisés.',
           body: () =>
             opencodeTab(
               recherche +
@@ -1127,7 +1130,7 @@
                   auth: auth(
                     '',
                     'loader-circle',
-                    'En cours (www.figma.com)',
+                    'Connexion en cours (www.figma.com)',
                     [link('Rouvrir la page'), link('Annuler')],
                     TIP_PENDING,
                     true

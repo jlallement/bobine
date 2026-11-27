@@ -1,7 +1,7 @@
 # 293 — Figma en un clic (serveur MCP distant connecté par l'agent)
 
-- **Statut** : spec et maquette arbitrées par Jérôme le 2026-11-27 ; rien de codé ; relevés R1 à
-  R9 avant de coder (maquette finale avec le logo pas encore vue par lui)
+- **Statut** : spec et maquette validées par Jérôme le 2026-11-27 ; rien de codé ; relevés R1 à R9
+  avant de coder
 - **Dépend de** : 025 (serveurs MCP des agents), 060 (« Tester » un serveur), 079 et 122 (outil
   `execute` d'OpenCode 2), 126 (confirmation dans la ligne), 287 (raison d'un bouton grisé)
 - **Agents** : OpenCode seulement. La connexion OAuth au serveur de Figma est faite **par l'agent**,
@@ -57,8 +57,8 @@ connecter que par OpenCode (Q3). Rien n'est dit, ni supposé, de ce que Bob saur
    serveur : `figma-2`, sans rien écraser.
 3. Bobine lance `opencode mcp auth figma --standalone` (main), lit l'adresse de la page de
    connexion dans sa sortie, vérifie qu'elle est en `https` sur l'hôte attendu `www.figma.com`, et
-   l'ouvre dans le navigateur par défaut. Ligne d'état : « ◌ En cours (www.figma.com) · Rouvrir la
-   page · Annuler » ; la consigne (« autorisez l'accès, puis revenez ici ») et le délai de 10 min
+   l'ouvre dans le navigateur par défaut. Ligne d'état : « ◌ Connexion en cours (www.figma.com) ·
+   Rouvrir la page · Annuler » ; la consigne (« autorisez l'accès, puis revenez ici ») et le délai de 10 min
    sont dans son info-bulle.
 4. L'utilisateur autorise l'accès sur la page de Figma. OpenCode reçoit le retour, écrit sa sortie
    (« Connected to figma »), finit. Bobine relit l'état chez OpenCode (source de vérité, voir
@@ -101,7 +101,7 @@ de la page et une raison courte, jamais l'adresse complète.
 au poids de la ligne de résultat de « Tester » (« ✓ Joignable · … », 11,5 px, couleur discrète) :
 icône + texte court (l'état ne repose jamais sur la seule couleur), puis les actions en **liens**
 (boutons plats à la hauteur du texte, couleur d'accent, soulignés au survol, atteignables au
-clavier, contour au focus), séparées par « · » qui passe à la ligne avec son action. Le détail va
+clavier, contour au focus), séparées par « · », qui reste en fin de ligne avec ce qui le précède. Le détail va
 dans l'info-bulle de la ligne (`title`, sans adresse). Une ligne à 940 px ; à 736 px, deux au plus.
 Seul bouton plein du parcours : « Connecter Figma ».
 
@@ -109,7 +109,7 @@ Seul bouton plein du parcours : « Connecter Figma ».
 |---|---|---|---|
 | **Absent** | — : carte « Figma » sous la liste (logo officiel, boîte de 56 px, nom, une phrase, **Connecter Figma**, bouton plein) | — | Rien de lancé. Carte cachée si un serveur `https://mcp.figma.com/mcp` existe déjà dans un des deux fichiers |
 | **Ajouté, à connecter** | ⓘ À connecter · *Se connecter* — pastille grise ; crayon, copie, corbeille ; pas de « Tester » | La connexion se fait dans votre navigateur, avec OpenCode. | Lit l'état chez OpenCode : aucune connexion. Pas de test de Bobine (fiche 060) pour ce serveur : sans jeton, Figma répond toujours 401 (relevé) |
-| **Connexion en cours** | ◌ En cours (www.figma.com) · *Rouvrir la page* · *Annuler* — pastille ambre qui pulse ; « Se connecter » des autres serveurs grisé (« Une connexion est déjà en cours ») | Page ouverte dans votre navigateur : autorisez l'accès, puis revenez ici. Sans réponse, abandon au bout de 10 min. | Processus lancé, adresse gardée en mémoire du main, page ouverte une fois ; délai 10 min ; une seule connexion à la fois dans toute l'app |
+| **Connexion en cours** | ◌ Connexion en cours (www.figma.com) · *Rouvrir la page* · *Annuler* — pastille ambre qui pulse ; « Se connecter » des autres serveurs grisé (« Une connexion est déjà en cours ») | Page ouverte dans votre navigateur : autorisez l'accès, puis revenez ici. Sans réponse, abandon au bout de 10 min. | Processus lancé, adresse gardée en mémoire du main, page ouverte une fois ; délai 10 min ; une seule connexion à la fois dans toute l'app |
 | **Connecté** | ✓ Connecté par OpenCode · *Se déconnecter* — pastille verte | Le jeton reste chez OpenCode : Bobine ne le voit jamais. Vaut pour les nouvelles conversations ; relancez une conversation ouverte. | État relu chez OpenCode (connexion présente, pas expirée) |
 | **Expiré** | ⚠ Connexion expirée · *Se reconnecter* — pastille ambre | — | État relu : connexion « à renouveler » selon OpenCode (forme exacte : R1) |
 | **Refusé** | ✕ Accès refusé sur la page de Figma · *Réessayer* — pastille rouge | — | Sortie d'OpenCode qui dit le refus (forme exacte : R2) ; état relu : à connecter |
@@ -286,7 +286,7 @@ connexion ») ; « serveur MCP » ; « tous les dossiers » / *all folders* ; «
 | `mcp.auth.toConnect` | À connecter | Not signed in |
 | `mcp.auth.toConnectTip` | La connexion se fait dans votre navigateur, avec {{agent}}. | You sign in in your browser, through {{agent}}. |
 | `mcp.auth.connect` | Se connecter | Sign in |
-| `mcp.auth.pending` | En cours ({{host}}) | In progress ({{host}}) |
+| `mcp.auth.pending` | Connexion en cours ({{host}}) | Signing in ({{host}}) |
 | `mcp.auth.pendingTip` | Page de connexion ouverte dans votre navigateur : autorisez l'accès, puis revenez ici. Sans réponse, abandon au bout de {{minutes}} min. | Sign-in page opened in your browser: allow access, then come back here. With no answer, it stops after {{minutes}} min. |
 | `mcp.auth.reopen` | Rouvrir la page | Reopen the page |
 | `mcp.auth.connected` | Connecté par {{agent}} | Signed in through {{agent}} |
@@ -500,3 +500,7 @@ Taille : ≈ 3 j avec le lot 3, relevés compris. **Aucune dépendance nouvelle.
   d'aide sous la liste retirée ; « Faire dans un terminal » devient « Dans un terminal » (copie) et
   un état « Copiée : … » ; textes raccourcis. Mesuré : une ligne à 940 px pour tous les états, deux
   au plus à 736 px. Captures refaites et regardées (1,5 Mo).
+- 2026-11-27 — **Validation de Jérôme** : « Ok pour moi » (maquette allégée). Dernière retouche :
+  « Connexion en cours (www.figma.com) · Rouvrir la page · Annuler » au lieu de « En cours » (une
+  ligne à 940 px, mesurée en français et en anglais : « Signing in (www.figma.com) · Reopen the
+  page · Cancel ») ; le « · » reste en fin de ligne quand la ligne passe à la ligne (736 px).
