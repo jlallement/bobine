@@ -48,7 +48,6 @@
     },
     "resumeSession": "Reprendre une session…",
     "childOf": "Travail de « {{title}} » : {{state}}",
-    "childTip": "Travail de « {{title}} »",
     "resize": "Redimensionner la barre latérale",
     "yesterday": "hier",
     "activity": "Mon activité",
@@ -148,7 +147,6 @@
       "send": "Envoyer",
       "action": "Modifier"
     },
-    "retry": "Réessayer",
     "retryBranch": "Réessayer dans une nouvelle branche",
     "copyReply": "Copier la réponse",
     "thought": "Réflexion",
@@ -596,6 +594,7 @@
     "costNotReported": "coût inconnu",
     "costNotReportedHint": "{{agent}} annonce un coût nul, mais le modèle ne se dit pas gratuit (abonnement, tarif inconnu de l’agent) : le coût réel est inconnu. Le plafond de coût ne peut pas se déclencher sur ce montant.",
     "costEstimate": "Coût de la conversation (estimation)",
+    "freeHint": "{{agent}} annonce un coût nul : modèle gratuit.",
     "costHint": "Montant annoncé par {{agent}} d’après ses tarifs : ce qui est facturé peut différer (abonnement, remises).",
     "capTokensValue": "{{tokens}} jetons, cache compris",
     "costPartial": "{{cost}} + coût inconnu",
@@ -874,6 +873,7 @@
       "busyArchiveChild": "« {{title}} », un travail lancé ici, est encore en cours : arrêtez-le avant d’archiver sa conversation d’origine",
       "unknown": "Conversation inconnue : {{id}}",
       "busyFolders": "L’agent répond encore : changez les dossiers de la conversation après sa réponse",
+      "startingFolders": "L’agent démarre : réessayez quand il est prêt.",
       "folderGoneAtSend": "Le dossier de cette conversation n’existe plus : {{folder}}. Rien n’est parti. Remettez-le à sa place, ou continuez dans une nouvelle conversation."
     },
     "newTitle": "Nouvelle conversation",
@@ -1273,7 +1273,6 @@
       },
       "none": "Aucun agent installé.",
       "ready": "Prêt",
-      "notStartedYet": "Pas encore démarré",
       "missing": "Non installés : {{list}}.",
       "missingDiagnostics": "Voir le Diagnostic",
       "capabilities": {
@@ -1289,7 +1288,6 @@
         "back": "Agents",
         "backLabel": "Revenir à la liste des agents",
         "open": "Ouvrir la page de {{agent}}",
-        "version": "version {{version}}",
         "restart": "Relancer",
         "restartTip": "Relance l’agent de la conversation en cours",
         "connection": "Connexion",
@@ -2506,7 +2504,6 @@
     "modified": "Modifié dans cette conversation",
     "special": "Fichier spécial (tube, socket ou périphérique) : il ne s’ouvre pas ici",
     "linkOutside": "Lien vers l’extérieur des dossiers de la conversation : non suivi",
-    "noFolder": "Cette conversation n’a pas encore de dossier.",
     "chooseFolder": "Choisir un dossier…",
     "folderMissing": "Ce dossier n’existe plus.",
     "readOnly": "Lecture seule",
@@ -2681,8 +2678,7 @@
       "split": "Découper le message en travaux, un par chantier",
       "help": "Liste des commandes",
       "agentCompact": "Résumer la conversation pour libérer du contexte (commande de {{agent}} ; /compact y mène aussi)",
-      "btw": "Aparté : une question à côté, répondue hors du fil",
-      "roundtable": "Poser la question à plusieurs modèles, puis en faire la synthèse"
+      "btw": "Aparté : une question à côté, répondue hors du fil"
     },
     "hint": {
       "name": "[nom]",
@@ -3871,39 +3867,15 @@
     "limit_many": "{{count}} travaux sont déjà en cours : c’est le plafond réglé dans Réglages › Conversations.",
     "limit_other": "{{count}} travaux sont déjà en cours : c’est le plafond réglé dans Réglages › Conversations.",
     "proposals": {
-      "title_one": "{{count}} travail proposé",
-      "title_many": "{{count}} travaux proposés",
-      "title_other": "{{count}} travaux proposés",
-      "worktree": "L’agent propose de découper ceci en travaux, chacun dans son propre worktree. Vous pouvez aussi lui demander de tout faire ici.",
-      "started_one": "{{count}} lancé",
-      "started_many": "{{count}} lancés",
-      "started_other": "{{count}} lancés",
       "here_one": "{{count}} fait ici",
       "here_many": "{{count}} faits ici",
       "here_other": "{{count}} faits ici",
-      "refused_one": "{{count}} refusé",
-      "refused_many": "{{count}} refusés",
-      "refused_other": "{{count}} refusés",
-      "expired_one": "{{count}} expiré",
-      "expired_many": "{{count}} expirés",
-      "expired_other": "{{count}} expirés",
-      "pending_one": "{{count}} en attente",
-      "pending_many": "{{count}} en attente",
-      "pending_other": "{{count}} en attente",
       "start": "Lancer",
       "here": "Faire ici",
       "refuse": "Refuser",
       "options": "Agent et modèle",
-      "hint": "↑ ↓ pour choisir une ligne, Entrée pour la lancer",
-      "expiredHint": "L’agent a redémarré entre-temps : « Lancer » lance ce travail comme « Lancer en parallèle… », sans réveil de l’agent.",
       "loadingChoice": "Lecture de la suggestion de l’agent…",
-      "proposed": "Suggéré par l’agent, à confirmer : {{choice}}",
-      "state": {
-        "start": "Lancé",
-        "here": "Fait ici",
-        "refuse": "Refusé",
-        "expired": "Expiré"
-      }
+      "proposed": "Suggéré par l’agent, à confirmer : {{choice}}"
     },
     "from": {
       "parent": "De la conversation d’origine « {{title}} »",
@@ -4374,7 +4346,6 @@
       "report": "Réponse d’un travail à lire",
       "errorPlain": "Erreur de l’agent"
     },
-    "childOf": "travail de « {{title}} »",
     "ago": {
       "now": "à l’instant",
       "minutes_one": "{{count}} min",
@@ -4411,9 +4382,6 @@
     "truncated": "Message tronqué : seul le début est gardé ({{size}} au total).",
     "out": "Vers l’agent",
     "in": "De l’agent"
-  },
-  "agents": {
-    "noneHint": "Installez Bob Shell (commande bob) ou OpenCode, puis Réglages › Diagnostic › Relire le PATH."
   },
   "customAgents": {
     "apiKey": "Clé d’API ({{name}})",
@@ -4614,11 +4582,36 @@
     "pr": "Pull request",
     "prTip": "Voir la PR dans la vue Git",
     "extraFolders": "Autres dossiers",
-    "addFolder": "Ajouter un dossier…",
-    "addFolderTip": "L’agent voit aussi ce dossier. Sa session repart aussitôt avec la nouvelle liste ; le fil est gardé.",
     "removeFolder": "Retirer {{name}} de la conversation",
-    "foldersBusy": "L’agent répond : l’ajout et le retrait d’un dossier attendent la fin de son tour.",
+    "foldersBusy": "L’agent répond : un dossier s’ajoute ou se retire une fois son tour fini.",
+    "foldersStarting": "L’agent démarre : un dossier s’ajoute ou se retire une fois qu’il est prêt.",
     "foldersUnsupported": "Non transmis : {{agent}} ne prend pas d’autres dossiers que le dossier de travail.",
+    "folderRefusal": {
+      "empty": "Saisissez le chemin d’un dossier.",
+      "tooLong": "Chemin trop long.",
+      "invalid": "Un seul chemin à la fois, sur une ligne.",
+      "notAbsolute": "Chemin incomplet : partez de la racine, ou de ~ pour votre dossier personnel.",
+      "notLocal": "Seul un dossier de cet ordinateur peut être ajouté.",
+      "tooBroad": "Trop large : l’agent aurait accès à tout {{folder}}. Choisissez le dossier d’un projet.",
+      "notFound": "Aucun dossier à cet endroit : {{folder}}",
+      "notDirectory": "C’est un fichier, pas un dossier : {{folder}}",
+      "unreadable": "Bobine ne peut pas lire ce dossier : {{folder}}",
+      "privacy": "macOS refuse à Bobine l’accès à {{folder}}. Autorisez-le dans Réglages Système › Confidentialité et sécurité › Fichiers et dossiers.",
+      "timeout": "Ce dossier ne répond pas (partage réseau ?) : {{folder}}",
+      "isWorkspace": "C’est déjà le dossier de travail de la conversation.",
+      "insideWorkspace": "Ce dossier est dans le dossier de travail : l’agent y a déjà accès.",
+      "alreadyAdded": "Ce dossier est déjà dans la liste.",
+      "busy": "L’agent répond : réessayez à la fin de son tour.",
+      "starting": "L’agent démarre : réessayez quand il est prêt."
+    },
+    "folderPlaceholder": "Chemin d’un dossier…",
+    "folderField": "Chemin d’un autre dossier",
+    "chooseFolder": "Choisir un dossier…",
+    "addThisFolder": "Ajouter ce dossier",
+    "dropFolder": "Déposer pour ajouter",
+    "folderAdded": "Ajouté.",
+    "folderRestarting": "La session de l’agent repart avec la nouvelle liste…",
+    "oneFolder": "Un seul dossier à la fois.",
     "documents": "Documents",
     "discussionDocuments": "Documents de la discussion",
     "thisDiscussion": "Cette discussion",
@@ -4800,7 +4793,6 @@
     "readOnlyRequested": "lecture seule demandée",
     "readOnlyRequestedHint": "L’agent de cette conversation écrit sans demander d’autorisation : la lecture seule lui est seulement demandée, et Bobine vérifie le dossier après chaque tour.",
     "writes": "écrit du code",
-    "mode": "mode {{mode}}",
     "byAgent": "proposé par l’agent",
     "prompt": "Consigne",
     "hides": "Rôle du projet : il remplace le rôle {{scopes}} du même nom.",
@@ -4869,11 +4861,6 @@
       "stopped": "{{role}} a été arrêté — {{title}}",
       "error": "{{role}} est en erreur — {{title}}",
       "saveAsRole": "Enregistrer comme rôle…"
-    },
-    "proposalsWhere": "L’agent propose de confier ce travail : un rôle en lecture seule travaille dans ce dossier, les autres chacun dans son worktree. Vous pouvez aussi lui demander de le faire ici.",
-    "where": {
-      "sameFolder": "dans ce dossier",
-      "worktree": "son worktree"
     }
   },
   "review": {
@@ -4929,10 +4916,6 @@
       "high": "Haute",
       "medium": "Moyenne",
       "low": "Basse"
-    },
-    "category": {
-      "correctness": "Correction",
-      "simplification": "Simplification"
     },
     "notes": {
       "title": "Remarques de la relecture",
@@ -5274,7 +5257,7 @@
       "text": "Gros changement : le faire relire par un autre agent avant de fusionner ?"
     },
     "scheduled": {
-      "text": "Troisième fois ce message. En faire une tâche planifiée ?",
+      "text": "Même message, trois jours différents. En faire une tâche planifiée ?",
       "plan": "Planifier…"
     }
   },
@@ -5305,7 +5288,6 @@
       "title": "Bienvenue dans Bobine",
       "subtitle": "Quatre étapes courtes. Tout se change ensuite dans Réglages.",
       "found": "trouvé",
-      "foundVersion": "trouvé · {{version}}",
       "missing": "introuvable",
       "note": "Un autre agent ACP s’ajoute dans Réglages › Agents.",
       "group": "Agent",
@@ -5356,7 +5338,6 @@
       "networkText": "{{agent}} n’a pas pu joindre son modèle. Vérifiez la connexion, le VPN ou le proxy.",
       "rateLimit": "Trop de demandes",
       "rateLimitText": "Le modèle fait patienter {{agent}}. Réessayez dans un moment.",
-      "networkSettings": "Réglages › Réseau",
       "timeout": "Pas de réponse à temps",
       "timeoutText": "{{agent}} a été arrêté. Le modèle est peut-être surchargé : réessayez, ou changez de modèle plus tard dans la conversation.",
       "crashed": "{{agent}} s’est arrêté",
@@ -6358,7 +6339,6 @@
     "commitThenSend": "Committer puis envoyer",
     "commitThenStart": "Committer puis lancer",
     "commitOnly": "Committer",
-    "proposalsHere": "L’agent propose de confier ce travail. Vous pouvez aussi lui demander de le faire ici.",
     "without_one": "depuis le dernier commit, sans votre modification",
     "without_many": "depuis le dernier commit, sans vos {{count}} modifications",
     "without_other": "depuis le dernier commit, sans vos {{count}} modifications",
@@ -6416,9 +6396,6 @@
       "expired_one": "{{count}} expiré",
       "expired_other": "{{count}} expirés",
       "expired_many": "{{count}} expirés",
-      "pending_one": "{{count}} en attente",
-      "pending_other": "{{count}} en attente",
-      "pending_many": "{{count}} en attente",
       "started_one": "{{count}} lancé",
       "started_other": "{{count}} lancés",
       "started_many": "{{count}} lancés",
@@ -6537,7 +6514,6 @@
     "action": "Fusionner dans {{base}}",
     "step": {
       "merging": "Fusion de {{branch}} dans {{base}}…",
-      "merged": "Fusion de {{branch}} dans {{base}}",
       "conflict": "Conflit dans {{files}}",
       "resolving": "{{name}} résout le conflit…",
       "pending": "En attente : une autre fusion passe avant."
@@ -6639,7 +6615,6 @@
       "search": "Rechercher un modèle",
       "footer": "Chacun reçoit la question et peut lire les fichiers de ce dossier.",
       "full": "5 participants au plus",
-      "once": "Une seule fois, sans choix de modèle",
       "gone": "N’existe plus : décochez-le",
       "modelGone": "Modèle indisponible : décochez-le",
       "arbiter": "C’est le modèle de cette conversation : il fait la synthèse",
@@ -6660,8 +6635,6 @@
       "held": "synthèse retenue : plafond de la conversation atteint",
       "interrupted": "interrompu par le redémarrage de l’app",
       "stopped": "arrêté",
-      "footer": "Lecture seule · chacun répond sans voir les autres",
-      "footerShort": "Lecture seule",
       "synthesizeNow": "Synthétiser sans attendre",
       "synthesizeNowShort": "Synthétiser",
       "synthesizeWith_one": "Synthétiser avec {{count}} avis",
@@ -6671,20 +6644,10 @@
       "stopAll": "Arrêter le tour de table",
       "relaunch": "Relancer",
       "open": "Ouvrir sa conversation",
-      "readMore": "Lire la suite",
-      "otherModel": "Choisir un autre modèle",
-      "seeSynthesis": "Voir la synthèse",
       "used": "Consommé : {{total}}",
-      "usedAll": "Consommé en tout : {{total}}",
       "tokens": "{{tokens}} jetons",
-      "silent_one": "{{count}} participant sans chiffre",
-      "silent_many": "{{count}} participants sans chiffre",
-      "silent_other": "{{count}} participants sans chiffre",
       "single": "Un seul avis : pas de synthèse.",
       "none": "Aucun avis : pas de synthèse.",
-      "partial_one": "Synthèse avec {{opinions}} avis : un participant n’a pas répondu.",
-      "partial_many": "Synthèse avec {{opinions}} avis : {{count}} participants n’ont pas répondu.",
-      "partial_other": "Synthèse avec {{opinions}} avis : {{count}} participants n’ont pas répondu.",
       "stopSeat": "Arrêter {{name}}",
       "attachments": "Fichiers joints : {{files}}",
       "withExchange": "Avec le dernier échange de cette conversation",
@@ -6707,12 +6670,9 @@
       "waiting": "en attente",
       "working": "au travail",
       "answered": "a répondu",
-      "noOpinion": "sans avis",
-      "silent": "silencieux depuis {{duration}}",
       "removed": "conversation supprimée",
       "changedFolder": "a modifié des fichiers du dossier",
       "error": "Sans avis : {{reason}}",
-      "errorAfter": "Sans avis : {{reason}} au bout de {{duration}}",
       "modelNotOffered": "Modèle non proposé par {{agent}} pour le moment.",
       "stopped": {
         "user": "Arrêté par vous",
@@ -6733,8 +6693,7 @@
         "enforced": "Lecture seule",
         "native": "Lecture seule garantie (rôle Participant installé)",
         "requested": "Lecture seule demandée : vérifiée sur les fichiers suivis par git",
-        "unverified": "Lecture seule demandée, non vérifiée (dossier hors git)",
-        "requestedShort": "Lecture seule demandée"
+        "unverified": "Lecture seule demandée, non vérifiée (dossier hors git)"
       },
       "noOpinionBecause": "Sans avis : {{reason}}",
       "noOpinionAfter": "Sans avis : {{reason}} au bout de {{duration}}",
@@ -6759,7 +6718,6 @@
       "requested_one": "Synthèse demandée · {{count}} avis",
       "requested_many": "Synthèse demandée · {{count}} avis",
       "requested_other": "Synthèse demandée · {{count}} avis",
-      "participant": "Participant {{letter}}",
       "apply": "Demander à {{agent}} de l’appliquer",
       "applyDraft": "Applique ta recommandation du tour de table.",
       "changed": "{{agent}} a modifié des fichiers pendant la synthèse.",

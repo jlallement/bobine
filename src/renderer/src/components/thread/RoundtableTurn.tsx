@@ -37,9 +37,7 @@ import {
   FolderChanged,
   GestureRefusal,
   RoundtableEntry,
-  UsedLine,
   useRoundtableGestures,
-  useRoundtableTotal,
   useSeatPresence
 } from './RoundtableCard'
 import { RebuttalRow, SeatLetters, ModelChoiceAgents, modelChoiceAgents } from './RoundtableRow'
@@ -102,7 +100,6 @@ function RebuttalCard({
     (s) => s.rebuttal?.state === 'working' || s.rebuttal?.state === 'waiting'
   )
   const activity = useChildTools(running.flatMap((s) => (s.childId ? [s.childId] : [])))
-  const used = useRoundtableTotal(group, info)
   const presence = useSeatPresence(item, info)
   return (
     <div className="work-group roundtable-card" data-testid="roundtable-rebuttal">
@@ -143,13 +140,6 @@ function RebuttalCard({
         </SeatLetters.Provider>
       </ModelChoiceAgents.Provider>
       <FolderChanged files={item.folderChanged?.rebuttal} stage="rebuttal" />
-      {used?.text && (
-        <UsedLine
-          label={t('roundtable.card.usedAll', { total: used.text })}
-          detail={used.detail}
-          testId="roundtable-used-all"
-        />
-      )}
     </div>
   )
 }

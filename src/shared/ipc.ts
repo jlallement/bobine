@@ -63,6 +63,7 @@ import type { RuleFileView } from './rules'
 import type { AgentQuota } from './usage'
 import { USAGE_CHANNELS, type UsageIpcContract } from './usage-ipc'
 import type { MenuCommand } from './shortcuts'
+import type { AddFolderResult } from './extra-folders'
 import type { Language } from './i18n/language'
 import type { LogStatus, Verbosity } from './log-level'
 import type { AcpExchangesBatch, AcpExchangesSnapshot } from './acp-exchanges'
@@ -409,10 +410,12 @@ export interface IpcInvokeContract
   /** Épingle une conversation en tête de la barre latérale (fiche 026). */
   'conversation:pin': { args: [id: string, pinned: boolean]; result: undefined }
   /**
-   * Autres dossiers de la conversation (fiche 179) : ajout par le dialogue natif (chemin choisi,
-   * `null` si annulé), retrait ; la session est rouverte si l'agent est prêt.
+   * Autres dossiers de la conversation (fiche 179) : ajout, retrait ; la session est rouverte si
+   * l'agent est prêt. Ajout sans `path` : par le dialogue natif (`null` si annulé) ; avec : le chemin
+   * saisi ou glissé (fiche 290). Les deux passent par la même vérification du main : dossier
+   * retenu, ou raison du refus.
    */
-  'conversation:addFolder': { args: [id: string]; result: string | null }
+  'conversation:addFolder': { args: [id: string, path?: string]; result: AddFolderResult | null }
   'conversation:removeFolder': { args: [id: string, folder: string]; result: undefined }
   /** Plafond de coût propre à la conversation, ou `null` pour celui des réglages (fiche 157). */
   'conversation:setCostCap': { args: [id: string, cap: ConversationCap | null]; result: undefined }

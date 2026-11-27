@@ -43,14 +43,17 @@
 
 - **Tout agent ACP, une seule fenêtre.** Bobine lance l'agent sur votre Mac et lui donne une vraie
   interface de bureau : réponses en continu, diffs, cartes d'autorisation, plans, historique.
-- **IBM Bob d'abord.** SSO ou clé d'API, confiance du dossier, licence et bobcoins dépensés se
+- **IBM Bob d'abord.** SSO ou clé d'API, confiance du dossier, licence et Bobcoins dépensés se
   gèrent dans l'app. [OpenCode](https://opencode.ai) marche aussi, avec ses modèles gratuits ou
   vos propres fournisseurs.
 - **Vous gardez la main.** Chaque modification ou commande que l'agent demande arrive en carte,
   avec le diff ou la commande exacte, et rien ne part avant votre réponse.
 - **Travailler en parallèle.** Appeler des spécialistes (`@security-expert`, `@code-reviewer`…)
-  ou laisser l'agent partager le travail : chaque conversation fille avance de son côté, dans le
-  dossier ou dans un worktree git.
+  ou laisser l'agent partager le travail : chaque travail avance de son côté, dans le dossier ou
+  dans un worktree git, et vous fusionnez le résultat.
+- **Plusieurs avis, une synthèse.** Le tour de table (`/roundtable`) pose la même question à deux
+  à cinq modèles, sans qu'aucun voie les autres ; puis la conversation compare les avis et rend une
+  synthèse qui tranche.
 - **L'agent voit ce qu'il construit.** Navigateur intégré avec console et réseau, terminaux,
   simulateur iOS et émulateur Android, pilotés par l'agent et montrés à côté de la conversation.
 - **Aucun modèle dedans.** Bobine n'embarque ni n'appelle aucun modèle, et n'envoie aucune
@@ -70,7 +73,7 @@ vue git.
 
 Tapez `@` pour appeler un rôle : sept sont fournis (expert UX/UI, expert sécurité, relecteur de
 code, tech lead…), et vous pouvez écrire les vôtres, pour vous ou pour le projet. Chaque rôle
-travaille dans sa conversation fille, en parallèle, et rend compte.
+travaille de son côté, en parallèle, et rend compte.
 
 ![Deux rôles relisent le panier en parallèle et rendent compte](docs/images/readme/fr/roles.gif)
 
@@ -124,14 +127,15 @@ présentation pour les démonstrations.
 
 ## Agents pris en charge
 
-| Agent | Statut | Versions essayées |
+| Agent | Statut | Versions vérifiées |
 |---|---|---|
 | IBM Bob (`bob acp`) | cible principale | 2.0.6, 2.0.9, 2.1.0 |
-| OpenCode (`opencode acp`) | pris en charge | 1.19, 2.0.31, 2.0.32, 2.2.5, 2.3.0 |
+| OpenCode (`opencode acp`) | pris en charge | 1.19, 2.0.31, 2.0.32, 2.2.5, 2.3.0, 2.4.1 |
 
 D'autres agents ACP se déclarent dans Réglages › Agents, sans garantie. Un agent factice sert au
-développement et aux essais seulement. Le détail, agent par agent : [`docs/agents.md`](docs/agents.md).
-Réglages › Diagnostic prévient quand un agent annonce une version non essayée.
+développement et aux essais seulement. Le détail, agent par agent :
+[`docs/agents.md`](docs/agents.md). Réglages › Diagnostic prévient quand un agent annonce une
+version non essayée.
 
 ## Installer
 
@@ -150,7 +154,8 @@ antérieures refusent de l'ouvrir), et au moins un agent installé (`bob` ou
    plus de risque de bugs.
 2. Ouvrir le `.dmg` et double-cliquer sur Bobine dans sa fenêtre. C'est le premier lancement, et
    **macOS le bloque** (« Apple n'a pas pu vérifier… ») car l'app est signée ad hoc, pas notarisée
-   (choix assumé). Pour passer, selon les [instructions d'Apple](https://support.apple.com/fr-fr/102445) :
+   (choix assumé). Pour passer, selon les [instructions
+   d'Apple](https://support.apple.com/fr-fr/102445) :
    1. Cliquer sur **Terminé** (pas « Placer dans la corbeille »).
    2. Ouvrir **Réglages Système › Confidentialité et sécurité**, descendre jusqu'à la section
       Sécurité et cliquer sur **Ouvrir quand même** à côté du message sur Bobine.
@@ -187,10 +192,11 @@ Releases »). Derrière un proxy,
 sans droits administrateur, ou sans réseau : [`docs/installation.md`](docs/installation.md).
 
 **Linux (préversion).** À partir de la 1.0.0-beta.6, `Bobine-<version>-amd64.deb` (x64) ou
-`Bobine-<version>-arm64.deb` sur la [page des versions](https://github.com/jlallement/bobine/releases), pour Ubuntu 24.04 ou plus récent et
-Debian : `sudo apt install ./Bobine-<version>-<arch>.deb`. Sommes dans
-`SHA256SUMS-linux-x64.txt` ou `-arm64.txt`. Sans les outils du simulateur iOS. Le détail, et la construction
-depuis les sources : [`docs/installation.md`](docs/installation.md#linux-préversion).
+`Bobine-<version>-arm64.deb` sur la [page des
+versions](https://github.com/jlallement/bobine/releases), pour Ubuntu 24.04 ou plus récent et Debian
+: `sudo apt install ./Bobine-<version>-<arch>.deb`. Sommes dans `SHA256SUMS-linux-x64.txt` ou
+`-arm64.txt`. Sans les outils du simulateur iOS. Le détail, et la construction depuis les sources :
+[`docs/installation.md`](docs/installation.md#linux-préversion).
 
 **Windows (préversion).** À partir de la 1.0.0-beta.6, `Bobine-<version>-x64.exe` ou
 `Bobine-<version>-arm64.exe` sur la même page, pour Windows 11 : installée pour l'utilisateur
@@ -212,9 +218,9 @@ montrent ce que Bobine garde sur votre Mac, et permettent de le sauvegarder ou d
 
 **Bobine contacte-t-elle autre chose ?** Une seule : au lancement, une fois par jour au plus, elle
 demande à l'API publique de GitHub la liste des versions de Bobine, pour vous dire dans la barre
-latérale qu'une version plus récente existe. Elle n'envoie rien sur vous (seulement sa propre version, dans le
-`User-Agent`) et n'installe rien. Le réglage est dans Réglages › Nouveautés ou Réglages ›
-Confidentialité.
+latérale qu'une version plus récente existe. Elle n'envoie rien sur vous (seulement sa propre
+version, dans le `User-Agent`) et n'installe rien. Le réglage est dans Réglages › Nouveautés ou
+Réglages › Confidentialité.
 
 **Faut-il IBM Bob ?** Non. Bob est la cible principale, mais OpenCode marche avec ses modèles
 gratuits, et tout agent ACP se déclare dans Réglages › Agents.
@@ -239,8 +245,8 @@ et elle est écrite de zéro avec Electron, React et le
   nouvelles versions de Bob et d'OpenCode.
 - **1.1, en version candidate :** un onglet Fichiers pour parcourir le dossier de travail et
   commenter une ligne.
-- **1.2, en version candidate :** le tour de table (`/roundtable`) : la même question part à plusieurs
-  modèles, sans qu'aucun ne voie les autres, puis la conversation en fait la synthèse.
+- **1.2, en version candidate :** le tour de table (`/roundtable`) : la même question part à
+  plusieurs modèles, sans qu'aucun ne voie les autres, puis la conversation en fait la synthèse.
 - **Idées, pas encore prévues :** revenir avant un tour d'une conversation ; donner la même tâche
   à deux agents et garder le meilleur résultat.
 
@@ -248,11 +254,13 @@ La feuille de route détaillée : [`docs/feuille-de-route-v1.md`](docs/feuille-d
 
 ## Documentation
 
-- **Guide de l'utilisateur** : [français](docs/guide/fr/README.md) · [English](docs/guide/en/README.md).
+- **Guide de l'utilisateur** : [français](docs/guide/fr/README.md) ·
+  [English](docs/guide/en/README.md).
 - **Documentation du projet** (architecture, ce qu'on utilise d'ACP, agents, installation, agent
   factice, une fiche par fonctionnalité, décisions d'architecture) : [`docs/`](docs/README.md),
   en français.
-- Des prompts de démonstration prêts à copier et un petit projet d'essai : [`demos/`](demos/README.md).
+- Des prompts de démonstration prêts à copier et un petit projet d'essai :
+  [`demos/`](demos/README.md).
 
 ## Construire depuis les sources
 
@@ -284,7 +292,8 @@ scripté, sans modèle ni donnée personnelle : `pnpm build && pnpm vitrine --la
   demandent un Mac avec Xcode.
 - Signature ad hoc, pas notarisée (voir plus haut) ; macOS 27 n'affiche aucune bannière de
   notification pour une app signée ad hoc (le badge et le rebond du Dock marchent).
-- Pas de mise à jour automatique.
+- Pas de mise à jour automatique : Bobine prévient quand une version plus récente existe, vous
+  l'installez vous-même.
 - Interface en français et en anglais ; documentation du projet surtout en français.
 
 ## Liens

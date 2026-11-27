@@ -164,7 +164,8 @@ reason appears below the buttons. After that, the Git view follows the PR and it
 ## Merge into `main`
 
 Click **Merge into main** (or the name of your base branch). The button is greyed out while the
-worktree still has uncommitted changes, or when there is nothing to merge.
+worktree still has uncommitted changes, or when there is nothing to merge; hovering it, or
+focusing it with the keyboard, says why.
 
 Bobine first updates the worktree with the base if the base has moved on, then moves the base
 forward.
@@ -185,13 +186,19 @@ ahead and lists the files. Two choices:
 - **Commit first**: a message is suggested, then **Commit, then merge**;
 - **Set aside**: the changes are put away (`git stash`) during the merge, then restored.
 
+While a turn is in progress in the main folder (an agent responding or waiting for your
+approval), **Commit, then merge** is refused before anything is committed, with the reason: try
+again once the turn has ended.
+
 <a id="nettoyer"></a>
 
 ## Clean up
 
 Once the branch is merged (or its PR merged on GitHub), **Clean up** archives the conversation,
 runs the `archive` command if you allowed it, then deletes the worktree and its branch. Brought
-back from the archive, the conversation continues in the main folder.
+back from the archive, the conversation continues in the main folder. If uncommitted files
+remain, the question says so (“1 uncommitted file would be lost”) and **Keep** is the default
+button. Cleaning up an open delegated task takes you back to its source conversation.
 
 **Deleting a conversation that has a worktree**: the **Also delete the worktree and the branch**
 checkbox is checked by default only when nothing would be lost; otherwise, Bobine says what would

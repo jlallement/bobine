@@ -35,7 +35,8 @@ const MAC_ONLY = new Set([
   'diagnostics.check.screenNotDetermined', // screenCapture
   'diagnostics.check.axeQuarantineFix', // simulator
   'install.scope.everyone.title', // selfInstall
-  'install.scope.everyone.denied' // selfInstall
+  'install.scope.everyone.denied', // selfInstall
+  'sessionTab.folderRefusal.privacy' // rendue par le main sous macOS seulement (fiche 290)
 ])
 // Polices du Mac comprises (fiche 145, D9) : « sinon SF Mono » était faux sous Linux et Windows.
 const MAC_WORDS =

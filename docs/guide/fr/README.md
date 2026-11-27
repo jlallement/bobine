@@ -44,8 +44,8 @@ faire, puis donne la marche à suivre.
 
 ## Référence
 
-13. [Panneaux](panneaux.md) : la session, les modifications, le navigateur intégré, le terminal,
-    le simulateur iOS.
+13. [Panneaux](panneaux.md) : la session, les modifications, les fichiers, le navigateur intégré,
+    le terminal, le simulateur iOS.
 14. [Réglages : confidentialité et données](reglages.md) : ce que Bobine retient et comment
     l'effacer ; la corbeille, la sauvegarde.
 15. [Agents](agents.md) : IBM Bob, OpenCode, et ce que chacun permet.

@@ -3,7 +3,7 @@ import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { affirm, probes } from '../affirm.mjs'
-import { FEATURES, L, check, withApp } from '../lib.mjs'
+import { FEATURES, L, LANG, check, withApp } from '../lib.mjs'
 
 /**
  * Tour de table (fiche 285), contre l'agent factice et son pair (« Agent factice B ») : chaque
@@ -81,6 +81,38 @@ export async function arbiterModel(ui) {
   await ui.waitFor(`!!${ui.$('control-model-factice-precis')}`)
   await ui.click(ui.$('control-model-factice-precis'))
   await ui.waitFor(`!${ui.$('model-menu-content')}`)
+}
+
+/**
+ * Fiche 292 : une seule ligne « Consommé » dans le fil, et son total est la somme des jetons
+ * traités (entrée + sortie) du journal de consommation (Mon activité), écrite en abrégé comme
+ * partout (`formatTokens(…, true)`, refait ici dans la page). La justesse au jeton près est
+ * prouvée sur les données (`roundtables-consomme.test.ts`). Le profil de l'essai est neuf : le
+ * journal ne contient que les tours de ce tour de table (et « Appliquer »).
+ */
+const USED_VS_JOURNAL = () => `(async () => {
+  const s = await window.api.usage.stats({ scope: 'all', date: '2026-01-01' })
+  const journal = s.totals.input + s.totals.output
+  const fmt = new Intl.NumberFormat(${JSON.stringify(LANG === 'en' ? 'en-US' : 'fr-FR')}, { maximumFractionDigits: 1 })
+  const k = Math.round(journal / 100) / 10
+  const short = journal < 1000 ? fmt.format(journal) : Math.abs(k) < 1000 ? fmt.format(k) + 'k' : fmt.format(Math.round(journal / 100000) / 10) + 'M'
+  const spaces = (t) => t.replace(/[\\u00a0\\u202f]/g, ' ')
+  const expected = spaces(${JSON.stringify(L('roundtable.card.used', { total: L('roundtable.card.tokens', { tokens: '@@' }) }))}.replace('@@', short))
+  const used = [...document.querySelectorAll('[data-testid^=roundtable-used]')].map((u) => spaces(u.textContent))
+  const shown = (used[0] ?? '').split(' · ')[0]
+  return { journal, expected, used, ok: used.length === 1 && journal > 0 && shown === expected }
+})()`
+
+async function usedIsJournal(ui, when) {
+  const settled = await ui
+    .waitFor(`${USED_VS_JOURNAL()}.then((r) => r.ok)`, 15_000)
+    .catch(() => false)
+  const last = await ui.ev(USED_VS_JOURNAL())
+  check(
+    settled,
+    `${when} : une seule ligne « Consommé », égale aux jetons traités journalisés (abrégés) (${JSON.stringify(last)})`
+  )
+  return last
 }
 
 const optionByName = (name) =>
@@ -558,6 +590,7 @@ async function nominal(scheme) {
           ),
           probes.threadFits()
         ])
+        await usedIsJournal(ui, 'après la synthèse')
 
         // Avis rouverts : format non suivi, l'erreur dite, l'avis entier déplié.
         await ui.click(ui.$('roundtable-head-toggle'))
@@ -622,24 +655,25 @@ async function nominal(scheme) {
         await ui.waitFor(`!!${ui.$('roundtable-apply')}`, 60_000)
         await affirm(ui, '285-replique-decision', [probes.threadFits()])
         // La carte du tour, repliée, garde son total après la réplique (évaluation du
-        // 2026-11-25, E2) : « Consommé en tout », comme la carte « Réplique ».
+        // 2026-11-25, E2) ; c'est la seule ligne « Consommé » du fil (fiche 292).
         await ui.ev(
           `(${ui.$('roundtable-card')}.querySelector('[data-testid=roundtable-used]') ?? ${ui.$('roundtable-card')}).scrollIntoView({ block: 'center' })`
         )
         await affirm(ui, '285-carte-apres-replique', [probes.threadFits()])
-        const tourUsed = await ui.ev(
-          `${ui.$('roundtable-card')}.querySelector('[data-testid=roundtable-used]')?.textContent ?? ''`
-        )
-        check(
-          tourUsed.startsWith(L('roundtable.card.usedAll', { total: '' }).trim()),
-          `carte du tour après la réplique : « Consommé en tout » (${tourUsed})`
-        )
+        const decided = await usedIsJournal(ui, 'après la réplique et la décision')
         await ui.click(ui.$('roundtable-apply'))
         await ui.waitFor(
           `[...document.querySelectorAll('[data-testid=user-message]')].some((m) => m.textContent.includes(${JSON.stringify(L('roundtable.synthesis.applyDraft'))}))`,
           20_000
         )
         await ui.ready()
+        // « Appliquer » est un message ordinaire : compté avec la conversation, hors du total.
+        await ui.waitFor(`${USED_VS_JOURNAL()}.then((r) => r.journal > ${decided.journal})`, 15_000)
+        const applied = await ui.ev(USED_VS_JOURNAL())
+        check(
+          applied.used.length === 1 && applied.used[0] === decided.used[0],
+          `« Appliquer » hors du total « Consommé » (${JSON.stringify({ decided, applied })})`
+        )
 
         // Sommaire (S4) : le tour par sa question, marqué ; jamais les demandes de l'app.
         // Le sommaire a besoin de place à gauche du fil : panneau fermé.

@@ -16,6 +16,7 @@ import { SessionChanges } from './SessionChanges'
 import { SessionContext } from './SessionContext'
 import { SessionEnvironment } from './SessionEnvironment'
 import { SessionFolders } from './SessionFolders'
+import { useFolderCapability } from './folder-capability'
 import { SessionRunning } from './SessionRunning'
 import { checksLine } from './PrCard'
 import { usePrTrack } from '../../usePrTrack'
@@ -168,6 +169,11 @@ export function SessionTab({
     [items, terminals, usage, appTools, mcp, memory]
   )
   const warn = (error: unknown) => data.onWarn(ipcErrorText(error))
+  const foldersSupported = useFolderCapability(
+    conversationId,
+    !!data.snapshot?.additionalDirectories,
+    view.status
+  )
   const stop = (entry: RunningEntry) => {
     const how = entry.stop
     if (!how) return
@@ -198,12 +204,16 @@ export function SessionTab({
         folders={
           <SessionFolders
             folders={data.additionalDirectories ?? []}
-            supported={!!data.snapshot?.additionalDirectories}
+            supported={foldersSupported}
             busy={view.status === 'busy'}
+            starting={view.status === 'starting'}
             agentLabel={view.agentLabel}
             finder={platformFeatures().finder}
             explorer={platformFeatures().explorer}
-            onAdd={() => void window.api.conversations.addFolder(conversationId).catch(warn)}
+            key={conversationId}
+            onAdd={(path) => window.api.conversations.addFolder(conversationId, path)}
+            pathFor={(file) => window.api.files.pathFor(file)}
+            onError={warn}
             onRemove={(folder) =>
               void window.api.conversations.removeFolder(conversationId, folder).catch(warn)
             }

@@ -109,7 +109,7 @@ describe('message répété (fiche 191)', () => {
         <ComposerTip busy={false} hasText={false} usage={undefined} onTryAside={vi.fn()} />
       </TipsContext.Provider>
     )
-    expect(screen.getByTestId('tip-scheduled').textContent).toContain('Troisième fois')
+    expect(screen.getByTestId('tip-scheduled').textContent).toContain('trois jours différents')
     fireEvent.click(screen.getByTestId('tip-plan'))
     expect(tips.planRepeated).toHaveBeenCalledOnce()
     fireEvent.click(screen.getByTestId('tip-never'))

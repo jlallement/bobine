@@ -88,6 +88,29 @@ diff line, a comment on an annotated page. Esc closes the dialog.
 
 In Settings, ⌘F goes to the search field.
 
+<a id="fichiers"></a>
+
+## In the Files tab
+
+In the filter:
+
+| Shortcut | What it does |
+|---|---|
+| ↑ and ↓ | Previous result, next result |
+| ↩ | Open the file (at the line, with `path:42`) |
+| ⌘↩ | Open it in your editor |
+| ⇧↩ | Mention it in the message box |
+| Esc | Clear the filter; if it is empty, go back to the message box |
+
+In an open file:
+
+| Shortcut | What it does |
+|---|---|
+| ⌘F | Find in the file (↩ next match, ⇧↩ previous, Esc close) |
+| ⌃G | Go to a line |
+
+See also: [Panels](panneaux.md#fichiers).
+
 <a id="navigateur"></a>
 
 ## In the built-in browser

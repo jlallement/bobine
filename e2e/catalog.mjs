@@ -529,13 +529,18 @@ export const SUITES = [
     ]
   },
   {
-    // Plusieurs dossiers par conversation (fiche 179) : ajout, retrait, agent sans la capacité.
+    // Plusieurs dossiers par conversation (fiche 179) : ajout, retrait, agent sans la capacité ;
+    // chemin saisi ou glissé, refus avec sa raison, panneau étroit (fiche 290).
     name: 'dossiers',
     file: 'dossiers.mjs',
     run: 'dossiersSuite',
     themes: BOTH,
     sources: [
       `${C}panel/SessionFolders.tsx`,
+      `${C}panel/FolderPathField.tsx`,
+      `${C}panel/folder-capability.ts`,
+      'src/main/conversations/extra-folder-check.ts',
+      'src/shared/extra-folders.ts',
       `${C}common/ReasonButton.tsx`,
       `${C}panel/SessionEnvironment.tsx`,
       `${C}panel/SessionTab.tsx`,

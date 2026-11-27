@@ -90,6 +90,29 @@ une ligne du diff, une remarque sur une page annotée. Échap ferme le dialogue.
 
 Dans les réglages, ⌘F va au champ de recherche.
 
+<a id="fichiers"></a>
+
+## Dans l'onglet Fichiers
+
+Dans le filtre :
+
+| Raccourci | Ce qu'il fait |
+|---|---|
+| ↑ et ↓ | Résultat précédent, résultat suivant |
+| ↩ | Ouvrir le fichier (à la ligne, avec `chemin:42`) |
+| ⌘↩ | L'ouvrir dans votre éditeur |
+| ⇧↩ | Le mentionner dans la zone de saisie |
+| Échap | Effacer le filtre ; s'il est vide, revenir à la zone de saisie |
+
+Dans un fichier ouvert :
+
+| Raccourci | Ce qu'il fait |
+|---|---|
+| ⌘F | Chercher dans le fichier (↩ résultat suivant, ⇧↩ précédent, Échap fermer) |
+| ⌃G | Aller à une ligne |
+
+Voir aussi : [Panneaux](panneaux.md#fichiers).
+
 <a id="navigateur"></a>
 
 ## Dans le navigateur intégré

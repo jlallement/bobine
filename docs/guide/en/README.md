@@ -32,7 +32,7 @@ walks you through it.
 4. [Worktrees](worktrees.md): a conversation on its own branch, its setup (`.worktreeinclude`,
    `.bobine/worktree.json`), merging back into `main`.
 5. [Delegated tasks and merging](conversations-filles.md): hand tasks to a role or another agent,
-   then merge their work.
+   read their responses, then merge their work.
 6. [Request review](faire-relire.md): ask another agent to review the work.
 7. [PR and CI tracking](suivi-pr-ci.md): open a pull request and follow its checks.
 8. [Scheduled tasks](taches-planifiees.md): run a prompt at a set time.
@@ -44,8 +44,8 @@ walks you through it.
 
 ## Reference
 
-13. [Panels](panneaux.md): the session, changes, the built-in browser, the terminal, the iOS
-    simulator.
+13. [Panels](panneaux.md): the session, changes, files, the built-in browser, the terminal, the
+    iOS Simulator.
 14. [Settings: privacy and data](reglages.md): what Bobine remembers and how to
     erase it; the trash, backups.
 15. [Agents](agents.md): IBM Bob, OpenCode, and what each one can do.

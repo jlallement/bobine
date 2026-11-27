@@ -1,10 +1,19 @@
 # Nouveautés
 
-Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › À propos.
+Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › Nouveautés.
 
 ## Prochaine version
 
-### Corrigé
+### Nouveau
+
+- **Autres dossiers : un chemin tapé ou un dossier glissé** : dans l’onglet Session, la ligne
+  « Autres dossiers » accepte un chemin saisi au clavier (ou collé, `~/…` et `file://…` compris)
+  et un dossier glissé sur le champ, en plus de la fenêtre du système. Un chemin refusé dit
+  pourquoi (introuvable, fichier, trop large comme le dossier personnel entier, déjà dans le
+  dossier de travail…). Un lien est suivi : l’agent reçoit l’accès au dossier réel, celui que
+  montre la liste.
+
+### Corrections
 
 - **Conflit résolu par un travail : rien n’entre dans la branche principale sans vous.** Quand la
   fusion depuis une carte bute sur un conflit et que le travail le résout, la résolution reste dans
@@ -12,6 +21,14 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   résolution » et « Faire relire ». Même chose pour « Laisser l’agent résoudre » dans la vue Git
   d’un worktree. La fusion ne part que sur votre clic, avec les vérifications habituelles. Pour un
   travail, cet état survit à la fermeture de l’app.
+- **Tour de table, « Consommé »** : une seule ligne, et un total qui se recoupe avec Mon activité :
+  synthèse, décision, et tout ce qu’ont consommé les conversations des participants. « Demander à …
+  de l’appliquer » compte avec la conversation. Le détail est dans Mon activité.
+- **Astuce « Planifier… »** : elle dit « Même message, trois jours différents », ce qu’elle
+  compte vraiment, plus « Troisième fois ce message ».
+- **Aide** : le guide décrit l’accueil du premier lancement, l’avis de nouvelle version, l’onglet
+  Fichiers, `/roundtable` dans la liste des commandes, et les retouches des tâches et des autres
+  dossiers de la 1.2.
 
 ## 1.2.0-rc.1 — 26 novembre 2026
 
@@ -26,7 +43,7 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ## 1.2.0-beta.3 — 26 novembre 2026
 
-### Corrigé
+### Corrections
 
 - **Repartir de ce message** : si l’un des fichiers à remettre dans leur état d’alors a été commité
   depuis ce message, la case n’est plus cochée d’office et le dialogue dit combien de fichiers
@@ -47,7 +64,7 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
 
 ## 1.2.0-beta.2 — 26 novembre 2026
 
-### Corrigé
+### Corrections
 
 - **Nettoyer une tâche fille** qui a des fichiers non commités : la question le dit (« 1 fichier non
   commité serait perdu ») et « Garder » est le bouton par défaut.

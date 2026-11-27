@@ -11,6 +11,7 @@ import {
   type ToldDirectories,
   type ToldStore,
   additionalDirectoriesParam,
+  presentFolders,
   directoriesContext
 } from './additional-directories'
 import type { AgentProfile } from './profiles'
@@ -85,12 +86,27 @@ describe('autres dossiers envoyés à l’ouverture de session (fiche 179)', () 
     agent.stop()
   })
 
-  it('dossier disparu ou chemin relatif : pas envoyé', () => {
-    expect(additionalDirectoriesParam(true, [other, '/nulle/part/ici', 'relatif'])).toEqual({
+  it('dossier disparu ou chemin relatif : pas envoyé', async () => {
+    const present = await presentFolders([other, '/nulle/part/ici', 'relatif'])
+    expect(present).toEqual([other])
+    expect(
+      additionalDirectoriesParam(true, [other, '/nulle/part/ici', 'relatif'], present)
+    ).toEqual({
       additionalDirectories: [other]
     })
-    expect(additionalDirectoriesParam(true, ['/nulle/part/ici'])).toEqual({})
-    expect(additionalDirectoriesParam(false, [other])).toEqual({})
+    expect(additionalDirectoriesParam(true, ['/nulle/part/ici'], present)).toEqual({})
+    expect(additionalDirectoriesParam(false, [other], present)).toEqual({})
+  })
+
+  it('fiche 290 : un dossier figé (partage réseau) ne bloque pas l’ouverture, il n’est pas envoyé', async () => {
+    const started = Date.now()
+    const present = await presentFolders(
+      ['/figé/a', other],
+      (path) => (path === other ? Promise.resolve(true) : new Promise<boolean>(() => {})),
+      50
+    )
+    expect(present).toEqual([other])
+    expect(Date.now() - started).toBeLessThan(1000)
   })
 
   it('ligne de contexte (D13) : au premier message, puis une fois par changement', async () => {
@@ -117,7 +133,7 @@ describe('autres dossiers envoyés à l’ouverture de session (fiche 179)', () 
     again.agent.stop()
   })
 
-  it('directoriesContext : rien sans changement ; ajouts, retraits, autre session', () => {
+  it('directoriesContext : rien sans changement ; ajouts, retraits, autre session', async () => {
     expect(directoriesContext([], [])).toBeUndefined()
     expect(directoriesContext(['/a', '/b'], ['/b', '/a'])).toBeUndefined()
     expect(directoriesContext([], ['/a', '/b'])).toBe(
@@ -131,6 +147,7 @@ describe('autres dossiers envoyés à l’ouverture de session (fiche 179)', () 
       get: () => saved,
       set: (t) => (saved = t)
     })
+    await dirs.prepare()
     dirs.param(true)
     expect(dirs.context('s1')).toBeUndefined()
     // Session neuve (l'ancienne perdue) : elle ne sait rien, la liste est redite.

@@ -1,16 +1,31 @@
 # What’s new
 
-What changes for you, version by version. Shown in Settings › About.
+What changes for you, version by version. Shown in Settings › What’s new.
 
 ## Next version
 
-### Fixed
+### New
+
+- **Other folders: a typed path or a dragged folder**: in the Session tab, the “Other folders”
+  row accepts a path typed on the keyboard (or pasted, `~/…` and `file://…` included) and a
+  folder dropped onto the field, besides the system window. A refused path says why (not found, a
+  file, too broad like your whole home folder, already inside the working folder…). A link is
+  followed: the agent gets access to the real folder, the one the list shows.
+
+### Fixes
 
 - **Conflict resolved by a task: nothing goes into the main branch without you.** When a merge
   from a card hits a conflict and the task resolves it, the resolution stays on its branch and the
   merge stops: the card says “conflict resolved · to review”, with “Show the resolution” and
   “Get a review”. Same for “Let the agent resolve” in a worktree’s Git view. The merge only starts
   when you click, with the usual checks. For a task, this state survives closing the app.
+- **Roundtable, “Used”**: a single line, with a total that matches My activity: synthesis,
+  decision, and everything the participants’ conversations used. “Ask … to apply it” counts with
+  the conversation. The details are in My activity.
+- **“Schedule…” tip**: it says “Same message on three different days”, which is what it really
+  counts, no longer “Third time you send this message”.
+- **Help**: the guide describes the first-launch welcome, the update notice, the Files tab,
+  `/roundtable` in the command list, and the 1.2 changes to tasks and other folders.
 
 ## 1.2.0-rc.1 — November 26, 2026
 
@@ -24,7 +39,7 @@ What changes for you, version by version. Shown in Settings › About.
 
 ## 1.2.0-beta.3 — November 26, 2026
 
-### Fixed
+### Fixes
 
 - **Branch from this message**: if one of the files to restore to their state at that point was
   committed since that message, the box is no longer checked for you and the dialog says how many
@@ -34,7 +49,7 @@ What changes for you, version by version. Shown in Settings › About.
   is counted under the model that answered, no longer under the refused one.
 - **Child tasks launched together**: two worktrees created in the same minute can no longer get
   the same name; creating one no longer fails with “branch already exists”.
-- **“Commit then merge”** while an agent is still writing in the main folder (or a task is still
+- **“Commit, then merge”** while an agent is still writing in the main folder (or a task is still
   replying): refused before anything is committed, with the reason; no more half-done commit
   followed by a refused merge.
 - **Child task merged then cleaned up from its Git tab**: the parent conversation’s card says
@@ -46,7 +61,7 @@ What changes for you, version by version. Shown in Settings › About.
 
 ## 1.2.0-beta.2 — November 26, 2026
 
-### Fixed
+### Fixes
 
 - **Cleaning up a child task** with uncommitted files: the question says so (“1 uncommitted file
   would be lost”) and “Keep” is the default button.

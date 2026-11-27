@@ -44,7 +44,14 @@ Settings › Diagnostics › **Log** shows the two files, with **Open** and
 - `main.log`: startup, errors, agents started and stopped, turn durations;
 - `agents.log`: the exchanges with the agents, at the Detailed and Trace levels.
 
+<!-- si: finder -->
 They’re in `~/Library/Logs/Bobine/`. Help › Show Log opens `main.log`.
+<!-- si: !finder !explorer
+They’re in `~/.config/bobine/logs/`. ☰ › Help › Show Log opens `main.log`.
+-->
+<!-- si: explorer
+They’re in `%APPDATA%\bobine\logs\`. ☰ › Help › Show Log opens `main.log`.
+-->
 
 **Log level**:
 
@@ -63,7 +70,11 @@ To understand a problem with an agent: switch to **Detailed**, do the operation 
 Settings › Diagnostics › **Report an issue** opens a GitHub issue in your browser, pre-filled with
 the version and the report. Nothing is sent until you submit it on GitHub.
 
-The Bobine › About Bobine window also has **Copy technical info** (version, commit,
+<!-- si: appMenu -->
+The Bobine › About Bobine window also has
+<!-- si: !appMenu
+The ☰ › About Bobine window also has
+--> **Copy technical info** (version, commit,
 <!-- si: finder -->
 macOS, installed agents), to paste into a report.
 <!-- si: !finder
@@ -85,10 +96,12 @@ Same for “git not found”: install the command line tools (`xcode-select --in
 
 ## OpenCode’s sign-in has expired
 
-Symptom: an error in English in the conversation, for example
-`Integration.Authorization: Request failed: 400`, while the agent is still “Ready”.
+Usually, Bobine detects it: the agent shows “Sign-in expired” and a sign-in card appears; once you
+are signed in again, **Try again** sends your message again.
 
-Bobine doesn’t detect this case yet. To sign in again, in a terminal (Bobine’s, ⌃`, works):
+One case it doesn’t detect: a raw error in English in the conversation, for example
+`Integration.Authorization: Request failed: 400`, while the agent is still “Ready”. To sign in
+again, in a terminal (Bobine’s, ⌃`, works):
 
 ```bash
 opencode auth login

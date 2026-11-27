@@ -135,11 +135,11 @@ Le survol donne la raison. C'est toujours vous qui fusionnez.
 
 ## Fusionner les modifications
 
-Un travail qui écrit se fusionne **depuis sa carte** : **Fusionner dans main**, après **Voir les
-modifications** et, si vous le voulez, **Faire relire** (voir [Faire relire](faire-relire.md)). Une
-carte de groupe propose **Fusionner les N prêts dans main** ; avec un avis de l'agent,
-**Fusionner les N recommandés dans main**, et **Inclure les M autres…** pour les autres, après
-confirmation.
+Un travail qui écrit se fusionne **depuis sa carte** : **Fusionner dans main** (le bouton nomme
+votre branche si ce n'est pas main), après **Voir les modifications** et, si vous le voulez, **Faire
+relire** (voir [Faire relire](faire-relire.md)). Une carte de groupe propose **Fusionner les N prêts
+dans main** ; avec un avis de l'agent, **Fusionner les N travaux recommandés dans main**, et
+**Inclure les M autres…** pour les autres, après confirmation.
 
 **Puis nettoyer (archiver, supprimer les branches)** : une case, avant le bouton. Elle archive la
 conversation de chaque travail fusionné et supprime son worktree et sa branche.
@@ -157,6 +157,10 @@ reste des conflits : **Réessayer**, **Abandonner** ou **Voir le conflit** (sa v
 worktree : **Committer d'abord** ou **Mettre de côté**. Voir
 [Fusionner dans `main`](worktrees.md#fusionner).
 
+Tant qu'un tour est en cours dans le dossier principal (agent qui répond ou attend votre accord),
+ou qu'un des travaux à fusionner répond encore, **Committer puis fusionner** est refusé avant tout
+commit, avec la raison : réessayez une fois le tour fini.
+
 Rien n'est poussé, et aucune PR n'est ouverte : pour une PR, passez par la
 [vue Git du travail](worktrees.md#pr).
 
@@ -172,8 +176,9 @@ Réglages › Conversations, rubrique **Travaux délégués** :
 - **Proposer des travaux** : **Jamais**, **Quand ça s'y prête** (par défaut) ou **Toujours
   demander**. Ce réglage dit à l'agent s'il doit proposer des travaux ; dans tous les cas, chaque
   proposition passe par la carte des travaux proposés et attend votre accord.
-- **Travaux en même temps, au plus** : de 1 à 10 par conversation (5 par défaut). Au-delà, « Lancer en
-  parallèle… » est grisé. Les relectures comptent dans ce nombre.
+- **Travaux en même temps, au plus** : de 1 à 10 par conversation (5 par défaut). Au-delà, « Lancer
+  en parallèle… » est grisé. Les relectures et les participants d'un [tour de
+  table](tour-de-table.md) comptent dans ce nombre.
 
 Les outils des travaux se coupent dans Réglages › Serveurs MCP › Outils de Bobine, famille
 **Travaux délégués**.

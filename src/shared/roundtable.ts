@@ -14,7 +14,7 @@
  * `roundtable-ipc.ts`.
  */
 import type { TranscriptItem, TranscriptState } from './transcript'
-import type { UsageDigest } from './usage'
+import { processedTokens, type UsageDigest } from './usage'
 
 /** Participants d'un tour, au moins et au plus (décision 7 de la fiche). */
 export const ROUNDTABLE_MIN_SEATS = 2
@@ -321,6 +321,11 @@ export type RoundtableEvent =
       by?: RoundtableStep['by']
     }
   | { type: 'step-held'; step: RoundtableStepKind }
+  /**
+   * La demande est repartie sur un autre modèle (refusé, puis un autre choisi : `resent`) : le
+   * modèle qui rédige vraiment, pour l'étiquette (testeur de la fiche 292).
+   */
+  | { type: 'step-model'; step: RoundtableStepKind; model: string }
   | {
       type: 'step-answered'
       step: RoundtableStepKind
@@ -509,7 +514,12 @@ const stepStopped = (step: RoundtableStep | undefined): RoundtableStep | undefin
 const withStep = (rt: Roundtable, kind: RoundtableStepKind, step: RoundtableStep): Roundtable =>
   kind === 'synthesis' ? { ...rt, synthesis: step } : { ...rt, verdict: step }
 
-const round6 = (n: number) => Math.round(n * 1e6) / 1e6
+/**
+ * Arrondi des sommes de coûts (bruit des flottants : 0,1 + 0,2). Au milliardième, pas au
+ * millionième : un tour payant de moins de 0,0000005 $ ne doit pas devenir un coût nul, lu
+ * « coût inconnu » (testeur de la fiche 292).
+ */
+const roundCost = (n: number) => Math.round(n * 1e9) / 1e9
 
 const plus = (a: number | undefined, b: number | undefined) =>
   a === undefined && b === undefined ? undefined : (a ?? 0) + (b ?? 0)
@@ -524,7 +534,7 @@ export function addDigests(a: UsageDigest | undefined, b: UsageDigest | undefine
   }
   const cost =
     a.cost && b.cost && a.cost.currency === b.cost.currency
-      ? { amount: round6(a.cost.amount + b.cost.amount), currency: a.cost.currency }
+      ? { amount: roundCost(a.cost.amount + b.cost.amount), currency: a.cost.currency }
       : (a.cost ?? b.cost)
   return { ...sum, ...(cost ? { cost } : {}) }
 }
@@ -559,7 +569,7 @@ export function attemptsTotal(
       continue
     }
     const start = Math.max(attempt.costStart ?? covered ?? 0, covered ?? -Infinity)
-    const amount = round6(Math.max(0, end.amount - start))
+    const amount = roundCost(Math.max(0, end.amount - start))
     cost = addDigests(cost ? { cost } : undefined, {
       cost: { amount, currency: end.currency }
     })?.cost
@@ -714,6 +724,10 @@ function reduceStep(
         : rt
     case 'step-held':
       return running ? withStep(rt, key, { ...step, state: 'held' }) : rt
+    case 'step-model':
+      return step.state === 'sent' && step.by
+        ? withStep(rt, key, { ...step, by: { ...step.by, model: event.model } })
+        : rt
     case 'step-usage':
       // Coût communiqué après coup : à la tentative qu'il vise, même si une autre est en route.
       return withStep(rt, key, withAttempt(step, event, event.attempt))
@@ -868,6 +882,7 @@ export function reduceRoundtable(rt: Roundtable, event: RoundtableEvent): Roundt
     }
     case 'step-sent':
     case 'step-held':
+    case 'step-model':
     case 'step-answered':
     case 'step-failed':
     case 'step-usage':
@@ -1080,48 +1095,54 @@ export function newSeats(
 
 /** Total d'un tour, par unité, sans conversion : seulement ce que les agents ont communiqué. */
 export interface RoundtableTotal {
-  /** Jetons communiqués, tous tours confondus ; absent si aucun agent n'en donne. */
+  /**
+   * Jetons traités (entrée + sortie, `processedTokens`), tous tours confondus : le nombre de Mon
+   * activité et du compteur de la conversation, cache et réflexion à part (fiches 245, 292) ;
+   * absent si aucun agent n'en donne.
+   */
   tokens?: number
   /**
    * Un montant par unité (« USD », « bobcoin »…), dans l'ordre d'apparition. `free` : tout ce qui
    * compte dans cette unité vient de modèles gratuits (un total nul s'y lit « gratuit »).
    */
   costs: { amount: number; currency: string; free?: true }[]
-  /** Participants qui n'ont rien communiqué (« 1 participant sans chiffre »). */
-  silent: number
+  /**
+   * Un tour a communiqué ses jetons mais pas son coût, alors que d'autres l'ont fait : le total
+   * des coûts est partiel (« + coût inconnu », comme le compteur de la conversation).
+   */
+  partial?: true
 }
 
-const digestTokens = (d: UsageDigest): number | undefined =>
-  d.total ??
-  (d.input !== undefined || d.output !== undefined ? (d.input ?? 0) + (d.output ?? 0) : undefined)
-
 /**
- * Total du pied de la carte : les conversations des participants (avis et répliques) et les tours
- * de l'agent de la conversation marqués « tour de table » (synthèse, décision). Jamais
+ * Total du pied de la carte (fiche 292, « un seul total juste ») : les conversations des
+ * participants (avis et répliques), puis les tours de l'agent de la conversation lancés par le tour
+ * (synthèse, décision). « Demander de l'appliquer », message ordinaire, n'en est pas. Jamais
  * d'addition entre unités (`digestsTotal` de la fiche 266 suit la même règle).
  */
-export function roundtableTotal(
-  /** `null` : participant encore au travail, ni chiffre ni « sans chiffre ». */
-  participants: readonly (UsageDigest | undefined | null)[],
-  steps: readonly (UsageDigest | undefined)[] = []
-): RoundtableTotal {
+export function roundtableTotal(digests: readonly (UsageDigest | undefined)[]): RoundtableTotal {
   let tokens: number | undefined
   const costs: { amount: number; currency: string; free?: true }[] = []
   const paid = new Set<string>()
-  let silent = 0
-  const add = (digest: UsageDigest | undefined, participant: boolean) => {
-    const used = digest ? digestTokens(digest) : undefined
-    const cost = digest?.cost
-    if (participant && used === undefined && !cost) silent++
-    if (used !== undefined) tokens = (tokens ?? 0) + used
-    if (!cost) return
-    if (digest?.free !== true) paid.add(cost.currency)
+  let withoutCost = false
+  for (const digest of digests) {
+    if (!digest) continue
+    if (digest.input !== undefined || digest.output !== undefined)
+      tokens = (tokens ?? 0) + processedTokens(digest)
+    const cost = digest.cost
+    if (!cost) {
+      // Des jetons sans coût : ce tour a consommé, sa dépense n'est pas connue.
+      if (digest.input !== undefined || digest.output !== undefined) withoutCost = true
+      continue
+    }
+    if (digest.free !== true) paid.add(cost.currency)
     const same = costs.find((c) => c.currency === cost.currency)
-    if (same) same.amount = round6(same.amount + cost.amount)
-    else costs.push({ amount: round6(cost.amount), currency: cost.currency })
+    if (same) same.amount = roundCost(same.amount + cost.amount)
+    else costs.push({ amount: roundCost(cost.amount), currency: cost.currency })
   }
-  for (const digest of participants) if (digest !== null) add(digest, true)
-  for (const digest of steps) add(digest, false)
   const marked = costs.map((c) => (paid.has(c.currency) ? c : { ...c, free: true as const }))
-  return { ...(tokens !== undefined ? { tokens } : {}), costs: marked, silent }
+  return {
+    ...(tokens !== undefined ? { tokens } : {}),
+    costs: marked,
+    ...(withoutCost && marked.length ? { partial: true as const } : {})
+  }
 }
