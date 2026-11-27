@@ -693,6 +693,25 @@
         color: var(--muted);
         text-align: center;
       }
+      /* Logo de la ligne « Figma » : boîte de 56 px (dessin ≈ 26 px). La marge de protection du
+         fichier est transparente : marges négatives de mise en page pour que le dessin, et non sa
+         boîte, s'aligne sur le bord et que la carte ne grandisse pas. Le fichier n'est pas touché. */
+      .preset-logo {
+        display: inline-flex;
+        margin: -10px -6px -10px -10px;
+      }
+      /* Devant le nom du serveur (boîte de 28 px, dessin ≈ 13 px) : la marge de protection
+         transparente est rattrapée de 4 px de chaque côté ; remonté de 1 px pour que le dessin
+         s'aligne sur les capitales et la ligne de base du nom plutôt que sur la boîte du texte. */
+      .mcp-server-name .logo {
+        position: relative;
+        top: -1px;
+        margin: 0 -4px;
+      }
+      .mcp-preset.v2 li {
+        padding-top: 7px;
+        padding-bottom: 7px;
+      }
       /* La ligne « Figma » : carte pleine (plus de pointillés), logo, bouton principal. */
       .mcp-preset.v2 {
         border-style: solid;
@@ -989,7 +1008,7 @@
 
       const preset = (button, reason = '') =>
         `<ul class="mcp-preset v2 new"><li>
-          ${logo(40)}
+          <span class="preset-logo">${logo(56)}</span>
           <div class="mcp-preset-text"><div class="mcp-preset-name">Figma</div>
             <div class="mcp-preset-summary">Serveur officiel de Figma. La connexion se fait dans votre navigateur, avec OpenCode.</div></div>
           ${button}

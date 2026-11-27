@@ -47,7 +47,7 @@ connecter que par OpenCode (Q3). Rien n'est dit, ni supposé, de ce que Bob saur
 ### Premier branchement (« Connecter Figma »)
 
 1. Réglages › Serveurs MCP › onglet **OpenCode**. Sous la liste des serveurs, une ligne
-   **Figma** en carte pleine, avec le logo officiel de Figma (boîte de 40 px, non modifié) : « Serveur
+   **Figma** en carte pleine, avec le logo officiel de Figma (boîte de 56 px, dessin ≈ 26 px, non modifié) : « Serveur
    officiel de Figma. La connexion se fait dans votre navigateur, avec
    OpenCode. » et le bouton **Connecter Figma**. La ligne n'existe pas si un serveur de cette
    adresse est déjà déclaré (quel que soit son nom).
@@ -99,7 +99,7 @@ de la page et une raison courte, jamais l'adresse complète.
 
 | État | Ce que l'utilisateur voit (ligne du serveur) | Boutons | Ce que fait Bobine |
 |---|---|---|---|
-| **Absent** | Ligne « Figma » sous la liste, en carte pleine : logo officiel (boîte de 40 px), nom, une phrase | **Connecter Figma** (principal) | Rien de lancé. Ligne cachée si un serveur `https://mcp.figma.com/mcp` existe déjà dans un des deux fichiers |
+| **Absent** | Ligne « Figma » sous la liste, en carte pleine : logo officiel (boîte de 56 px), nom, une phrase | **Connecter Figma** (principal) | Rien de lancé. Ligne cachée si un serveur `https://mcp.figma.com/mcp` existe déjà dans un des deux fichiers |
 | **Ajouté, à connecter** | Pastille grise, « À connecter : la connexion se fait dans votre navigateur, avec OpenCode. » | **Se connecter** (principal), crayon, copie, corbeille ; pas de « Tester » | Lit l'état chez OpenCode : aucune connexion pour ce serveur. Le test de Bobine (fiche 060) n'est pas lancé pour ce serveur : sans jeton, Figma répond toujours 401 (relevé) |
 | **Connexion en cours** | Pastille ambre qui pulse, « Page de connexion ouverte dans votre navigateur (www.figma.com). Autorisez l'accès, puis revenez ici. » ; en petit : « Sans réponse, abandon au bout de 10 min. » | **Rouvrir la page**, **Annuler** ; « Se connecter » des autres serveurs grisé (raison au survol : « Une connexion est déjà en cours ») | Processus lancé, adresse gardée en mémoire du main, page ouverte une fois ; délai 10 min ; une seule connexion à la fois dans toute l'app |
 | **Connecté** | Pastille verte, « Connecté par OpenCode. Bobine ne voit jamais le jeton. » | **Se déconnecter** (discret), crayon, copie, corbeille | État relu chez OpenCode (connexion présente, pas expirée) |
@@ -305,7 +305,7 @@ retenue** par défaut, voir la fin de Q5.
 
 **Décision de Jérôme (2026-11-27)** : la **ligne**, avec le logo officiel de Figma. Une fois le
 serveur ajouté, c'est une ligne de serveur ordinaire (interrupteur, crayon, copie, corbeille) avec
-le logo (boîte de 28 px) devant le nom ; avant, la ligne « Figma » en carte pleine (boîte de 40 px, nom, phrase,
+le logo (boîte de 28 px) devant le nom ; avant, la ligne « Figma » en carte pleine (boîte de 56 px, nom, phrase,
 « Connecter Figma »). Toutes les planches de Réglages de la maquette ont cette forme.
 
 **Écartée : la tuile** (bloc « Connecteurs » en tête de l'onglet, façon Claude). Avis UX : le gain
@@ -345,9 +345,13 @@ pleine couleur se lit sur les deux fonds ; la mono-ligne blanche disparaît sur 
 traits fins se brouillent sous 28 px ; la noire disparaît sur fond sombre. **Taille** : la boîte du
 fichier (1024 × 1280) contient la marge de protection de Figma, le dessin n'en occupe que 47 % de
 haut ; en boîte de 16 px, le dessin fait 7,5 px, illisible. Retenu, sans recadrer : boîte de
-**40 px** dans la ligne « Figma » (dessin ≈ 19 px) et de **28 px** devant le nom du serveur (dessin
-≈ 13 px ; la ligne du nom grandit de quelques pixels). Rien d'autre : ni recoloration, ni fond, ni
-recadrage.
+**56 px** dans la ligne « Figma » à ajouter (dessin ≈ 26 px, le repère visuel de la ligne, centré sur
+le bloc de texte) et de **28 px** devant le nom du serveur ajouté (dessin ≈ 13 px, un repère). La
+marge de protection, transparente, est rattrapée par la mise en page (marges négatives : 10 px à
+gauche, 6 px à droite et 10 px en haut et en bas pour la boîte de 56 px, la carte gardant la hauteur
+d'une ligne de serveur à trois lignes ; 4 px de chaque côté pour celle de 28 px, remontée de 1 px
+pour s'aligner sur les capitales et la ligne de base du nom). Rien d'autre : ni recoloration, ni
+fond, ni recadrage.
 
 **Dans l'app** (à l'implémentation, proposé) : fichier d'origine tel quel dans
 `src/renderer/src/assets/brands/figma/Figma Icon (Full-color).svg`, nommé par le préréglage
@@ -395,7 +399,7 @@ Aucune ; R1 à R9 à relever avant de coder.
 - [ ] « Tester » n'est pas lancé pour un serveur à connexion par l'agent ; pastille selon l'état.
 - [ ] Onglet Bob : ligne d'aide (Q3), aucun bouton.
 - [ ] Logo de Figma **non modifié** : le fichier livré a la même empreinte sha256 que celui de
-      l'archive officielle (`9798b710…`) ; lisible dans ses deux tailles (boîtes de 40 et 28 px),
+      l'archive officielle (`9798b710…`) ; lisible dans ses deux tailles (boîtes de 56 et 28 px, dessins ≈ 26 et 13 px),
       en clair et en sombre (captures regardées).
 - [ ] `specificItems` et `docs/agents.md` : repère `mcp-oauth` (test existant des repères).
 - [ ] (Lot 3) Une carte `execute` finie avec `toolCalls: [{ tool: "figma.whoami" }]` s'intitule
@@ -460,3 +464,7 @@ Taille : ≈ 3 j avec le lot 3, relevés compris. **Aucune dépendance nouvelle.
   `Figma Icon (Full-color).svg`, copié tel quel dans `docs/maquettes/293/` et branché dans toutes
   les planches de Réglages (boîtes de 40 et 28 px). Captures refaites et regardées : 40 PNG + le
   SVG, 1,6 Mo.
+- 2026-11-27 — Relecture du tech lead : logo trop discret dans la ligne « Figma ». Boîte portée de
+  40 à 56 px (dessin ≈ 26 px), marges négatives de mise en page, carte à la hauteur d'une ligne de
+  serveur à trois lignes ; logo de 28 px devant le nom remonté de 1 px et rapproché (4 px).
+  Captures refaites et regardées (1,6 Mo).
