@@ -1,7 +1,7 @@
 {
   "name": "bobine",
   "desktopName": "bobine.desktop",
-  "version": "1.2.0-rc.1",
+  "version": "1.2.0-rc.2",
   "private": true,
   "license": "Apache-2.0",
   "author": "Jérôme Lallement",
