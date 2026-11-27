@@ -11,7 +11,9 @@ import { McpOAuth, attemptOutcome } from './mcp-oauth'
 
 const FIXTURES = join(__dirname, 'fixtures', 'opencode-2.3.0-mcp-auth')
 const SUCCESS = readFileSync(join(FIXTURES, 'sortie-reussie.txt'))
-const PAGE_PREFIX = 'https://www.figma.com/oauth/mcp?response_type=code&client_id=FAKECLIENTID'
+const FIXTURE_PREFIX = 'https://www.figma.com/oauth/mcp?response_type=code&client_id=FAKECLIENTID'
+/** Adresse écrite par les essais : avec le retour local que le préréglage de Figma exige. */
+const PAGE_PREFIX = `${FIXTURE_PREFIX}&redirect_uri=http%3A%2F%2F127.0.0.1%3A54321%2Fcallback`
 const CONNECTED = JSON.stringify([
   {
     id: 'mcp_abc',
@@ -173,7 +175,7 @@ describe('connexion d’un serveur MCP par l’agent : moteur (fiche 293, ADR-00
     // Sortie relevée, en morceaux de 50 octets.
     for (let i = 0; i < SUCCESS.length; i += 50) child.write(SUCCESS.subarray(i, i + 50))
     expect(t.opened).toHaveLength(1)
-    expect(t.opened[0]?.startsWith(PAGE_PREFIX)).toBe(true)
+    expect(t.opened[0]?.startsWith(FIXTURE_PREFIX)).toBe(true)
     t.world.authList = CONNECTED
     child.end(0)
     await flush()

@@ -12,7 +12,10 @@ import {
 
 const FIXTURES = join(__dirname, 'fixtures', 'opencode-2.3.0-mcp-auth')
 const HOST = 'www.figma.com'
-const EXPECTED = { host: HOST, path: '/oauth/mcp' }
+/** Retour de connexion facultatif : chaque cas vise la règle d'hôte ou de chemin qu'il nomme. */
+const EXPECTED = { host: HOST, path: '/oauth/mcp', loopbackRedirect: false }
+/** Préréglage de Figma : retour de connexion vers cette machine exigé. */
+const REQUIRED = { ...EXPECTED, loopbackRedirect: true }
 const PAGE = 'https://www.figma.com/oauth/mcp?client_id=C&state=S&code_challenge=X'
 
 function collect(chunks: (Buffer | string)[]): string[] {
@@ -177,6 +180,49 @@ describe('vérification de l’adresse de la page (fiche 293, ADR-0077)', () => 
     const check = checkPageUrl(raw, EXPECTED)
     expect(check.ok).toBe(false)
     expect(check.ok ? undefined : check.host).toBe(host)
+  })
+
+  it('préréglage de Figma : la vraie adresse relevée passe ; sans `redirect_uri`, refusée', () => {
+    const real =
+      'https://www.figma.com/oauth/mcp?response_type=code&client_id=FAKECLIENTID&code_challenge=FAKECHALLENGE&code_challenge_method=S256&redirect_uri=http%3A%2F%2F127.0.0.1%3A54321%2Fcallback&state=FAKESTATE&scope=mcp%3Aconnect&resource=https%3A%2F%2Fmcp.figma.com%2Fmcp'
+    expect(checkPageUrl(real, REQUIRED)).toMatchObject({ ok: true, host: HOST })
+    expect(checkPageUrl(`https://www.figma.com${P}?client_id=ATTACKER`, REQUIRED)).toEqual({
+      ok: false,
+      host: HOST
+    })
+    // Fragment : pas un paramètre, le retour manque toujours.
+    const fragment = `https://www.figma.com${P}?client_id=X#&redirect_uri=https://evil.tld`
+    expect(checkPageUrl(fragment, REQUIRED).ok).toBe(false)
+    // Fragment de la page après un retour local : le retour lu est `http://127.0.0.1:1/cb`.
+    const after = `https://www.figma.com${P}?redirect_uri=http://127.0.0.1:1/cb#x`
+    expect(checkPageUrl(after, REQUIRED).ok).toBe(true)
+  })
+
+  it.each([
+    ['second retour au nom encodé', `&${LOOP}&redirect%5Furi=https%3A%2F%2Fevil.tld`],
+    ['nom encodé deux fois', `&${LOOP}&redirect%255Furi=https%3A%2F%2Fevil.tld`],
+    ['nom en majuscules', `&${LOOP}&REDIRECT_URI=https%3A%2F%2Fevil.tld%2Fcb`],
+    ['nom en majuscules seul', '&REDIRECT_URI=http%3A%2F%2F127.0.0.1%3A1%2Fcb'],
+    ['point-virgule', `&${LOOP}&a=1;redirect_uri=https://evil.tld/cb`],
+    ['request_uri', `&${LOOP}&request_uri=https%3A%2F%2Fevil.tld%2Fpar`],
+    ['request', `&${LOOP}&request=eyJhbGciOiJub25lIn0.e30.`],
+    ['request en majuscules', `&${LOOP}&REQUEST=x`],
+    ['retour 0x7f.1', '&redirect_uri=http%3A%2F%2F0x7f.1%3A1%2F'],
+    ['retour 127.1', '&redirect_uri=http%3A%2F%2F127.1%3A1%2F'],
+    ['retour localhost.', '&redirect_uri=http%3A%2F%2Flocalhost.%3A1%2F'],
+    ['retour [::1]', '&redirect_uri=http%3A%2F%2F%5B%3A%3A1%5D%3A1%2F'],
+    ['retour localhost@evil', '&redirect_uri=http%3A%2F%2Flocalhost%40evil.tld%3A1%2F'],
+    ['retour 127.0.0.1.evil', '&redirect_uri=http%3A%2F%2F127.0.0.1.evil.tld%3A1%2F'],
+    ['retour avec antislash', '&redirect_uri=http%3A%2F%2F127.0.0.1%3A1%5C%40evil.tld%2F'],
+    ['@ dans le chemin du retour', '&redirect_uri=http%3A%2F%2F127.0.0.1%3A1%2Fcb%40evil.tld'],
+    ['antislash dans le chemin du retour', '&redirect_uri=http%3A%2F%2F127.0.0.1%3A1%2Fcb%5Cx'],
+    ['retour port non numérique', '&redirect_uri=http%3A%2F%2F127.0.0.1%3Aabc%2F'],
+    ['retour port vide', '&redirect_uri=http%3A%2F%2Flocalhost%3A%2F'],
+    ['retour LOCALHOST', '&redirect_uri=http%3A%2F%2FLOCALHOST%3A1%2F']
+  ])('retour de connexion refusé : %s', (_label, query) => {
+    const raw = `https://www.figma.com${P}?client_id=ATTACKER${query}`
+    expect(checkPageUrl(raw, REQUIRED).ok).toBe(false)
+    expect(checkPageUrl(raw, EXPECTED).ok).toBe(false)
   })
 
   it('refusée : trop longue (au-delà de 4 096 caractères), sans même la lire', () => {

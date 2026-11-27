@@ -2,7 +2,9 @@
  * Preuves du testeur adverse (relecture du lot 1, fiche 293), gardées telles quelles comme essais
  * permanents : six essais rouges sur `8c550084` (courses entre tentatives, page ouverte après la fin
  * du processus, journal qui fuyait, déconnexion ratée dite faite). Seules retouches : imports
- * inutilisés retirés et `!` remplacé par `first()` (règles ESLint du dépôt).
+ * inutilisés retirés et `!` remplacé par `first()` (règles ESLint du dépôt) ; au second passage, R4
+ * réécrit sur le contrat actuel, et les adresses de R1 à R3 dotées du `redirect_uri` local que le
+ * préréglage exige (sans lui, ces essais ne pouvaient plus échouer).
  */
 import { EventEmitter } from 'node:events'
 import { tmpdir } from 'node:os'
@@ -13,7 +15,10 @@ import { log } from '../log'
 import { resolveProfiles } from '../agent/profiles'
 import { McpOAuth } from './mcp-oauth'
 
-const PAGE_PREFIX = 'https://www.figma.com/oauth/mcp?response_type=code&client_id=FAKECLIENTID'
+// Second passage : le préréglage exige désormais un `redirect_uri` local ; sans lui, R1, R2 et R3
+// visaient une page refusée d'avance et ne pouvaient plus échouer pour la raison qu'ils nomment.
+const PAGE_PREFIX =
+  'https://www.figma.com/oauth/mcp?response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A1%2Fcb&client_id=FAKECLIENTID'
 
 /** Processus factice : sorties et fin émises à la demande, de façon synchrone. */
 class FakeChild extends EventEmitter {
@@ -154,7 +159,9 @@ describe('REVUE 293 : preuves', () => {
     const w = world2()
     await w.engine.connect('opencode', 'figma', tmpdir())
     // Processus tué de l'extérieur au milieu de l'écriture de l'adresse.
-    first(w.attempts).write('●  https://www.figma.com/oauth/mcp?response_type=code&client_id=FAKE')
+    first(w.attempts).write(
+      '●  https://www.figma.com/oauth/mcp?response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A1%2Fcb&client_id=FAKE'
+    )
     first(w.attempts).end(null, 'SIGKILL')
     await flush()
     expect(w.opened).toEqual([])
@@ -178,16 +185,17 @@ describe('REVUE 293 : preuves', () => {
     expect(w.logged.join('\n')).not.toContain('FAKESTATE')
   })
 
-  it('R4 déconnexion en échec (délai) : journalisée comme faite', async () => {
+  it('R4 déconnexion en échec (délai) : ni succès rendu, ni succès au journal', async () => {
+    // Réécrit au second passage : le contrat a changé (`McpDisconnectResult`), l'ancienne forme ne
+    // pouvait plus échouer.
     const w = world2([figma()], true)
     const p = w.engine.disconnect('opencode', 'figma', tmpdir())
     await flush()
     await vi.advanceTimersByTimeAsync(30_000)
     if (w.lists.length) w.releaseList('[]')
     await flush()
-    const r = await p
-    // Rien n'a été déconnecté (commande sans réponse) : ni succès dit, ni « déconnexion » au journal.
-    expect(w.logged.filter((l) => l.includes('déconnexion de'))).toEqual([])
-    expect(r).not.toEqual({ started: true })
+    expect(await p).toEqual({ done: false, reason: 'timeout' })
+    expect(w.logged.filter((l) => l.includes('déconnecté'))).toEqual([])
+    expect(w.logged.some((l) => l.includes('pas de réponse'))).toBe(true)
   })
 })

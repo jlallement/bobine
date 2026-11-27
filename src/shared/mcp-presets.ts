@@ -19,6 +19,11 @@ export interface McpPreset {
    * l'`authorization_endpoint` publié par le serveur d'autorisation.
    */
   pagePath: string
+  /**
+   * La page doit porter un `redirect_uri` vers l'agent sur cette machine (`http`, `127.0.0.1` ou
+   * `localhost`, port) : sans lui, ce pourrait être la page de consentement du client d'un tiers.
+   */
+  pageLoopbackRedirect: boolean
 }
 
 export const MCP_PRESETS: readonly McpPreset[] = [
@@ -28,7 +33,9 @@ export const MCP_PRESETS: readonly McpPreset[] = [
     url: 'https://mcp.figma.com/mcp',
     // `authorization_endpoint` de Figma : `https://www.figma.com/oauth/mcp` (relevé 2026-11-27).
     pageHost: 'www.figma.com',
-    pagePath: '/oauth/mcp'
+    pagePath: '/oauth/mcp',
+    // Relevé : `redirect_uri=http://127.0.0.1:<port>/callback` (sortie réelle d'OpenCode 2.3.0).
+    pageLoopbackRedirect: true
   }
 ]
 

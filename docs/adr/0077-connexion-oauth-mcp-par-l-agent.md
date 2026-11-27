@@ -23,8 +23,9 @@ R6 de la fiche 293).
 2. **Bobine n'ouvre la page qu'après vérification** : ASCII imprimable, longueur bornée,
    `new URL` réussi, `https:`, hôte et chemin **exactement** ceux du préréglage (Figma :
    `www.figma.com`, `/oauth/mcp`), écrits tels quels (ni encodage, ni `..`), sans identifiants ni
-   port autre que celui par défaut ; un `redirect_uri`, s'il y en a un, est unique et pointe vers
-   cette machine (`http`, `127.0.0.1` ou `localhost`, port explicite). Jamais une adresse lue après
+   port autre que celui par défaut ; ni `request` ni `request_uri` ni `;` ; un `redirect_uri`
+   unique, sous ce nom exact, exigé si le préréglage le dit (Figma : oui), pointant vers cette
+   machine (`http`, hôte écrit `127.0.0.1` ou `localhost`, port en chiffres, ni `\` ni `@`). Jamais une adresse lue après
    la fin du processus ni une dernière ligne sans retour à la ligne. Sinon rien n'est ouvert et la
    tentative est arrêtée. Ouverture par `shell.openExternal`, depuis le main seulement.
 3. **Le jeton reste chez l'agent.** Bobine ne lit jamais sa base, ne lance jamais d'export, ne

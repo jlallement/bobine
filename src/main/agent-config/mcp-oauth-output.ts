@@ -100,6 +100,8 @@ export type PageCheck = { ok: true; url: string; host: string } | { ok: false; h
 export interface ExpectedPage {
   host: string
   path: string
+  /** La page doit porter un `redirect_uri` vers cette machine (sinon : facultatif). */
+  loopbackRedirect: boolean
 }
 
 const ASCII = /^[\x21-\x7e]+$/
@@ -124,36 +126,71 @@ function written(raw: string): { host: string; path: string } | undefined {
   return match ? { host: (match[1] ?? '').toLowerCase(), path: match[2] ?? '' } : undefined
 }
 
-/**
- * Retour de la connexion (`redirect_uri`) : absent, accepté ; sinon une seule fois, et vers l'agent
- * sur cette machine (`http`, `127.0.0.1` ou `localhost`, port explicite, sans identifiants). Deux
- * valeurs : refusé (le serveur pourrait prendre l'une ou l'autre). Décodé une fois seulement, comme
- * le lira le serveur : une valeur encodée deux fois ne se lit pas, refusée.
- */
-function loopbackRedirect(url: URL): boolean {
-  const values = url.searchParams.getAll('redirect_uri')
-  if (values.length === 0) return true
-  if (values.length > 1) return false
+/** Paramètres refusés partout : demande d'autorisation venue d'ailleurs (RFC 9101, RFC 9126). */
+const FORBIDDEN_PARAMS = new Set(['request', 'request_uri'])
+
+/** Décodage d'un nom de paramètre, une fois de plus ; tel quel s'il ne se décode pas. */
+function decodedOnce(text: string): string {
   try {
-    const back = new URL(values[0] ?? '')
-    return (
-      back.protocol === 'http:' &&
-      (back.hostname === '127.0.0.1' || back.hostname === 'localhost') &&
-      back.port !== '' &&
-      !back.username &&
-      !back.password
-    )
+    return decodeURIComponent(text)
+  } catch {
+    return text
+  }
+}
+
+/**
+ * Paramètres de la page : aucun `request` ni `request_uri` ; un seul `redirect_uri`, écrit sous ce
+ * nom exact (`REDIRECT_URI`, `redirect%5Furi`, `redirect%255Furi`… : refusés, on ne parie pas sur ce
+ * que lira le serveur) ; pas de `;` dans la requête (séparateur reconnu par certains serveurs).
+ */
+function queryParams(url: URL): { redirect?: string } | undefined {
+  if (url.search.includes(';')) return undefined
+  const redirects: string[] = []
+  for (const [name, value] of url.searchParams) {
+    const lower = name.toLowerCase()
+    const again = decodedOnce(name).toLowerCase()
+    if (FORBIDDEN_PARAMS.has(lower) || FORBIDDEN_PARAMS.has(again)) return undefined
+    if (lower === 'redirect_uri' || again === 'redirect_uri') {
+      if (name !== 'redirect_uri') return undefined
+      redirects.push(value)
+    }
+  }
+  if (redirects.length > 1) return undefined
+  return redirects.length ? { redirect: redirects[0] } : {}
+}
+
+/**
+ * Retour de la connexion (`redirect_uri`, décodé une fois, comme le lira le serveur) vers l'agent
+ * sur cette machine : `http`, hôte **écrit** exactement `127.0.0.1` ou `localhost` (ni `127.1`, ni
+ * `0x7f.1`, ni point final), port obligatoire en chiffres, ni `\` ni `@` nulle part. Une valeur
+ * encodée deux fois ne se lit pas : refusée.
+ */
+function loopback(redirect: string): boolean {
+  if (/[\\@]/.test(redirect)) return false
+  const match = /^http:\/\/(127\.0\.0\.1|localhost):([0-9]{1,5})(?:[/?#]|$)/.exec(redirect)
+  if (!match) return false
+  try {
+    const back = new URL(redirect)
+    return back.hostname === match[1] && back.port === String(Number(match[2]))
   } catch {
     return false
   }
+}
+
+/** Retour de connexion accepté : selon le préréglage, exigé ; s'il existe, vers cette machine. */
+function redirectOk(url: URL, required: boolean): boolean {
+  const params = queryParams(url)
+  if (!params) return false
+  if (params.redirect === undefined) return !required
+  return loopback(params.redirect)
 }
 
 /**
  * Adresse de page acceptée seulement si : ASCII imprimable, au plus `MAX_URL_CHARS`, lue en entier
  * par `new URL`, `https:`, hôte **exactement** celui attendu (ni sous-domaine, ni suffixe, ni point
  * final), sans port explicite autre que celui par défaut, sans identifiants, hôte et chemin **écrits**
- * exactement comme attendu (ni `..`, ni encodage, ni `\`), retour de connexion vers cette machine
- * s'il y en a un (`loopbackRedirect`). Rend l'adresse telle que `URL` l'écrit (c'est elle, vérifiée,
+ * exactement comme attendu (ni `..`, ni encodage, ni `\`), paramètres sûrs et retour de connexion
+ * vers cette machine, exigé si le préréglage le dit (`redirectOk`). Rend l'adresse telle que `URL` l'écrit (c'est elle, vérifiée,
  * qui sera ouverte) ; sinon l'hôte seul, s'il se lit.
  */
 export function checkPageUrl(raw: string, page: ExpectedPage): PageCheck {
@@ -176,7 +213,7 @@ export function checkPageUrl(raw: string, page: ExpectedPage): PageCheck {
     [host, `${host}:443`].includes(written(raw)?.host ?? '') &&
     written(raw)?.path === page.path &&
     url.pathname === page.path &&
-    loopbackRedirect(url)
+    redirectOk(url, page.loopbackRedirect)
   return exact
     ? { ok: true, url: url.href, host: url.hostname }
     : { ok: false, ...hostField(hostOf(raw)) }

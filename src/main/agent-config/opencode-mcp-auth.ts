@@ -18,12 +18,13 @@
 import type { McpAuthLine, McpAuthStored, McpOAuthSource } from '../agent/adapters'
 
 /**
- * Préfixe de tête sans importance : un symbole court suivi d'espaces. Sur un terminal Unicode,
- * OpenCode met `│`, `●`, `◇`, `◆`, `■`, `└` (relevé sur Mac) ; sans Unicode, sa bibliothèque
- * d'invite les remplace par de l'ASCII (`|`, `•`, `o`, `*`, `x`, `—` : hypothèse, non relevée sous
- * Windows, R9). La lecture ne dépend donc d'aucun symbole : au plus trois caractères, puis des espaces.
+ * Préfixe de tête sans importance, suivi d'espaces : un à trois **symboles** (ni lettre ni chiffre),
+ * ou **un seul** caractère quel qu'il soit. Sur un terminal Unicode, OpenCode met `│`, `●`, `◇`,
+ * `◆`, `■`, `└` (relevé sur Mac) ; sans Unicode, sa bibliothèque d'invite les remplacerait par de
+ * l'ASCII (`|`, `•`, `o`, `x`, `*`, `!`, `—` : hypothèse, non relevée sous Windows, R9). Un mot
+ * (`see`, `or`, `Go:`) n'est jamais ignoré : la ligne n'est alors pas « l'adresse seule ».
  */
-const SHORT_PREFIX = /^\S{1,3}\s+/u
+const SHORT_PREFIX = /^(?:[^\p{L}\p{N}\s]{1,3}|\S)\s+/u
 
 /** Une adresse, quel que soit son schéma : le moteur refuse ensuite tout ce qui n'est pas attendu. */
 const URL_LINE = /^[a-z][a-z0-9+.-]*:\/\/\S+$/i

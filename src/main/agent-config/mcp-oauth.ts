@@ -102,6 +102,8 @@ interface Attempt {
   name: string
   host: string
   path: string
+  /** Le préréglage exige un `redirect_uri` vers cette machine. */
+  loopbackRedirect: boolean
   /** Dossier de la conversation au lancement : la commande et la relecture y tournent (R4). */
   workspace: string
   child?: ChildProcess
@@ -284,27 +286,45 @@ export class McpOAuth {
     if (!target) return { done: false, reason: 'not-offered' }
     if (this.busy()) return { done: false, reason: 'busy' }
     this.logout = true
-    const id = this.claim(profileId, name)
     try {
+      // Environnement d'abord : s'il manque, rien n'est réservé et la fin d'une tentative précédente
+      // garde le droit d'émettre son état.
       const env = await this.deps.env(target.profile)
-      const outcome = await this.command(
-        target.profile,
-        target.source.disconnectArgs(name),
-        workspace,
-        env
-      )
+      return await this.loggedOut(target, name, workspace, env)
+    } finally {
+      this.logout = false
+    }
+  }
+
+  /**
+   * Déconnexion, environnement lu. Elle réserve le numéro du serveur (toute fin précédente devient
+   * périmée) : elle émet donc elle-même un état, quelle que soit sa façon de finir (`finally`).
+   */
+  private async loggedOut(
+    target: Target,
+    name: string,
+    workspace: string,
+    env: NodeJS.ProcessEnv
+  ): Promise<McpDisconnectResult> {
+    const profileId = target.profile.id
+    const id = this.claim(profileId, name)
+    let stored: Stored
+    let emitted = false
+    try {
+      const args = target.source.disconnectArgs(name)
+      const outcome = await this.command(target.profile, args, workspace, env)
       if (outcome.kind === 'missing') {
         this.remember(id, this.missing(profileId, name))
+        emitted = true
         return { done: false, reason: 'agent-missing' }
       }
       this.outcomes.delete(key(profileId, name))
-      const stored = await this.readStored(target.profile, target.source, workspace, env)
-      if (!this.quitting && this.latest.get(key(profileId, name)) === id) {
-        this.deps.onState(this.shown(profileId, name, stored))
-      }
+      stored = await this.readStored(target.profile, target.source, workspace, env)
       return this.disconnected(target.profile, name, outcome, stored)
     } finally {
-      this.logout = false
+      if (!emitted && !this.quitting && this.latest.get(key(profileId, name)) === id) {
+        this.deps.onState(this.shown(profileId, name, stored))
+      }
     }
   }
 
@@ -479,6 +499,7 @@ export class McpOAuth {
       name,
       host: target.preset.pageHost,
       path: target.preset.pagePath,
+      loopbackRedirect: target.preset.pageLoopbackRedirect,
       workspace,
       urlSeen: false,
       processEnded: false,
@@ -579,7 +600,11 @@ export class McpOAuth {
       return
     }
     attempt.urlSeen = true
-    const check = checkPageUrl(read.url, { host: attempt.host, path: attempt.path })
+    const check = checkPageUrl(read.url, {
+      host: attempt.host,
+      path: attempt.path,
+      loopbackRedirect: attempt.loopbackRedirect
+    })
     if (!check.ok) {
       log.warn(
         `MCP : connexion de « ${attempt.name} » : page refusée (${check.host ?? 'adresse illisible'}, attendu ${attempt.host})`
@@ -637,8 +662,6 @@ export class McpOAuth {
     }
     if (this.current === attempt) this.current = undefined
     if (this.quitting) return
-    const unread = attempt.unread ? `, ${attempt.unread} ligne(s) non reconnue(s)` : ''
-    log.info(`MCP : connexion de « ${name} » par ${profile.label} : fin (${ending.kind}${unread})`)
     let stored: Stored
     if (!(ending.kind === 'spawn-failed' && ending.missing)) {
       try {
@@ -654,7 +677,14 @@ export class McpOAuth {
       name,
       ...attemptOutcome(ending, attempt.told, attempt.urlSeen, value)
     }
-    if (this.quitting || this.latest.get(key(profile.id, name)) !== attempt.id) return
+    if (this.quitting) return
+    const unread = attempt.unread ? `, ${attempt.unread} ligne(s) non reconnue(s)` : ''
+    const subject = `MCP : connexion de « ${name} » par ${profile.label}`
+    if (this.latest.get(key(profile.id, name)) !== attempt.id) {
+      log.info(`${subject} : fin périmée (${ending.kind}${unread}), ignorée`)
+      return
+    }
+    log.info(`${subject} : fin (${ending.kind}${unread})`)
     if (value === 'connected' || ending.kind === 'cancel') {
       this.outcomes.delete(key(profile.id, name))
       this.deps.onState(state)

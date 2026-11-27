@@ -13,7 +13,7 @@ import { resolveProfiles } from '../agent/profiles'
 import { McpOAuth } from './mcp-oauth'
 
 const PAGE =
-  'https://www.figma.com/oauth/mcp?response_type=code&client_id=FAKECLIENTID&state=FAKESTATE&code_challenge=FAKECHALLENGE'
+  'https://www.figma.com/oauth/mcp?response_type=code&client_id=FAKECLIENTID&redirect_uri=http%3A%2F%2F127.0.0.1%3A54321%2Fcallback&state=FAKESTATE&code_challenge=FAKECHALLENGE'
 const CONNECTED = JSON.stringify([
   { id: 'mcp_abc', name: 'figma', connections: [{ method: 'oauth' }] }
 ])
@@ -70,6 +70,8 @@ interface WorldOptions {
   logout?: 'ok' | 'hang' | 'missing' | 'throw'
   /** Environnement fourni à la demande (`releaseEnv`). */
   heldEnv?: boolean
+  /** L'environnement rejette (trousseau verrouillé) tant que la fonction rend vrai. */
+  envFails?: () => boolean
   startError?: Error
   openError?: Error
 }
@@ -111,9 +113,11 @@ function world(options: WorldOptions = {}) {
     servers: () => options.servers ?? [figma()],
     fallbackCwd: tmpdir(),
     env: () =>
-      options.heldEnv
-        ? new Promise<NodeJS.ProcessEnv>((resolve) => envWaiters.push(resolve))
-        : Promise.resolve({ PATH: '/x' }),
+      options.envFails?.()
+        ? Promise.reject(new Error('trousseau verrouillé'))
+        : options.heldEnv
+          ? new Promise<NodeJS.ProcessEnv>((resolve) => envWaiters.push(resolve))
+          : Promise.resolve({ PATH: '/x' }),
     findCommand: (c) => `/x/${c}`,
     openExternal: (url) => {
       if (options.openError) return Promise.reject(options.openError)
@@ -192,6 +196,35 @@ describe('A. une fin périmée n’émet rien et ne range rien', () => {
     await flush()
     w.releaseList('[]')
     expect((await view).servers[0]?.status).toBe('to-connect')
+  })
+
+  it('connexion dont l’environnement échoue pendant la relecture d’une autre : état émis', async () => {
+    let failEnv = false
+    const w = world({ envFails: () => failEnv })
+    await w.engine.connect('opencode', 'figma', ws)
+    w.attempt().write(`${PAGE}\n`)
+    w.engine.cancel('opencode', 'figma')
+    await flush()
+    expect(w.lists).toHaveLength(1)
+    failEnv = true
+    expect(await w.engine.connect('opencode', 'figma', ws)).toEqual({ started: true })
+    await flush()
+    failEnv = false
+    w.releaseList('[]') // relecture périmée de la première tentative
+    await flush()
+    expect(w.last()).toMatchObject({ status: 'error', reason: 'stopped' })
+    expect(w.logged.some((l) => l.includes('fin périmée (cancel)'))).toBe(true)
+    expect(w.logged.filter((l) => /: fin \(cancel/.test(l))).toEqual([])
+  })
+
+  it('déconnexion dont l’environnement échoue, sans tentative avant : rien de réservé ni d’émis', async () => {
+    const w = world({ envFails: () => true })
+    await expect(w.engine.disconnect('opencode', 'figma', ws)).rejects.toThrow()
+    expect(w.states).toEqual([])
+    expect(w.start).not.toHaveBeenCalled()
+    expect(await w.engine.disconnect('opencode', 'autre', ws)).toMatchObject({
+      reason: 'not-offered'
+    })
   })
 
   it('relecture qui ne répond jamais : bornée par le délai des commandes, état inconnu', async () => {

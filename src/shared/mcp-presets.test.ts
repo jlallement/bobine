@@ -10,7 +10,8 @@ describe('préréglages de serveurs MCP (fiche 293)', () => {
       name: 'figma',
       url: 'https://mcp.figma.com/mcp',
       pageHost: 'www.figma.com',
-      pagePath: '/oauth/mcp'
+      pagePath: '/oauth/mcp',
+      pageLoopbackRedirect: true
     })
     expect(MCP_PRESETS).toHaveLength(1)
     expect(presetById('inconnu')).toBeUndefined()

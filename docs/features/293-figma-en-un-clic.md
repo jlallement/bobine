@@ -175,10 +175,14 @@ en réel. (Q1)
   (majuscules et `:443` admis, aucun encodage) ; a pour chemin exactement le chemin attendu du
   préréglage (`pagePath`, Figma : `/oauth/mcp`, celui de l'`authorization_endpoint` publié),
   **écrit tel quel** (ni `..`, ni `.`, ni encodage, ni `\`) ; n'a pas d'identifiants
-  (`user:pass@`) ; et, si elle porte un `redirect_uri`, il est **unique** (deux valeurs : refus, on
-  ne parie pas sur celle que lira le serveur), se lit après un seul décodage, et pointe vers cette
-  machine : `http`, `127.0.0.1` ou `localhost`, port explicite, sans identifiants. Sans
-  `redirect_uri` : acceptée. Sinon : rien d'ouvert, état **Erreur** « Page inattendue (<hôte>) »,
+  (`user:pass@`) ; n'a ni `request` ni `request_uri` (à la casse près), ni `;` dans la requête ;
+  porte un **`redirect_uri` exigé** par le préréglage (`pageLoopbackRedirect`, Figma : oui, relevé
+  `http://127.0.0.1:<port>/callback` ; sans lui, ce pourrait être la page de consentement du client
+  d'un tiers), **unique** et écrit sous ce nom exact (`REDIRECT_URI`, `redirect%5Furi`,
+  `redirect%255Furi` : refus, on ne parie pas sur celui que lira le serveur) ; ce retour, décodé
+  une fois, ne contient ni `\` ni `@`, est en `http`, a pour hôte **écrit** exactement `127.0.0.1`
+  ou `localhost` (ni `127.1`, ni `0x7f.1`, ni `[::1]`, ni point final, ni majuscules) et un port en
+  chiffres. Un préréglage qui ne l'exige pas accepte une page sans retour, jamais un mauvais. Sinon : rien d'ouvert, état **Erreur** « Page inattendue (<hôte>) »,
   processus arrêté. C'est l'adresse normalisée par `URL`, celle qui a été vérifiée, qui est ouverte.
 - **Pas d'adresse après la fin** : une adresse lue après la sortie du processus, ou sur une
   dernière ligne sans retour à la ligne (peut-être coupée), n'est jamais ouverte.
@@ -662,3 +666,17 @@ Taille : ≈ 3 j avec le lot 3, relevés compris. **Aucune dépendance nouvelle.
     (`urlSeen`/`url`), place rendue à la fermeture (deux remises à zéro, et `quitting` refuse tout),
     garde de péremption de `remember` (aucun appel périmé possible), ligne incomplète et `close`
     sans `exit` (le processus est toujours marqué sorti avant).
+- 2026-11-27 — **Second passage du testeur** (sur `d5dac27b`) : A, B, C, E, G, H, I tiennent ; choix
+  de A accepté par le tech lead. Corrigé :
+  1. déconnexion : le numéro n'est réservé qu'après lecture de l'environnement, et la déconnexion
+     émet elle-même un état dans un `finally` dès qu'elle a réservé ; `connect` réserve avant
+     l'attente (double clic) mais toute issue y émet un état (fin de tentative, agent absent) ;
+  2. préfixe ignoré limité à 1–3 symboles (ni lettre ni chiffre) ou à un seul caractère : `see`,
+     `or`, `Go:` devant une adresse ne font plus « la page » ;
+  3. R4 réécrit sur le contrat actuel ; R1 à R3 dotés du `redirect_uri` local exigé (sinon creux) ;
+     les six essais recopiés rougissent chacun sous une mutation ;
+  4. D durci : `redirect_uri` local exigé par le préréglage, `request`/`request_uri`, noms
+     déguisés et `;` refusés, retour sans `\` ni `@`, hôte écrit `127.0.0.1` ou `localhost`, port
+     en chiffres ;
+  5. journal : une fin périmée écrit « fin périmée (…), ignorée », jamais « fin (…) ».
+  Essais du second passage gardés (`mcp-oauth.revue2.test.ts`, balayage D avec réponses attendues).
