@@ -421,6 +421,28 @@ le logo n'en est pas un ; l'archive n'impose aucune formule ; à trancher à l'i
 « certifié », « recommandé par Figma », « intégration officielle » ni rien qui laisse croire que
 Figma cautionne Bobine.
 
+## Écarts au plan (lot 1)
+
+- **Canaux en plus** : `mcp:addPreset` (ajout du préréglage, séparé de `mcp:connect` : le renderer
+  enchaîne les deux, et l'ajout se fait aussi sans connexion) et `mcp:reopenPage` (« Rouvrir la
+  page » : l'adresse ne quitte jamais le main). `connect` et `disconnect` rendent un
+  `McpConnectResult` (refus `busy`, `not-offered`, `agent-missing`) au lieu de lever une erreur.
+- **Raisons d'erreur** : `failed` ajoutée (« La connexion n'a pas abouti » : fin d'échec dite par
+  l'agent sans cause reconnue, dont le refus tant que R2 manque) à `timeout`, `unexpected-page`,
+  `stopped`. L'expiration dite par OpenCode donne `timeout`.
+- **Adresse adverse** : l'hôte en majuscules et le port 443 écrit sont acceptés (même hôte, même
+  origine pour `URL`) ; c'est l'adresse **normalisée par `URL`**, celle qui a été vérifiée, qui est
+  ouverte. Toute adresse contenant un caractère hors ASCII imprimable est refusée (IDN compris).
+  Deux adresses : **la première décide** (ouverte, ou tentative arrêtée si elle est refusée) ; une
+  suivante est ignorée et journalisée sans elle.
+- **Nom ambigu** (R7 non relevé) : un nom déclaré deux fois (tous les dossiers et ce dossier) n'est
+  connectable que si les deux déclarations ont l'adresse du même préréglage ; sinon rien n'est
+  proposé ni lancé.
+- **Entrée standard** de la commande : un tube jamais écrit (comme l'agent) ; sous Windows, l'arrêt
+  de l'arbre commence par le fermer (ADR-0050).
+- **Commande copiée** (« Dans un terminal ») : `terminalArgs` existe dans l'adaptateur, pas encore
+  exposé au renderer (lot 2).
+
 ## Décisions de Jérôme (2026-11-27)
 
 Réponses à ses questions, avec ses mots :
@@ -435,7 +457,9 @@ Réponses à ses questions, avec ses mots :
 
 ## Questions pour Jérôme
 
-Aucune ; R1 à R9 à relever avant de coder.
+- Valider l'ADR-0075 (proposé).
+- R2 (refus sur la page de Figma) et R3 (conversation déjà ouverte) : un clic de sa part, avec
+  le profil isolé, avant le lot 2 de préférence.
 
 ## Critères d'acceptation
 
@@ -462,10 +486,10 @@ Aucune ; R1 à R9 à relever avant de coder.
 - [ ] Logo de Figma **non modifié** : le fichier livré a la même empreinte sha256 que celui de
       l'archive officielle (`9798b710…`) ; lisible dans ses deux tailles (boîtes de 56 et 28 px, dessins ≈ 26 et 13 px),
       en clair et en sombre (captures regardées).
-- [ ] `specificItems` et `docs/agents.md` : repère `mcp-oauth` (test existant des repères).
+- [x] `specificItems` et `docs/agents.md` : repère `mcp-oauth` (test existant des repères).
 - [ ] (Lot 3) Une carte `execute` finie avec `toolCalls: [{ tool: "figma.whoami" }]` s'intitule
       « figma · whoami » ; une carte sans ce champ garde « execute ».
-- [ ] **Unitaires** : lecture de la sortie (ANSI, tourniquet, adresse seule sur sa ligne, « Connected
+- [x] **Unitaires** (lot 1) : lecture de la sortie (ANSI, tourniquet, adresse seule sur sa ligne, « Connected
       to », « Authorization expired », erreur, sortie inconnue), vérification d'adresse (http, autre
       hôte, `user@`, trop longue, adresse coupée), lecture de `auth list` (connecté, expiré, absent,
       JSON invalide), machine d'états (une seule connexion, annulation, délai).
@@ -479,9 +503,9 @@ Aucune ; R1 à R9 à relever avant de coder.
 
 ## Plan
 
-0. **Relevés R1 à R8** (essai réel, profil isolé) ; puis ADR « connexion OAuth d'un serveur MCP
+0. **Relevés R1 à R8** (essai réel, profil isolé ; R4, R5, R6 faits le 2026-11-27) ; puis ADR « connexion OAuth d'un serveur MCP
    par l'agent : Bobine ouvre une page lue dans sa sortie, après vérification d'hôte ».
-1. **Lot 1 — moteur (main)**, ≈ 1,5 j :
+1. **Lot 1 — moteur (main)**, ≈ 1,5 j — **fait le 2026-11-27** (voir Journal et « Écarts ») :
    - `shared/mcp.ts` : `McpAuthState`, `oauth` sur `McpAgentView` ; `shared/mcp-presets.ts`
      (Figma) ; `shared/ipc.ts` : canaux.
    - `main/agent/adapters.ts` : `McpOAuthSource` ; `main/agent-config/opencode-mcp-auth.ts`
@@ -541,3 +565,39 @@ Taille : ≈ 3 j avec le lot 3, relevés compris. **Aucune dépendance nouvelle.
   « Connexion en cours (www.figma.com) · Rouvrir la page · Annuler » au lieu de « En cours » (une
   ligne à 940 px, mesurée en français et en anglais : « Signing in (www.figma.com) · Reopen the
   page · Cancel ») ; le « · » reste en fin de ligne quand la ligne passe à la ligne (736 px).
+- 2026-11-27 — **Étape 0** (relevés du tech lead reportés) : R4, R5, R6, « avant connexion » et
+  expiration dans « Contrat réel » ; sorties brutes copiées en fixtures
+  (`src/main/agent-config/fixtures/opencode-2.3.0-mcp-auth/`) ; R1, R2, R3, R7 à R9 notés « pas
+  faits ». ADR-0075 écrit, statut **proposé**.
+- 2026-11-27 — **Lot 1 (moteur, main)** codé, sans interface :
+  - `shared/mcp.ts` : `McpAuthStatus`, `McpAuthReason`, `McpAuthState`, `McpAuthView`,
+    `McpConnectResult`, `oauth` sur `McpAgentView` ; `shared/mcp-presets.ts` : Figma en donnée
+    (`url`, `pageHost: www.figma.com`), `presetForUrl` (adresse comparée normalisée) ;
+  - `agent/adapters.ts` : `McpOAuthSource`, `McpAuthLine` (dont `refused`, point d'extension
+    `TODO(R2)` non branché), `McpAuthStored` ; `agent-config/opencode-mcp-auth.ts` : arguments
+    (`--standalone` toujours, sauf la commande à copier), lecture des lignes (glyphes d'OpenCode
+    retirés, adresse seule sur sa ligne, « Connected to », « Authorization expired », « Failed »,
+    « Cancelled »), lecture de `auth list` (`mcp_…` seulement, méthode `oauth`, `needs_auth`
+    facultatif, sortie illisible = inconnu) ; `agent/profiles.ts` : `mcpOAuth` sur OpenCode ;
+    `agent/capabilities.ts` : repère `mcp-oauth` (+ `docs/agents.md`) ;
+  - `agent-config/mcp-oauth-output.ts` : lignes de terminal (UTF-8 coupé, `\r` seul et retour du
+    curseur = effacement, codes retirés, contrôles neutralisés en U+FFFD, ligne > 8 192 caractères
+    jetée entière, tourniquet compacté au fil de l'eau), `checkPageUrl`, `scrubUrls` ;
+  - `agent-config/mcp-oauth.ts` : moteur `McpOAuth` (une connexion ou déconnexion à la fois,
+    réservée avant toute attente ; délai 10 min, 30 s sans adresse ; chaque fin traitée une fois,
+    arbre toujours arrêté par `killTree`, même après une fin naturelle ; fin jugée par
+    `attemptOutcome` à la sortie et à l'état relu ; état d'erreur gardé jusqu'à une connexion relue ;
+    commandes courtes bornées à 30 s et 1 Mio) ;
+  - `McpSettings` : `addPreset` (tous les dossiers, format du fichier gardé, pas de doublon
+    d'adresse, `figma-2`… si le nom est pris, fichier illisible = refus), « Tester » refusé pour ces
+    serveurs, méthodes de connexion ; `mcp-oauth-setup.ts` (environnement de l'agent,
+    `shell.openExternal`, `broadcast`) ; `index.ts` : arrêt à la fermeture (`shutdown`) ;
+  - IPC : `mcp:addPreset`, `mcp:authStates`, `mcp:connect`, `mcp:cancelConnect`, `mcp:reopenPage`,
+    `mcp:disconnect`, événement `mcp:authState` ; preload ; `read-only-guard.ts` (lire, rouvrir,
+    annuler : sûrs ; ajouter, connecter, déconnecter : refusés en lecture seule) ;
+  - essais unitaires : fixtures réelles rejouées (d'un bloc, octet par octet, en morceaux, en CRLF),
+    adresses adverses, moteur sur faux processus et horloge simulée (fins en course, une connexion
+    à la fois, fermeture, agent absent, IBM Bob, recherche de `state=`, `code_challenge`,
+    `client_id` dans tout ce qui sort), et un essai sur une **fausse commande** réelle
+    (`fixtures/fake-agent-mcp-auth.mjs`, Node) : enfant arrêté avec le parent à « Annuler ».
+  - Pas d'e2e : aucune interface ne change dans ce lot.

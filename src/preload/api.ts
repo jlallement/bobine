@@ -230,7 +230,19 @@ export function createApi(
       appTools: () => invoke('mcp:appTools'),
       /** Coupe ou rallume une famille d'outils de Bobine (fiche 109). */
       setAppToolFamily: (id: string, enabled: boolean) =>
-        invoke('mcp:setAppToolFamily', id, enabled)
+        invoke('mcp:setAppToolFamily', id, enabled),
+      /** Préréglage ajouté pour tous les dossiers (fiche 293). */
+      addPreset: (profileId: string, presetId: string) =>
+        invoke('mcp:addPreset', profileId, presetId),
+      /** Connexion d'un serveur par l'agent (fiche 293) : états, lancer, annuler, rouvrir, défaire. */
+      authStates: (profileId: string) => invoke('mcp:authStates', profileId),
+      connect: (profileId: string, name: string) => invoke('mcp:connect', profileId, name),
+      cancelConnect: (profileId: string, name: string) =>
+        invoke('mcp:cancelConnect', profileId, name),
+      reopenPage: (profileId: string, name: string) => invoke('mcp:reopenPage', profileId, name),
+      disconnect: (profileId: string, name: string) => invoke('mcp:disconnect', profileId, name),
+      onAuthState: (listener: (state: IpcEventContract['mcp:authState']) => void) =>
+        subscribe('mcp:authState', listener)
     },
     /**
      * Règles d'approbation globales d'un agent (fiche 215, ADR-0044 ; Bob : celles de Bob IDE et

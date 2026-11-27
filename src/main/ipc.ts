@@ -57,7 +57,7 @@ import { scheduleHandlers } from './scheduler/scheduler-ipc'
 import { profileHandlers, type ProfileIpcDeps } from './profile-ipc'
 import { translate } from '@shared/i18n/message'
 import { plainError } from './profile-status'
-import { mcpHandlers } from './agent-config/mcp-ipc'
+import { mcpHandlers, type McpIpcSettings } from './agent-config/mcp-ipc'
 import {
   approvalRulesHandlers,
   type ApprovalRulesSettings
@@ -72,7 +72,6 @@ import type { DevServers } from './preview/dev-servers'
 import type { TerminalManager } from './terminal/terminal-manager'
 import { log } from './log'
 import { messageOf } from '@shared/errors'
-import type { McpSettings } from './agent-config/mcp-settings'
 import type { ApprovalStore } from './approvals'
 import { appHandlers, type AppIpcDeps } from './app-ipc'
 import { acpExchanges, type AcpExchanges } from './agent/acp-exchanges'
@@ -273,7 +272,7 @@ export function createHandlers(
   deps: AppIpcDeps &
     DiagnosticsIpcDeps & {
       /** Serveurs MCP des agents (fiche 025). */
-      mcp?: Pick<McpSettings, 'list' | 'save' | 'remove' | 'setEnabled' | 'test'>
+      mcp?: McpIpcSettings
       /** Règles d'approbation globales des agents (fiche 215). */
       approvalRules?: Pick<ApprovalRulesSettings, 'get' | 'change' | 'file'>
       /** Fournisseurs de modèles des agents, et réseau d'entreprise (fiche 104). */

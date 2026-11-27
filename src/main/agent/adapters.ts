@@ -256,3 +256,45 @@ export interface ProvidersSource {
   /** La clé sera lue dans la variable `env` : remplace une clé en clair ou absente. */
   useKeyVariable(text: string, data: Record<string, unknown>, id: string, env: string): string
 }
+
+/**
+ * Ligne de la sortie de la commande de connexion, telle que l'adaptateur la reconnaît (fiche 293) :
+ * `url` : une adresse seule sur sa ligne (vérifiée ensuite par le moteur, jamais ici) ; les autres :
+ * une fin dite par l'agent. `refused` : point d'extension du refus sur la page, pas encore branché
+ * (`TODO(R2)`, fiche 293 : aucune sortie relevée, rien d'inventé).
+ */
+export type McpAuthLine =
+  | { kind: 'url'; url: string }
+  | { kind: 'connected' }
+  | { kind: 'expired' }
+  | { kind: 'refused' }
+  | { kind: 'failed' }
+  | { kind: 'cancelled' }
+
+/** État d'un serveur relu chez l'agent ; absent de la table : aucune connexion (à connecter). */
+export type McpAuthStored = 'connected' | 'expired' | 'unknown'
+
+/**
+ * Connexion OAuth d'un serveur MCP distant faite par l'agent (fiche 293, ADR-0075), telle que son
+ * profil la déclare. Arguments seuls : la commande est celle de l'agent (`AgentProfile.command`),
+ * trouvée et lancée comme lui. Le moteur (`agent-config/mcp-oauth.ts`) lance, lit, vérifie l'adresse,
+ * arrête ; l'adaptateur ne fait que dire les arguments et lire les sorties.
+ */
+export interface McpOAuthSource {
+  /** Repère de la fonction dans « Propre à <agent> » et `docs/agents.md`. */
+  id: 'opencode-mcp-auth'
+  /** Version de l'agent sur laquelle le contrat a été relevé. */
+  version: string
+  /** Arguments de la connexion d'un serveur (nom déjà vérifié par `MCP_NAME`). */
+  connectArgs(name: string): string[]
+  /** Arguments de la déconnexion d'un serveur. */
+  disconnectArgs(name: string): string[]
+  /** Arguments qui listent les connexions de l'agent (sortie lue par `readStates`). */
+  statesArgs(): string[]
+  /** Commande à copier pour la faire dans un terminal (« Dans un terminal », lot 2). */
+  terminalArgs(name: string): string[]
+  /** Une ligne de sortie, déjà débarrassée des codes de terminal ; `undefined` : rien de reconnu. */
+  readLine(line: string): McpAuthLine | undefined
+  /** États par nom de serveur, d'après la sortie de `statesArgs` ; `undefined` : sortie illisible. */
+  readStates(stdout: string): Map<string, McpAuthStored> | undefined
+}

@@ -27,7 +27,13 @@ function setup() {
     save: vi.fn((): McpAgentView[] => []),
     remove: vi.fn((): McpAgentView[] => []),
     setEnabled: vi.fn((): McpAgentView[] => []),
-    test: vi.fn(async () => ({ ok: false as const, error: 'x', ms: 1 }))
+    test: vi.fn(async () => ({ ok: false as const, error: 'x', ms: 1 })),
+    addPreset: vi.fn(() => ({ name: 'figma', added: true, views: [] as McpAgentView[] })),
+    authStates: vi.fn(async (profileId: string) => ({ profileId, agentFound: true, servers: [] })),
+    connect: vi.fn(async () => ({ started: true as const })),
+    cancelConnect: vi.fn(() => true),
+    reopenPage: vi.fn(() => true),
+    disconnect: vi.fn(async () => ({ started: true as const }))
   }
   return { conversations, mcp, appSettings, handlers: mcpHandlers(mcp, conversations, appSettings) }
 }
@@ -56,6 +62,26 @@ describe('canaux de Réglages › Serveurs MCP (fiche 099)', () => {
     expect(() =>
       handlers['mcp:setEnabled']('bob', 'global', 'x', 'oui' as unknown as boolean)
     ).toThrow('enabled')
+  })
+
+  it('connexion par l’agent (fiche 293) : dossier courant, arguments vérifiés', async () => {
+    const { handlers, mcp } = setup()
+    handlers['mcp:addPreset']('opencode', 'figma')
+    expect(mcp.addPreset).toHaveBeenCalledWith('opencode', 'figma', '/projet')
+    await handlers['mcp:authStates']('opencode')
+    expect(mcp.authStates).toHaveBeenCalledWith('opencode', '/projet')
+    await handlers['mcp:connect']('opencode', 'figma')
+    expect(mcp.connect).toHaveBeenCalledWith('opencode', 'figma', '/projet')
+    handlers['mcp:cancelConnect']('opencode', 'figma')
+    expect(mcp.cancelConnect).toHaveBeenCalledWith('opencode', 'figma')
+    handlers['mcp:reopenPage']('opencode', 'figma')
+    expect(mcp.reopenPage).toHaveBeenCalledWith('opencode', 'figma')
+    await handlers['mcp:disconnect']('opencode', 'figma')
+    expect(mcp.disconnect).toHaveBeenCalledWith('opencode', 'figma', '/projet')
+    expect(() => handlers['mcp:connect']('opencode', 42 as unknown as string)).toThrow('name')
+    expect(() => handlers['mcp:addPreset']('', 'figma')).toThrow('profileId')
+    expect(() => handlers['mcp:reopenPage']('opencode', '')).toThrow('name')
+    expect(mcp.connect).toHaveBeenCalledTimes(1)
   })
 
   it('sans réglages MCP (essais) : erreur claire, les outils de Bobine restent lisibles', () => {

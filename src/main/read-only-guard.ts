@@ -66,6 +66,10 @@ export const READ_ONLY_SAFE = [
   'approvalRules:open',
   'mcp:test',
   'mcp:appTools',
+  // Connexion par l'agent (fiche 293) : lire l'état, rouvrir la page, annuler ne changent rien.
+  'mcp:authStates',
+  'mcp:reopenPage',
+  'mcp:cancelConnect',
   'providers:list',
   'providers:test',
   'providers:diagnose',
@@ -239,6 +243,10 @@ export const PROFILE_CHANGING = [
   'mcp:remove',
   'mcp:setEnabled',
   'mcp:setAppToolFamily',
+  // Écrivent le fichier ou la connexion de l'agent, comme `mcp:save` (fiche 293).
+  'mcp:addPreset',
+  'mcp:connect',
+  'mcp:disconnect',
   'providers:save',
   'providers:remove',
   'providers:setEnabled',

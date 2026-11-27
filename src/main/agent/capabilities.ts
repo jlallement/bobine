@@ -173,6 +173,17 @@ function fileItems(profile: AgentProfile): CapabilityItem[] {
       detail: t('capabilities.mcpFiles.detail', { files: profile.mcpConfig.summary() })
     })
   }
+  // Connexion des serveurs MCP distants par l'agent (fiche 293), un repère par commande.
+  if (profile.mcpOAuth?.id === 'opencode-mcp-auth') {
+    items.push({
+      id: 'mcp-oauth',
+      label: t('capabilities.mcpOAuth.label'),
+      detail: t('capabilities.mcpOAuth.detail', {
+        command: [profile.command, ...profile.mcpOAuth.terminalArgs('')].join(' ').trim(),
+        agent: profile.label
+      })
+    })
+  }
   // Un repère par format de règles d'approbation (`ApprovalRulesSource.id`), comme pour les coûts.
   if (profile.approvalRules?.id === 'bob-settings') {
     items.push({

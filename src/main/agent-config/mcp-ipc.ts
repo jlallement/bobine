@@ -18,6 +18,12 @@ type McpChannels =
   | 'mcp:test'
   | 'mcp:appTools'
   | 'mcp:setAppToolFamily'
+  | 'mcp:addPreset'
+  | 'mcp:authStates'
+  | 'mcp:connect'
+  | 'mcp:cancelConnect'
+  | 'mcp:reopenPage'
+  | 'mcp:disconnect'
   | 'conversation:appTools'
 
 /* Les arguments IPC viennent du renderer : on ne fait confiance qu'à ce qu'on vérifie. */
@@ -32,8 +38,24 @@ function mcpScope(value: unknown): McpScope {
   return value
 }
 
+/** Ce que les canaux appellent de `McpSettings`. */
+export type McpIpcSettings = Pick<
+  McpSettings,
+  | 'list'
+  | 'save'
+  | 'remove'
+  | 'setEnabled'
+  | 'test'
+  | 'addPreset'
+  | 'authStates'
+  | 'connect'
+  | 'cancelConnect'
+  | 'reopenPage'
+  | 'disconnect'
+>
+
 export function mcpHandlers(
-  mcp: Pick<McpSettings, 'list' | 'save' | 'remove' | 'setEnabled' | 'test'> | undefined,
+  mcp: McpIpcSettings | undefined,
   conversations: Pick<ConversationManager, 'settingsView' | 'appToolsCatalog' | 'appToolNames'>,
   appSettings: Pick<SettingsStore, 'setAppToolFamily'>
 ): Pick<IpcHandlers, McpChannels> {
@@ -71,6 +93,18 @@ export function mcpHandlers(
     },
     'mcp:test': (profileId, scope, name) =>
       settings().test(str(profileId, 'profileId'), mcpScope(scope), workspace(), str(name, 'name')),
+    'mcp:addPreset': (profileId, presetId) =>
+      settings().addPreset(str(profileId, 'profileId'), str(presetId, 'presetId'), workspace()),
+    'mcp:authStates': (profileId) =>
+      settings().authStates(str(profileId, 'profileId'), workspace()),
+    'mcp:connect': (profileId, name) =>
+      settings().connect(str(profileId, 'profileId'), str(name, 'name'), workspace()),
+    'mcp:cancelConnect': (profileId, name) =>
+      settings().cancelConnect(str(profileId, 'profileId'), str(name, 'name')),
+    'mcp:reopenPage': (profileId, name) =>
+      settings().reopenPage(str(profileId, 'profileId'), str(name, 'name')),
+    'mcp:disconnect': (profileId, name) =>
+      settings().disconnect(str(profileId, 'profileId'), str(name, 'name'), workspace()),
     'mcp:appTools': () => conversations.appToolsCatalog(),
     'mcp:setAppToolFamily': (id, enabled) => {
       if (typeof enabled !== 'boolean') throw new Error('Paramètre invalide : enabled')

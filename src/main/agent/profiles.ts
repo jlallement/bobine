@@ -15,6 +15,7 @@ import { BOB_EXCLUSIONS } from '../agent-config/bob-exclusions'
 import { BOB_APPROVAL_RULES } from '../agent-config/bob-approval-rules'
 import type { ApprovalRulesSource } from '../agent-config/approval-rules'
 import { OPENCODE_MCP } from '../agent-config/opencode-mcp'
+import { OPENCODE_MCP_AUTH } from '../agent-config/opencode-mcp-auth'
 import { OPENCODE_PROVIDERS } from '../agent-config/opencode-providers'
 import { OPENCODE_RULES } from '../agent-config/opencode-rules'
 import type {
@@ -22,6 +23,7 @@ import type {
   DiffSource,
   ExclusionSource,
   McpConfigSource,
+  McpOAuthSource,
   ProvidersSource,
   QuotaSource,
   RulesSource,
@@ -170,6 +172,12 @@ export interface AgentProfile {
    * format (fiche 140).
    */
   mcpConfig?: McpConfigSource
+  /**
+   * Connexion OAuth d'un serveur MCP distant faite par l'agent (fiche 293, ADR-0075 ; OpenCode :
+   * `opencode mcp auth`) : « Se connecter » des préréglages dans Réglages › Serveurs MCP. Absent :
+   * rien n'est proposé ni lancé, rien n'est supposé de l'agent.
+   */
+  mcpOAuth?: McpOAuthSource
   /**
    * Format du fichier où l'agent déclare ses fournisseurs de modèles (fiche 104 : points d'accès
    * compatibles OpenAI), modifiables dans Réglages › Agents ; clé posée par `{env:VAR}`.
@@ -632,6 +640,8 @@ export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
       env: {},
       compactCommand: '/compact',
       mcpConfig: OPENCODE_MCP,
+      // Connexion des serveurs MCP distants par `opencode mcp auth` (2.3.0, fiche 293).
+      mcpOAuth: OPENCODE_MCP_AUTH,
       // Points d'accès compatibles OpenAI (modèles internes) dans `opencode.json` (fiche 104).
       providers: OPENCODE_PROVIDERS,
       rules: OPENCODE_RULES,

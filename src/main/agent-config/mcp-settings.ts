@@ -1,30 +1,135 @@
 /**
  * Serveurs MCP des agents dans les réglages (fiche 025) : un `AgentMcpConfig` par profil qui en
- * déclare le format. Le dossier « projet » est celui de la conversation affichée.
+ * déclare le format. Le dossier « projet » est celui de la conversation affichée. Préréglages et
+ * connexion OAuth par l'agent (fiche 293) : ajout « tous les dossiers », moteur `McpOAuth`.
  */
 import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { parseMcpServer, type McpAgentView, type McpScope, type McpTestResult } from '@shared/mcp'
+import {
+  MCP_NAME,
+  parseMcpServer,
+  type McpAgentView,
+  type McpAuthView,
+  type McpConnectResult,
+  type McpScope,
+  type McpTestResult
+} from '@shared/mcp'
+import { MCP_PRESETS, presetById, presetForUrl, type McpPreset } from '@shared/mcp-presets'
 import { log } from '../log'
 import { probeMcpServer } from './mcp-probe'
 import type { AgentProfile } from '../agent/profiles'
 import { AgentMcpConfig, type McpLocations } from './mcp-files'
+import { McpOAuth, type McpOAuthDeps } from './mcp-oauth'
+
+/** Ce que le moteur de connexion reçoit de l'app (le reste vient des réglages). */
+export type McpOAuthAppDeps = Omit<McpOAuthDeps, 'profiles' | 'servers'>
+
+/** Suffixes essayés quand le nom du préréglage est pris (`figma-2`…), sans rien écraser. */
+const MAX_NAME_SUFFIX = 9
 
 export class McpSettings {
   private readonly configs: { profile: AgentProfile; config: AgentMcpConfig }[]
+  private readonly profiles: readonly AgentProfile[]
+  private readonly presets: readonly McpPreset[]
+  private readonly oauth: McpOAuth | undefined
 
-  constructor(profiles: readonly AgentProfile[], locations: McpLocations) {
+  constructor(
+    profiles: readonly AgentProfile[],
+    locations: McpLocations,
+    oauth?: McpOAuthAppDeps,
+    presets: readonly McpPreset[] = MCP_PRESETS
+  ) {
+    this.profiles = profiles
+    this.presets = presets
     this.configs = profiles.flatMap((profile) =>
       profile.mcpConfig
         ? [{ profile, config: new AgentMcpConfig(profile.mcpConfig, locations) }]
         : []
     )
+    this.oauth = oauth
+      ? new McpOAuth({
+          ...oauth,
+          presets,
+          profiles: () => this.profiles,
+          servers: (profileId, workspace) =>
+            this.list(workspace).find((v) => v.profileId === profileId)?.servers ?? []
+        })
+      : undefined
   }
 
   list(workspace: string): McpAgentView[] {
-    return this.configs.map(({ profile, config }) =>
-      config.view(profile.id, profile.label, workspace)
+    return this.configs.map(({ profile, config }) => ({
+      ...config.view(profile.id, profile.label, workspace),
+      ...(profile.mcpOAuth ? { oauth: true as const } : {})
+    }))
+  }
+
+  /**
+   * « Connecter <préréglage> » (fiche 293) : ajoute le serveur pour tous les dossiers, dans le format
+   * déjà présent du fichier de l'agent (fiche 025). Adresse déjà déclarée (sous n'importe quel nom,
+   * dans l'un des deux fichiers) : rien d'écrit, son nom est rendu. Nom pris : `<nom>-2`… ; la
+   * connexion de l'agent étant attachée au nom (relevé R4), ce serveur aura la sienne.
+   */
+  addPreset(
+    profileId: string,
+    presetId: string,
+    workspace: string
+  ): { name: string; added: boolean; views: McpAgentView[] } {
+    if (!this.profiles.find((p) => p.id === profileId)?.mcpOAuth) {
+      throw new Error(`Pas de connexion des serveurs MCP pour l’agent « ${profileId} »`)
+    }
+    const preset = presetById(presetId, this.presets)
+    if (!preset) throw new Error('Paramètre invalide : presetId')
+    const view = this.list(workspace).find((v) => v.profileId === profileId)
+    // Un fichier illisible cache peut-être déjà ce serveur ou ce nom : rien n'est écrit.
+    if (view?.error) throw new Error(view.error)
+    const servers = view?.servers ?? []
+    const existing = servers.find((s) => presetForUrl(s.url, this.presets) === preset)
+    if (existing) return { name: existing.name, added: false, views: this.list(workspace) }
+    const taken = new Set(servers.map((s) => s.name))
+    const name = [preset.name, ...suffixes(preset.name)].find(
+      (n) => !taken.has(n) && MCP_NAME.test(n)
     )
+    if (!name)
+      throw new Error(`Noms « ${preset.name} » à « ${preset.name}-${MAX_NAME_SUFFIX} » pris`)
+    this.config(profileId).save('global', workspace, {
+      name,
+      transport: 'http',
+      url: preset.url,
+      enabled: true
+    })
+    log.info(`MCP : préréglage « ${preset.id} » ajouté pour ${profileId} sous « ${name} » (global)`)
+    return { name, added: true, views: this.list(workspace) }
+  }
+
+  authStates(profileId: string, workspace: string): Promise<McpAuthView> {
+    return this.engine().view(profileId, workspace)
+  }
+
+  connect(profileId: string, name: string, workspace: string): Promise<McpConnectResult> {
+    return this.engine().connect(profileId, name, workspace)
+  }
+
+  cancelConnect(profileId: string, name: string): boolean {
+    return this.engine().cancel(profileId, name)
+  }
+
+  reopenPage(profileId: string, name: string): boolean {
+    return this.engine().reopen(profileId, name)
+  }
+
+  disconnect(profileId: string, name: string, workspace: string): Promise<McpConnectResult> {
+    return this.engine().disconnect(profileId, name, workspace)
+  }
+
+  /** Fermeture de l'app : connexion en cours arrêtée, arbre de processus compris. */
+  stop(): void {
+    this.oauth?.stop()
+  }
+
+  private engine(): McpOAuth {
+    if (!this.oauth) throw new Error('Connexion des serveurs MCP indisponible')
+    return this.oauth
   }
 
   save(
@@ -72,6 +177,16 @@ export class McpSettings {
       .find((v) => v.profileId === profileId)
       ?.servers.find((s) => s.scope === scope && s.name === name)
     if (!server) throw new Error(`Serveur introuvable : ${name}`)
+    // Serveur connecté par l'agent (fiche 293) : sans son jeton, il répond toujours 401 ; pas de
+    // test de Bobine, son état vient de l'agent.
+    const profile = this.profiles.find((p) => p.id === profileId)
+    if (
+      profile?.mcpOAuth &&
+      server.transport === 'http' &&
+      presetForUrl(server.url, this.presets)
+    ) {
+      throw new Error(`« ${name} » se connecte par ${profile.label} : pas de test de Bobine`)
+    }
     const result = await probeMcpServer(server, {
       cwd: existsSync(workspace) ? workspace : homedir()
     })
@@ -88,4 +203,8 @@ export class McpSettings {
     if (!found) throw new Error(`Pas de serveurs MCP modifiables pour l’agent « ${profileId} »`)
     return found.config
   }
+}
+
+function suffixes(name: string): string[] {
+  return Array.from({ length: MAX_NAME_SUFFIX - 1 }, (_, i) => `${name}-${i + 2}`)
 }

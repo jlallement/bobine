@@ -119,11 +119,17 @@ describe('capacités des agents (fiche 054)', () => {
       'compact-command',
       'rules-files',
       'mcp-files',
+      'mcp-oauth',
       'role-export',
       'model-providers',
       'terminal-login',
       'tested-versions'
     ])
+    const opencode = Object.fromEntries(
+      specificItems(profile('opencode')).map((i) => [i.id, i.detail])
+    )
+    expect(opencode['mcp-oauth']).toContain('`opencode mcp auth`')
+    expect(opencode['mcp-oauth']).toContain('OpenCode')
     const bob = Object.fromEntries(specificItems(profile('bob')).map((i) => [i.id, i.detail]))
     expect(bob['compact-command']).toContain('`/compact`')
     expect(bob['agent-log']).toContain('`~/.bob/logs/shell/`')

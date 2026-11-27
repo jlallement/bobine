@@ -71,6 +71,9 @@ import type {
   AppToolFamily,
   ConversationAppTools,
   McpAgentView,
+  McpAuthState,
+  McpAuthView,
+  McpConnectResult,
   McpScope,
   McpServer,
   McpTestResult
@@ -201,6 +204,24 @@ export interface IpcInvokeContract
   'mcp:appTools': { args: []; result: AppToolFamily[] }
   /** Coupe ou rallume une famille d'outils de Bobine (fiche 109) ; rend les familles. */
   'mcp:setAppToolFamily': { args: [id: string, enabled: boolean]; result: AppToolFamily[] }
+  /**
+   * Préréglage (fiche 293, `shared/mcp-presets.ts`) ajouté pour tous les dossiers ; rend le nom du
+   * serveur (déjà déclaré à cette adresse : rien d'écrit) et les serveurs.
+   */
+  'mcp:addPreset': {
+    args: [profileId: string, presetId: string]
+    result: { name: string; added: boolean; views: McpAgentView[] }
+  }
+  /** États des serveurs connectés par l'agent (fiche 293), relus chez lui pour ce dossier. */
+  'mcp:authStates': { args: [profileId: string]; result: McpAuthView }
+  /** « Se connecter » : la commande de l'agent est lancée, ou le refus (une à la fois). */
+  'mcp:connect': { args: [profileId: string, name: string]; result: McpConnectResult }
+  /** « Annuler » la connexion en cours ; faux s'il n'y en a pas pour ce serveur. */
+  'mcp:cancelConnect': { args: [profileId: string, name: string]; result: boolean }
+  /** « Rouvrir la page » de la connexion en cours (adresse gardée par le main). */
+  'mcp:reopenPage': { args: [profileId: string, name: string]; result: boolean }
+  /** « Se déconnecter » : la commande de l'agent, puis l'état relu (événement `mcp:authState`). */
+  'mcp:disconnect': { args: [profileId: string, name: string]; result: McpConnectResult }
   /** Fournisseurs de modèles des agents (fiche 104), dans leur fichier global. */
   'providers:list': { args: []; result: ProvidersView[] }
   'providers:save': {
@@ -789,6 +810,8 @@ export interface IpcEventContract {
   'profile:changed': ProfileStatus
   /** Tâches planifiées changées : échéance, exécution, modification (fiche 178). */
   'schedule:changed': ScheduledTask[]
+  /** Connexion d'un serveur MCP par l'agent (fiche 293) : état, hôte, raison ; jamais l'adresse. */
+  'mcp:authState': McpAuthState
   /** Aparté d'une conversation : question, réponse au fil de l'eau, coût ; `closed` à la fin. */
   'aside:changed': AsideView
   /**
@@ -922,6 +945,12 @@ export const IPC_CHANNELS = [
   'mcp:test',
   'mcp:appTools',
   'mcp:setAppToolFamily',
+  'mcp:addPreset',
+  'mcp:authStates',
+  'mcp:connect',
+  'mcp:cancelConnect',
+  'mcp:reopenPage',
+  'mcp:disconnect',
   'providers:list',
   'providers:save',
   'providers:remove',

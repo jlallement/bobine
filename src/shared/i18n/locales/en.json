@@ -3404,6 +3404,10 @@
       "opencode": "the project’s `opencode.json`, `~/.config/opencode/opencode.json` for all folders (OpenCode 1 and 2 formats)",
       "detail": "In the agent’s files: {{files}}."
     },
+    "mcpOAuth": {
+      "label": "Remote MCP server sign-in",
+      "detail": "Through `{{command}}`; the token stays with {{agent}}."
+    },
     "apiKey": {
       "label": "API key instead of sign-in",
       "detail": "`{{env}}`, encrypted in the macOS Keychain."

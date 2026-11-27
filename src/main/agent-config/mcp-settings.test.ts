@@ -1,0 +1,121 @@
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { describe, expect, it, vi } from 'vitest'
+import { resolveProfiles } from '../agent/profiles'
+import { McpSettings } from './mcp-settings'
+
+const profiles = resolveProfiles({
+  appPath: '/app',
+  execPath: '/electron',
+  isPackaged: false,
+  env: {}
+})
+const FIGMA = 'https://mcp.figma.com/mcp'
+
+function setup(globalText?: string) {
+  const home = mkdtempSync(join(tmpdir(), 'mcp-preset-home-'))
+  const workspace = mkdtempSync(join(tmpdir(), 'mcp-preset-ws-'))
+  const file = join(home, '.config', 'opencode', 'opencode.json')
+  if (globalText !== undefined) {
+    mkdirSync(join(home, '.config', 'opencode'), { recursive: true })
+    writeFileSync(file, globalText)
+  }
+  const start = vi.fn()
+  const settings = new McpSettings(
+    profiles,
+    { home },
+    {
+      fallbackCwd: home,
+      env: async () => ({}),
+      findCommand: () => undefined,
+      openExternal: vi.fn(),
+      onState: vi.fn(),
+      start
+    }
+  )
+  const opencode = () => settings.list(workspace).find((v) => v.profileId === 'opencode')
+  return { settings, workspace, file, start, opencode, read: () => readFileSync(file, 'utf8') }
+}
+
+describe('préréglages de serveurs MCP (fiche 293)', () => {
+  it('vue : `oauth` posé d’après le profil (OpenCode oui, IBM Bob non)', () => {
+    const { settings, workspace } = setup()
+    const views = settings.list(workspace)
+    expect(views.find((v) => v.profileId === 'opencode')?.oauth).toBe(true)
+    expect(views.find((v) => v.profileId === 'bob')?.oauth).toBeUndefined()
+  })
+
+  it('« Connecter Figma » : ajouté pour tous les dossiers, au format 1 si le fichier n’a rien', () => {
+    const { settings, workspace, file, opencode } = setup()
+    const result = settings.addPreset('opencode', 'figma', workspace)
+    expect(result).toMatchObject({ name: 'figma', added: true })
+    expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({
+      mcp: { figma: { type: 'remote', url: FIGMA } }
+    })
+    expect(opencode()?.servers).toMatchObject([{ name: 'figma', scope: 'global', url: FIGMA }])
+  })
+
+  it('format 2 (`mcp.servers`) gardé, commentaires et réglages inconnus gardés', () => {
+    const text = `{
+  // réglage de l'utilisateur
+  "model": "x/y",
+  "mcp": { "servers": { "autre": { "type": "local", "command": ["a"] } }, "timeout": 5 }
+}
+`
+    const { settings, workspace, read } = setup(text)
+    settings.addPreset('opencode', 'figma', workspace)
+    const after = read()
+    expect(after).toContain("// réglage de l'utilisateur")
+    expect(after).toContain('"timeout": 5')
+    expect(after).toMatch(
+      /"servers":\s*\{[\s\S]*"figma":\s*\{[\s\S]*"url": "https:\/\/mcp\.figma\.com\/mcp"/
+    )
+  })
+
+  it('adresse déjà déclarée, sous un autre nom ou écrite autrement : rien d’écrit, son nom rendu', () => {
+    const text =
+      '{ "mcp": { "maquettes": { "type": "remote", "url": "https://MCP.figma.com/mcp/" } } }\n'
+    const { settings, workspace, read } = setup(text)
+    expect(settings.addPreset('opencode', 'figma', workspace)).toMatchObject({
+      name: 'maquettes',
+      added: false
+    })
+    expect(read()).toBe(text)
+  })
+
+  it('nom pris par un autre serveur : `figma-2`, sans rien écraser (connexion à part, relevé R4)', () => {
+    const text = '{ "mcp": { "figma": { "type": "local", "command": ["mon-figma"] } } }\n'
+    const { settings, workspace, read } = setup(text)
+    expect(settings.addPreset('opencode', 'figma', workspace)).toMatchObject({
+      name: 'figma-2',
+      added: true
+    })
+    const data = JSON.parse(read()) as { mcp: Record<string, unknown> }
+    expect(data.mcp['figma']).toEqual({ type: 'local', command: ['mon-figma'] })
+    expect(data.mcp['figma-2']).toEqual({ type: 'remote', url: FIGMA })
+  })
+
+  it('fichier illisible : jamais réécrit, erreur rendue', () => {
+    const text = '{ "mcp": { cassé '
+    const { settings, workspace, read } = setup(text)
+    expect(() => settings.addPreset('opencode', 'figma', workspace)).toThrow()
+    expect(read()).toBe(text)
+  })
+
+  it('agent sans la capacité (IBM Bob), préréglage inconnu : refusé, rien d’écrit ni lancé', () => {
+    const { settings, workspace, start } = setup()
+    expect(() => settings.addPreset('bob', 'figma', workspace)).toThrow()
+    expect(() => settings.addPreset('opencode', 'inconnu', workspace)).toThrow('presetId')
+    expect(settings.list(workspace).every((v) => v.servers.length === 0)).toBe(true)
+    expect(start).not.toHaveBeenCalled()
+  })
+
+  it('« Tester » (fiche 060) pas lancé pour un serveur connecté par l’agent', async () => {
+    const { settings, workspace } = setup()
+    settings.addPreset('opencode', 'figma', workspace)
+    await expect(settings.test('opencode', 'global', workspace, 'figma')).rejects.toThrow(
+      'pas de test de Bobine'
+    )
+  })
+})

@@ -3524,6 +3524,10 @@
       "opencode": "`opencode.json` du projet, `~/.config/opencode/opencode.json` pour tous les dossiers (formats d’OpenCode 1 et 2)",
       "detail": "Dans les fichiers de l’agent : {{files}}."
     },
+    "mcpOAuth": {
+      "label": "Connexion des serveurs MCP distants",
+      "detail": "Par `{{command}}` ; le jeton reste chez {{agent}}."
+    },
     "apiKey": {
       "label": "Clé d’API à la place de la connexion",
       "detail": "`{{env}}`, chiffrée dans le trousseau macOS."

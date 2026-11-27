@@ -65,7 +65,7 @@ import { buildMenuTemplate, zoomInterface } from './menu'
 import { appMenu } from './app-menu'
 import { Presentation } from './presentation'
 import { followFullScreen, hideSystemFullScreenItem } from './full-screen-menu'
-import { McpSettings } from './agent-config/mcp-settings'
+import { setupMcpSettings } from './agent-config/mcp-oauth-setup'
 import { ApprovalRulesSettings } from './agent-config/approval-rules-settings'
 import { ProvidersSettings } from './agent-config/providers-settings'
 import { effectiveNetwork, networkController } from './agent-config/network-env'
@@ -344,7 +344,7 @@ async function start(): Promise<void> {
   // Profils des agents ; serveurs MCP déclarés dans leurs fichiers (fiche 025), sous un autre
   // dossier personnel pendant les essais (BOBINE_CONFIG_HOME).
   const { profiles, configHome, agentFiles } = appAgents()
-  const mcp = new McpSettings(profiles, agentFiles)
+  const mcp = setupMcpSettings(profiles, agentFiles, neutralFolder, () => settings)
   // Règles d'approbation globales des agents (fiche 215) : même dossier personnel que les MCP.
   const approvalRules = new ApprovalRulesSettings(profiles, agentFiles)
   // Clés d'API des agents (fiche 022), chiffrées par le trousseau macOS. Rien n'est appelé ici :
@@ -802,7 +802,8 @@ async function start(): Promise<void> {
       android?.stopStream()
       terminals.closeAll()
       onboarding.stop()
-      quotas.stop()
+      // Connexion d'un serveur MCP par l'agent en cours (fiche 293) : arbre arrêté, rien relancé.
+      for (const helper of [quotas, mcp]) helper.stop()
       // Ce qu'aucun arrêt ci-dessus n'a visé (essai du diagnostic en cours…) : arrêté aussi (fiche 208).
       stopRemainingTrees()
     }

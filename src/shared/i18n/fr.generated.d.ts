@@ -3375,6 +3375,10 @@ export type FrResources = {
       readonly opencode: '`opencode.json` du projet, `~/.config/opencode/opencode.json` pour tous les dossiers (formats d’OpenCode 1 et 2)'
       readonly detail: 'Dans les fichiers de l’agent : {{files}}.'
     }
+    readonly mcpOAuth: {
+      readonly label: 'Connexion des serveurs MCP distants'
+      readonly detail: 'Par `{{command}}` ; le jeton reste chez {{agent}}.'
+    }
     readonly apiKey: {
       readonly label: 'Clé d’API à la place de la connexion'
       readonly detail: '`{{env}}`, chiffrée dans le trousseau macOS.'

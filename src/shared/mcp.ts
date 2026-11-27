@@ -36,7 +36,61 @@ export interface McpAgentView {
   servers: McpServerEntry[]
   /** Fichier illisible (JSON invalide…) : affiché, et rien n'est écrit dedans. */
   error?: string
+  /**
+   * L'agent sait connecter lui-même un serveur distant par OAuth (fiche 293, ADR-0075) : posé par
+   * le main d'après le profil (`mcpOAuth`), jamais d'après un identifiant.
+   */
+  oauth?: true
 }
+
+/**
+ * État de la connexion d'un serveur MCP distant connecté par l'agent (fiche 293) :
+ * - `unknown` : l'état n'a pas pu être relu chez l'agent ;
+ * - `to-connect`, `connected`, `expired` : relus chez l'agent (`auth list`) ;
+ * - `connecting` : tentative en cours dans le main ;
+ * - `refused`, `error`, `no-page` : fin de la dernière tentative ;
+ * - `agent-missing` : commande de l'agent introuvable, rien de lancé.
+ */
+export type McpAuthStatus =
+  | 'unknown'
+  | 'to-connect'
+  | 'connecting'
+  | 'connected'
+  | 'expired'
+  | 'refused'
+  | 'error'
+  | 'no-page'
+  | 'agent-missing'
+
+/**
+ * Raison courte d'une `error` : délai dépassé, page refusée par la vérification d'hôte, agent
+ * arrêté sans fin reconnue, fin d'échec dite par l'agent sans cause reconnue.
+ */
+export type McpAuthReason = 'timeout' | 'unexpected-page' | 'stopped' | 'failed'
+
+/** Ce que le renderer reçoit d'une connexion : jamais l'adresse complète de la page (ADR-0075). */
+export interface McpAuthState {
+  profileId: string
+  /** Nom du serveur dans le fichier de l'agent. */
+  name: string
+  status: McpAuthStatus
+  /** Hôte de la page : attendu (`connecting`) ou refusé (`error` `unexpected-page`). */
+  host?: string
+  reason?: McpAuthReason
+}
+
+/** États des serveurs connectables d'un agent, pour le dossier courant (fiche 293). */
+export interface McpAuthView {
+  profileId: string
+  /** Commande de l'agent trouvée, comme pour son lancement (sinon : « agent absent »). */
+  agentFound: boolean
+  /** Un état par serveur déclaré dont l'adresse est celle d'un préréglage. */
+  servers: McpAuthState[]
+}
+
+/** Réponse à « Se connecter » : lancé, ou pourquoi pas (refus côté main). */
+export type McpConnectResult =
+  { started: true } | { started: false; reason: 'busy' | 'not-offered' | 'agent-missing' }
 
 /** Résultat de « Tester » (fiche 060) : l'app s'est connectée au serveur, ou pourquoi pas. */
 export type McpTestResult =
