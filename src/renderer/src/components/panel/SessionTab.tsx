@@ -96,7 +96,8 @@ export function useMcpTokens(
     // `load` change à chaque rendu de l'app : relu quand l'agent change.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- relu par agent, pas par rendu
   }, [profileId])
-  const servers = view?.servers.filter((server) => server.enabled) ?? []
+  // Serveurs connectés par l'agent (fiche 293) : jamais testés par Bobine, donc jamais mesurés.
+  const servers = view?.servers.filter((server) => server.enabled && !server.authPreset) ?? []
   const measure = () => {
     if (view) void testMcpServers(view.profileId, view.servers, false)
   }

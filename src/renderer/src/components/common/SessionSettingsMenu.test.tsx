@@ -1,7 +1,8 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
 import { act, fireEvent, render, screen } from '@testing-library/react'
-import { beforeAll, describe, expect, it, vi } from 'vitest'
-import type { McpAgentView } from '@shared/mcp'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import type { McpAgentView, McpAuthState, McpAuthView } from '@shared/mcp'
+import { resetMcpAuthStore } from '../../mcp-auth'
 import type { RuleFileView } from '@shared/rules'
 import { SessionSettingsMenu } from './Menus'
 
@@ -214,5 +215,107 @@ describe('menu « Réglages de la session »', () => {
       warnings.mockRestore()
       vi.useRealTimers()
     }
+  })
+})
+
+describe('menu « Réglages de la session » : serveurs connectés par l’agent (fiche 293)', () => {
+  const figma = {
+    name: 'figma',
+    transport: 'http' as const,
+    url: 'https://mcp.figma.com/mcp',
+    enabled: true,
+    scope: 'global' as const,
+    file: '~/.config/opencode/opencode.json',
+    authPreset: 'figma'
+  }
+  const view: McpAgentView = {
+    profileId: 'opencode',
+    label: 'OpenCode',
+    files: { global: '~/.config/opencode/opencode.json' },
+    servers: [figma],
+    oauth: true
+  }
+  const original = window.api
+  afterEach(() => {
+    window.api = original
+  })
+
+  function setup(authStates: () => Promise<McpAuthView>) {
+    resetMcpAuthStore()
+    const test = vi.fn()
+    window.api = {
+      ...original,
+      mcp: { test, authStates, onAuthState: () => () => {} }
+    } as unknown as Window['api']
+    render(
+      <Tooltip.Provider>
+        <SessionSettingsMenu
+          controls={[]}
+          agentLabel="OpenCode"
+          disabled={false}
+          onSetControl={vi.fn()}
+          onLoadMcp={async () => view}
+          onLoadAppTools={async () => ({ names: [], tokens: 0 })}
+        />
+      </Tooltip.Provider>
+    )
+    return test
+  }
+  const read = (status: McpAuthState['status']): McpAuthView => ({
+    profileId: 'opencode',
+    agentFound: true,
+    servers: [{ profileId: 'opencode', name: 'figma', status }],
+    terminal: {}
+  })
+  const nbsp = (text: string | null) => (text ?? '').replace(/ /g, ' ')
+
+  it.each([
+    ['connected', 'connecté', 'ok'],
+    ['to-connect', 'à connecter', 'unknown'],
+    ['expired', 'connexion expirée', 'warn'],
+    ['error', 'connexion en erreur', 'error']
+  ] as const)(
+    '%s : l’état de connexion, jamais « pas encore testé » ; aucun test lancé',
+    async (status, said, dot) => {
+      const test = setup(async () => read(status))
+      fireEvent.keyDown(screen.getByTestId('session-settings'), { key: 'Enter' })
+      await act(async () => {})
+      const row = screen.getByTestId('session-mcp')
+      expect(nbsp(row.textContent)).toBe(`figma${said} · tous les dossiers`)
+      expect(row.dataset['state']).toBe(dot)
+      expect(row.querySelector('[data-testid=mcp-dot]')?.getAttribute('aria-label')).not.toBe(
+        'pas encore testé'
+      )
+      expect(test).not.toHaveBeenCalled()
+    }
+  )
+
+  it('état pas encore lu (relecture lente) : libellé neutre et vrai ; le menu affiché ne change plus (fiche 234)', async () => {
+    vi.useFakeTimers()
+    try {
+      let release: (view: McpAuthView) => void = () => {}
+      setup(() => new Promise<McpAuthView>((resolve) => (release = resolve)))
+      fireEvent.keyDown(screen.getByTestId('session-settings'), { key: 'Enter' })
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(300)
+      })
+      const row = () => screen.getByTestId('session-mcp')
+      expect(nbsp(row().textContent)).toBe('figmaconnexion par OpenCode · tous les dossiers')
+      expect(nbsp(row().textContent)).not.toContain('test')
+      await act(async () => release(read('connected')))
+      // Arrivé après l'affichage : gardé pour l'ouverture suivante, rien ne bouge sous le pointeur.
+      expect(nbsp(row().textContent)).toBe('figmaconnexion par OpenCode · tous les dossiers')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('relecture impossible : libellé neutre, pas d’erreur inventée', async () => {
+    setup(() => Promise.reject(new Error('main indisponible')))
+    fireEvent.keyDown(screen.getByTestId('session-settings'), { key: 'Enter' })
+    await act(async () => {})
+    expect(nbsp(screen.getByTestId('session-mcp').textContent)).toBe(
+      'figmaconnexion par OpenCode · tous les dossiers'
+    )
   })
 })

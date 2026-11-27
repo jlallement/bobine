@@ -265,6 +265,7 @@ export async function mcpFigmaSuite(scheme) {
             'opencode mcp auth figma' && (await h.links()).join() === L('mcp.auth.retryHere'),
           '« Dans un terminal » : « Copiée : opencode mcp auth figma · Réessayer ici »'
         )
+        await h.oneLine()
         await h.shots('c7-figma-commande-copiee')
 
         // 9. Pas de page de connexion (commande inconnue : OpenCode trop ancien).
@@ -419,6 +420,52 @@ export async function mcpFigmaSuite(scheme) {
       undefined,
       'demo',
       { ...env, BOBINE_FAKE_MCP_AUTH: '' }
+    )
+
+    // 15. Menu « Réglages de la session » (lecture seule) : l'état de connexion, jamais « pas encore
+    // testé ». L'agent factice y lit et connecte ses serveurs comme OpenCode (`MOCK_AGENT_MCP_OAUTH`).
+    writeFileSync(configFile, JSON.stringify({ mcp: { figma: { type: 'remote', url: FIGMA } } }))
+    setState({ mode: 'hang', connected: { figma: 'ok' } })
+    const callsBefore = calls().length
+    await withApp(
+      scheme,
+      async (ui) => {
+        const row = `[...document.querySelectorAll('[data-testid=session-mcp]')].find((r) => r.innerText.startsWith('figma'))`
+        const menu = async () => {
+          await ui.click(ui.$('session-settings'))
+          await ui.waitFor(`!!${row}`)
+          return ui.ev(
+            `({ auth: ${row}.dataset.auth, state: ${row}.dataset.state, text: ${row}.innerText.replace(/\\s+/g, ' ') })`
+          )
+        }
+        const connected = await menu()
+        check(
+          connected.auth === 'connected' &&
+            connected.state === 'ok' &&
+            connected.text.includes(L('mcp.state.connected')) &&
+            !connected.text.includes(L('sessionSettings.mcp.testing')),
+          `menu ⚙ : « ${connected.text} » (état de connexion, jamais « test… »)`
+        )
+        await ui.shot('c13-figma-menu-session')
+        await ui.key('Escape')
+        setState({ connected: { figma: 'expired' } })
+        const expired = await menu()
+        check(
+          expired.auth === 'expired' && expired.text.includes(L('mcp.state.expired')),
+          `menu ⚙ rouvert : l’état relu (« ${expired.text} »)`
+        )
+        await ui.shot('c14-figma-menu-session-expire')
+        await ui.key('Escape')
+        check(
+          !calls()
+            .slice(callsBefore)
+            .some((c) => c[0] === 'mcp' && c[1] === 'auth'),
+          'menu ⚙ : lecture seule, aucune connexion lancée'
+        )
+      },
+      undefined,
+      'demo',
+      { ...env, MOCK_AGENT_MCP_OAUTH: 'opencode' }
     )
   } finally {
     rmSync(root, { recursive: true, force: true })

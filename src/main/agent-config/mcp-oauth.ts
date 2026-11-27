@@ -23,7 +23,6 @@
  */
 import type { ChildProcess, ChildProcessWithoutNullStreams, SpawnOptions } from 'node:child_process'
 import {
-  joinCommandLine,
   MCP_AUTH_MINUTES,
   MCP_NAME,
   type McpAuthReason,
@@ -42,7 +41,7 @@ import { killTree } from '../agent/process-utils'
 import type { McpAuthLine, McpAuthStored, McpOAuthSource } from '../agent/adapters'
 import type { AgentProfile } from '../agent/profiles'
 import { checkPageUrl, scrubUrls, TerminalLines } from './mcp-oauth-output'
-import { runCommand, type CommandOutcome } from './mcp-oauth-command'
+import { runCommand, terminalCommand, type CommandOutcome } from './mcp-oauth-command'
 
 export interface McpOAuthLimits {
   /** Durée maximale d'une tentative (proche de celle d'OpenCode, ≈ 10 min). */
@@ -82,6 +81,8 @@ export interface McpOAuthDeps {
   stop?: (child: ChildProcess) => void
   limits?: Partial<McpOAuthLimits>
   presets?: readonly McpPreset[]
+  /** Système des commandes à copier (« Dans un terminal ») ; celui de l'app par défaut. */
+  platform?: NodeJS.Platform
 }
 
 /** Ce que l'agent a dit de la fin. */
@@ -232,7 +233,7 @@ export class McpOAuth {
   /**
    * « Dans un terminal » : la commande de l'agent, à lancer par l'utilisateur (OpenCode y ouvre
    * lui-même la page). Un serveur déclaré pour ce dossier seulement n'est vu que de ce dossier
-   * (relevé R4) : la commande commence alors par son `cd`.
+   * (relevé R4) : une première ligne y va (`terminalCommand`).
    */
   private terminalCommands(
     profile: AgentProfile,
@@ -242,11 +243,15 @@ export class McpOAuth {
   ): Record<string, string> {
     const servers = this.deps.servers(profile.id, workspace)
     const commands: Record<string, string> = {}
+    const platform = this.deps.platform ?? process.platform
     for (const name of names) {
-      const line = joinCommandLine([profile.command, ...source.terminalArgs(name)])
+      const words = [profile.command, ...source.terminalArgs(name)]
       const global = servers.some((s) => s.name === name && s.scope === 'global')
-      commands[name] =
-        global || !workspace ? line : `${joinCommandLine(['cd', workspace])} && ${line}`
+      commands[name] = terminalCommand(
+        platform,
+        words,
+        global || !workspace ? undefined : workspace
+      )
     }
     return commands
   }

@@ -1040,6 +1040,7 @@ export type FrResources = {
       readonly appToolsNext_many: 'Au prochain démarrage de l’agent : {{count}} outils'
       readonly appToolsNext_other: 'Au prochain démarrage de l’agent : {{count}} outils'
       readonly appToolsRestart: 'Les réglages ont changé · Redémarrer l’agent pour les appliquer'
+      readonly agentAuth: 'connexion par {{agent}}'
     }
     readonly title: 'Réglages · {{agent}}'
   }

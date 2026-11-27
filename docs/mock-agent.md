@@ -145,6 +145,11 @@ Dans l'app : `MOCK_AGENT_ROLE_EXPORT=bob|opencode`, **seulement avec `BOBINE_CON
 profil factice déclare alors `roleExport` comme Bob ou OpenCode et passe ces options). Suite e2e
 `roles-export` ; `/scenario echo` dans la fille d'un rôle dit le mode où elle a été mise.
 
+Serveurs MCP connectés par l'agent (fiche 293) : `MOCK_AGENT_MCP_OAUTH=opencode`, **seulement avec
+`BOBINE_CONFIG_HOME` et `BOBINE_FAKE_MCP_AUTH`** (fausse commande de connexion) : le profil factice
+lit alors ses serveurs MCP et les connecte comme OpenCode (`mcpConfig`, `mcpOAuth`). Suite e2e
+`mcp-figma` (menu « Réglages de la session »).
+
 ## Scénarios
 
 | Nom | Ce qu'il simule |

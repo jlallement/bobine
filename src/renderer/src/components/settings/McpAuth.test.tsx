@@ -13,6 +13,7 @@ import type {
   McpServerEntry
 } from '@shared/mcp'
 import { McpSettings } from './McpSettings'
+import { resetMcpAuthStore } from '../../mcp-auth'
 
 const FIGMA = 'https://mcp.figma.com/mcp'
 const nbsp = (text: string) => text.replace(/ /g, ' ')
@@ -104,6 +105,7 @@ function setup(over: Partial<World> = {}) {
 }
 
 beforeEach(() => {
+  resetMcpAuthStore()
   Object.defineProperty(navigator, 'clipboard', { value: clipboard, configurable: true })
   clipboard.writeText.mockClear()
 })
@@ -430,6 +432,23 @@ describe('ligne d’état d’un serveur connecté par l’agent : un état = un
     expect(links()).toEqual(['Réessayer ici'])
     await click(screen.getByTestId('mcp-auth-retryHere'))
     expect(mcp.connect).toHaveBeenCalledWith('opencode', 'figma')
+  })
+
+  it('commande sur deux lignes (`cd` du dossier d’abord) : la commande montrée, le tout copié et au survol', async () => {
+    setup({ views: [opencode([figma({ scope: 'project' })])], states: [state('no-page')] })
+    window.api.mcp.authStates = vi.fn(async () => ({
+      profileId: 'opencode',
+      agentFound: true,
+      servers: [state('no-page')],
+      terminal: { figma: "cd '/projets/l'\\''atelier'\nopencode mcp auth figma" }
+    }))
+    await open()
+    await click(screen.getByTestId('mcp-auth-terminal'))
+    expect(clipboard.writeText).toHaveBeenCalledWith(
+      "cd '/projets/l'\\''atelier'\nopencode mcp auth figma"
+    )
+    expect(line().querySelector('code')?.textContent).toBe('opencode mcp auth figma')
+    expect(line().title).toContain("cd '/projets/l'\\''atelier'\nopencode mcp auth figma")
   })
 
   it('serveur désactivé : dit, rien à lancer ; connecté : la déconnexion reste possible', async () => {

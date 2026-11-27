@@ -74,6 +74,14 @@ const DOTS: Record<McpAuthState['status'], { state: DotState; label: DotLabel }>
   'agent-missing': { state: 'unknown', label: 'authUnknown' }
 }
 
+/** Pastille et son libellé (clé `mcp.state.<label>`) d'après l'état de la connexion. */
+export function dotOf(
+  server: McpServerEntry,
+  state: McpAuthState | undefined
+): { state: DotState; label: DotLabel } {
+  return !server.enabled ? { state: 'off', label: 'off' } : DOTS[state?.status ?? 'unknown']
+}
+
 /** Pastille d'un serveur connecté par l'agent : d'après l'état de sa connexion, pas « Tester ». */
 export function McpAuthDot({
   server,
@@ -83,9 +91,7 @@ export function McpAuthDot({
   state: McpAuthState | undefined
 }) {
   const { t } = useTranslation()
-  const dot: { state: DotState; label: DotLabel } = !server.enabled
-    ? { state: 'off', label: 'off' }
-    : DOTS[state?.status ?? 'unknown']
+  const dot = dotOf(server, state)
   const label = t(`mcp.state.${dot.label}`)
   return (
     <span
@@ -229,6 +235,9 @@ function useLine(
   }
   const note = model.notes[name]
   if (note?.kind === 'copied') {
+    // Copiée sur plusieurs lignes (`cd` du dossier d'abord) : la commande montrée, le tout au survol.
+    const lines = note.text.split('\n')
+    const tip = t('mcp.auth.copiedTip', { agent, name: presetName })
     return {
       tone: '',
       icon: Check,
@@ -236,11 +245,11 @@ function useLine(
         <Trans
           t={t}
           i18nKey="mcp.auth.copied"
-          values={{ command: note.text }}
+          values={{ command: lines.at(-1) ?? note.text }}
           components={{ code: <code /> }}
         />
       ),
-      tip: t('mcp.auth.copiedTip', { agent, name: presetName }),
+      tip: lines.length > 1 ? `${tip}\n${note.text}` : tip,
       actions: [connect('retryHere', t('mcp.auth.retryHere'))]
     }
   }

@@ -84,3 +84,31 @@ export function runCommand(run: CommandRun): Promise<CommandOutcome> {
     )
   })
 }
+
+/** Mot sûr tel quel dans un shell : rien à citer. */
+const PLAIN = /^[A-Za-z0-9_@%+=:,./-]+$/
+
+/**
+ * Commande à copier pour un terminal (« Dans un terminal », fiche 293) : une ligne par commande,
+ * jamais `&&` (refusé par Windows PowerShell 5), chaque mot cité pour le shell du système.
+ * - macOS, Linux (sh, bash, zsh) : `cd '<dossier>'`, apostrophe écrite `'\''` ;
+ * - Windows (PowerShell, le terminal par défaut) : `Set-Location -LiteralPath '<dossier>'`, apostrophe
+ *   doublée ; `-LiteralPath` : ni `[`, ni `*`, ni `$` interprétés.
+ */
+export function terminalCommand(
+  platform: NodeJS.Platform,
+  words: readonly string[],
+  cwd?: string
+): string {
+  const windows = platform === 'win32'
+  const quote = (word: string) =>
+    PLAIN.test(word)
+      ? word
+      : windows
+        ? `'${word.replace(/'/g, "''")}'`
+        : `'${word.replace(/'/g, "'\\''")}'`
+  const line = words.map(quote).join(' ')
+  if (cwd === undefined) return line
+  const cd = windows ? `Set-Location -LiteralPath ${quote(cwd)}` : `cd ${quote(cwd)}`
+  return `${cd}\n${line}`
+}

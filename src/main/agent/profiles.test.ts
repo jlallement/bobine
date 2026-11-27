@@ -230,3 +230,24 @@ describe('profils : règles d’approbation (fiche 215)', () => {
     expect(resolveProfiles(ctx).find((p) => p.id === 'bob')?.approvalRules).toBeDefined()
   })
 })
+
+describe('agent factice connecté comme OpenCode (fiche 293, e2e)', () => {
+  const base = { appPath: '/app', execPath: '/e', isPackaged: false }
+  const mock = (env: NodeJS.ProcessEnv) =>
+    resolveProfiles({ ...base, env: { BOBINE_AGENT_PROFILE: 'mock', ...env } }).find(
+      (p) => p.id === 'mock'
+    )
+  it('seulement avec un dossier d’essai et la fausse commande de connexion', () => {
+    const all = {
+      MOCK_AGENT_MCP_OAUTH: 'opencode',
+      BOBINE_CONFIG_HOME: '/h',
+      BOBINE_FAKE_MCP_AUTH: '/f.mjs'
+    }
+    expect(mock(all)?.mcpOAuth?.id).toBe('opencode-mcp-auth')
+    expect(mock({ ...all, BOBINE_FAKE_MCP_AUTH: undefined })?.mcpOAuth).toBeUndefined()
+    expect(mock({ ...all, BOBINE_CONFIG_HOME: undefined })?.mcpOAuth).toBeUndefined()
+    expect(
+      mock({ BOBINE_CONFIG_HOME: '/h', BOBINE_FAKE_MCP_AUTH: '/f.mjs' })?.mcpOAuth
+    ).toBeUndefined()
+  })
+})

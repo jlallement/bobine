@@ -986,7 +986,8 @@
       "appToolsTokens": "≈ {{tokens}} tokens",
       "appToolsNext_one": "At the agent’s next start: {{count}} tool",
       "appToolsNext_other": "At the agent’s next start: {{count}} tools",
-      "appToolsRestart": "Settings changed · Restart the agent to apply them"
+      "appToolsRestart": "Settings changed · Restart the agent to apply them",
+      "agentAuth": "sign-in through {{agent}}"
     },
     "title": "Settings · {{agent}}"
   },

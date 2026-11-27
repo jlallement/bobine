@@ -24,10 +24,17 @@ import {
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { isPlanMode } from '@shared/plan-doc'
 import type { RuleFileView } from '@shared/rules'
-import { APP_TOOLS_SERVER_NAME, type ConversationAppTools, type McpAgentView } from '@shared/mcp'
+import {
+  APP_TOOLS_SERVER_NAME,
+  type ConversationAppTools,
+  type McpAgentView,
+  type McpAuthState
+} from '@shared/mcp'
 import { formatTokens } from '@shared/usage'
-import { mcpKey, mcpStatus, testMcpServers, useMcpStatuses } from '../../mcp-status'
-import { BOBINE_TAB, McpDot } from '../settings/McpSettings'
+import { testMcpServers, useMcpStatuses } from '../../mcp-status'
+import { mcpAuthEntry, readMcpAuth } from '../../mcp-auth'
+import { BOBINE_TAB } from '../settings/McpSettings'
+import { SessionMcpServer } from './SessionMcpServer'
 import type {
   AgentConfigureRequest,
   AgentSettingsView,
@@ -487,6 +494,7 @@ export function SessionSettingsMenu({
   const { t } = useTranslation()
   const [rules, setRules] = useState<RuleFileView[] | 'loading' | 'error'>('loading')
   const [mcp, setMcp] = useState<McpAgentView | null>(null)
+  const [auth, setAuth] = useState<Record<string, McpAuthState> | null>(null)
   const [appTools, setAppTools] = useState<ConversationAppTools | null>(null)
   const [open, setOpen] = useState(false)
   /** Ouverture en cours : une plus récente (ou une fermeture) l'annule. */
@@ -545,6 +553,14 @@ export function SessionSettingsMenu({
         (view) => {
           whenStill(() => setMcp(view ?? null))
           if (view) void testMcpServers(view.profileId, view.servers, true)
+          // Serveurs connectés par l'agent (fiche 293) : leur état, lu dans le magasin partagé.
+          if (!view?.oauth || !view.servers.some((s) => s.authPreset)) return undefined
+          // Dernier état connu d'abord, puis relu chez l'agent (avant l'affichage, au plus 300 ms).
+          whenStill(() => setAuth(mcpAuthEntry(view.profileId)?.states ?? null))
+          return readMcpAuth(view.profileId).then(
+            (entry) => whenStill(() => setAuth(entry.states)),
+            () => whenStill(() => setAuth(null))
+          )
         },
         () => whenStill(() => setMcp(null))
       ),
@@ -596,6 +612,7 @@ export function SessionSettingsMenu({
       {onLoadMcp && (
         <SessionMcpSection
           mcp={mcp}
+          auth={auth}
           appTools={appTools}
           onOpen={onOpenMcpSettings}
           onRestart={onRestartAgent}
@@ -695,11 +712,14 @@ export function SessionSettingsMenu({
  */
 function SessionMcpSection({
   mcp,
+  auth,
   appTools,
   onOpen,
   onRestart
 }: {
   mcp: McpAgentView | null
+  /** États de connexion des serveurs que l'agent connecte lui-même (fiche 293), lus à l'ouverture. */
+  auth: Record<string, McpAuthState> | null
   appTools: ConversationAppTools | null
   onOpen: ((tab?: string) => void) | undefined
   onRestart: (() => void) | undefined
@@ -761,53 +781,16 @@ function SessionMcpSection({
           />
         </Dropdown.Item>
       )}
-      {mcp?.servers.map((server) => {
-        const status = mcpStatus(mcpKey(mcp.profileId, server))
-        return (
-          <Dropdown.Item
-            key={`${server.scope}:${server.name}`}
-            className="menu-item"
-            onSelect={() => onOpen?.()}
-            title={
-              status && status !== 'testing'
-                ? status.ok
-                  ? t('sessionSettings.mcp.toolsTip', { tools: status.tools.join(', ') })
-                  : status.error
-                : undefined
-            }
-            data-testid="session-mcp"
-            data-state={
-              !server.enabled
-                ? 'off'
-                : status === undefined || status === 'testing'
-                  ? 'testing'
-                  : status.ok
-                    ? 'ok'
-                    : 'error'
-            }
-          >
-            <span className="menu-icon session-mcp-dot">
-              <McpDot server={server} status={status} />
-            </span>
-            <span className="menu-text">
-              <div className="menu-title">{server.name}</div>
-              <div className="menu-desc">
-                {!server.enabled
-                  ? t('sessionSettings.mcp.disabled')
-                  : status === undefined || status === 'testing'
-                    ? t('sessionSettings.mcp.testing')
-                    : status.ok
-                      ? t('sessionSettings.mcp.tools', { count: status.tools.length })
-                      : t('sessionSettings.mcp.error')}
-                {' · '}
-                {server.scope === 'global'
-                  ? t('sessionSettings.mcp.global')
-                  : t('sessionSettings.mcp.folder')}
-              </div>
-            </span>
-          </Dropdown.Item>
-        )
-      })}
+      {mcp?.servers.map((server) => (
+        <SessionMcpServer
+          key={`${server.scope}:${server.name}`}
+          profileId={mcp.profileId}
+          agent={mcp.label}
+          server={server}
+          auth={auth ?? undefined}
+          onOpen={onOpen && (() => onOpen())}
+        />
+      ))}
     </>
   )
 }

@@ -519,11 +519,24 @@ Figma cautionne Bobine.
   l'agent : logo, ligne d'état, ni « Tester » ni « Tout tester », ni test automatique à l'ouverture,
   y compris dans « Réglages de la session » et Diagnostic). Préréglage : `logo`, `listUrl`,
   `McpPresetId`. `declaredPreset` déplacé du moteur vers `shared/mcp-presets.ts` (même règle).
-- **« Réglages de la session »** (menu ⚙) : ces serveurs n'y sont plus testés ; leur pastille y
-  reste grise (« pas encore testé ») : l'état de connexion n'y est pas montré (hors lot 2).
-- **Commande copiée sous Windows** : `cd "<dossier>" && opencode mcp auth <nom>` pour un serveur
-  « ce dossier » ; `&&` ne passe pas dans Windows PowerShell 5 (R9, non vérifié). « Connecter
-  Figma » ajoute toujours pour tous les dossiers : pas de `cd`.
+- **« Réglages de la session »** (menu ⚙, relecture du tech lead) : ces serveurs n'y sont jamais
+  testés ; la ligne dit l'état de connexion (`mcp.state.*` : « connecté », « à connecter »,
+  « connexion expirée »…, pastille de l'onglet), lu dans le **magasin partagé** de `mcp-auth.ts`
+  (le même que l'onglet des Réglages : dernier état connu, relu chez l'agent à l'ouverture du menu,
+  tenu par `mcp:authState`) ; inconnu : « connexion par OpenCode », jamais « pas encore testé ».
+  Lecture seule. Fiche 234 : la relecture attend l'affichage (300 ms au plus) ; arrivée après, elle
+  est gardée pour l'ouverture suivante, le menu affiché ne change pas. Ligne sortie de `Menus.tsx`
+  (`common/SessionMcpServer.tsx`). Onglet « Session » : ces serveurs ne comptent plus dans la ligne
+  des outils mesurés (jamais mesurés). E2e : l'agent factice connecte comme OpenCode sous
+  `MOCK_AGENT_MCP_OAUTH=opencode` (seulement avec `BOBINE_CONFIG_HOME` et `BOBINE_FAKE_MCP_AUTH`,
+  `docs/mock-agent.md`).
+- **Commande copiée** (relecture du tech lead) : jamais `&&` ; un serveur « ce dossier » donne
+  **deux lignes** (`cd`, puis la commande), chaque mot cité pour le shell du système
+  (`terminalCommand`, `mcp-oauth-command.ts`) : macOS et Linux `cd '<dossier>'` (apostrophe
+  `'\''`, vérifié par un vrai `sh`) ; Windows, PowerShell (terminal par défaut) : `Set-Location
+  -LiteralPath '<dossier>'` (apostrophe doublée, ni `$` ni `[` interprétés). `cmd.exe` n'est pas
+  visé (non vérifié sous Windows, R9). La ligne montre la commande, l'info-bulle le tout ;
+  « Connecter Figma » ajoute pour tous les dossiers : pas de `cd`.
 - **Essais de bout en bout** : `BOBINE_FAKE_MCP_AUTH` (script Node lancé par l'exécutable de l'app,
   `ELECTRON_RUN_AS_NODE=1` ; vide : agent absent) et `BOBINE_FAKE_MCP_AUTH_MS` (délai raccourci),
   **gardées** : sans effet dans l'app installée (`mcp-oauth-forced.ts`, `app.isPackaged`, essai
@@ -774,4 +787,11 @@ Taille : ≈ 3 j avec le lot 3, relevés compris. **Aucune dépendance nouvelle.
     5,24, 6,08, 5,24, 4,58, 5,24, 6,84, 6,22, 5,43 ;
   - documentation : guide (Agents › Connecter Figma à OpenCode, fr et en), `docs/architecture.md`,
     ADR-0077 (surface d'essai), `CHANGELOG.md` et `CHANGELOG.en.md`.
-
+- 2026-11-27 — **Relecture du lot 2 par le tech lead** : décisions sur hôte raccourci, pastille
+  rouge sous « Copiée », `ConfirmRow`, mention de marque (gardés) ; corrigé : menu « Réglages de la
+  session » (état de connexion depuis le magasin partagé, jamais « pas encore testé », essais
+  unitaires et e2e, captures `c13-figma-menu-session-*`, `c14-figma-menu-session-expire-*`) ;
+  commande copiée sur deux lignes, citée par système (essais par plateforme simulée et par `sh`).
+  Captures anglaises regardées (`en-c*-figma-*`) : textes justes, rien de tronqué ; à 736 px les
+  ligne « Copiée : … » de l’essai passe à 3 lignes (fr et en) à cause de la copie vers l’agent
+  factice (absente de l'app installée) ; mesurées sans elle : 2 au plus.

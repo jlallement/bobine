@@ -1053,7 +1053,8 @@
       "appToolsNext_one": "Au prochain démarrage de l’agent : {{count}} outil",
       "appToolsNext_many": "Au prochain démarrage de l’agent : {{count}} outils",
       "appToolsNext_other": "Au prochain démarrage de l’agent : {{count}} outils",
-      "appToolsRestart": "Les réglages ont changé · Redémarrer l’agent pour les appliquer"
+      "appToolsRestart": "Les réglages ont changé · Redémarrer l’agent pour les appliquer",
+      "agentAuth": "connexion par {{agent}}"
     },
     "title": "Réglages · {{agent}}"
   },

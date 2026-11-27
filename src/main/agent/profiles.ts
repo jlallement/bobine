@@ -362,6 +362,22 @@ function mockRoleExportArgs(env: ProfileContext['env']): string[] {
   return home && kind && MOCK_ROLE_EXPORT[kind] ? ['--modes-installes', kind, '--perso', home] : []
 }
 
+/**
+ * Agent factice qui lit ses serveurs MCP et les connecte comme OpenCode (fiche 293, e2e du menu
+ * « Réglages de la session ») : jamais sans dossier personnel d'essai (`BOBINE_CONFIG_HOME`) ni sans
+ * la fausse commande de connexion (`BOBINE_FAKE_MCP_AUTH`, sinon l'exécutable de l'app serait
+ * lancé avec les arguments d'OpenCode).
+ */
+function mockMcpOAuth(
+  env: ProfileContext['env']
+): Pick<AgentProfile, 'mcpConfig' | 'mcpOAuth'> | Record<string, never> {
+  return env['MOCK_AGENT_MCP_OAUTH'] === 'opencode' &&
+    env['BOBINE_CONFIG_HOME'] &&
+    env['BOBINE_FAKE_MCP_AUTH'] !== undefined
+    ? { mcpConfig: OPENCODE_MCP, mcpOAuth: OPENCODE_MCP_AUTH }
+    : {}
+}
+
 export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
   const profiles: AgentProfile[] = []
   // Dossier personnel des agents : un autre pour les essais, jamais les vrais fichiers de Bob.
@@ -433,6 +449,9 @@ export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
       // Règles et serveurs MCP lus comme Bob (fiches 056, 060).
       rules: BOB_RULES,
       mcpConfig: BOB_MCP,
+      // Serveurs MCP connectés comme OpenCode (`MOCK_AGENT_MCP_OAUTH=opencode`, fiche 293) :
+      // seulement avec un dossier personnel d'essai et la fausse commande de connexion.
+      ...mockMcpOAuth(ctx.env),
       // Fichiers d'exclusion lus comme Bob (fiche 155).
       exclusions: BOB_EXCLUSIONS,
       // Règles d'approbation écrites comme Bob (fiche 215), SEULEMENT dans un dossier personnel

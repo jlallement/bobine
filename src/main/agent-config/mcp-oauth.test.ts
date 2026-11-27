@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { McpAuthState, McpServerEntry } from '@shared/mcp'
 import { log } from '../log'
 import { resolveProfiles } from '../agent/profiles'
-import { joinCommandLine } from '@shared/mcp'
+import { terminalCommand } from './mcp-oauth-command'
 import { McpOAuth, attemptOutcome } from './mcp-oauth'
 
 const FIXTURES = join(__dirname, 'fixtures', 'opencode-2.3.0-mcp-auth')
@@ -422,7 +422,7 @@ describe('connexion d’un serveur MCP par l’agent : moteur (fiche 293, ADR-00
     expect(t.engine.reopen('opencode', 'figma')).toBe(false)
   })
 
-  it('« Dans un terminal » : commande de l’agent sans `--standalone`, `cd` du dossier si le serveur n’est déclaré que là', async () => {
+  it('« Dans un terminal » : commande de l’agent sans `--standalone`, une ligne `cd` d’abord si le serveur n’est déclaré que là', async () => {
     const both = setup({
       servers: [figma(), figma({ scope: 'project', file: '/p/opencode.json' })]
     })
@@ -430,11 +430,12 @@ describe('connexion d’un serveur MCP par l’agent : moteur (fiche 293, ADR-00
       figma: 'opencode mcp auth figma'
     })
     const here = setup({ servers: [figma({ scope: 'project', file: '/p/opencode.json' })] })
-    const view = here.engine.view('opencode', here.workspace)
-    const { terminal } = await view
+    const { terminal } = await here.engine.view('opencode', here.workspace)
     expect(terminal['figma']).toBe(
-      `${joinCommandLine(['cd', here.workspace])} && opencode mcp auth figma`
+      terminalCommand(process.platform, ['opencode', 'mcp', 'auth', 'figma'], here.workspace)
     )
+    expect(terminal['figma']?.split('\n')).toHaveLength(2)
+    expect(terminal['figma']).not.toContain('&&')
   })
 
   it('agent absent : rien de lancé, état « agent absent » ; commande disparue au lancement aussi', async () => {
