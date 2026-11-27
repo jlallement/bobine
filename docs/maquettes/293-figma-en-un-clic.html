@@ -198,7 +198,8 @@
         outline-offset: 3px;
         border-radius: var(--radius-sm);
       }
-      .no-marks .new {
+      /* Annotations : seulement sur demande (« Montrer ce qui change »), jamais dans les captures. */
+      body:not(.show-marks) .new {
         outline: none;
       }
       /* Fond de la fenêtre principale derrière la feuille des Réglages. */
@@ -528,47 +529,70 @@
       }
 
       /* ===== Nouveau (fiche 293) : sur les mêmes jetons ===== */
-      /* État de connexion sous l'adresse : une phrase, puis ses boutons (passent à la ligne). */
+      /* État de connexion sous l'adresse : une ligne, au poids de .mcp-test (fiche 060). */
       .mcp-auth {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
-        gap: 6px 10px;
-        margin-top: 6px;
-        font-size: 12px;
-        line-height: 1.45;
-        color: var(--text-2);
-      }
-      .mcp-auth > .mcp-auth-text {
-        flex: 1 1 240px;
-        min-width: 0;
-        display: flex;
-        gap: 6px;
-        align-items: flex-start;
-      }
-      .mcp-auth > .mcp-auth-text svg {
+        gap: 0 6px;
         margin-top: 2px;
+        font-size: 11.5px;
+        line-height: 1.4;
+        color: var(--muted);
       }
-      .mcp-auth-actions {
-        display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
+      .mcp-auth .st {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        min-width: 0;
       }
-      .mcp-auth.ok .mcp-auth-text {
+      .mcp-auth.ok .st {
         color: var(--ok);
       }
-      .mcp-auth.err .mcp-auth-text {
+      .mcp-auth.err .st {
         color: var(--err);
       }
-      .mcp-auth.warn .mcp-auth-text {
+      .mcp-auth.warn .st {
         color: var(--warn);
       }
-      .mcp-auth small {
-        display: block;
+      .mcp-auth .sep {
         color: var(--muted);
-        font-size: 11.5px;
       }
-      .mcp-auth code,
+      /* Le point et son action passent à la ligne ensemble : jamais un « · » seul en début de ligne. */
+      .mcp-auth .act {
+        display: inline-flex;
+        gap: 6px;
+        white-space: nowrap;
+      }
+      .mcp-auth code {
+        white-space: nowrap;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        background: var(--surface-2);
+        padding: 0 4px;
+        border-radius: var(--radius-xs);
+        color: var(--text);
+      }
+      /* Action dans une ligne d'état : bouton plat, à la hauteur du texte, atteignable au clavier. */
+      .link {
+        font-size: 11.5px;
+        line-height: 1.4;
+        color: var(--accent);
+        font-weight: 500;
+        border-radius: var(--radius-xs);
+        white-space: nowrap;
+      }
+      .link:hover {
+        text-decoration: underline;
+      }
+      .link:focus-visible {
+        outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+        outline-offset: 2px;
+      }
+      .link.pressed {
+        color: var(--err);
+        text-decoration: underline;
+      }
       .mcp-preset code {
         font-family: var(--font-mono);
         font-size: 11.5px;
@@ -807,7 +831,8 @@
           de 800 px, la plus petite permise). Fond de la fenêtre principale autour.
         </li>
         <li>
-          Pointillés orange : ce qui est nouveau. Tout le reste existe déjà, avec les mêmes classes.
+          Les planches montrent l’écran tel qu’il serait. Ce qui est nouveau est dit en légende ; la
+          case « Montrer ce qui change » l’entoure de pointillés (jamais dans les captures).
         </li>
         <li>
           Forme retenue par Jérôme le 2026-11-27 : la ligne, avec le logo officiel de Figma (icône
@@ -820,7 +845,9 @@
         <button class="btn small" data-set-theme="light">Clair</button>
         <button class="btn small" data-set-theme="dark">Sombre</button>
         <button class="btn small" data-set-theme="">Système</button>
-        <button class="btn small" data-toggle-marks>Pointillés</button>
+        <label class="btn small"
+          ><input type="checkbox" data-toggle-marks /> Montrer ce qui change</label
+        >
       </div>
       <div id="planches"></div>
     </div>
@@ -1001,10 +1028,14 @@
           ...opts
         })
 
-      const auth = (cls, iconName, text, buttons = '', spin = false) =>
-        `<div class="mcp-auth ${cls} new"><div class="mcp-auth-text">${iconName ? icon(iconName, 13, spin ? 'spin' : '') : ''}<div>${text}</div></div>${
-          buttons ? `<div class="mcp-auth-actions">${buttons}</div>` : ''
-        }</div>`
+      // État de connexion : UNE ligne, au poids de la ligne « ✓ Joignable · … » du test (fiche 060),
+      // actions en liens (boutons plats, atteignables au clavier), détail en info-bulle.
+      const link = (label, title = '') =>
+        `<button class="link"${title ? ` title="${title}"` : ''}>${label}</button>`
+      const auth = (cls, iconName, text, links = [], title = '', spin = false) =>
+        `<div class="mcp-auth ${cls} new"${title ? ` title="${title}"` : ''}><span class="st">${icon(iconName, 12, spin ? 'spin' : '')}<span>${text}</span></span>${links
+          .map((l) => `<span class="act"><span class="sep" aria-hidden="true">·</span>${l}</span>`)
+          .join('')}</div>`
 
       const preset = (button, reason = '') =>
         `<ul class="mcp-preset v2 new"><li>
@@ -1019,8 +1050,12 @@
         `<div class="mcp-settings">${tabs('opencode', counts)}${fold('OpenCode')}
           <ul class="settings-list">${list}</ul>${after}${actions(all)}</div>`
 
-      const newConv =
-        '<p class="settings-row-hint new">Pour les nouvelles conversations avec OpenCode ; relancez une conversation ouverte pour qu’elle reçoive ces outils.</p>'
+      const TIP_PENDING =
+        'Page de connexion ouverte dans votre navigateur : autorisez l’accès sur la page de Figma, puis revenez ici. Sans réponse, abandon au bout de 10 min.'
+      const TIP_CONNECTED =
+        'Le jeton reste chez OpenCode : Bobine ne le voit jamais. Vaut pour les nouvelles conversations ; relancez une conversation ouverte pour qu’elle reçoive ces outils.'
+      const TIP_TERMINAL =
+        'Copie « opencode mcp auth figma » ; dans un terminal, OpenCode ouvre lui-même la page de Figma.'
 
       const PLANCHES = [
         {
@@ -1052,7 +1087,7 @@
           id: 'a-ajouter',
           title: '1 — Figma à ajouter',
           legend:
-            'Une ligne sous la liste, en carte pleine : logo officiel de Figma (non modifié), nom, une phrase. Un seul bouton : il ajoute le serveur (tous les dossiers, Q2) et lance aussitôt la connexion. Absente si l’adresse de Figma est déjà déclarée, sous n’importe quel nom.',
+            '<strong>Nouveau</strong> : la carte « Figma » sous la liste (logo officiel de Figma non modifié, nom, une phrase, « Connecter Figma »). Seul bouton plein de tout le parcours : il ajoute le serveur (tous les dossiers) et lance aussitôt la connexion. Absente si l’adresse de Figma est déjà déclarée, sous n’importe quel nom.',
           body: () =>
             opencodeTab(
               recherche,
@@ -1064,7 +1099,7 @@
           id: 'a-connecter',
           title: '2 — Ajouté, à connecter',
           legend:
-            'Serveur ordinaire (interrupteur, crayon, copie, corbeille) ; pas de « Tester ». Sous l’adresse : l’état lu chez OpenCode et « Se connecter ». Cas : connexion annulée, ou serveur ajouté à la main.',
+            '<strong>Nouveau</strong> : le logo devant le nom, et la ligne d’état « À connecter · Se connecter » à la place du résultat de « Tester » (absent pour ce serveur). Cas : connexion annulée, ou serveur ajouté à la main.',
           body: () =>
             opencodeTab(
               recherche +
@@ -1072,8 +1107,9 @@
                   auth: auth(
                     '',
                     'info',
-                    'À connecter : la connexion se fait dans votre navigateur, avec OpenCode.',
-                    `<button class="btn small primary">${icon('log-in', 13)} Se connecter</button>`
+                    'À connecter',
+                    [link('Se connecter')],
+                    'La connexion se fait dans votre navigateur, avec OpenCode.'
                   )
                 })
             )
@@ -1082,7 +1118,7 @@
           id: 'en-cours',
           title: '3 — Connexion en cours',
           legend:
-            'La page de Figma est ouverte dans le navigateur par défaut (hôte vérifié : <code>www.figma.com</code>, montré). « Rouvrir la page » la rouvre (l’adresse reste dans le main) ; « Annuler » tue la commande. Fermer les Réglages n’arrête rien. Les autres « Se connecter » sont grisés (une seule connexion à la fois).',
+            '<strong>Nouveau</strong> : une ligne « En cours (www.figma.com) · Rouvrir la page · Annuler », roue qui tourne et pastille qui pulse ; l’hôte vérifié reste visible, « dans votre navigateur » est dans l’info-bulle. La consigne et le délai de 10 min sont dans l’info-bulle de la ligne. « Annuler » tue la commande ; fermer les Réglages n’arrête rien ; les autres « Se connecter » sont grisés.',
           body: () =>
             opencodeTab(
               recherche +
@@ -1091,8 +1127,9 @@
                   auth: auth(
                     '',
                     'loader-circle',
-                    'Page de connexion ouverte dans votre navigateur (www.figma.com). Autorisez l’accès, puis revenez ici.<small>Sans réponse, abandon au bout de 10 min.</small>',
-                    `<button class="btn small">${icon('external-link', 13)} Rouvrir la page</button><button class="btn small ghost">Annuler</button>`,
+                    'En cours (www.figma.com)',
+                    [link('Rouvrir la page'), link('Annuler')],
+                    TIP_PENDING,
                     true
                   )
                 })
@@ -1102,7 +1139,7 @@
           id: 'connecte',
           title: '4 — Connecté',
           legend:
-            'État relu chez OpenCode (<code>opencode auth list</code>), jamais déduit du code de sortie. « Se déconnecter » reste discret. Ligne d’aide sous la liste tant que le relevé R3 n’a pas montré que les conversations ouvertes reçoivent les outils.',
+            '<strong>Nouveau</strong> : « ✓ Connecté par OpenCode · Se déconnecter ». État relu chez OpenCode (<code>opencode auth list</code>). « Bobine ne voit jamais le jeton » et « vaut pour les nouvelles conversations » sont dans l’info-bulle (cette dernière est déjà dite dans « Fichiers d’OpenCode »).',
           body: () =>
             opencodeTab(
               recherche +
@@ -1111,18 +1148,18 @@
                   auth: auth(
                     'ok',
                     'check',
-                    'Connecté par OpenCode. Bobine ne voit jamais le jeton.',
-                    `<button class="btn small ghost">${icon('log-out', 13)} Se déconnecter</button>`
+                    'Connecté par OpenCode',
+                    [link('Se déconnecter')],
+                    TIP_CONNECTED
                   )
-                }),
-              newConv
+                })
             )
         },
         {
           id: 'deconnexion',
           title: '4 bis — Se déconnecter : confirmation dans la ligne',
           legend:
-            'Même règle que toute révocation des Réglages (fiche 126). Puis <code>opencode mcp logout figma</code> ; le serveur reste déclaré, état « à connecter ».',
+            '<strong>Nouveau</strong> : le texte de la confirmation ; le gabarit est celui de toute révocation des Réglages (fiche 126). Puis <code>opencode mcp logout figma</code> ; le serveur reste déclaré, état « à connecter ».',
           body: () =>
             opencodeTab(
               recherche +
@@ -1131,8 +1168,14 @@
                   auth: auth(
                     'ok',
                     'check',
-                    'Connecté par OpenCode. Bobine ne voit jamais le jeton.',
-                    `<button class="btn small ghost" style="background:var(--surface-3)">${icon('log-out', 13)} Se déconnecter</button>`
+                    'Connecté par OpenCode',
+                    [
+                      link('Se déconnecter').replace(
+                        'class="link"',
+                        'class="link pressed" aria-expanded="true"'
+                      )
+                    ],
+                    TIP_CONNECTED
                   ),
                   confirm:
                     '<div class="confirm-row new"><span>Se déconnecter de Figma ? OpenCode oubliera l’accès ; il faudra vous reconnecter.</span><button class="btn small ghost">Garder</button><button class="btn small danger">Se déconnecter</button></div>'
@@ -1143,18 +1186,13 @@
           id: 'expire',
           title: '5 — Connexion expirée',
           legend:
-            'Lue chez OpenCode à l’ouverture de l’onglet (forme exacte : relevé R1). « Se reconnecter » relance la même commande ; OpenCode ne pose pas de question hors terminal.',
+            '<strong>Nouveau</strong> : « Connexion expirée · Se reconnecter », en lien comme les autres actions de la ligne. Lue chez OpenCode à l’ouverture de l’onglet (forme exacte : relevé R1).',
           body: () =>
             opencodeTab(
               recherche +
                 figma({
                   dot: 'warn',
-                  auth: auth(
-                    'warn',
-                    'circle-alert',
-                    'Connexion expirée.',
-                    `<button class="btn small primary">${icon('rotate-cw', 13)} Se reconnecter</button>`
-                  )
+                  auth: auth('warn', 'circle-alert', 'Connexion expirée', [link('Se reconnecter')])
                 })
             )
         },
@@ -1162,18 +1200,13 @@
           id: 'refuse',
           title: '6 — Accès refusé sur la page de Figma',
           legend:
-            'Texte de la sortie d’OpenCode à relever (R2). « Réessayer » relance la connexion.',
+            '<strong>Nouveau</strong> : « Accès refusé sur la page de Figma · Réessayer ». Texte de la sortie d’OpenCode à relever (R2).',
           body: () =>
             opencodeTab(
               recherche +
                 figma({
                   dot: 'error',
-                  auth: auth(
-                    'err',
-                    'x',
-                    'Accès refusé sur la page de Figma.',
-                    `<button class="btn small">${icon('rotate-cw', 13)} Réessayer</button>`
-                  )
+                  auth: auth('err', 'x', 'Accès refusé sur la page de Figma', [link('Réessayer')])
                 })
             )
         },
@@ -1181,7 +1214,7 @@
           id: 'erreur',
           title: '6 bis — Erreur (délai, page inattendue, OpenCode arrêté)',
           legend:
-            'Raison courte, détail au survol sans l’adresse. « Faire dans un terminal » montre la commande à copier (dans un vrai terminal, OpenCode ouvre lui-même le navigateur).',
+            '<strong>Nouveau</strong> : « Pas de réponse en 10 min · Réessayer · Dans un terminal » ; la raison est courte, le détail (sans l’adresse) dans l’info-bulle. « Dans un terminal » copie la commande (planche 6 ter bis).',
           body: () =>
             opencodeTab(
               recherche +
@@ -1190,8 +1223,9 @@
                   auth: auth(
                     'err',
                     'x',
-                    'La connexion n’a pas abouti : pas de réponse en 10 min',
-                    `<button class="btn small">${icon('rotate-cw', 13)} Réessayer</button><button class="btn small ghost">${icon('square-terminal', 13)} Faire dans un terminal</button>`
+                    'Pas de réponse en 10 min',
+                    [link('Réessayer'), link('Dans un terminal', TIP_TERMINAL)],
+                    'La connexion n’a pas abouti : OpenCode n’a pas reçu l’accord de Figma en 10 min ; la commande a été arrêtée.'
                   )
                 })
             )
@@ -1200,17 +1234,36 @@
           id: 'commande-non-reconnue',
           title: '6 ter — Commande non reconnue (OpenCode trop ancien, ou sortie qui a changé)',
           legend:
-            'Aucune adresse lue en 30 s, ou commande inconnue : rien d’ouvert, la commande à lancer soi-même. Pas de version minimale supposée : seule la 2.3.0 est relevée.',
+            '<strong>Nouveau</strong> : « Pas de page de connexion · Dans un terminal · Réessayer ». Aucune adresse lue en 30 s, ou commande inconnue : rien d’ouvert. Pas de version minimale supposée.',
           body: () =>
             opencodeTab(
               recherche +
                 figma({
-                  dot: '',
                   auth: auth(
                     '',
                     'info',
-                    'OpenCode n’a pas proposé de page de connexion. Faites-le dans un terminal : <code>opencode mcp auth figma</code>',
-                    `<button class="btn small">${icon('clipboard-copy', 13)} Copier la commande</button><button class="btn small ghost">${icon('rotate-cw', 13)} Réessayer</button>`
+                    'Pas de page de connexion',
+                    [link('Dans un terminal', TIP_TERMINAL), link('Réessayer')],
+                    'OpenCode n’a pas proposé de page de connexion (version trop ancienne, ou sortie qui a changé).'
+                  )
+                })
+            )
+        },
+        {
+          id: 'commande-copiee',
+          title: '6 ter bis — Après « Dans un terminal »',
+          legend:
+            '<strong>Nouveau</strong> : la commande copiée est montrée en clair, sur la même ligne, pour qu’on sache quoi coller ; « à coller dans un terminal » est dans l’info-bulle (dans un vrai terminal, OpenCode ouvre lui-même la page).',
+          body: () =>
+            opencodeTab(
+              recherche +
+                figma({
+                  auth: auth(
+                    '',
+                    'check',
+                    'Copiée : <code>opencode mcp auth figma</code>',
+                    [link('Réessayer ici')],
+                    'À coller dans un terminal : OpenCode y ouvre lui-même la page de Figma.'
                   )
                 })
             )
@@ -1219,7 +1272,7 @@
           id: 'agent-absent',
           title: '6 quater — OpenCode absent',
           legend:
-            'Le bouton grisé dit pourquoi (au survol et en clair dessous, comme les boutons grisés de la fiche 287). Rien n’est lancé.',
+            '<strong>Nouveau</strong> : la carte « Figma », bouton grisé, et sa raison en clair dessous (comme les boutons grisés de la fiche 287). Rien n’est lancé.',
           body: () =>
             opencodeTab(
               recherche,
@@ -1234,7 +1287,7 @@
           id: 'onglet-bob',
           title: '7 — Onglet IBM Bob',
           legend:
-            'Pas de ligne Figma ni de bouton. Une ligne d’aide (Q3), d’après la documentation publique de Figma seulement : rien n’est dit ni supposé de Bob. Le lien ouvre la liste de Figma dans le navigateur.',
+            '<strong>Nouveau</strong> : la ligne d’aide sous la liste. Pas de ligne Figma ni de bouton. Ligne d’aide (Q3, tranchée), d’après la documentation publique de Figma seulement : rien n’est dit ni supposé de Bob. Le lien ouvre la liste de Figma dans le navigateur.',
           body: () =>
             `<div class="mcp-settings">${tabs('bob', { bob: 1, opencode: 2 })}${fold('IBM Bob')}
               <ul class="settings-list">${server({
@@ -1280,7 +1333,7 @@
           <div class="frame-label">Fenêtre la plus étroite (736 px)</div><div class="frame" data-shot="${p.id}-736">${dialog(736, p.body())}</div></section>`
       }
       html += `<section class="planche" id="fil"><h2>8 — Un appel Figma dans le fil, avant / après (lot 3, Q4)</h2>
-        <p class="legend">Avant : relevé du 2026-11-27 (OpenCode 2.3.0) — trois cartes « execute ». Après : le titre vient de ce qu’OpenCode dit lui-même à la fin de la carte (<code>rawOutput.metadata.toolCalls[].tool</code> : <code>search</code> de l’espace <code>figma</code>, puis <code>figma.whoami</code>). Pendant l’appel, la carte garde « execute ». Vaut pour tout serveur MCP appelé ainsi.</p>
+        <p class="legend"><strong>Nouveau</strong> : le titre des cartes. Avant : relevé du 2026-11-27 (OpenCode 2.3.0) — trois cartes « execute ». Après : le titre vient de ce qu’OpenCode dit lui-même à la fin de la carte (<code>rawOutput.metadata.toolCalls[].tool</code> : <code>search</code> de l’espace <code>figma</code>, puis <code>figma.whoami</code>). Pendant l’appel, la carte garde « execute ». Vaut pour tout serveur MCP appelé ainsi.</p>
         <div class="frame-label">Avant</div><div class="frame" data-shot="fil-avant-640">${thread(BEFORE)}</div>
         <div class="frame-label">Après</div><div class="frame" data-shot="fil-apres-640">${thread(AFTER)}</div>
         <div class="frame-label">Après, fil étroit (420 px)</div><div class="frame" data-shot="fil-apres-420">${thread(AFTER, true)}</div></section>`
@@ -1295,7 +1348,9 @@
       }
       document
         .querySelector('[data-toggle-marks]')
-        .addEventListener('click', () => document.body.classList.toggle('no-marks'))
+        .addEventListener('change', (e) =>
+          document.body.classList.toggle('show-marks', e.target.checked)
+        )
     </script>
   </body>
 </html>

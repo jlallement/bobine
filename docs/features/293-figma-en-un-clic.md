@@ -57,15 +57,15 @@ connecter que par OpenCode (Q3). Rien n'est dit, ni supposé, de ce que Bob saur
    serveur : `figma-2`, sans rien écraser.
 3. Bobine lance `opencode mcp auth figma --standalone` (main), lit l'adresse de la page de
    connexion dans sa sortie, vérifie qu'elle est en `https` sur l'hôte attendu `www.figma.com`, et
-   l'ouvre dans le navigateur par défaut. La ligne dit : « Page de connexion ouverte dans votre
-   navigateur (www.figma.com). Autorisez l'accès, puis revenez ici. » ; boutons **Rouvrir la
-   page** et **Annuler**.
+   l'ouvre dans le navigateur par défaut. Ligne d'état : « ◌ En cours (www.figma.com) · Rouvrir la
+   page · Annuler » ; la consigne (« autorisez l'accès, puis revenez ici ») et le délai de 10 min
+   sont dans son info-bulle.
 4. L'utilisateur autorise l'accès sur la page de Figma. OpenCode reçoit le retour, écrit sa sortie
    (« Connected to figma »), finit. Bobine relit l'état chez OpenCode (source de vérité, voir
    « Source de l'état ») : **Connecté**.
-5. Ligne d'aide sous l'état : « Pour les nouvelles conversations avec OpenCode ; relancez une
-   conversation ouverte pour qu'elle reçoive les outils de Figma. » (à confirmer par le relevé
-   R3, sinon retirée).
+5. « Vaut pour les nouvelles conversations ; relancez une conversation ouverte » : dans l'info-bulle
+   de « Connecté par OpenCode », et déjà dit dans « Fichiers d'OpenCode » (texte existant) ; pas de
+   ligne de plus sous la liste (à revoir selon le relevé R3).
 
 ### Reconnexion après expiration
 
@@ -97,20 +97,34 @@ connecter que par OpenCode (Q3). Rien n'est dit, ni supposé, de ce que Bob saur
 « Ce que fait Bobine » : tout part du main (ADR, règle 1) ; le renderer ne reçoit que l'état, l'hôte
 de la page et une raison courte, jamais l'adresse complète.
 
-| État | Ce que l'utilisateur voit (ligne du serveur) | Boutons | Ce que fait Bobine |
-|---|---|---|---|
-| **Absent** | Ligne « Figma » sous la liste, en carte pleine : logo officiel (boîte de 56 px), nom, une phrase | **Connecter Figma** (principal) | Rien de lancé. Ligne cachée si un serveur `https://mcp.figma.com/mcp` existe déjà dans un des deux fichiers |
-| **Ajouté, à connecter** | Pastille grise, « À connecter : la connexion se fait dans votre navigateur, avec OpenCode. » | **Se connecter** (principal), crayon, copie, corbeille ; pas de « Tester » | Lit l'état chez OpenCode : aucune connexion pour ce serveur. Le test de Bobine (fiche 060) n'est pas lancé pour ce serveur : sans jeton, Figma répond toujours 401 (relevé) |
-| **Connexion en cours** | Pastille ambre qui pulse, « Page de connexion ouverte dans votre navigateur (www.figma.com). Autorisez l'accès, puis revenez ici. » ; en petit : « Sans réponse, abandon au bout de 10 min. » | **Rouvrir la page**, **Annuler** ; « Se connecter » des autres serveurs grisé (raison au survol : « Une connexion est déjà en cours ») | Processus lancé, adresse gardée en mémoire du main, page ouverte une fois ; délai 10 min ; une seule connexion à la fois dans toute l'app |
-| **Connecté** | Pastille verte, « Connecté par OpenCode. Bobine ne voit jamais le jeton. » | **Se déconnecter** (discret), crayon, copie, corbeille | État relu chez OpenCode (connexion présente, pas expirée) |
-| **Expiré** | Pastille ambre, « Connexion expirée. » | **Se reconnecter** (principal) | État relu : connexion présente, « à renouveler » selon OpenCode (forme exacte : R1) |
-| **Refusé** | Pastille rouge, « Accès refusé sur la page de Figma. » | **Réessayer** | Sortie d'OpenCode qui dit le refus (forme exacte : R2, non relevée) ; état relu : à connecter |
-| **Erreur** | Pastille rouge, « La connexion n'a pas abouti : <raison courte> », détail au survol (sans adresse) | **Réessayer**, **Faire dans un terminal** | Délai dépassé, page refusée par la vérification d'hôte, sortie non reconnue, processus mort : processus tué, état relu |
-| **Agent absent** | Ligne « Figma » présente, bouton grisé ; raison : « OpenCode n'est pas installé. » | — | `opencode` introuvable (même recherche que le lancement de l'agent) : rien de lancé |
-| **Commande non reconnue** (agent trop ancien, ou sortie qui a changé) | « OpenCode n'a pas proposé de page de connexion. Faites-le dans un terminal : `opencode mcp auth figma` » | **Copier la commande**, **Réessayer** | Aucune adresse lue en 30 s, ou commande inconnue : processus tué. Pas de `minVersion` supposée : seule la 2.3.0 est relevée |
+**Gabarit d'un état** (retour de Jérôme du 2026-11-27 : pas de pavé) : **une ligne** sous l'adresse,
+au poids de la ligne de résultat de « Tester » (« ✓ Joignable · … », 11,5 px, couleur discrète) :
+icône + texte court (l'état ne repose jamais sur la seule couleur), puis les actions en **liens**
+(boutons plats à la hauteur du texte, couleur d'accent, soulignés au survol, atteignables au
+clavier, contour au focus), séparées par « · » qui passe à la ligne avec son action. Le détail va
+dans l'info-bulle de la ligne (`title`, sans adresse). Une ligne à 940 px ; à 736 px, deux au plus.
+Seul bouton plein du parcours : « Connecter Figma ».
 
-« Faire dans un terminal » : la commande exacte à copier (`opencode mcp auth figma`, et `cd` du
-dossier pour un serveur « ce dossier »), à lancer par l'utilisateur. Dans un vrai terminal, OpenCode
+| État | Ligne d'état (sous l'adresse) | Info-bulle | Ce que fait Bobine |
+|---|---|---|---|
+| **Absent** | — : carte « Figma » sous la liste (logo officiel, boîte de 56 px, nom, une phrase, **Connecter Figma**, bouton plein) | — | Rien de lancé. Carte cachée si un serveur `https://mcp.figma.com/mcp` existe déjà dans un des deux fichiers |
+| **Ajouté, à connecter** | ⓘ À connecter · *Se connecter* — pastille grise ; crayon, copie, corbeille ; pas de « Tester » | La connexion se fait dans votre navigateur, avec OpenCode. | Lit l'état chez OpenCode : aucune connexion. Pas de test de Bobine (fiche 060) pour ce serveur : sans jeton, Figma répond toujours 401 (relevé) |
+| **Connexion en cours** | ◌ En cours (www.figma.com) · *Rouvrir la page* · *Annuler* — pastille ambre qui pulse ; « Se connecter » des autres serveurs grisé (« Une connexion est déjà en cours ») | Page ouverte dans votre navigateur : autorisez l'accès, puis revenez ici. Sans réponse, abandon au bout de 10 min. | Processus lancé, adresse gardée en mémoire du main, page ouverte une fois ; délai 10 min ; une seule connexion à la fois dans toute l'app |
+| **Connecté** | ✓ Connecté par OpenCode · *Se déconnecter* — pastille verte | Le jeton reste chez OpenCode : Bobine ne le voit jamais. Vaut pour les nouvelles conversations ; relancez une conversation ouverte. | État relu chez OpenCode (connexion présente, pas expirée) |
+| **Expiré** | ⚠ Connexion expirée · *Se reconnecter* — pastille ambre | — | État relu : connexion « à renouveler » selon OpenCode (forme exacte : R1) |
+| **Refusé** | ✕ Accès refusé sur la page de Figma · *Réessayer* — pastille rouge | — | Sortie d'OpenCode qui dit le refus (forme exacte : R2) ; état relu : à connecter |
+| **Erreur** | ✕ <raison courte> · *Réessayer* · *Dans un terminal* — pastille rouge ; raisons : « Pas de réponse en 10 min », « Page inattendue (<hôte>) », « OpenCode s'est arrêté » | La connexion n'a pas abouti : <détail, sans adresse> | Délai dépassé, page refusée par la vérification d'hôte, processus mort : processus tué, état relu |
+| **Commande non reconnue** (agent trop ancien, ou sortie qui a changé) | ⓘ Pas de page de connexion · *Dans un terminal* · *Réessayer* | OpenCode n'a pas proposé de page de connexion. | Aucune adresse lue en 30 s, ou commande inconnue : processus tué. Pas de `minVersion` supposée : seule la 2.3.0 est relevée |
+| **Commande copiée** (après *Dans un terminal*) | ✓ Copiée : `opencode mcp auth figma` · *Réessayer ici* | À coller dans un terminal : OpenCode y ouvre lui-même la page de Figma. | Commande copiée dans le presse-papiers (et `cd` du dossier pour un serveur « ce dossier ») |
+| **Agent absent** | — : carte « Figma », bouton grisé, raison en clair dessous : « OpenCode n'est pas installé. » | même raison | `opencode` introuvable (même recherche que le lancement de l'agent) : rien de lancé |
+
+Choix : « Bobine ne voit jamais le jeton » passe en **info-bulle** de « Connecté » (rassurant, pas
+une action ; dit aussi dans la fiche et l'aide) ; en cours, **seul l'hôte reste visible** (c'est la
+vérification de sécurité que l'utilisateur peut contrôler) ; consigne et délai en info-bulle, la
+page de Figma disant elle-même quoi faire.
+
+« Dans un terminal » : copie la commande exacte (`opencode mcp auth figma`, et `cd` du dossier
+pour un serveur « ce dossier »), à lancer par l'utilisateur. Dans un vrai terminal, OpenCode
 ouvre lui-même le navigateur (relu dans son code : `process.stdin.isTTY && process.stdout.isTTY`).
 
 ## Règles d'architecture
@@ -269,28 +283,34 @@ connexion ») ; « serveur MCP » ; « tous les dossiers » / *all folders* ; «
 | `mcp.preset.connect` | Connecter {{name}} | Connect {{name}} |
 | `mcp.preset.notOffered` | {{name}} : pas proposé pour {{agent}}. {{name}} n'accepte que les applications de sa liste ; Bobine ne sait le connecter que par {{agents}}. | {{name}}: not available for {{agent}}. {{name}} only accepts the apps on its list; Bobine can only connect it through {{agents}}. |
 | `mcp.preset.listLink` | Liste de {{name}} | {{name}}'s list |
-| `mcp.auth.toConnect` | À connecter : la connexion se fait dans votre navigateur, avec {{agent}}. | Not signed in: you sign in in your browser, through {{agent}}. |
+| `mcp.auth.toConnect` | À connecter | Not signed in |
+| `mcp.auth.toConnectTip` | La connexion se fait dans votre navigateur, avec {{agent}}. | You sign in in your browser, through {{agent}}. |
 | `mcp.auth.connect` | Se connecter | Sign in |
-| `mcp.auth.pending` | Page de connexion ouverte dans votre navigateur ({{host}}). Autorisez l'accès, puis revenez ici. | Sign-in page opened in your browser ({{host}}). Allow access, then come back here. |
-| `mcp.auth.pendingDelay` | Sans réponse, abandon au bout de {{minutes}} min. | With no answer, it stops after {{minutes}} min. |
+| `mcp.auth.pending` | En cours ({{host}}) | In progress ({{host}}) |
+| `mcp.auth.pendingTip` | Page de connexion ouverte dans votre navigateur : autorisez l'accès, puis revenez ici. Sans réponse, abandon au bout de {{minutes}} min. | Sign-in page opened in your browser: allow access, then come back here. With no answer, it stops after {{minutes}} min. |
 | `mcp.auth.reopen` | Rouvrir la page | Reopen the page |
-| `mcp.auth.connected` | Connecté par {{agent}}. Bobine ne voit jamais le jeton. | Signed in through {{agent}}. Bobine never sees the token. |
+| `mcp.auth.connected` | Connecté par {{agent}} | Signed in through {{agent}} |
+| `mcp.auth.connectedTip` | Le jeton reste chez {{agent}} : Bobine ne le voit jamais. Vaut pour les nouvelles conversations ; relancez une conversation ouverte pour qu'elle reçoive ces outils. | The token stays with {{agent}}: Bobine never sees it. Applies to new conversations; restart an open conversation for it to get these tools. |
 | `mcp.auth.disconnect` | Se déconnecter | Sign out |
 | `mcp.auth.disconnectAsk` | Se déconnecter de {{name}} ? {{agent}} oubliera l'accès ; il faudra vous reconnecter. | Sign out of {{name}}? {{agent}} will forget the access; you will need to sign in again. |
-| `mcp.auth.expired` | Connexion expirée. | Sign-in expired. |
+| `mcp.auth.expired` | Connexion expirée | Sign-in expired |
 | `mcp.auth.reconnect` | Se reconnecter | Sign in again |
-| `mcp.auth.refused` | Accès refusé sur la page de {{name}}. | Access denied on the {{name}} page. |
-| `mcp.auth.failed` | La connexion n'a pas abouti : {{reason}} | Sign-in did not complete: {{reason}} |
-| `mcp.auth.reason.timeout` | pas de réponse en {{minutes}} min | no answer within {{minutes}} min |
-| `mcp.auth.reason.unexpectedPage` | page inattendue ({{host}}) | unexpected page ({{host}}) |
+| `mcp.auth.refused` | Accès refusé sur la page de {{name}} | Access denied on the {{name}} page |
+| `mcp.auth.failedTip` | La connexion n'a pas abouti : {{detail}} | Sign-in did not complete: {{detail}} |
+| `mcp.auth.reason.timeout` | Pas de réponse en {{minutes}} min | No answer within {{minutes}} min |
+| `mcp.auth.reason.unexpectedPage` | Page inattendue ({{host}}) | Unexpected page ({{host}}) |
 | `mcp.auth.reason.stopped` | {{agent}} s'est arrêté | {{agent}} stopped |
-| `mcp.auth.noPage` | {{agent}} n'a pas proposé de page de connexion. Faites-le dans un terminal : | {{agent}} did not offer a sign-in page. Do it in a terminal: |
-| `mcp.auth.inTerminal` | Faire dans un terminal | Do it in a terminal |
-| `mcp.auth.copyCommand` | Copier la commande | Copy the command |
-| `mcp.auth.unknown` | État de la connexion inconnu. | Sign-in status unknown. |
+| `mcp.auth.retry` | Réessayer | Try again |
+| `mcp.auth.noPage` | Pas de page de connexion | No sign-in page |
+| `mcp.auth.noPageTip` | {{agent}} n'a pas proposé de page de connexion. | {{agent}} did not offer a sign-in page. |
+| `mcp.auth.inTerminal` | Dans un terminal | In a terminal |
+| `mcp.auth.inTerminalTip` | Copie « {{command}} » ; dans un terminal, {{agent}} ouvre lui-même la page. | Copies “{{command}}”; in a terminal, {{agent}} opens the page itself. |
+| `mcp.auth.copied` | Copiée : <code>{{command}}</code> | Copied: <code>{{command}}</code> |
+| `mcp.auth.copiedTip` | À coller dans un terminal : {{agent}} y ouvre lui-même la page de {{name}}. | Paste it in a terminal: {{agent}} opens the {{name}} page there. |
+| `mcp.auth.retryHere` | Réessayer ici | Try again here |
+| `mcp.auth.unknown` | État de la connexion inconnu | Sign-in status unknown |
 | `mcp.auth.busy` | Une connexion est déjà en cours. | A sign-in is already in progress. |
 | `mcp.auth.agentMissing` | {{agent}} n'est pas installé. | {{agent}} is not installed. |
-| `mcp.auth.newConversations` | Pour les nouvelles conversations avec {{agent}} ; relancez une conversation ouverte pour qu'elle reçoive ces outils. | For new conversations with {{agent}}; restart an open conversation so it gets these tools. |
 | `mcp.auth.removeAskConnected` | Retirer le serveur « {{name}} » ? {{agent}} garde l'accès tant que vous ne vous déconnectez pas. | Remove the “{{name}}” server? {{agent}} keeps the access until you sign out. |
 | `mcp.state.toConnect`, `connecting`, `connected`, `expired` (pastille) | à connecter, connexion en cours, connecté, connexion expirée | not signed in, signing in, signed in, sign-in expired |
 | `capabilities.mcpOAuth.label` / `.detail` | Connexion des serveurs MCP distants / Par `{{command}}` ; le jeton reste chez {{agent}} | Remote MCP server sign-in / Through `{{command}}`; the token stays with {{agent}} |
@@ -398,6 +418,10 @@ Aucune ; R1 à R9 à relever avant de coder.
       `code_challenge` et `state=` dans le journal et le DOM après un parcours).
 - [ ] « Tester » n'est pas lancé pour un serveur à connexion par l'agent ; pastille selon l'état.
 - [ ] Onglet Bob : ligne d'aide (Q3), aucun bouton.
+- [ ] **Un état = une ligne** sous l'adresse à 940 px (deux au plus à 736 px, jamais un « · » seul
+      en début de ligne) ; actions en liens atteignables au clavier (focus visible), contraste
+      suffisant en clair et en sombre ; icône + texte, jamais la couleur seule ; rien de tronqué sans
+      `title`. Seul bouton plein : « Connecter Figma ».
 - [ ] Logo de Figma **non modifié** : le fichier livré a la même empreinte sha256 que celui de
       l'archive officielle (`9798b710…`) ; lisible dans ses deux tailles (boîtes de 56 et 28 px, dessins ≈ 26 et 13 px),
       en clair et en sombre (captures regardées).
@@ -468,3 +492,11 @@ Taille : ≈ 3 j avec le lot 3, relevés compris. **Aucune dépendance nouvelle.
   40 à 56 px (dessin ≈ 26 px), marges négatives de mise en page, carte à la hauteur d'une ligne de
   serveur à trois lignes ; logo de 28 px devant le nom remonté de 1 px et rapproché (4 px).
   Captures refaites et regardées (1,6 Mo).
+- 2026-11-27 — Retour de Jérôme (« J'aime pas trop le gros bloc avec les lignes pointillées quand
+  la connexion est en cours ou expirée ») : (A) les pointillés d'annotation sont retirés des
+  captures, visibles seulement par la case « Montrer ce qui change » du HTML, et chaque légende dit
+  en mots ce qui est nouveau ; (B) chaque état devient une ligne au poids de « ✓ Joignable · … »,
+  actions en liens, détail en info-bulle (jeton, consigne, délai, nouvelles conversations) ; ligne
+  d'aide sous la liste retirée ; « Faire dans un terminal » devient « Dans un terminal » (copie) et
+  un état « Copiée : … » ; textes raccourcis. Mesuré : une ligne à 940 px pour tous les états, deux
+  au plus à 736 px. Captures refaites et regardées (1,5 Mo).
