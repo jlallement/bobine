@@ -178,8 +178,11 @@ en réel. (Q1)
   (`user:pass@`) ; n'a ni `request` ni `request_uri` (à la casse près), ni `;` dans la requête ;
   porte un **`redirect_uri` exigé** par le préréglage (`pageLoopbackRedirect`, Figma : oui, relevé
   `http://127.0.0.1:<port>/callback` ; sans lui, ce pourrait être la page de consentement du client
-  d'un tiers), **unique** et écrit sous ce nom exact (`REDIRECT_URI`, `redirect%5Furi`,
-  `redirect%255Furi` : refus, on ne parie pas sur celui que lira le serveur) ; ce retour, décodé
+  d'un tiers), **unique** et écrit sous ce nom exact (`REDIRECT_URI`, `redirect%255Furi`, et tout nom qui,
+  décodé, rogné de ses espaces et débarrassé de `[]` et de `\0`, vaut `redirect_uri`, `request` ou
+  `request_uri` — `redirect_uri%20`, `redirect_uri+`, `redirect_uri[]`, `redirect_uri%00` : refus,
+  on ne parie pas sur celui que lira le serveur ; `redirect%5Furi` seul est le même nom une fois
+  décodé, accepté et vérifié comme les autres) ; ce retour, décodé
   une fois, ne contient ni `\` ni `@`, est en `http`, a pour hôte **écrit** exactement `127.0.0.1`
   ou `localhost` (ni `127.1`, ni `0x7f.1`, ni `[::1]`, ni point final, ni majuscules) et un port en
   chiffres. Un préréglage qui ne l'exige pas accepte une page sans retour, jamais un mauvais. Sinon : rien d'ouvert, état **Erreur** « Page inattendue (<hôte>) »,
@@ -680,3 +683,11 @@ Taille : ≈ 3 j avec le lot 3, relevés compris. **Aucune dépendance nouvelle.
      en chiffres ;
   5. journal : une fin périmée écrit « fin périmée (…), ignorée », jamais « fin (…) ».
   Essais du second passage gardés (`mcp-oauth.revue2.test.ts`, balayage D avec réponses attendues).
+- 2026-11-27 — **Trois restes du lot 1** (avant le lot 2) : (1) vérification de la page : tout nom
+  de paramètre qui, décodé (par `URLSearchParams` puis une fois de plus), sans espaces, `[]` ni
+  `\0`, vaut `redirect_uri`, `request` ou `request_uri` est refusé, sauf l'unique `redirect_uri`
+  exact (`redirect_uri%20=`, `redirect_uri+=`, `redirect_uri[]=`, `redirect_uri%00=`… à côté d'un
+  vrai retour local : essais) ; la fixture réelle passe toujours ; (2) déconnexion : chaque fin émet
+  **un seul** état (essai qui rougit si l'on retire `!emitted` du `finally`) ; (3) commentaire
+  corrigé : `redirect%5Furi` seul est accepté (même nom une fois décodé, valeur vérifiée), essai
+  qui le fixe.

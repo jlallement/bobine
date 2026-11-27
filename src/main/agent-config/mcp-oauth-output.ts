@@ -139,18 +139,31 @@ function decodedOnce(text: string): string {
 }
 
 /**
+ * Nom de paramètre ramené à ce qu'un serveur indulgent pourrait y lire : en minuscules, sans
+ * espaces (`redirect_uri%20`, `redirect_uri+`), sans `[]` (`redirect_uri[]`, tableaux de certains
+ * serveurs) ni `\0` (`redirect_uri%00`, nom coupé par certains autres).
+ */
+function canonicalName(name: string): string {
+  return name.toLowerCase().replace(/[\s\u0000[\]]/g, '')
+}
+
+/**
  * Paramètres de la page : aucun `request` ni `request_uri` ; un seul `redirect_uri`, écrit sous ce
- * nom exact (`REDIRECT_URI`, `redirect%5Furi`, `redirect%255Furi`… : refusés, on ne parie pas sur ce
- * que lira le serveur) ; pas de `;` dans la requête (séparateur reconnu par certains serveurs).
+ * nom exact ; pas de `;` dans la requête (séparateur reconnu par certains serveurs). Un nom qui,
+ * décodé (par `URLSearchParams`, puis une fois de plus) et ramené par `canonicalName`, vaut l'un de
+ * ces trois noms est refusé (`REDIRECT_URI`, `redirect%255Furi`, `redirect_uri%20`, `redirect_uri[]`,
+ * `redirect_uri%00`… : on ne parie pas sur ce que lira le serveur), sauf le `redirect_uri` exact.
+ * `redirect%5Furi` seul est **accepté** : `URLSearchParams` le décode en `redirect_uri`, comme le
+ * serveur ; c'est donc ce même nom, unique, et sa valeur est vérifiée comme les autres. À côté
+ * d'un vrai `redirect_uri`, il fait un second retour : refusé.
  */
 function queryParams(url: URL): { redirect?: string } | undefined {
   if (url.search.includes(';')) return undefined
   const redirects: string[] = []
   for (const [name, value] of url.searchParams) {
-    const lower = name.toLowerCase()
-    const again = decodedOnce(name).toLowerCase()
-    if (FORBIDDEN_PARAMS.has(lower) || FORBIDDEN_PARAMS.has(again)) return undefined
-    if (lower === 'redirect_uri' || again === 'redirect_uri') {
+    const forms = [canonicalName(name), canonicalName(decodedOnce(name))]
+    if (forms.some((form) => FORBIDDEN_PARAMS.has(form))) return undefined
+    if (forms.includes('redirect_uri')) {
       if (name !== 'redirect_uri') return undefined
       redirects.push(value)
     }

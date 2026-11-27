@@ -198,6 +198,13 @@ describe('vérification de l’adresse de la page (fiche 293, ADR-0077)', () => 
     expect(checkPageUrl(after, REQUIRED).ok).toBe(true)
   })
 
+  it('`redirect%5Furi` seul : même nom une fois décodé, accepté, et sa valeur vérifiée', () => {
+    const local = `https://www.figma.com${P}?client_id=X&redirect%5Furi=http%3A%2F%2F127.0.0.1%3A1%2Fcb`
+    expect(checkPageUrl(local, REQUIRED)).toMatchObject({ ok: true, host: HOST })
+    const evil = `https://www.figma.com${P}?client_id=X&redirect%5Furi=https%3A%2F%2Fevil.tld%2Fcb`
+    expect(checkPageUrl(evil, REQUIRED).ok).toBe(false)
+  })
+
   it.each([
     ['second retour au nom encodé', `&${LOOP}&redirect%5Furi=https%3A%2F%2Fevil.tld`],
     ['nom encodé deux fois', `&${LOOP}&redirect%255Furi=https%3A%2F%2Fevil.tld`],
@@ -207,6 +214,17 @@ describe('vérification de l’adresse de la page (fiche 293, ADR-0077)', () => 
     ['request_uri', `&${LOOP}&request_uri=https%3A%2F%2Fevil.tld%2Fpar`],
     ['request', `&${LOOP}&request=eyJhbGciOiJub25lIn0.e30.`],
     ['request en majuscules', `&${LOOP}&REQUEST=x`],
+    ['retour suivi de %20', `&${LOOP}&redirect_uri%20=https%3A%2F%2Fevil.tld%2Fcb`],
+    ['retour suivi de +', `&${LOOP}&redirect_uri+=https%3A%2F%2Fevil.tld%2Fcb`],
+    ['retour en tableau', `&${LOOP}&redirect_uri[]=https%3A%2F%2Fevil.tld%2Fcb`],
+    ['retour en tableau encodé', `&${LOOP}&redirect_uri%5B%5D=https%3A%2F%2Fevil.tld%2Fcb`],
+    ['retour suivi de %00', `&${LOOP}&redirect_uri%00=https%3A%2F%2Fevil.tld%2Fcb`],
+    ['retour précédé de %20', `&${LOOP}&%20redirect_uri=https%3A%2F%2Fevil.tld%2Fcb`],
+    ['retour suivi de %2520', `&${LOOP}&redirect_uri%2520=https%3A%2F%2Fevil.tld%2Fcb`],
+    ['retour déguisé seul', '&redirect_uri%20=http%3A%2F%2F127.0.0.1%3A1%2Fcb'],
+    ['request_uri en tableau', `&${LOOP}&request_uri[]=https%3A%2F%2Fevil.tld%2Fpar`],
+    ['request suivi de %00', `&${LOOP}&request%00=x`],
+    ['request suivi de +', `&${LOOP}&request+=x`],
     ['retour 0x7f.1', '&redirect_uri=http%3A%2F%2F0x7f.1%3A1%2F'],
     ['retour 127.1', '&redirect_uri=http%3A%2F%2F127.1%3A1%2F'],
     ['retour localhost.', '&redirect_uri=http%3A%2F%2Flocalhost.%3A1%2F'],

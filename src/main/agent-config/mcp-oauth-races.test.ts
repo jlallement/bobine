@@ -386,6 +386,17 @@ describe('E. déconnexion : jamais dite faite sans l’état relu', () => {
     const said = w.logged.filter((l) => l.includes('déconnecté'))
     expect(said).toHaveLength('done' in expected ? 1 : 0)
     for (const secret of SECRETS) expect(w.logged.join('\n'), secret).not.toContain(secret)
+    // Un seul état émis par déconnexion, quelle que soit sa fin (le `finally` n'en double aucun).
+    expect(w.states).toHaveLength(1)
+  })
+
+  it('commande introuvable : l’état « agent absent » est émis une fois, pas deux', async () => {
+    const w = world({ logout: 'missing' })
+    expect(await w.engine.disconnect('opencode', 'figma', ws)).toMatchObject({
+      reason: 'agent-missing'
+    })
+    await flush()
+    expect(w.states).toEqual([{ profileId: 'opencode', name: 'figma', status: 'agent-missing' }])
   })
 })
 
