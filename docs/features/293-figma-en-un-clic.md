@@ -1,7 +1,7 @@
 # 293 — Figma en un clic (serveur MCP distant connecté par l'agent)
 
-- **Statut** : spec et maquette validées par Jérôme le 2026-11-27 ; rien de codé ; relevés R1 à R9
-  avant de coder
+- **Statut** : spec et maquette validées par Jérôme le 2026-11-27 ; relevés R4, R5, R6 faits (R1,
+  R2, R3, R7 à R9 non) ; ADR-0075 proposé ; lot 1 (moteur, main) codé, sans interface
 - **Dépend de** : 025 (serveurs MCP des agents), 060 (« Tester » un serveur), 079 et 122 (outil
   `execute` d'OpenCode 2), 126 (confirmation dans la ligne), 287 (raison d'un bouton grisé)
 - **Agents** : OpenCode seulement. La connexion OAuth au serveur de Figma est faite **par l'agent**,
@@ -230,7 +230,50 @@ sur expiration (essai) ; (3) `mcp list` vide (relevé ci-dessus, cause non étab
 serveur, pas de la configuration) ; (4) « execute » = Code Mode d'OpenCode (fiche 079) ; (5)
 `mcp logout <nom>` existe.
 
-### À relever par un essai réel avant de coder
+### Relevés du tech lead (2026-11-27, OpenCode 2.3.0, macOS, deux profils isolés par `XDG_*`)
+
+Faits :
+
+- **R5** — `opencode auth list --format json --standalone` rend `[]` (code 0) aussi bien sans
+  serveur déclaré qu'avec `figma` déclaré **sans** connexion ; sans `--format json` : « No
+  authenticated integrations ». Donc : intégration absente = **à connecter** (pas de
+  `connections: []`).
+- **R6** — Pendant « Waiting for authorization... », le processus `opencode mcp auth figma
+  --standalone` a **un enfant** (`opencode`, le serveur privé) qui écoute le port de retour
+  `127.0.0.1:<port>`. `SIGTERM` comme `SIGINT` sur le parent : fin en 0,3 s, dernière ligne
+  « └  Cancelled », enfant disparu, port libéré ; un nouvel essai repart aussitôt avec un nouveau
+  port (trois fois de suite). `auth list` reste `[]`. Conséquence : arrêter **l'arbre** (`killTree`),
+  pas le seul parent.
+- **R4** — Profil connecté. Dans le dossier d'origine : intégration `figma` avec une connexion
+  `oauth`. Dans un **autre dossier** qui déclare le **même nom et la même adresse** : la même
+  connexion est vue (la connexion vaut pour tout le profil OpenCode). Dans un dossier qui déclare la
+  **même adresse sous un autre nom** (`maquettes`) : `[]`. Dans un dossier **sans** serveur
+  déclaré : `[]`. Conséquences : `auth list` ne montre que les serveurs déclarés pour le dossier
+  courant, la commande tourne donc dans le bon dossier (un serveur « tous les dossiers » est vu de
+  partout) ; la connexion est attachée au **nom** : un `figma-2` de repli (nom `figma` déjà pris par
+  un autre serveur) a **sa propre connexion**, à faire, et le retirer puis redéclarer `figma` ne
+  reprend pas celle de `figma-2`.
+- **Avant connexion** — Une conversation Bobine ouverte sur un dossier où `figma` est déclaré sans
+  connexion : l'agent répond « 0 figma tools ».
+- **Expiration de la tentative** (essai du matin) — Sans accord, fin au bout d'environ 618 s,
+  lignes « ■  Authorization expired » puis « └  Failed », **code de sortie 0**.
+- **Sorties brutes** (octets, codes ANSI, tourniquet ; `client_id`, `state`, `code_challenge` et
+  port remplacés par des valeurs factices) : `src/main/agent-config/fixtures/opencode-2.3.0-mcp-auth/`
+  (`sortie-reussie.txt`, `sortie-annulee.txt`, `LISEZMOI.md`), copiées telles quelles et rejouées
+  par les essais du moteur. L'expiration n'a pas été gardée en octets (relevée à l'écran).
+
+**Pas faits** (ils demandent un clic de Jérôme, qui n'était plus devant le Mac) : **R2** (refus sur
+la page de Figma), **R3** (outils dans une conversation déjà ouverte). Pas faits non plus : **R1**
+(forme de l'état expiré dans `auth list`), **R7**, **R8**, **R9**. Le code n'en suppose rien :
+
+- une fin de sortie non reconnue donne l'état générique **Erreur** ;
+- le **refus** n'est pas reconnu : `TODO(R2)` (2026-11-27), point d'extension prévu dans la lecture
+  de sortie de l'adaptateur (`McpAuthLine` `refused`), branché quand le relevé existera ; jusque-là
+  un refus finit en Erreur (« La connexion n'a pas abouti ») ;
+- `status.status === "needs_auth"` n'est lu que comme champ **facultatif** (type de l'API relu dans
+  le code, jamais vu en sortie) : son absence ne change rien (essai).
+
+### Restant à relever
 
 - **R1** — Forme de l'état « expiré » dans `auth list --format json` (le `status` prévu par le type
   apparaît-il sans tentative de connexion ?). Méthode : profil isolé, jeton laissé expirer ou
@@ -240,13 +283,7 @@ serveur, pas de la configuration) ; (4) « execute » = Code Mode d'OpenCode (fi
 - **R3** — Les outils de Figma arrivent-ils dans une conversation **déjà ouverte** après la
   connexion, ou faut-il relancer l'agent ? (Le texte « relancez une conversation ouverte » en
   dépend.)
-- **R4** — **Portée** : la connexion vaut-elle pour un autre dossier qui déclare la même adresse
-  (l'empreinte `mcp_…` dépend-elle de l'adresse, du nom, du dossier) ? Et pour un serveur déclaré
-  « tous les dossiers » ?
-- **R5** — `auth list` d'un serveur déclaré **sans** connexion : intégration listée avec
-  `connections: []`, ou absente ?
-- **R6** — Annulation : processus tué pendant « Waiting for authorization... » → port libéré,
-  tentative annulée, un nouvel essai part sans erreur.
+- R4, R5, R6 : faits (ci-dessus).
 - **R7** — Deux serveurs de même nom (global et dossier) : lequel `mcp auth` prend-il ?
 - **R8** — OpenCode 1.19 et 2.4.1 : `mcp auth --standalone` et `auth list --format json` existent-ils
   et rendent-ils la même chose ? (Sinon : état « commande non reconnue », pas de version imposée.)

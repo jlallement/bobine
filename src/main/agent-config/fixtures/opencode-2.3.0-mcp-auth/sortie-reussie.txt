@@ -1,0 +1,14 @@
+┌  Authenticate an MCP server
+[?25l│
+◒  Starting authorization[999D[J◐  Starting authorization[999D[J◓  Starting authorization[999D[J◑  Starting authorization[999D[J◒  Starting authorization[999D[J◐  Starting authorization[999D[J◓  Starting authorization[999D[J◑  Starting authorization[999D[J◒  Starting authorization.[999D[J◐  Starting authorization.[999D[J◓  Starting authorization.[999D[J◑  Starting authorization.[999D[J◒  Starting authorization.[999D[J◐  Starting authorization.[999D[J◓  Starting authorization.[999D[J◑  Starting authorization.[999D[J◒  Starting authorization..[999D[J◐  Starting authorization..[999D[J◓  Starting authorization..[999D[J◑  Starting authorization..[999D[J◒  Starting authorization..[999D[J◐  Starting authorization..[999D[J◓  Starting authorization..[999D[J◑  Starting authorization..[999D[J◒  Starting authorization...[999D[J◐  Starting authorization...[999D[J◓  Starting authorization...[999D[J◑  Starting authorization...[999D[J◒  Starting authorization...[999D[J◇  Authorization started
+[?25h│
+●  Authorize figma in your browser. This window will close automatically.
+│
+●  https://www.figma.com/oauth/mcp?response_type=code&client_id=FAKECLIENTID&code_challenge=FAKECHALLENGE&code_challenge_method=S256&redirect_uri=http%3A%2F%2F127.0.0.1%3A54321%2Fcallback&state=FAKESTATE&scope=mcp%3Aconnect&resource=https%3A%2F%2Fmcp.figma.com%2Fmcp
+│
+◇  Waiting for authorization...
+│
+◆  Connected to figma
+│
+└  Done
+
