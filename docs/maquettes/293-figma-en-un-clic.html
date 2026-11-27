@@ -655,9 +655,11 @@
         display: inline-flex;
         flex-shrink: 0;
       }
+      /* Hauteur de la boîte du fichier : elle contient la marge de protection de Figma
+         (le dessin n'en occupe que 47 % de haut) ; largeur selon les proportions du fichier. */
       .logo img {
-        width: var(--ls);
         height: var(--ls);
+        width: auto;
         display: block;
       }
       .logo .logo-dark {
@@ -789,9 +791,9 @@
           Pointillés orange : ce qui est nouveau. Tout le reste existe déjà, avec les mêmes classes.
         </li>
         <li>
-          Forme retenue par Jérôme le 2026-11-27 : la ligne, avec le logo officiel de Figma, tel
-          quel (fichier de l’archive officielle, dans <code>293/</code>). La tuile a été écartée
-          (fiche, « Variantes visuelles »).
+          Forme retenue par Jérôme le 2026-11-27 : la ligne, avec le logo officiel de Figma (icône
+          pleine couleur), tel quel (fichier de l’archive officielle, dans <code>293/</code>). La
+          tuile a été écartée (fiche, « Forme retenue et variante écartée »).
         </li>
         <li>Textes en français ; les clés et l'anglais sont dans la fiche.</li>
       </ul>
@@ -963,16 +965,16 @@
 
       // Logo officiel de Figma (archive « Download our logos » de la page de marque), fichiers
       // copiés tels quels dans 293/ ; vide : son emplacement seulement.
-      const LOGO = { light: '', dark: '' }
+      const LOGO = { light: 'Figma Icon (Full-color).svg', dark: 'Figma Icon (Full-color).svg' }
       const logo = (size) =>
         LOGO.light
-          ? `<span class="logo" style="--ls:${size}px"><img class="logo-light" src="293/${LOGO.light}" alt="Figma" /><img class="logo-dark" src="293/${LOGO.dark || LOGO.light}" alt="Figma" /></span>`
+          ? `<span class="logo" style="--ls:${size}px"><img class="logo-light" src="293/${encodeURIComponent(LOGO.light)}" alt="Figma" /><img class="logo-dark" src="293/${encodeURIComponent(LOGO.dark || LOGO.light)}" alt="Figma" /></span>`
           : `<span class="logo-slot" style="--ls:${size}px">${size >= 24 ? 'logo<br />officiel' : ''}</span>`
 
       const FIGMA_URL = 'https://mcp.figma.com/mcp'
       const figma = (opts) =>
         server({
-          name: `${logo(16)}figma`,
+          name: `${logo(28)}figma`,
           scope: 'tous les dossiers',
           web: true,
           detail: FIGMA_URL,
@@ -987,7 +989,7 @@
 
       const preset = (button, reason = '') =>
         `<ul class="mcp-preset v2 new"><li>
-          ${logo(28)}
+          ${logo(40)}
           <div class="mcp-preset-text"><div class="mcp-preset-name">Figma</div>
             <div class="mcp-preset-summary">Serveur officiel de Figma. La connexion se fait dans votre navigateur, avec OpenCode.</div></div>
           ${button}
