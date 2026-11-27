@@ -268,3 +268,15 @@ nouveau choix structurant ; elle est consignée ici.
   sur GitHub. Vert sur `d9420b82` : `./scripts/verify` 0 (sans charge ; sous charge, deux délais sans
   rapport, `log.test.ts` et `file-tree.test.ts`), `pnpm build` 0, huit suites en clair et en sombre
   16/16.
+- 2026-11-27 : **second rouge sur le Mac de GitHub** (`1382fd93`, en anglais) :
+  `filles-fusion-redemarrage` clair, « au clic suivant : main a la résolution et les travaux
+  restants ». Capture : en-tête « 1 replied, 1 to review, 1 merged », pied « 1 task merged into main
+  in 1 s. », « Page d'aide » toujours « conflict resolved · to review » : le second clic n'a fusionné
+  que « Notes de version ». **Cause : un vrai défaut de l'app**, même famille que le précédent. Après
+  le redémarrage, l'agent du travail à relire démarre (session rechargée) ; le moteur de fusion le
+  tenait pour « au travail » (`childState` range `starting` avec les tours) : le plan l'écartait des
+  travaux à fusionner et le bouton ne prenait que l'autre. Correctif : pour la fusion, un agent qui
+  démarre n'est pas au travail (`mergeState`, `children-merge.ts`). Essai unitaire rouge d'abord
+  (« un travail dont l'agent démarre encore… », `expected 'running' to be 'ready'`) ; l'e2e attend le
+  bon signal (« Fusionner les 2 ») avant chaque clic et tient l'agent du travail au démarrage
+  (« Voir la résolution » l'ouvre, `MOCK_AGENT_START_LOCK`), ce qui rend le rouge déterministe.

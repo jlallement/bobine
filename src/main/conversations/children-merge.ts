@@ -100,6 +100,16 @@ const fileList = (files: readonly { path: string }[]): string => {
   return files.length > MAX_FILES ? `${shown}…` : shown
 }
 
+/**
+ * L'état d'un travail pour la fusion : un agent qui démarre (`starting`, session rechargée au
+ * redémarrage de l'app) n'écrit rien, ce n'est pas « au travail » (fiche 289, rc.2 : sur un Mac
+ * lent, le travail résolu était écarté du clic qui devait le fusionner).
+ */
+const mergeState: typeof childState = (child, attention) =>
+  child.status === 'starting'
+    ? childState({ ...child, status: 'ready' }, attention)
+    : childState(child, attention)
+
 /** Rang de lancement de chaque fille, d'après le fil de la mère. */
 function launchRank(items: readonly TranscriptItem[]): (id: string) => number {
   const launched = items.flatMap((i) => (i.kind === 'child-started' ? [i.childId] : []))
@@ -125,7 +135,7 @@ export class ChildrenMerger {
 
   /** Le travail travaille encore ou attend un accord (fiche 264). */
   private busy(child: ConversationSummary): boolean {
-    const state = childState(child, (this.deps.attention?.() ?? {})[child.id])
+    const state = mergeState(child, (this.deps.attention?.() ?? {})[child.id])
     return state === 'running' || state === 'waiting'
   }
 
@@ -195,7 +205,7 @@ export class ChildrenMerger {
       const target = this.target(child.id)
       if (!target) continue
       targets.set(child.id, target)
-      candidates.push(await this.candidate(child, target, childState(child, attention[child.id])))
+      candidates.push(await this.candidate(child, target, mergeState(child, attention[child.id])))
     }
     const ready = mergeable({ children: candidates })
     const first = ready[0] ?? candidates[0]

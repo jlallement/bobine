@@ -289,3 +289,23 @@ describe('marque illisible ou périmée (fiche 289, second passage du testeur)',
     expect(JSON.parse(readFileSync(m.markFile, 'utf8'))).toMatchObject({ stage: 'review' })
   }, 30_000)
 })
+
+describe('après redémarrage, un agent qui démarre (fiche 289, rc.2 sur le Mac de GitHub)', () => {
+  it('un travail dont l’agent démarre encore n’est pas « au travail » : proposé et fusionné au clic', async () => {
+    const { env, a, b } = await conflicting()
+    agent(env, (child, files) => {
+      for (const f of files) writeFileSync(join(child.worktree.path, f), 'résolu\n')
+    })
+    await env.merger.start('mere', ['f1', 'f2'], false)
+    await env.merger.settled('mere')
+    expect(last(env.merges).status).toBe('review')
+    // Redémarrage : l'agent de chaque travail démarre (session rechargée), il n'écrit rien.
+    a.status = 'starting'
+    b.status = 'starting'
+    const plan = await env.merger.plan('mere')
+    expect(plan.children.find((c) => c.id === 'f2')?.state).toBe('ready')
+    await env.merger.start('mere', ['f2'], false)
+    await env.merger.settled('mere')
+    expect(states(last(env.merges))).toEqual(['merged'])
+  }, 30_000)
+})

@@ -29,6 +29,8 @@ export async function fillesFusionRedemarrageSuite(scheme) {
   const userData = mkdtempSync(join(tmpdir(), 'bob-e2e-redemarrage-data-'))
   const locks = realpathSync(mkdtempSync(join(tmpdir(), 'bob-e2e-redemarrage-verrou-')))
   const turnLock = join(locks, 'verrou')
+  /** Verrou de démarrage de l'agent factice : posé après le redémarrage (agent « au démarrage »). */
+  const startLock = join(locks, 'verrou-demarrage')
   const git = (cwd, ...args) =>
     execFileSync('git', ['-c', 'user.name=e2e', '-c', 'user.email=e2e@example.invalid', ...args], {
       cwd,
@@ -134,7 +136,9 @@ export async function fillesFusionRedemarrageSuite(scheme) {
         await ui.waitFor(`!!${item}`, 20000)
         await ui.click(`${item}.querySelector('.history-open') ?? ${item}`)
         const start = ui.$('subtasks-merge-start')
-        await ui.waitFor(`!!${start} && !${start}.hasAttribute('aria-disabled')`, 30000)
+        // Le bon signal, explicite : les deux travaux restants proposés ensemble.
+        const both = `${start}?.innerText === ${JSON.stringify(L('workGroup.merge.action', { count: 2, base: 'main' }))} && !${start}.hasAttribute('aria-disabled')`
+        await ui.waitFor(both, 30000)
         await ui.ev(`${ui.$('work-group')}.scrollIntoView({ block: 'center' }), true`)
         await ui.click(start)
         await ui.waitFor(
@@ -154,8 +158,25 @@ export async function fillesFusionRedemarrageSuite(scheme) {
         )
         await ui.ev(`${ui.$('work-group')}.scrollIntoView({ block: 'center' }), true`)
         await ui.shot('289-redemarrage-a-relire')
-        // Après relecture, le clic suivant fusionne.
-        await ui.waitFor(`!!${start} && !${start}.hasAttribute('aria-disabled')`, 30000)
+        // « Voir la résolution » ouvre le travail : son agent démarre (session rechargée). Il reste
+        // « au démarrage » (verrou de l'agent factice), comme sur une machine lente (rc.2, GitHub) :
+        // ce n'est pas un travail « au travail », le clic suivant le fusionne avec l'autre.
+        writeFileSync(startLock, '')
+        await ui.click(ui.$('subtasks-merge-resolution'))
+        await ui.waitFor(`!!${ui.$('title-origin')}`, 20000)
+        await ui.click(ui.$('title-origin'))
+        await ui.waitFor(`!!${start}`, 20000)
+        const statuses = await ui.ev(
+          `window.api.conversations.get().then((s) => s.conversations.filter((c) => c.startedFrom).map((c) => c.title + ':' + c.status))`
+        )
+        const settled = await ui.waitFor(both, 20000).then(
+          () => true,
+          () => false
+        )
+        check(
+          settled && statuses.some((s) => s.endsWith(':starting')),
+          `un travail dont l’agent démarre (${statuses.join(', ')}) reste proposé : « Fusionner les 2 »`
+        )
         await ui.click(start)
         await ui.waitFor(`${ui.$('subtasks-merge-result')}?.dataset.status === 'done'`, 60000)
         check(
@@ -163,10 +184,11 @@ export async function fillesFusionRedemarrageSuite(scheme) {
             existsSync(join(workspace, 'NOTES.md')),
           'au clic suivant : main a la résolution et les travaux restants'
         )
+        rmSync(startLock, { force: true })
       },
       userData,
       'conflits',
-      env
+      { ...env, MOCK_AGENT_START_LOCK: startLock }
     )
   } finally {
     rmSync(workspace, { recursive: true, force: true })
