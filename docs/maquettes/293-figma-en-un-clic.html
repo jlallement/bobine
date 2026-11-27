@@ -649,142 +649,53 @@
         color: var(--muted);
       }
 
-      /* ===== Variantes visuelles (V1 tuile, V2 ligne enrichie) ===== */
-      /* Emplacement du logo officiel de Figma, non modifié : fichier pas encore récupéré. */
+      /* ===== Logo de Figma (décision du 2026-11-27 : ligne avec logo) ===== */
+      /* Logo officiel, non modifié, seulement mis à l'échelle ; une version par thème. */
+      .logo {
+        display: inline-flex;
+        flex-shrink: 0;
+      }
+      .logo img {
+        width: var(--ls);
+        height: var(--ls);
+        display: block;
+      }
+      .logo .logo-dark {
+        display: none;
+      }
+      :root[data-theme='dark'] .logo .logo-light {
+        display: none;
+      }
+      :root[data-theme='dark'] .logo .logo-dark {
+        display: block;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) .logo .logo-light {
+          display: none;
+        }
+        :root:not([data-theme='light']) .logo .logo-dark {
+          display: block;
+        }
+      }
+      /* Emplacement, tant que le fichier officiel n'est pas là : jamais un tracé approchant. */
       .logo-slot {
-        width: var(--ls, 32px);
-        height: var(--ls, 32px);
+        width: var(--ls, 28px);
+        height: var(--ls, 28px);
         flex-shrink: 0;
         border-radius: var(--radius-sm);
         border: 1px dashed var(--border-strong);
-        background: var(--surface);
         display: grid;
         place-items: center;
-        text-align: center;
-        font-size: 7.5px;
+        font-size: 7px;
         line-height: 1.1;
         color: var(--muted);
+        text-align: center;
       }
-      /* Repli sans logo : pastille neutre avec l'initiale. */
-      .logo-fallback {
-        width: var(--ls, 32px);
-        height: var(--ls, 32px);
-        flex-shrink: 0;
-        border-radius: var(--radius-sm);
-        background: var(--surface-3);
-        color: var(--text);
-        display: grid;
-        place-items: center;
-        font-weight: 600;
-        font-size: calc(var(--ls, 32px) * 0.45);
-      }
-      .connectors-title {
-        font-size: 12.5px;
-        font-weight: 600;
-        color: var(--muted);
-        margin: 4px 4px 0;
-      }
-      .tile {
-        width: 300px;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        padding: 14px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-      }
-      .tile-head {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .tile-name {
-        flex: 1;
-        min-width: 0;
-        font-weight: 600;
-        font-size: 14px;
-      }
-      .tile-state {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        font-size: 11.5px;
-        color: var(--muted);
-        white-space: nowrap;
-      }
-      .tile-state.ok {
-        color: var(--ok);
-      }
-      .tile-state.err {
-        color: var(--err);
-      }
-      .tile-state.warn {
-        color: var(--warn);
-      }
-      .tile-text {
-        font-size: 12.5px;
-        color: var(--text-2);
-        line-height: 1.45;
-      }
-      .tile-text small {
-        display: block;
-        color: var(--muted);
-        font-size: 11.5px;
-        margin-top: 2px;
-      }
-      .tile-text code {
-        font-family: var(--font-mono);
-        font-size: 11.5px;
-        background: var(--surface-2);
-        padding: 1px 5px;
-        border-radius: var(--radius-xs);
-      }
-      .tile-foot {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 6px;
-      }
-      .tile-foot .grow {
-        flex: 1;
-      }
-      .tile-meta {
-        font-size: 11px;
-        color: var(--muted);
-      }
-      .menu {
-        position: absolute;
-        right: 0;
-        top: 30px;
-        z-index: 2;
-        min-width: 200px;
-        padding: 4px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        box-shadow: 0 4px 24px rgb(0 0 0 / 0.12);
-        font-size: 13px;
-      }
-      .menu div {
-        padding: 6px 10px;
-        border-radius: 6px;
-      }
-      .menu div.danger {
-        color: var(--err);
-      }
-      .menu-anchor {
-        position: relative;
-      }
-      /* V2 : la ligne « Figma » ne se cache plus en pointillés : carte pleine, logo, bouton. */
+      /* La ligne « Figma » : carte pleine (plus de pointillés), logo, bouton principal. */
       .mcp-preset.v2 {
         border-style: solid;
         border-color: var(--border);
         background: var(--surface);
-      }
-      .mcp-server-name .logo-slot,
-      .mcp-server-name .logo-fallback {
-        margin-right: 1px;
       }
       /* ===== Fil (copie de styles.css) ===== */
       .thread {
@@ -876,6 +787,11 @@
         </li>
         <li>
           Pointillés orange : ce qui est nouveau. Tout le reste existe déjà, avec les mêmes classes.
+        </li>
+        <li>
+          Forme retenue par Jérôme le 2026-11-27 : la ligne, avec le logo officiel de Figma, tel
+          quel (fichier de l’archive officielle, dans <code>293/</code>). La tuile a été écartée
+          (fiche, « Variantes visuelles »).
         </li>
         <li>Textes en français ; les clés et l'anglais sont dans la fiche.</li>
       </ul>
@@ -1045,10 +961,18 @@
           all ? `<button class="btn small">${icon('plug-zap', 13)} Tout tester</button>` : ''
         }</div>`
 
+      // Logo officiel de Figma (archive « Download our logos » de la page de marque), fichiers
+      // copiés tels quels dans 293/ ; vide : son emplacement seulement.
+      const LOGO = { light: '', dark: '' }
+      const logo = (size) =>
+        LOGO.light
+          ? `<span class="logo" style="--ls:${size}px"><img class="logo-light" src="293/${LOGO.light}" alt="Figma" /><img class="logo-dark" src="293/${LOGO.dark || LOGO.light}" alt="Figma" /></span>`
+          : `<span class="logo-slot" style="--ls:${size}px">${size >= 24 ? 'logo<br />officiel' : ''}</span>`
+
       const FIGMA_URL = 'https://mcp.figma.com/mcp'
       const figma = (opts) =>
         server({
-          name: 'figma',
+          name: `${logo(16)}figma`,
           scope: 'tous les dossiers',
           web: true,
           detail: FIGMA_URL,
@@ -1062,8 +986,8 @@
         }</div>`
 
       const preset = (button, reason = '') =>
-        `<ul class="mcp-preset new"><li>
-          <span class="mcp-preset-icon">${icon('globe', 15)}</span>
+        `<ul class="mcp-preset v2 new"><li>
+          ${logo(28)}
           <div class="mcp-preset-text"><div class="mcp-preset-name">Figma</div>
             <div class="mcp-preset-summary">Serveur officiel de Figma. La connexion se fait dans votre navigateur, avec OpenCode.</div></div>
           ${button}
@@ -1107,7 +1031,7 @@
           id: 'a-ajouter',
           title: '1 — Figma à ajouter',
           legend:
-            'Une ligne sous la liste, en pointillés : nom, une phrase, icône neutre (pas de logo). Un seul bouton : il ajoute le serveur (tous les dossiers, Q2) et lance aussitôt la connexion. Absente si l’adresse de Figma est déjà déclarée, sous n’importe quel nom.',
+            'Une ligne sous la liste, en carte pleine : logo officiel de Figma (non modifié), nom, une phrase. Un seul bouton : il ajoute le serveur (tous les dossiers, Q2) et lance aussitôt la connexion. Absente si l’adresse de Figma est déjà déclarée, sous n’importe quel nom.',
           body: () =>
             opencodeTab(
               recherche,
@@ -1327,184 +1251,6 @@
         toolRow('<span class="srv">figma ·</span> whoami', true)
       ]
 
-      // ===== Variantes visuelles =====
-      // Logo officiel de Figma : pas récupéré (archive officielle à télécharger, accord requis).
-      // `FIGMA_LOGO` reste vide : on montre son emplacement, jamais un tracé approchant.
-      const FIGMA_LOGO = ''
-      const logo = (size = 32) =>
-        FIGMA_LOGO
-          ? `<span style="--ls:${size}px" class="logo">${FIGMA_LOGO}</span>`
-          : `<span class="logo-slot" style="--ls:${size}px">logo<br />officiel</span>`
-      const fallback = (size = 32) => `<span class="logo-fallback" style="--ls:${size}px">F</span>`
-
-      const tile = ({
-        mark = logo(32),
-        state,
-        stateCls = '',
-        dot = '',
-        text,
-        buttons = '',
-        menu = false,
-        meta = true
-      }) =>
-        `<div class="tile new"><div class="tile-head">${mark}<div class="tile-name">Figma</div>
-          ${state ? `<span class="tile-state ${stateCls}"><span class="mcp-dot ${dot}"></span>${state}</span>` : ''}</div>
-          <div class="tile-text">${text}</div>
-          <div class="tile-foot">${buttons}<span class="grow"></span>${meta ? '<span class="tile-meta">tous les dossiers</span>' : ''}
-            <span class="menu-anchor"><button class="icon-button small${menu ? ' pressed' : ''}" style="${menu ? 'color:var(--text)' : ''}">${icon('ellipsis', 14)}</button>${
-              menu
-                ? '<div class="menu"><div>Désactiver</div><div>Voir dans le fichier d’OpenCode</div><div class="danger">Retirer Figma…</div></div>'
-                : ''
-            }</span></div></div>`
-
-      const v1Tab = (tileHtml, counts = { bob: 1, opencode: 1 }) =>
-        `<div class="mcp-settings">${tabs('opencode', counts)}
-          <div class="connectors-title new">Connecteurs</div>${tileHtml}
-          <div class="connectors-title">Serveurs</div>${fold('OpenCode')}
-          <ul class="settings-list">${recherche}</ul>${actions()}</div>`
-
-      const VARIANTES = [
-        {
-          id: 'v1-a-connecter',
-          widths: [940, 736],
-          title: 'V1 — Tuile : Figma pas encore ajouté',
-          legend:
-            'Un bloc « Connecteurs » en tête de l’onglet, une tuile. « Connecter Figma » ajoute le serveur et lance la connexion. Pas de « bientôt », pas de tuile fantôme : avec une seule tuile, le bloc ne promet rien d’autre.',
-          body: () =>
-            v1Tab(
-              tile({
-                text: 'Serveur officiel de Figma. La connexion se fait dans votre navigateur, avec OpenCode.',
-                buttons: '<button class="btn small primary">Connecter Figma</button>',
-                meta: false
-              })
-            )
-        },
-        {
-          id: 'v1-en-cours',
-          widths: [940, 736],
-          title: 'V1 — Tuile : connexion en cours',
-          legend:
-            'La tuile est la seule représentation du serveur une fois ajouté : il n’apparaît pas aussi dans « Serveurs » (pas de doublon ; compté dans « OpenCode 2 »). Les états longs passent dans la tuile, qui s’allonge.',
-          body: () =>
-            v1Tab(
-              tile({
-                state: 'connexion en cours',
-                stateCls: 'warn',
-                dot: 'testing',
-                text: 'Page de connexion ouverte dans votre navigateur (www.figma.com). Autorisez l’accès, puis revenez ici.<small>Sans réponse, abandon au bout de 10 min.</small>',
-                buttons: `<button class="btn small">${icon('external-link', 13)} Rouvrir la page</button><button class="btn small ghost">Annuler</button>`
-              }),
-              { bob: 1, opencode: 2 }
-            )
-        },
-        {
-          id: 'v1-connecte',
-          widths: [940, 736],
-          title: 'V1 — Tuile : connecté, menu ⋯ ouvert',
-          legend:
-            'Interrupteur, crayon, copie et corbeille de la ligne de serveur passent dans le menu ⋯ (« Désactiver », « Voir dans le fichier d’OpenCode », « Retirer Figma… » avec la confirmation habituelle). Pas de copie vers IBM Bob : Bobine ne sait pas connecter Figma par Bob.',
-          body: () =>
-            v1Tab(
-              tile({
-                state: 'connecté',
-                stateCls: 'ok',
-                dot: 'ok',
-                text: 'Connecté par OpenCode. Bobine ne voit jamais le jeton.',
-                buttons: `<button class="btn small ghost">${icon('log-out', 13)} Se déconnecter</button>`,
-                menu: true
-              }),
-              { bob: 1, opencode: 2 }
-            ) + '<div style="height:40px"></div>'
-        },
-        {
-          id: 'v1-erreur',
-          widths: [940, 736],
-          title: 'V1 — Tuile : erreur et commande à lancer soi-même',
-          legend:
-            'Le cas le plus long (commande non reconnue) : dans 300 px, la commande et deux boutons tiennent sur quatre lignes.',
-          body: () =>
-            v1Tab(
-              tile({
-                state: 'pas connecté',
-                stateCls: 'err',
-                dot: 'error',
-                text: 'OpenCode n’a pas proposé de page de connexion. Faites-le dans un terminal : <code>opencode mcp auth figma</code>',
-                buttons: `<button class="btn small">${icon('clipboard-copy', 13)} Copier la commande</button><button class="btn small ghost">${icon('rotate-cw', 13)} Réessayer</button>`
-              }),
-              { bob: 1, opencode: 2 }
-            )
-        },
-        {
-          id: 'v1-onglet-bob',
-          widths: [940, 736],
-          title: 'V1 — Onglet IBM Bob',
-          legend:
-            'Ni tuile grisée (une vitrine de ce qu’on ne peut pas avoir), ni bloc « Connecteurs » vide : la même ligne d’aide que la proposition d’origine.',
-          body: () =>
-            `<div class="mcp-settings">${tabs('bob', { bob: 1, opencode: 2 })}${fold('IBM Bob')}
-              <ul class="settings-list">${recherche}</ul>
-              <p class="settings-row-hint new">Figma : pas proposé pour IBM Bob. Figma n’accepte que les applications de sa liste ; Bobine ne sait le connecter que par OpenCode. <a href="#">Liste de Figma ${icon('external-link', 11)}</a></p>
-              ${actions()}</div>`
-        },
-        {
-          id: 'v2-a-ajouter',
-          widths: [940],
-          title: 'V2 — Ligne enrichie : Figma pas encore ajouté (recommandée)',
-          legend:
-            'La proposition d’origine avec le logo officiel à la place du globe, et une carte pleine (plus de pointillés) : elle se remarque par le logo et le bouton principal, sans nouveau motif à l’écran.',
-          body: () =>
-            opencodeTab(
-              recherche,
-              `<ul class="mcp-preset v2 new"><li>${logo(28)}
-                <div class="mcp-preset-text"><div class="mcp-preset-name">Figma</div>
-                <div class="mcp-preset-summary">Serveur officiel de Figma. La connexion se fait dans votre navigateur, avec OpenCode.</div></div>
-                <button class="btn small primary">Connecter Figma</button></li></ul>`,
-              { bob: 1, opencode: 1 }
-            )
-        },
-        {
-          id: 'v2-connecte',
-          widths: [940],
-          title: 'V2 — Ligne enrichie : connecté',
-          legend:
-            'Une fois ajouté, Figma est une ligne de serveur ordinaire (interrupteur, crayon, copie, corbeille), reconnue d’un coup d’œil par son logo en 16 px devant le nom. États longs et boutons : comme la proposition d’origine.',
-          body: () =>
-            opencodeTab(
-              recherche +
-                server({
-                  name: `${logo(16).replace('logo<br />officiel', '')}figma`,
-                  scope: 'tous les dossiers',
-                  web: true,
-                  detail: FIGMA_URL,
-                  noTest: true,
-                  dot: 'ok',
-                  auth: auth(
-                    'ok',
-                    'check',
-                    'Connecté par OpenCode. Bobine ne voit jamais le jeton.',
-                    `<button class="btn small ghost">${icon('log-out', 13)} Se déconnecter</button>`
-                  )
-                }),
-              newConv
-            )
-        },
-        {
-          id: 'repli-sans-logo',
-          widths: [940],
-          title: 'Repli — sans logo (si l’usage du logo n’est pas retenu)',
-          legend:
-            'Pastille neutre avec l’initiale, à la place du logo, dans la tuile (V1) comme dans la ligne (V2). Ce n’est pas un logo approchant : une lettre sur un fond neutre.',
-          body: () =>
-            v1Tab(
-              tile({
-                mark: fallback(32),
-                text: 'Serveur officiel de Figma. La connexion se fait dans votre navigateur, avec OpenCode.',
-                buttons: '<button class="btn small primary">Connecter Figma</button>',
-                meta: false
-              })
-            )
-        }
-      ]
       const root = document.getElementById('planches')
       let html = ''
       for (const p of PLANCHES) {
@@ -1517,16 +1263,6 @@
         <div class="frame-label">Avant</div><div class="frame" data-shot="fil-avant-640">${thread(BEFORE)}</div>
         <div class="frame-label">Après</div><div class="frame" data-shot="fil-apres-640">${thread(AFTER)}</div>
         <div class="frame-label">Après, fil étroit (420 px)</div><div class="frame" data-shot="fil-apres-420">${thread(AFTER, true)}</div></section>`
-      html += `<section class="planche" id="variantes"><h2>Variantes visuelles (retour de Jérôme, 2026-11-27)</h2>
-        <p class="legend">Le logo de Figma est montré par son <strong>emplacement</strong> (carré en pointillés « logo officiel ») : le fichier officiel n’a pas été récupéré (archive à télécharger depuis la page de marque de Figma). Il sera mis tel quel, sans retouche, sur un fond qui respecte ses règles.</p></section>`
-      for (const p of VARIANTES) {
-        html += `<section class="planche" id="${p.id}"><h2>${p.title}</h2><p class="legend">${p.legend}</p>${p.widths
-          .map(
-            (w) =>
-              `<div class="frame-label">${w === 940 ? 'Largeur réelle (940 px)' : 'Fenêtre la plus étroite (736 px)'}</div><div class="frame" data-shot="${p.id}-${w}">${dialog(w, p.body())}</div>`
-          )
-          .join('')}</section>`
-      }
       root.innerHTML = html
 
       for (const b of document.querySelectorAll('[data-set-theme]')) {

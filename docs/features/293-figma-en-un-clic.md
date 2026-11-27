@@ -1,6 +1,7 @@
 # 293 — Figma en un clic (serveur MCP distant connecté par l'agent)
 
-- **Statut** : proposé — spec et maquette à valider, rien de codé
+- **Statut** : proposé — forme retenue le 2026-11-27 (ligne avec le logo officiel de Figma) ; Q1,
+  Q2, Q4 ouvertes, Q3 à confirmer ; rien de codé
 - **Dépend de** : 025 (serveurs MCP des agents), 060 (« Tester » un serveur), 079 et 122 (outil
   `execute` d'OpenCode 2), 126 (confirmation dans la ligne), 287 (raison d'un bouton grisé)
 - **Agents** : OpenCode seulement. La connexion OAuth au serveur de Figma est faite **par l'agent**,
@@ -46,7 +47,8 @@ connecter que par OpenCode (Q3). Rien n'est dit, ni supposé, de ce que Bob saur
 ### Premier branchement (« Connecter Figma »)
 
 1. Réglages › Serveurs MCP › onglet **OpenCode**. Sous la liste des serveurs, une ligne
-   **Figma** : « Serveur officiel de Figma. La connexion se fait dans votre navigateur, avec
+   **Figma** en carte pleine, avec le logo officiel de Figma (28 px, non modifié) : « Serveur
+   officiel de Figma. La connexion se fait dans votre navigateur, avec
    OpenCode. » et le bouton **Connecter Figma**. La ligne n'existe pas si un serveur de cette
    adresse est déjà déclaré (quel que soit son nom).
 2. Clic : Bobine écrit le serveur `figma` (`{ type: remote, url }`) dans le fichier d'OpenCode,
@@ -97,7 +99,7 @@ de la page et une raison courte, jamais l'adresse complète.
 
 | État | Ce que l'utilisateur voit (ligne du serveur) | Boutons | Ce que fait Bobine |
 |---|---|---|---|
-| **Absent** | Ligne « Figma » sous la liste : nom, une phrase, icône neutre (globe) | **Connecter Figma** (principal) | Rien de lancé. Ligne cachée si un serveur `https://mcp.figma.com/mcp` existe déjà dans un des deux fichiers |
+| **Absent** | Ligne « Figma » sous la liste, en carte pleine : logo officiel (28 px), nom, une phrase | **Connecter Figma** (principal) | Rien de lancé. Ligne cachée si un serveur `https://mcp.figma.com/mcp` existe déjà dans un des deux fichiers |
 | **Ajouté, à connecter** | Pastille grise, « À connecter : la connexion se fait dans votre navigateur, avec OpenCode. » | **Se connecter** (principal), crayon, copie, corbeille ; pas de « Tester » | Lit l'état chez OpenCode : aucune connexion pour ce serveur. Le test de Bobine (fiche 060) n'est pas lancé pour ce serveur : sans jeton, Figma répond toujours 401 (relevé) |
 | **Connexion en cours** | Pastille ambre qui pulse, « Page de connexion ouverte dans votre navigateur (www.figma.com). Autorisez l'accès, puis revenez ici. » ; en petit : « Sans réponse, abandon au bout de 10 min. » | **Rouvrir la page**, **Annuler** ; « Se connecter » des autres serveurs grisé (raison au survol : « Une connexion est déjà en cours ») | Processus lancé, adresse gardée en mémoire du main, page ouverte une fois ; délai 10 min ; une seule connexion à la fois dans toute l'app |
 | **Connecté** | Pastille verte, « Connecté par OpenCode. Bobine ne voit jamais le jeton. » | **Se déconnecter** (discret), crayon, copie, corbeille | État relu chez OpenCode (connexion présente, pas expirée) |
@@ -299,32 +301,19 @@ avec des maquettes Figma ? « Connecter Figma » donne à OpenCode les outils de
 from Figma designs? “Connect Figma” gives OpenCode Figma's tools. » (clé `tips.mcpFigma`) : **non
 retenue** par défaut, voir la fin de Q5.
 
-## Variantes visuelles (retour de Jérôme, 2026-11-27)
+## Forme retenue et variante écartée
 
-Demande : « un truc un peu plus visuel… comme les connecteurs de Claude Code, avec l'icône Figma en
-mode une tuile ». Planches `v1-*`, `v2-*` et `repli-sans-logo-*` de la maquette.
+**Décision de Jérôme (2026-11-27)** : la **ligne**, avec le logo officiel de Figma. Une fois le
+serveur ajouté, c'est une ligne de serveur ordinaire (interrupteur, crayon, copie, corbeille) avec
+le logo en 16 px devant le nom ; avant, la ligne « Figma » en carte pleine (logo 28 px, nom, phrase,
+« Connecter Figma »). Toutes les planches de Réglages de la maquette ont cette forme.
 
-**Avis UX.** Le gain réel de la demande, c'est **le logo** : on reconnaît Figma avant de lire,
-comme ailleurs. La **tuile**, elle, coûte plus qu'elle ne rapporte ici : seule dans un bloc
-« Connecteurs », elle fait galerie vide et promet un catalogue qui n'existe pas ; elle introduit un
-motif que rien d'autre n'a dans des Réglages tout en lignes ; dans 300 px, les états longs
-(connexion en cours, commande à lancer dans un terminal) prennent quatre à cinq lignes ; et il
-faut cacher l'interrupteur, le crayon, la copie et la corbeille derrière un menu ⋯, propre à ce
-seul serveur. En 736 px, une tuile unique n'est plus qu'une ligne plus haute. **Je recommande la V2** :
-la ligne prévue, avec le logo officiel à la place du globe et une carte pleine (plus de pointillés)
-qui se voit sans crier. La tuile deviendra juste le jour où il y aura trois préréglages ou plus.
-
-**V1 — tuile** (si Jérôme la préfère) : bloc « Connecteurs » en tête de l'onglet OpenCode, puis
-« Serveurs ». **La tuile est la seule représentation** du serveur ajouté (pas de doublon dans la
-liste ; il compte dans « OpenCode 2 ») : un objet, un endroit. Ses actions de serveur passent dans
-⋯ (« Désactiver », « Voir dans le fichier d'OpenCode », « Retirer Figma… ») ; pas de copie vers
-Bob. Onglet IBM Bob : **ni tuile grisée ni bloc vide**, la ligne d'aide de Q3 (une tuile grisée est
-une vitrine de ce qu'on ne peut pas avoir). Rien qui annonce d'autres connecteurs : pas de
-« bientôt », pas de tuile fantôme, pas de « Parcourir ».
-
-**V2 — ligne enrichie** (recommandée) : ligne « Figma » en carte pleine, logo officiel 28 px, nom,
-phrase, « Connecter Figma » ; une fois ajouté, ligne de serveur ordinaire avec le logo en 16 px
-devant le nom. Tout le reste comme la proposition d'origine.
+**Écartée : la tuile** (bloc « Connecteurs » en tête de l'onglet, façon Claude). Avis UX : le gain
+réel, c'est le logo, que la ligne a aussi ; la tuile, seule dans son bloc, fait galerie vide et
+promet un catalogue qui n'existe pas, introduit un motif que rien d'autre n'a dans des Réglages tout
+en lignes, allonge les états longs (4 à 5 lignes dans 300 px) et cache les actions du serveur
+derrière un menu ⋯ propre à lui. Elle deviendra juste avec trois préréglages ou plus. (Planches
+retirées de la maquette ; elles sont dans le commit `be6fb081`.)
 
 **Logo de Figma : ce que disent ses règles** (page lue le 2026-11-27 :
 https://www.figma.com/using-the-figma-brand/, « Figma Trademark Guidelines ») :
@@ -337,12 +326,27 @@ https://www.figma.com/using-the-figma-brand/, « Figma Trademark Guidelines ») 
   d'≈ 78 Ko) ; zone de protection, couleurs et fonds clair et sombre sont dans le « Brand Book »
   (non lu : fichier Figma ou PDF à télécharger) ; un accord écrit séparé peut s'appliquer.
 
-Donc l'usage pour désigner l'intégration paraît permis, logo non modifié. **Le logo n'est pas
-dans la maquette** : récupérer l'archive est un téléchargement, à faire avec l'accord de Jérôme
-(Q5) ; la maquette montre son emplacement (carré « logo officiel »), jamais un tracé approchant.
-À l'implémentation : fichier officiel tel quel, sur un fond conforme au Brand Book dans les deux
-thèmes, licence notée. Textes : « Serveur officiel de Figma » décrit le serveur, jamais Bobine ;
-jamais « partenaire », « certifié », « recommandé par Figma ».
+Donc l'usage pour désigner l'intégration paraît permis, logo non modifié.
+
+**Fichier du logo : pas encore récupéré.** Jérôme a autorisé le téléchargement de l'archive
+« Download our logos » (2026-11-27), mais l'accord m'est parvenu relayé par l'agent coordinateur,
+pas de sa main : le téléchargement est à faire par la session qui lui parle (ou sur sa
+confirmation directe). En attendant, la maquette montre l'**emplacement** du logo (carré « logo
+officiel » en 28 px, carré vide en 16 px), jamais un tracé approchant. À faire dès l'archive
+reçue : adresse, taille, sha256, liste des fichiers et consignes d'usage relevés ici ; variante
+pour petite taille, fond clair et fond sombre ; SVG sans script ni ressource externe ; fichiers
+copiés tels quels dans `docs/maquettes/293/` (noms d'origine) et branchés dans la maquette
+(`LOGO` du script), captures refaites.
+
+**Dans l'app** (à l'implémentation, proposé) : fichier d'origine tel quel dans
+`src/renderer/src/assets/brands/figma/`, nommé par le préréglage (`shared/mcp-presets.ts`, une
+version par thème si l'archive en fournit) ; jamais recoloré ni recadré, seulement mis à l'échelle.
+Mention de marque à prévoir : « Figma et le logo Figma sont des marques de Figma, Inc. », dans
+Réglages › À propos ou l'avis des composants (fiche 217 : celui-ci liste des licences de logiciels,
+le logo n'en est pas un ; à trancher, et à vérifier si l'archive impose une formule).
+**Textes** : « Serveur officiel de Figma » décrit le serveur, jamais Bobine ; jamais « partenaire »,
+« certifié », « recommandé par Figma », « intégration officielle » ni rien qui laisse croire que
+Figma cautionne Bobine.
 
 ## Questions pour Jérôme
 
@@ -372,16 +376,8 @@ jamais « partenaire », « certifié », « recommandé par Figma ».
   (lu à la fin de la carte, champ déjà sondé par `pnpm opencode-probe`). Gain : le fil se lit.
 - B : fiche à part, plus tard. C : rien.
 
-**Q5 — Forme de Figma dans l'onglet OpenCode** (voir « Variantes visuelles »)
-- A (recommandé) : **V2, ligne enrichie** avec le logo officiel. Impact : la ligne prévue + un
-  fichier de logo ; nul ailleurs. Risque : faible (règles de marque à respecter). Gain :
-  reconnaissable d'un coup d'œil, sobre, aucun nouveau motif ni promesse de catalogue.
-- B : **V1, tuile** dans un bloc « Connecteurs ». Impact : nouveau composant, menu ⋯ qui remplace
-  interrupteur, crayon, copie, corbeille pour ce seul serveur ; ≈ ½ j de plus. Risque : bloc qui
-  paraît vide avec une tuile, deux façons de montrer un serveur. Gain : ressemble à Claude.
-- C : **repli sans logo** (pastille neutre « F »), si l'usage du logo n'est pas retenu.
-- Et pour le logo : **d'accord pour télécharger l'archive officielle de Figma** (lien de la page de
-  marque, ≈ 78 Ko) et en tirer le fichier sans le modifier ? Sans cet accord : C.
+**Q5 — Forme de Figma dans l'onglet OpenCode** : **tranchée le 2026-11-27** par Jérôme : la
+ligne avec le logo officiel ; téléchargement de l'archive officielle des logos autorisé.
 
 L'astuce « Vous travaillez avec des maquettes Figma ? » (`tips.mcpFigma`) n'est pas retenue : la
 ligne suffit (décision par défaut, à rouvrir si Jérôme la veut).
@@ -404,6 +400,8 @@ ligne suffit (décision par défaut, à rouvrir si Jérôme la veut).
       `code_challenge` et `state=` dans le journal et le DOM après un parcours).
 - [ ] « Tester » n'est pas lancé pour un serveur à connexion par l'agent ; pastille selon l'état.
 - [ ] Onglet Bob : ligne d'aide (si Q3 = A), aucun bouton.
+- [ ] Logo de Figma **non modifié** : le fichier livré a la même empreinte sha256 que celui de
+      l'archive officielle ; lisible en 16 et 28 px, en clair et en sombre (captures regardées).
 - [ ] `specificItems` et `docs/agents.md` : repère `mcp-oauth` (test existant des repères).
 - [ ] (Lot 3) Une carte `execute` finie avec `toolCalls: [{ tool: "figma.whoami" }]` s'intitule
       « figma · whoami » ; une carte sans ce champ garde « execute ».
@@ -434,8 +432,9 @@ ligne suffit (décision par défaut, à rouvrir si Jérôme la veut).
    - `main/agent/capabilities.ts` : repère `mcp-oauth`.
    - Unitaires.
 2. **Lot 2 — interface**, ≈ 1 j : `components/settings/McpAuthRow.tsx` (nouveau : `McpSettings.tsx`
-   est à 679 lignes, plafond 800), `McpSettings.tsx` (ligne du préréglage, état sous la ligne du
-   serveur), styles, `fr.json` / `en.json` ; fausse commande e2e, suite `mcp` étendue (ou
+   est à 679 lignes, plafond 800), `McpSettings.tsx` (ligne du préréglage avec logo, état sous la
+   ligne du serveur), logo dans `assets/brands/figma/`, mention de marque, styles, `fr.json` /
+   `en.json` ; fausse commande e2e, suite `mcp` étendue (ou
    `mcp-figma`).
 3. **Lot 3 — fil** (si Q4 = A), ≈ ½ j : `opencode-contract.ts` (outils appelés), marque
    `_meta["bobine/calledTools"]`, titre dans `ToolCall.tsx` ; agent factice : scénario
@@ -456,3 +455,8 @@ Taille : ≈ 3 j avec le lot 3, relevés compris. **Aucune dépendance nouvelle.
   règles de marque de Figma lues (logo non téléchargé : accord demandé, Q5). L'ancienne Q5
   (astuce) devient une décision par défaut. Captures refaites à l'échelle 1 (colonne de droite,
   hauteur utile) et doublons retirés : 58 fichiers, 2,4 Mo au lieu de 6,4 Mo.
+- 2026-11-27 — **Décision de Jérôme** : « 1. Ligne 2. Oui télécharge » — forme ligne avec le logo
+  officiel retenue, téléchargement de l'archive officielle des logos autorisé (archive seulement,
+  pas le Brand Book). Maquette ramenée à une seule forme (tuile et repli retirés, pointillés de la
+  ligne « Figma » remplacés par une carte pleine, emplacement du logo dans toutes les planches de
+  Réglages). Logo pas encore téléchargé : accord reçu relayé, à confirmer de la main de Jérôme.
