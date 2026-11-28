@@ -64,6 +64,51 @@ remplace cette ligne seulement. Le texte de l'ADR-0026 n'est pas touché ; son s
 « réglage de l'utilisateur » / « essai de l'agent » (aujourd'hui une seule émulation par onglet,
 que la fin de tour efface) ; le thème dans `BrowserState`.
 
+## Sonde du lot 0 (contrat réel, 2026-11-28)
+
+Electron du dépôt (**45.4.1**, Chromium 156), macOS 27 (écran Retina, thème du système sombre),
+script jetable hors du dépôt : une `WebContentsView` de 600 × 700 dans une fenêtre, débogueur
+attaché comme `cdp-tab.ts`, pages servies par la sonde sur `127.0.0.1` et `localhost` (jamais le
+réseau), avec et sans `<meta name="viewport">`. Mêmes commandes que `CdpTab.emulate` et
+`setColorScheme`. Ce qui ne relève pas du CDP (zoom de l'interface, Annoter, clics de l'agent par
+l'app) est relevé par l'e2e `browser-device` (lot 1), pas par la sonde.
+
+| # | Question | Relevé |
+|---|---|---|
+| S1 | Sans émulation (vue 600 × 700) | `innerWidth` 600, `(pointer: coarse)` faux, `(pointer: fine)` vrai, `(hover: none)` faux, `maxTouchPoints` 0, `'ontouchstart' in window` faux, `typeof TouchEvent` défini (toujours, même sans émulation), `devicePixelRatio` 2, identité « Chrome/156 … » sans « Mobile ». |
+| S2 | `setDeviceMetricsOverride { 375 × 667, mobile: true, scale: 1 }` + `setTouchEmulationEnabled { enabled: true }`, **sans recharger** | `innerWidth` × `innerHeight` = 375 × 667, `screen` = 375 × 667, `(pointer: coarse)` **vrai**, `(hover: none)` **vrai**, `(any-pointer: coarse)` vrai, `maxTouchPoints` **1** : tout de suite. Mais `'ontouchstart' in window` reste **faux** jusqu'au rechargement. `devicePixelRatio` reste 2, identité inchangée (pas de « Mobile »). |
+| S3 | Même chose, page rechargée | Comme S2, et `'ontouchstart' in window` vrai. |
+| S4 | Page **sans** `meta viewport`, `mobile: true` | Mise en page sur **980** px (`innerWidth` 980, `visualViewport.scale` 0,38), comme le dit l'ADR-0026. |
+| S5 | Retour à « Adaptatif » (`clearDeviceMetricsOverride` + tactile coupé), sans recharger | Taille, `pointer`, `hover`, `maxTouchPoints` reviennent **tout de suite** ; `'ontouchstart' in window` reste **vrai** jusqu'au rechargement (S6 : faux après). |
+| S7 | `mobile: false`, 1280 × 800, `scale` 0,47 (Portable) | 1280 × 800, `pointer: fine`, pas de tactile, `devicePixelRatio` 2 inchangé (la réduction n'y touche pas). |
+| S8 | Thème : `setEmulatedMedia` `dark`, `light`, puis `''` | `light` forcé l'emporte sur le système sombre ; `''` rend celui du système. Gardé au rechargement. Indépendant de la taille : poser puis effacer une taille ne touche pas au thème forcé. |
+| S9 | Deux `setDeviceMetricsOverride` envoyés sans attendre | Réponses dans l'ordre d'envoi ; la page finit sur le **dernier envoyé**. Taille puis `clear` sans attendre : finit effacée. **Mais** juste après la réponse, `innerWidth` peut encore valoir l'ancienne taille (375 lu, puis 600 deux images plus tard) : la réponse du CDP ne veut pas dire « page remise en page ». Un essai attend un fait, jamais la réponse seule. |
+| S10 | Vue masquée (`setVisible(false)`, onglet en arrière-plan) | L'émulation s'applique et s'efface aussi (`innerWidth` 412 puis 600). |
+| S11 | Navigation même site, autre site (127.0.0.1 → localhost : **autre processus**), dans la page (`pushState`), `reload()` | Taille, tactile et thème **gardés** dans tous les cas : l'émulation tient à la cible du débogueur, pas au document ni au processus. |
+| S12 | Page qui plante (`forcefullyCrashRenderer`) | Débogueur toujours attaché ; une commande envoyée pendant le plantage **répond** (`{}`) et s'applique au rechargement ; taille et thème gardés après rechargement. |
+| S13 | Onglet fermé pendant un changement (`close()` avec une commande en vol) | La commande en vol est **rejetée** (« target closed while handling command ») : pas de promesse pendante. Après fermeture, `sendCommand` lève « Object has been destroyed », et **`view.webContents` vaut `undefined`** (à ne plus lire après `close`). |
+| S14 | Autre vue (nouvel onglet) | Rien n'est hérité : l'émulation est **par onglet** (`innerWidth` 600 dans l'autre). Le main doit la poser à chaque nouvel onglet. |
+| S15 | Page réduite (`scale` 0,5, vue 188 × 334) | Clic CDP aux coordonnées CSS × `scale` : touche le bouton ; aux coordonnées CSS brutes : à côté (règle de l'ADR-0026 confirmée). Clic natif (`sendInputEvent`, pixels de la vue) : touche le bouton, et **ne produit pas** d'évènement tactile sous `setTouchEmulationEnabled` (la souris reste une souris). `DOM.getNodeForLocation` prend des pixels **CSS** (non réduits). Molette native : jusqu'en bas (`scrollY` = max). `Page.captureScreenshot` : taille émulée × densité (750 × 1334), non réduite ; `capturePage` : la vue × densité. |
+| S16 | Avertissement de certificat (HTTPS auto-signé local) | Refus : `ERR_CERT_AUTHORITY_INVALID`, débogueur attaché ; accepté puis chargé : taille, tactile et thème **toujours appliqués** ; page suivante après un refus : appliqués. |
+| S17 | Zoom de l'interface à 80 et 150 % avec une taille réglée | Non relevé par la sonde (pas de CDP en jeu) : essai e2e `browser-device`. |
+| S18 | Annoter sur une page réduite | Non relevé par la sonde : `page-layer.ts` lit `cdp.emulation`, quelle qu'en soit la source ; essai e2e (capture figée : fenêtre = taille émulée). |
+
+**Ce que la sonde change au plan** (rien ne contredit la maquette ni les décisions) :
+
+- le moteur pose le réglage **à chaque nouvel onglet** (S14) et n'a **rien à reposer** après une
+  navigation, un rechargement ou un plantage (S11, S12) ;
+- les changements d'un onglet sont **mis en file** et chaque passage recalcule ce qui doit
+  s'appliquer : l'ordre des réponses est sûr (S9), mais c'est l'état noté qui doit suivre la
+  dernière commande posée, pas la dernière demandée ;
+- `CdpTab.emulate` note la taille **dès que `setDeviceMetricsOverride` a répondu**, avant le tactile :
+  si le tactile échoue ensuite, l'état dit la taille vraiment posée (clics justes) au lieu de
+  l'ancienne ;
+- **à trancher (lot 2)** : `'ontouchstart' in window` ne suit le choix d'un téléphone (ou le retour
+  à Adaptatif) qu'**après rechargement** (S2, S5) ; `pointer`, `hover` et `maxTouchPoints` suivent
+  tout de suite. Le moteur ne recharge pas la page d'office (perdrait la saisie en cours) ; la ligne
+  « en tactile » du menu reste vraie pour les requêtes média. Proposé : le dire dans l'infobulle
+  ou ne rien faire.
+
 ## Périmètre
 
 **Dedans** : une barre « Appareil », repliée par défaut, ouverte par un bouton de la barre
