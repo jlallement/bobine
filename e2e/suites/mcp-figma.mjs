@@ -92,7 +92,7 @@ export async function mcpFigmaSuite(scheme) {
           card.alt === '' &&
             card.loaded &&
             Math.round(card.h) === 56 &&
-            card.button === L('mcp.preset.connect', { name: 'Figma' }) &&
+            card.button === L('mcp.preset.connect', { name: L('mcp.preset.figma.name') }) &&
             card.disabled === null &&
             card.text.includes(L('mcp.preset.figma.summary', { agent: 'OpenCode' })),
           `carte « Figma » : logo de 56 px chargé (alt vide), phrase, « Connecter Figma » (${JSON.stringify(card)})`
@@ -193,7 +193,7 @@ export async function mcpFigmaSuite(scheme) {
         await ui.waitFor(`!!${h.row()}.querySelector('[data-testid=confirm-row]')`)
         check(
           (await ui.ev(`${h.row()}.querySelector('[data-testid=confirm-row]').innerText`)).includes(
-            L('mcp.auth.disconnectAsk', { name: 'Figma', agent: 'OpenCode' })
+            L('mcp.auth.disconnectAsk', { name: L('mcp.preset.figma.name'), agent: 'OpenCode' })
           ) && (await ui.ev(`${h.link('disconnect')}.getAttribute('aria-expanded')`)) === 'true',
           'se déconnecter : confirmation dans la ligne, rien de lancé au premier clic'
         )
@@ -387,7 +387,11 @@ export async function mcpFigmaSuite(scheme) {
         await ui.waitFor(`!!${ui.$('mcp-preset-help')}`)
         check(
           (await ui.ev(`${ui.$('mcp-preset-help')}.innerText`)).includes(
-            L('mcp.preset.notOffered', { name: 'Figma', agent: 'IBM Bob', agents: 'OpenCode' })
+            L('mcp.preset.notOffered', {
+              name: L('mcp.preset.figma.name'),
+              agent: 'IBM Bob',
+              agents: 'OpenCode'
+            })
           ) && !(await ui.ev(`!!${ui.$('mcp-preset')}`)),
           'onglet IBM Bob : ligne d’aide d’après les profils, ni carte ni bouton'
         )
@@ -482,7 +486,7 @@ export async function mcpFigmaSuite(scheme) {
          * d'ouverture du menu.
          */
         const reread = (before) => waitUntil(() => authLists() > before, 30_000)
-        const neutral = L('sessionSettings.mcp.agentAuth', { agent: 'Agent factice' })
+        const neutral = L('sessionSettings.mcp.agentAuth', { agent: L('profiles.mock.label') })
 
         // Le menu s'ouvre sans attendre la relecture (fiche 293, M2), que la fausse commande retient
         // (`holdList`) : déterministe, quelle que soit la vitesse de la machine.

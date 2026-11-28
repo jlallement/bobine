@@ -988,3 +988,13 @@ Taille : ≈ 3 j avec le lot 3, relevés compris. **Aucune dépendance nouvelle.
   - Réponses du tech lead : une carte rejouée garde le même titre qu'en direct (début vu) ; l'export
     Markdown garde « execute » ; la marque `bobine/subagent` forgeable est hors périmètre.
   - Mutations (`293-lot3/mutate-c.py`) : 17 tuées sur 17 (une survivante tuée par un essai ajouté).
+- 2026-11-28 — **E2e anglais du Mac de GitHub rouges sur `48834411`** (`mcp-figma`, menu ⚙ pendant
+  la relecture) : défaut de l'**essai**, pas de l'app. Le libellé neutre attendu était
+  `L('sessionSettings.mcp.agentAuth', { agent: 'Agent factice' })` : le nom de l'agent factice
+  était écrit en français, alors que l'app affiche son libellé traduit (« Mock agent »). Corrigé :
+  `L('profiles.mock.label')` ; « Figma » passe aussi par `L('mcp.preset.figma.name')`. Revue des
+  deux suites : les autres textes de l'app passent par `L('clé')` ; restent en dur des données
+  (noms de serveur et d'outil, commande copiée, hôte) et des noms de produit (OpenCode, IBM Bob).
+  La minuscule de « sign-in through … » est voulue : même style que « signed in » dans le menu.
+  Preuve : rouge en anglais avant, vert après en français et en anglais, clair et sombre, avec la
+  commande ralentie à 0, 800 et 3 000 ms ; captures anglaises du fil et du menu regardées.
