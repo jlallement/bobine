@@ -1,0 +1,958 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Zone de saisie alignée sur le fil — maquette 294</title>
+    <style>
+      /*
+       * Jetons : thèmes réels de Bobine (src/renderer/src/themes.generated.css), accent par défaut.
+       * Clair par défaut, sombre selon le système, et forçable (bascule en haut, ou ?theme=dark).
+       * Aucune ressource externe : les polices viennent du dépôt (fiche 145), avec repli système.
+       */
+      :root {
+        --bg: #faf9f5;
+        --sidebar: #f3f1ea;
+        --surface: #ffffff;
+        --surface-2: #f0eee6;
+        --surface-3: #e8e5db;
+        --border: #e3e0d6;
+        --border-strong: #8f8b81;
+        --text: #2b2a26;
+        --text-2: #4d4b45;
+        --muted: #6d6b64;
+        --accent: #b75534;
+        --on-accent: #ffffff;
+        --warn: #905f18;
+        --guide: #d03bd0;
+        --shadow: 0 1px 3px rgb(0 0 0 / 0.05), 0 4px 16px rgb(0 0 0 / 0.04);
+        --doc-bg: #ecebe5;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --bg: #262624;
+          --sidebar: #1f1e1d;
+          --surface: #30302e;
+          --surface-2: #383835;
+          --surface-3: #42413d;
+          --border: #3e3d39;
+          --border-strong: #7d7b74;
+          --text: #f0eee6;
+          --text-2: #d4d1c7;
+          --muted: #a6a39a;
+          --accent: #db8062;
+          --on-accent: #1a1918;
+          --warn: #e0a84f;
+          --guide: #ff6bff;
+          --shadow: 0 1px 3px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.2);
+          --doc-bg: #191918;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme='dark'] {
+        --bg: #262624;
+        --sidebar: #1f1e1d;
+        --surface: #30302e;
+        --surface-2: #383835;
+        --surface-3: #42413d;
+        --border: #3e3d39;
+        --border-strong: #7d7b74;
+        --text: #f0eee6;
+        --text-2: #d4d1c7;
+        --muted: #a6a39a;
+        --accent: #db8062;
+        --on-accent: #1a1918;
+        --warn: #e0a84f;
+        --guide: #ff6bff;
+        --shadow: 0 1px 3px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.2);
+        --doc-bg: #191918;
+        color-scheme: dark;
+      }
+      :root {
+        --radius-xs: 4px;
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 20px;
+        --radius-pill: 999px;
+        --font-ui:
+          'Bobine Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+        --font-serif: ui-serif, 'New York', Georgia, 'Times New Roman', serif;
+      }
+      @font-face {
+        font-family: 'Bobine Inter';
+        src: url('../../src/renderer/src/assets/fonts/InterVariable.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--doc-bg);
+        color: var(--text);
+        font-family: var(--font-ui);
+        font-size: 14px;
+        -webkit-font-smoothing: antialiased;
+      }
+      svg.i {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      /* ===== Page ===== */
+      .page {
+        max-width: 1336px;
+        margin: 0 auto;
+        padding: 32px 24px 96px;
+      }
+      .page > header {
+        display: flex;
+        gap: 24px;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+      h1 {
+        font-size: 26px;
+        margin: 0 0 6px;
+        letter-spacing: -0.01em;
+      }
+      .lead {
+        color: var(--text-2);
+        margin: 0 0 6px;
+        max-width: 900px;
+        line-height: 1.5;
+      }
+      .controls {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        font-size: 13px;
+        color: var(--text-2);
+      }
+      .controls label {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        cursor: pointer;
+      }
+      .controls button {
+        font: inherit;
+        padding: 5px 10px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        cursor: pointer;
+      }
+      section.planche {
+        margin-top: 40px;
+        padding: 20px;
+        background: var(--surface-2);
+        border-radius: 14px;
+        width: fit-content;
+        max-width: 100%;
+      }
+      section.planche > h2 {
+        margin: 0 0 4px;
+        font-size: 18px;
+      }
+      section.planche > p.caption {
+        margin: 0 0 14px;
+        color: var(--text-2);
+        line-height: 1.5;
+        max-width: 1280px;
+      }
+      figure.state {
+        margin: 0 0 16px;
+      }
+      figure.state:last-child {
+        margin-bottom: 0;
+      }
+      figure.state figcaption {
+        font-size: 13px;
+        color: var(--text-2);
+        margin: 0 0 6px;
+        line-height: 1.45;
+        max-width: 1280px;
+      }
+      figure.state figcaption b {
+        color: var(--text);
+      }
+      .reco {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 1px 7px;
+        border-radius: var(--radius-pill);
+        background: var(--accent);
+        color: var(--on-accent);
+        margin-left: 6px;
+        vertical-align: 1px;
+      }
+      /* Une planche seule, pour les captures : ?planche=id */
+      body.only .page > header,
+      body.only section.planche:not(.shown) {
+        display: none;
+      }
+      body.only .page {
+        padding: 0;
+      }
+      body.only section.planche {
+        margin: 0;
+        border-radius: 0;
+      }
+
+      /* ===== Fenêtre de Bobine (reprise des styles du dépôt) ===== */
+      .win {
+        display: flex;
+        height: var(--win-h, 560px);
+        width: var(--win-w, 1280px);
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+        position: relative;
+      }
+      .sidebar {
+        width: 300px;
+        flex-shrink: 0;
+        background: var(--sidebar);
+        border-right: 1px solid var(--border);
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 14px;
+        color: var(--text-2);
+      }
+      .sb-top {
+        display: flex;
+        justify-content: flex-end;
+        gap: 14px;
+        color: var(--muted);
+        height: 24px;
+        margin-bottom: 14px;
+      }
+      .segmented {
+        display: flex;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 3px;
+        margin-bottom: 12px;
+      }
+      .segmented span {
+        flex: 1;
+        text-align: center;
+        padding: 6px 0;
+        border-radius: 7px;
+        color: var(--text-2);
+      }
+      .segmented span.active {
+        background: var(--surface);
+        color: var(--text);
+        font-weight: 600;
+      }
+      .sb-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 7px 8px;
+        border-radius: var(--radius-sm);
+      }
+      .sb-item.new {
+        color: var(--text);
+        font-weight: 500;
+      }
+      .sb-item.new svg {
+        color: var(--accent);
+      }
+      .sb-title {
+        margin: 18px 8px 6px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+      }
+      .sb-item.current {
+        background: var(--surface-3);
+        color: var(--text);
+      }
+      .main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
+      .main-header {
+        height: 52px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        padding: 0 14px 0 18px;
+        font-size: 14px;
+        font-weight: 500;
+        gap: 8px;
+      }
+      .main-header .grow {
+        flex: 1;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+      .main-header svg {
+        color: var(--muted);
+      }
+      .scroll {
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+      }
+      .column {
+        width: 100%;
+        max-width: var(--column-width, 740px);
+        margin: 0 auto;
+        padding: 0 24px;
+        overflow-x: clip;
+      }
+      .thread {
+        padding: 16px 0 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .msg-user {
+        align-self: flex-end;
+        max-width: 85%;
+        padding: 10px 16px;
+        border-radius: var(--radius-lg);
+        background: var(--surface-2);
+        white-space: pre-wrap;
+        line-height: 1.5;
+        font-size: calc(var(--conv-size) - 1px);
+      }
+      .msg-agent {
+        font-size: var(--conv-size);
+        line-height: 1.65;
+      }
+      .msg-agent p {
+        margin: 0 0 0.75em;
+      }
+      .msg-agent p:last-child {
+        margin-bottom: 0;
+      }
+      .notice {
+        display: flex;
+        gap: 10px;
+        padding: 12px 14px;
+        border-radius: var(--radius-md);
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        font-size: 13px;
+        line-height: 1.45;
+        color: var(--text-2);
+      }
+      .notice b {
+        color: var(--text);
+        display: block;
+      }
+      .notice svg {
+        color: var(--warn);
+        margin-top: 2px;
+      }
+      .thread-dock {
+        position: relative;
+        z-index: 1;
+      }
+
+      /* Zone de saisie : styles réels de styles.css (« Zone de saisie »). */
+      .composer-dock {
+        padding: 0 0 18px;
+      }
+      .composer {
+        background: var(--surface);
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
+        padding: 12px 10px 8px 16px;
+      }
+      .typed {
+        white-space: pre-wrap;
+        color: var(--text);
+        font-size: 15px;
+        line-height: 1.5;
+        padding: 2px 6px 8px 0;
+        max-height: 240px;
+        overflow: hidden;
+      }
+      .typed.placeholder {
+        color: var(--muted);
+      }
+      .caret {
+        display: inline-block;
+        width: 1px;
+        height: 1.15em;
+        background: var(--text);
+        vertical-align: -0.18em;
+      }
+      .composer-bar {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        margin-left: -6px;
+      }
+      .composer-bar .grow {
+        flex: 1;
+      }
+      .icon-button {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-sm);
+        display: inline-grid;
+        place-items: center;
+        color: var(--muted);
+        flex-shrink: 0;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 30px;
+        padding: 0 9px;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        color: var(--text-2);
+        white-space: nowrap;
+      }
+      .chip svg {
+        width: 14px;
+        height: 14px;
+      }
+      .ring {
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        border: 2px solid var(--surface-3);
+        border-top-color: var(--muted);
+      }
+      .send-button {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-sm);
+        display: grid;
+        place-items: center;
+        background: var(--accent);
+        color: var(--on-accent);
+        margin-left: 4px;
+        flex-shrink: 0;
+      }
+      .composer-context {
+        display: flex;
+        align-items: center;
+        margin: 6px 0 0 6px;
+      }
+      .composer-context .chip {
+        height: 24px;
+        gap: 5px;
+        padding: 0 7px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .composer-context .chip svg {
+        width: 13px;
+        height: 13px;
+      }
+      /* Barre repliée (fenêtre étroite, fiche 092) : icônes seules. */
+      .win.folded .fold-label {
+        display: none;
+      }
+
+      /* Accueil */
+      .welcome {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding-bottom: 8vh;
+      }
+      .greeting {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        margin: 0 0 28px;
+        font-family: var(--font-serif);
+        font-size: 36px;
+        font-weight: 400;
+      }
+      .greeting svg {
+        color: var(--accent);
+        width: 34px;
+        height: 34px;
+      }
+      .suggestions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 16px;
+      }
+      .suggestion {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 7px 13px;
+        border-radius: var(--radius-pill);
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text-2);
+        font-size: 13px;
+      }
+      .suggestion svg {
+        width: 15px;
+        height: 15px;
+      }
+
+      /* Panneau de droite */
+      .side-panel {
+        width: 320px;
+        flex-shrink: 0;
+        border-left: 1px solid var(--border);
+        padding: 14px 16px;
+        font-size: 13px;
+        color: var(--text-2);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .side-panel .tab {
+        align-self: flex-start;
+        padding: 6px 10px;
+        border-radius: var(--radius-sm);
+        background: var(--surface-2);
+        color: var(--text);
+        font-size: 14px;
+      }
+      .side-panel .h {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+        margin-top: 8px;
+      }
+      .side-panel .row {
+        display: flex;
+        justify-content: space-between;
+      }
+
+      /* ===== Après (proposition) ===== */
+      /* Le bloc de la saisie déborde de la colonne de sa marge intérieure (16 px + 1 px de bord) :
+         le texte tapé occupe exactement la colonne du fil. */
+      .after {
+        --overhang: 17px;
+      }
+      .after .composer-dock {
+        margin-inline: calc(-1 * var(--overhang));
+      }
+      .after .typed {
+        font-size: calc(var(--conv-size) - 1px);
+      }
+      /* Variante du débord : marge intérieure de 12 px (débord de 13 px). */
+      .after.pad12 {
+        --overhang: 13px;
+      }
+      .after.pad12 .composer {
+        padding-left: 12px;
+        padding-right: 6px;
+      }
+      /* Variante de la barre : sur la colonne, pas sur le cadre. */
+      .after.bar-on-column .composer-bar {
+        margin-left: calc(var(--overhang) - 6px);
+        margin-right: var(--overhang);
+      }
+      /* Variante B des lignes autour : ligne du dossier restée sur la colonne. */
+      .after.context-on-column .composer-context {
+        margin-left: calc(var(--overhang) + 6px);
+      }
+
+      /* ===== Repères : bords de la colonne du fil (texte de l'agent, bord des bulles) ===== */
+      .guides {
+        display: none;
+        position: absolute;
+        inset: 52px 0 0 0;
+        pointer-events: none;
+        z-index: 5;
+      }
+      body.guides-on .guides {
+        display: block;
+      }
+      .guides .column {
+        height: 100%;
+        overflow: visible;
+      }
+      .guides .lines {
+        position: relative;
+        height: 100%;
+      }
+      .guides .lines::before,
+      .guides .lines::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 0;
+        border-left: 1px dashed var(--guide);
+      }
+      .guides .lines::before {
+        left: 0;
+      }
+      .guides .lines::after {
+        right: -1px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <div>
+          <h1>294 — Zone de saisie alignée sur le fil</h1>
+          <p class="lead">
+            Chaque planche montre l'écran <b>avant</b> (la 1.2.0-rc.2) puis <b>après</b> au même
+            cadrage. Après : le texte tapé commence là où commence le texte de l'agent et s'arrête
+            au bord droit de la colonne (celui des bulles) ; le cadre déborde de la colonne de sa
+            marge intérieure ; le texte tapé a la taille de la bulle envoyée et suit le réglage «
+            Taille du texte de la conversation ». Rien d'autre ne change.
+          </p>
+          <p class="lead">
+            Les captures de l'app réelle (avant) sont dans
+            <code>docs/maquettes/294/app-avant-*.png</code>.
+          </p>
+        </div>
+        <div class="controls">
+          <label><input type="checkbox" id="guides" /> Montrer les repères</label>
+          <button id="theme" type="button">Clair / sombre</button>
+        </div>
+      </header>
+      <div id="planches"></div>
+    </div>
+
+    <script>
+      /* Icônes (traits de lucide, reprises à la main). */
+      const I = {
+        clip: '<path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l8.6-8.6a4 4 0 0 1 5.7 5.7l-8.6 8.6a2 2 0 0 1-2.8-2.8l8.5-8.5"/>',
+        camera:
+          '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/>',
+        roles:
+          '<circle cx="12" cy="12" r="2"/><circle cx="4" cy="12" r="1.5"/><circle cx="20" cy="12" r="1.5"/><circle cx="12" cy="4" r="1.5"/><circle cx="12" cy="20" r="1.5"/>',
+        shield:
+          '<path d="M20 13c0 5-3.5 7.5-7.7 9a1 1 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.6 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+        sliders:
+          '<path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/>',
+        chevron: '<path d="m6 9 6 6 6-6"/>',
+        up: '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
+        folder:
+          '<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
+        plus: '<circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/>',
+        search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+        panel: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/>',
+        sidebar: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/>',
+        chart: '<path d="M3 3v18h18M18 17V9M13 17V5M8 17v-3"/>',
+        cal: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+        hourglass:
+          '<path d="M5 22h14M5 2h14M17 22v-4.2a2 2 0 0 0-.6-1.4L12 12l-4.4 4.4a2 2 0 0 0-.6 1.4V22M7 2v4.2a2 2 0 0 0 .6 1.4L12 12l4.4-4.4a2 2 0 0 0 .6-1.4V2"/>',
+        spool: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/>',
+        flask: '<path d="M10 2v7.5L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9.5V2M8.5 2h7"/>',
+        code: '<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>',
+        bubble: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>'
+      }
+      const svg = (name, cls = 'i') => `<svg class="${cls}" viewBox="0 0 24 24">${I[name]}</svg>`
+
+      const USER =
+        'Peux-tu relire la fiche 290 et me dire si le chemin saisi est vérifié au même endroit que le dossier glissé ? Je voudrais une seule vérification, dans le main.'
+      const AGENT = [
+        'Oui : les deux chemins passent par la même fonction du main, qui normalise le chemin, suit les liens et refuse un dossier trop large ou déjà présent. Le renderer ne touche jamais au disque.',
+        'Une seule différence : un chemin collé peut commencer par <code>~/</code> ou <code>file://</code>, qu’on développe avant la vérification. Je propose d’ajouter un essai qui envoie les deux formes et compare les refus.'
+      ]
+      const TYPED =
+        'D’accord pour l’essai. Vérifie aussi un lien symbolique qui pointe hors du dossier de travail, un chemin avec des espaces et un chemin avec des accents.\nPuis relance la suite « dossiers » en clair et en sombre.\nMerci !'
+
+      function sidebar() {
+        return `<aside class="sidebar">
+          <div class="sb-top">${svg('search')}${svg('sidebar')}</div>
+          <div class="segmented"><span class="active">‹/› Code</span><span>Discussion</span></div>
+          <div class="sb-item new">${svg('plus')} Nouvelle conversation</div>
+          <div class="sb-item">${svg('chart')} Mon activité</div>
+          <div class="sb-item">${svg('cal')} Tâches planifiées</div>
+          <div class="sb-title">RÉCENTS</div>
+          <div class="sb-item current">Relire la fiche 290</div>
+          <div class="sb-item">Captures du tour de table</div>
+        </aside>`
+      }
+
+      function panel() {
+        return `<aside class="side-panel">
+          <span class="tab">Session</span>
+          <div class="h">ENVIRONNEMENT</div>
+          <div class="row"><span>Agent</span><span>Agent factice</span></div>
+          <div class="row"><span>Modèle</span><span>Factice rapide</span></div>
+          <div class="row"><span>Mode</span><span>Code</span></div>
+          <div class="row"><span>Dossier</span><span>workspace</span></div>
+          <div class="h">CONTEXTE</div>
+          <div class="row"><span>Messages</span><span>≈ 64</span></div>
+        </aside>`
+      }
+
+      function composer({ typed = TYPED, placeholder = false, folded = false } = {}) {
+        const text = placeholder
+          ? `<div class="typed placeholder">${typed}</div>`
+          : `<div class="typed">${typed}<span class="caret"></span></div>`
+        const label = (s) => `<span class="fold-label">${s}</span>`
+        return `<div class="composer-dock">
+          <div class="composer">
+            ${text}
+            <div class="composer-bar">
+              <span class="icon-button">${svg('clip')}</span>
+              ${folded ? '' : `<span class="icon-button">${svg('camera')}</span>`}
+              <span class="icon-button">${svg('roles')}</span>
+              <span class="chip">${svg('shield')}${label('Code')}</span>
+              ${folded ? '' : `<span class="icon-button">${svg('sliders')}</span>`}
+              <span class="grow"></span>
+              <span class="chip"><span class="ring"></span>${label('1 %')}</span>
+              <span class="chip">Factice rapide ${svg('chevron')}</span>
+              ${folded ? '' : `<span class="chip">Agent factice ${svg('chevron')}</span>`}
+              <span class="send-button">${svg('up')}</span>
+            </div>
+          </div>
+          <div class="composer-context"><span class="chip">${svg('folder')} workspace</span></div>
+        </div>`
+      }
+
+      function guides() {
+        return `<div class="guides"><div class="column"><div class="lines"></div></div></div>`
+      }
+
+      /*
+       * Une fenêtre : `after` (proposition), `width` (réglage de largeur), `size` (taille du texte
+       * de la conversation), `win` (largeur de la fenêtre), `panel`, `notice`, `variant`.
+       */
+      function win(o) {
+        const colW = { narrow: 640, normal: 740, wide: 960 }[o.width ?? 'normal']
+        const cls = ['win', o.after ? 'after' : 'before', o.variant ?? '', o.folded ? 'folded' : '']
+        const style = `--column-width:${colW}px;--conv-size:${o.size ?? 15}px;--win-w:${o.win ?? 1280}px;--win-h:${o.h ?? 560}px`
+        const thread = o.welcome
+          ? `<div class="welcome column">
+              <h2 class="greeting">${svg('spool')} Bonjour</h2>
+              ${composer({ typed: 'Décrivez une tâche, ou tapez / pour les commandes.', placeholder: true })}
+              <div class="suggestions">
+                <span class="suggestion">${svg('flask')} Lancer les tests</span>
+                <span class="suggestion">${svg('code')} Expliquer le code</span>
+                <span class="suggestion">${svg('bubble')} Relire mes changements</span>
+              </div>
+            </div>`
+          : `<div class="scroll"><div class="column"><div class="thread">
+              <div class="msg-user">${USER}</div>
+              <div class="msg-agent">${AGENT.map((p) => `<p>${p}</p>`).join('')}</div>
+              ${
+                o.notice
+                  ? `<div class="notice">${svg('hourglass')}<div><b>L’agent n’a rien envoyé depuis 1 min</b>C’est normal pendant une longue commande ou une longue réflexion. Vous pouvez attendre, ou arrêter la réponse : la conversation est gardée.</div></div>`
+                  : ''
+              }
+            </div></div></div>
+            <div class="column thread-dock">${composer({ folded: o.folded })}</div>`
+        return `<div class="${cls.join(' ')}" style="${style}">
+          ${o.sidebar === false ? '' : sidebar()}
+          <div class="main">
+            <div class="main-header"><span class="grow">${o.welcome ? 'Nouvelle conversation' : 'Relire la fiche 290'}</span>${svg('panel')}</div>
+            ${thread}
+            ${guides()}
+          </div>
+          ${o.panel ? panel() : ''}
+        </div>`
+      }
+
+      const pair = (o, before, after) => `
+        <figure class="state"><figcaption><b>Avant.</b> ${before}</figcaption>${win({ ...o, after: false })}</figure>
+        <figure class="state"><figcaption><b>Après.</b> ${after}</figcaption>${win({ ...o, after: true })}</figure>`
+
+      const variants = (o, a, b) => `
+        <figure class="state"><figcaption><b>Variante A</b><span class="reco">recommandée</span> ${a.text}</figcaption>${win({ ...o, after: true, variant: a.variant })}</figure>
+        <figure class="state"><figcaption><b>Variante B.</b> ${b.text}</figcaption>${win({ ...o, after: true, variant: b.variant })}</figure>`
+
+      const BEFORE =
+        'Le cadre a la largeur de la colonne ; le texte tapé est en retrait de 17 px de chaque côté (16 px de marge et 1 px de bord) et en 15 px, plus gros que la bulle envoyée (14 px).'
+      const AFTER =
+        'Le texte tapé commence sur le bord gauche du texte de l’agent et s’arrête sur le bord droit des bulles ; le cadre déborde de 17 px de chaque côté. Texte tapé en 14 px, interligne 1,5 : comme la bulle envoyée.'
+
+      const PLANCHES = [
+        {
+          id: 'normale',
+          title: 'Largeur de conversation normale (740 px)',
+          caption:
+            'Fenêtre de 1 280 px, barre latérale ouverte, panneau fermé. Taille du texte : 15 (défaut).',
+          body: pair({ width: 'normal' }, BEFORE, AFTER)
+        },
+        {
+          id: 'etroite',
+          title: 'Largeur de conversation étroite (640 px)',
+          caption: 'Même règle : la colonne est plus étroite, la saisie suit.',
+          body: pair(
+            { width: 'narrow' },
+            'Texte tapé en retrait de 17 px de chaque côté.',
+            'Texte tapé sur la colonne ; cadre en débord de 17 px.'
+          )
+        },
+        {
+          id: 'large',
+          title: 'Largeur de conversation large (960 px)',
+          caption: 'Même règle à la plus grande largeur.',
+          body: pair(
+            { width: 'wide' },
+            'Texte tapé en retrait de 17 px de chaque côté.',
+            'Texte tapé sur la colonne ; cadre en débord de 17 px.'
+          )
+        },
+        {
+          id: 'fenetre-etroite',
+          title: 'Fenêtre étroite : la colonne remplit déjà la largeur',
+          caption:
+            'Fenêtre de 760 px, barre latérale ouverte : la zone du fil fait 460 px, la colonne la remplit, avec ses 24 px de gouttière de chaque côté. Règle : le débord (17 px) reste toujours dans cette gouttière ; le cadre garde au moins 7 px jusqu’au bord de la zone, jamais de défilement de côté. La barre se replie comme aujourd’hui (fiche 092), un peu plus tard puisqu’elle gagne 34 px.',
+          body: pair(
+            { width: 'normal', win: 760, folded: true, h: 600 },
+            'Le cadre touche la gouttière (24 px du bord) ; texte en retrait de 17 px.',
+            'Le cadre est à 7 px du bord de la zone ; le texte tapé reste aligné sur celui de l’agent.'
+          )
+        },
+        {
+          id: 'panneau',
+          title: 'Panneau de droite ouvert',
+          caption:
+            'Fenêtre de 1 280 px, panneau de 320 px : la zone du fil fait 660 px, moins que la colonne normale, donc la colonne la remplit. Même règle que la fenêtre étroite.',
+          body: pair(
+            { width: 'normal', panel: true },
+            BEFORE,
+            'Texte tapé sur la colonne ; cadre à 7 px du panneau.'
+          )
+        },
+        {
+          id: 'taille-22',
+          title: 'Taille du texte de la conversation : 22',
+          caption:
+            'Le texte tapé suit le réglage, comme la bulle envoyée (21 px). La saisie grandit jusqu’à son plafond de 240 px (7 lignes à cette taille), puis défile.',
+          body: pair(
+            { width: 'normal', size: 22, h: 640 },
+            'Le texte tapé reste en 15 px : bien plus petit que la bulle.',
+            'Texte tapé en 21 px, interligne 1,5, comme la bulle.'
+          )
+        },
+        {
+          id: 'taille-12',
+          title: 'Taille du texte de la conversation : 12',
+          caption: 'À la plus petite taille, le texte tapé passe en 11 px, comme la bulle.',
+          body: pair(
+            { width: 'normal', size: 12, h: 500 },
+            'Texte tapé en 15 px : plus gros que la bulle et que la réponse.',
+            'Texte tapé en 11 px, comme la bulle.'
+          )
+        },
+        {
+          id: 'accueil',
+          title: 'Nouvelle conversation (écran d’accueil) — et onglet Discussion',
+          caption:
+            'Même saisie, même règle : le cadre déborde de la colonne et l’invite prend la taille de la bulle. L’onglet Discussion a exactement la même saisie (seuls l’invite et les suggestions changent) : pas de planche à part.',
+          body: pair(
+            { width: 'normal', welcome: true },
+            'Invite en 15 px, cadre sur la colonne.',
+            'Invite en 14 px, cadre en débord de 17 px ; les suggestions restent centrées.'
+          )
+        },
+        {
+          id: 'choix-barre',
+          title: 'Choix 1 — La barre d’icônes sous le texte',
+          caption:
+            'Aujourd’hui, la barre est dans la marge intérieure du cadre, comme le texte : son premier pictogramme tombe à 2 px du bord du texte. En gardant la marge, le texte et la barre se déplacent ensemble ; il n’y a donc pas vraiment de choix entre « le cadre » et « le texte » : ils restent alignés. La seule autre possibilité est de laisser la barre où elle est (sur l’ancienne colonne).',
+          body: variants(
+            { width: 'normal' },
+            {
+              variant: '',
+              text: 'La barre suit le cadre (et donc le texte), marges intérieures inchangées : le cadre reste un seul bloc.'
+            },
+            {
+              variant: 'bar-on-column',
+              text: 'La barre reste à son ancienne place, en retrait de 17 px de plus que le texte : deux alignements dans le même cadre, et 34 px de moins pour la barre.'
+            }
+          )
+        },
+        {
+          id: 'choix-autour',
+          title: 'Choix 2 — La ligne du dossier sous la saisie, les avis au-dessus',
+          caption:
+            'Les avis (silence, reprise, erreur) sont des cartes du fil : elles sont à la largeur de la colonne, comme les cartes d’outils. La ligne du dossier appartient à la saisie.',
+          body: variants(
+            { width: 'normal', notice: true, h: 640 },
+            {
+              variant: '',
+              text: 'La ligne du dossier suit le cadre (même retrait qu’aujourd’hui sous le cadre) ; les avis restent sur la colonne, comme tout le fil.'
+            },
+            {
+              variant: 'context-on-column',
+              text: 'Seul le cadre bouge : la ligne du dossier reste sur la colonne, décalée de 17 px par rapport au cadre au-dessus d’elle.'
+            }
+          )
+        },
+        {
+          id: 'choix-debord',
+          title: 'Choix 3 — La valeur du débord',
+          caption:
+            'Le débord vaut la marge intérieure gauche du cadre plus son bord. Le réduire rapproche le cadre de la colonne, mais colle le texte au coin arrondi (rayon de 20 px).',
+          body: variants(
+            { width: 'normal' },
+            {
+              variant: '',
+              text: 'Marge actuelle : 16 px (débord de 17 px). Même marge que dans la bulle envoyée (16 px) ; le texte est bien dégagé du coin arrondi.'
+            },
+            {
+              variant: 'pad12',
+              text: 'Marge de 12 px (débord de 13 px) : le cadre déborde moins, mais le texte est serré contre le coin arrondi et la saisie paraît plus tassée.'
+            }
+          )
+        }
+      ]
+
+      const params = new URLSearchParams(location.search)
+      const only = params.get('planche')
+      document.getElementById('planches').innerHTML = PLANCHES.map(
+        (p) => `<section class="planche${p.id === only ? ' shown' : ''}" id="${p.id}">
+          <h2>${p.title}</h2><p class="caption">${p.caption}</p>${p.body}</section>`
+      ).join('')
+      if (only) document.body.classList.add('only')
+      if (params.get('theme')) document.documentElement.dataset.theme = params.get('theme')
+      const box = document.getElementById('guides')
+      const setGuides = (on) => document.body.classList.toggle('guides-on', on)
+      box.addEventListener('change', () => setGuides(box.checked))
+      if (params.get('reperes') === '1') {
+        box.checked = true
+        setGuides(true)
+      }
+      document.getElementById('theme').addEventListener('click', () => {
+        const dark =
+          document.documentElement.dataset.theme === 'dark' ||
+          (!document.documentElement.dataset.theme &&
+            matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.dataset.theme = dark ? 'light' : 'dark'
+      })
+    </script>
+  </body>
+</html>

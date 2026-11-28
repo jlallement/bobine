@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useRef } from 'react'
+import { APPEARANCE_APPLIED } from './appearance-event'
 
 /** Hauteur de la zone : celle de son contenu (texte ou invite), dans la limite du CSS. */
 function fitHeight(el: HTMLTextAreaElement) {
@@ -12,7 +13,9 @@ function fitHeight(el: HTMLTextAreaElement) {
  * zone et de quoi demander une position de curseur pour le prochain texte.
  *
  * La hauteur suit aussi la largeur (fiche 167) : une conversation qui rétrécit replie le texte, ou
- * l'invite, sur une ligne de plus, qui serait sinon coupée à mi-hauteur.
+ * l'invite, sur une ligne de plus, qui serait sinon coupée à mi-hauteur. Et la taille du texte
+ * (fiche 294) : le texte tapé suit celle de la conversation, réglage ou mode présentation changés
+ * pendant qu'un texte attend.
  */
 export function useTextareaLayout(text: string) {
   const textarea = useRef<HTMLTextAreaElement>(null)
@@ -43,7 +46,12 @@ export function useTextareaLayout(text: string) {
       fitHeight(el)
     })
     resize.observe(el)
-    return () => resize.disconnect()
+    const refit = () => fitHeight(el)
+    window.addEventListener(APPEARANCE_APPLIED, refit)
+    return () => {
+      resize.disconnect()
+      window.removeEventListener(APPEARANCE_APPLIED, refit)
+    }
   }, [])
   const placeCaret = useCallback((caret: number, scroll?: 'top' | 'bottom') => {
     pendingCaret.current = caret

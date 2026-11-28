@@ -1,5 +1,6 @@
 import { act, render } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { APPEARANCE_APPLIED } from './appearance-event'
 import { useTextareaLayout } from './useTextareaLayout'
 
 /** ResizeObserver factice : on déclenche son rappel à la main. */
@@ -60,9 +61,32 @@ describe('hauteur de la zone de saisie (fiches 089, 167)', () => {
     expect(el.style.height).toBe('99px')
   })
 
+  it('suit la taille du texte : recalculée quand l’apparence change, texte et largeur inchangés (fiche 294)', () => {
+    const line = { height: 21 }
+    const { getByTestId, rerender } = render(<Zone text="" />)
+    const el = getByTestId('zone')
+    Object.defineProperty(el, 'clientWidth', { configurable: true, get: () => 400 })
+    Object.defineProperty(el, 'scrollHeight', { configurable: true, get: () => 3 * line.height })
+    rerender(<Zone text={'un\ndeux\ntrois'} />)
+    expect(el.style.height).toBe('63px')
+    line.height = 31.5
+    act(() => {
+      window.dispatchEvent(new Event(APPEARANCE_APPLIED))
+    })
+    expect(el.style.height).toBe('94.5px')
+  })
+
   it('cesse d’observer une fois la zone retirée', () => {
     const { unmount } = render(<Zone text="" />)
     unmount()
     expect(disconnect).toHaveBeenCalled()
+  })
+
+  it('n’écoute plus l’apparence une fois retirée', () => {
+    const remove = vi.spyOn(window, 'removeEventListener')
+    const { unmount } = render(<Zone text="" />)
+    unmount()
+    expect(remove).toHaveBeenCalledWith(APPEARANCE_APPLIED, expect.any(Function))
+    remove.mockRestore()
   })
 })

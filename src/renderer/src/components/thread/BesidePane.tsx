@@ -7,6 +7,7 @@ import { ComposerInbox, useFileDrop } from '../../useFileDrop'
 import { excludedIn } from '../../useAttachments'
 import { DropOverlay } from '../composer/DropOverlay'
 import { WorkingIndicator } from './WorkingIndicator'
+import { useScrollbarGutter } from '../../useScrollbarGutter'
 import { Composer } from '../composer/Composer'
 import { PinnedPlan } from './PinnedPlan'
 import { pinnedPlanOf } from './PlanList'
@@ -45,6 +46,8 @@ export function BesidePane({
 }) {
   const { t } = useTranslation()
   const scroller = useRef<HTMLDivElement>(null)
+  // La saisie, hors de la zone qui défile, garde la gouttière de la barre du fil (fiche 294).
+  useScrollbarGutter(scroller)
   const stickToBottom = useRef(true)
   useLayoutEffect(() => {
     const el = scroller.current
