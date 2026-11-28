@@ -252,7 +252,9 @@ export function useMcpAuth(view: McpAgentView, workspace: string): McpAuthModel 
     contextRef.current = context
   }, [context])
   const readWorkspace = readFor?.context === context ? readFor.workspace : undefined
-  const entry = readWorkspace === undefined ? undefined : mcpAuthEntry(profileId, readWorkspace)
+  // Pas encore relu par cet onglet (réouverture des Réglages) : le dernier état relu pour ce dossier
+  // s'il existe, comme le menu ⚙ (fiche 293) ; jamais celui d'un autre dossier.
+  const entry = mcpAuthEntry(profileId, readWorkspace ?? view.workspace ?? workspace)
   const shown = entry ?? EMPTY
   const { states } = shown
   // Dossier relu, lu par les actions (après un `await`) : l'état courant du magasin pour lui.

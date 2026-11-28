@@ -367,9 +367,10 @@
       }
     },
     "calledTools": {
-      "search": "Searches {{server}}’s tools",
+      "search": "Searches <code>{{server}}</code>’s tools",
       "searchAny": "Searches tools",
       "more": "+{{n}}",
+      "failed": "(failed)",
       "calls_one": "{{count}} call",
       "calls_other": "{{count}} calls"
     },
@@ -2078,6 +2079,7 @@
     },
     "auth": {
       "toConnect": "Not signed in",
+      "byAgent": "Sign-in through {{agent}}",
       "toConnectTip": "You sign in in your browser, through {{agent}}.",
       "connect": "Sign in",
       "pending": "Signing in ({{host}})",

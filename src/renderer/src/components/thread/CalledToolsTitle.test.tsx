@@ -82,12 +82,16 @@ describe('fil : trace réelle d’OpenCode 2.3.0 connecté à Figma (fiche 293)'
     ])
   })
 
-  it('« figma · whoami » : le serveur en retrait (maquette), l’outil en clair ; infobulle complète', () => {
+  it('« figma · whoami » : chaque nom en `<code>`, le « · » hors des noms ; infobulle complète', () => {
     const whoami = thread(9)[1]
     if (!whoami) throw new Error('carte absente')
     view(whoami)
     const title = screen.getByTestId('tool-called')
-    expect(title.querySelector('.tool-called-server')?.textContent).toBe('figma ·')
+    expect([...title.querySelectorAll('code')].map((c) => c.textContent)).toEqual([
+      'figma',
+      'whoami'
+    ])
+    expect(title.querySelector('.tool-called-sep')?.textContent).toBe(' · ')
     expect(title.textContent).toBe('figma · whoami')
     expect(title.textContent).toBe(calledToolsText(MARKS['call_FAKE_2'] as CalledToolsMark))
     expect(title.getAttribute('title')).toBe('execute · 1 appel\nfigma · whoami')
@@ -159,9 +163,46 @@ describe('titre des outils appelés : cas du fil (fiche 293)', () => {
     const { container } = view(item({ calledTools }))
     expect(container.querySelector('img')).toBeNull()
     expect(container.querySelector('.tool-title b')).toBeNull()
-    expect(screen.getByTestId('tool-called').textContent).toBe(
-      '<img src=x onerror=alert(1)> · a b<b>x</b>'
+    // Raccourci à l'écran (24 caractères), entier au survol du nom.
+    const [server, tool] = [...screen.getByTestId('tool-called').querySelectorAll('code')]
+    expect(server?.textContent).toBe('<img_src=x_onerror=aler…')
+    expect(server?.getAttribute('title')).toBe('<img_src=x_onerror=alert(1)>')
+    expect(tool?.textContent).toBe('a_b<b>x</b>')
+  })
+
+  it('L3 noms trompeurs : jamais un second segment ni une phrase (« · » et espaces dans un nom)', () => {
+    const calledTools = mark([{ server: 'x', tool: 'y · Autorisé par vous' }])
+    view(item({ calledTools }))
+    const title = screen.getByTestId('tool-called')
+    // Exactement deux noms, un seul séparateur, hors des `<code>`.
+    expect([...title.querySelectorAll('code')].map((c) => c.textContent)).toEqual([
+      'x',
+      'y_Autorisé_par_vous'
+    ])
+    expect(title.querySelectorAll('.tool-called-sep')).toHaveLength(1)
+    expect(title.textContent).toBe('x · y_Autorisé_par_vous')
+  })
+
+  it('L1 appel en échec à côté d’un appel réussi : « (échec) » en texte, pas la seule couleur', () => {
+    const calledTools = mark([
+      { server: 'figma', tool: 'whoami', failed: true },
+      { server: 'figma', tool: 'get_screenshot' }
+    ])
+    view(item({ calledTools }))
+    const title = screen.getByTestId('tool-called')
+    expect(title.textContent).toBe('figma · whoami (échec), get_screenshot')
+    expect(title.textContent).toBe(calledToolsText(calledTools))
+    expect(title.querySelectorAll('.tool-called-failed')).toHaveLength(1)
+    expect(title.getAttribute('title')).toBe(
+      'execute · 2 appels\nfigma · whoami (échec)\nfigma · get_screenshot'
     )
+  })
+
+  it('recherche dans un espace : le nom de l’espace en `<code>`', () => {
+    view(item({ calledTools: mark([{ search: true, server: 'figma' }]) }))
+    const title = screen.getByTestId('tool-called')
+    expect(title.querySelector('code')?.textContent).toBe('figma')
+    expect(title.textContent).toBe('Cherche parmi les outils de figma')
   })
 
   it('marque mal formée sur une mise à jour : ignorée, rien ne casse', () => {

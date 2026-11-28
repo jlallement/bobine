@@ -150,15 +150,26 @@ function calledToolOf(call: unknown): CalledTool | undefined {
   const c = record(call)
   const tool = c?.['tool']
   if (typeof tool !== 'string') return undefined
+  // Seul `completed` est relevé pour un appel réussi : tout autre état noté (`error`, relevé en
+  // 2.0.32, fiche 122 ; ou inconnu) est « pas réussi » ; `isError` aussi. Sans état : rien de dit.
+  const status = c?.['status']
+  const failed =
+    (typeof status === 'string' && status !== 'completed') || c?.['isError'] === true
+      ? { failed: true as const }
+      : {}
   if (tool === 'search') {
     const namespace = record(c?.['input'])?.['namespace']
-    return { search: true, ...(typeof namespace === 'string' ? { server: namespace } : {}) }
+    return {
+      search: true,
+      ...(typeof namespace === 'string' ? { server: namespace } : {}),
+      ...failed
+    }
   }
   const dot = tool.indexOf('.')
   if (dot > 0 && dot < tool.length - 1) {
-    return { server: tool.slice(0, dot), tool: tool.slice(dot + 1) }
+    return { server: tool.slice(0, dot), tool: tool.slice(dot + 1), ...failed }
   }
-  return { tool }
+  return { tool, ...failed }
 }
 
 /**
@@ -183,5 +194,7 @@ export function executeCalledTools(
 /** Noms des outils appelés par `execute`, tels que le profil d'OpenCode les déclare (ADR-0015). */
 export const OPENCODE_CALLED_TOOLS: CalledToolsSource = {
   id: 'opencode-called-tools',
+  // Carte annoncée `name: "execute"` et `title: "execute"` (trace du 2026-11-28).
+  toolName: 'execute',
   read: executeCalledTools
 }

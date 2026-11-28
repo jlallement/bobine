@@ -405,9 +405,10 @@ export type FrResources = {
       }
     }
     readonly calledTools: {
-      readonly search: 'Cherche parmi les outils de {{server}}'
+      readonly search: 'Cherche parmi les outils de <code>{{server}}</code>'
       readonly searchAny: 'Cherche parmi les outils'
       readonly more: '+{{n}}'
+      readonly failed: '(échec)'
       readonly calls_one: '{{count}} appel'
       readonly calls_many: '{{count}} appels'
       readonly calls_other: '{{count}} appels'
@@ -2135,6 +2136,7 @@ export type FrResources = {
     }
     readonly auth: {
       readonly toConnect: 'À connecter'
+      readonly byAgent: 'Connexion par {{agent}}'
       readonly toConnectTip: 'La connexion se fait dans votre navigateur, avec {{agent}}.'
       readonly connect: 'Se connecter'
       readonly pending: 'Connexion en cours ({{host}})'

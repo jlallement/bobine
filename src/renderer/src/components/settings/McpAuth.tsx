@@ -149,19 +149,25 @@ export function McpAuthLine({
   const signature = line ? `${status}|${line.actions.map((a) => a.id).join(',')}` : ''
   // Le bouton cliqué a disparu (la ligne a changé) : le focus, tombé sur la page, revient à la
   // première action de la nouvelle ligne, sinon à la ligne. Jamais si l'utilisateur est allé
-  // ailleurs entre-temps.
+  // ailleurs entre-temps. Ligne sans action (état pas encore relu : libellé neutre) : le focus
+  // l'attend sur la ligne, puis passe à la première action quand elle arrive.
   useEffect(() => {
     const { name } = server
     if (!model.focusPending(name) || !root.current) return
     const active = document.activeElement
-    const lost = !active || active === document.body || !active.isConnected
+    const waiting = active === root.current
+    const lost = !active || active === document.body || !active.isConnected || waiting
     if (!lost) {
       if (!root.current.contains(active)) model.focusDone(name)
       return
     }
-    model.focusDone(name)
     const first = root.current.querySelector<HTMLElement>('button')
-    ;(first ?? root.current).focus()
+    if (!first) {
+      if (!waiting) root.current.focus()
+      return
+    }
+    model.focusDone(name)
+    first.focus()
   }, [signature, model, server])
   if (!line) return null
   const { tone, icon: Icon, spin, text, tip, actions } = line
@@ -254,10 +260,11 @@ function useLine(
   const retry = connect('retry', t('mcp.auth.retry'))
 
   if (!state) {
-    // Relecture impossible : dite ; pas encore relue : rien (pas d'état deviné).
+    // Relecture impossible : dite ; pas encore relue : un libellé neutre et vrai, comme le menu ⚙
+    // (jamais une ligne vide qui apparaît d'un coup et fait grandir la carte, fiche 293).
     return model.error
       ? { tone: '', icon: Info, text: t('mcp.auth.unknown'), tip: model.error, actions: [signIn] }
-      : undefined
+      : { tone: '', icon: Info, text: t('mcp.auth.byAgent', { agent }), actions: [] }
   }
   const note = model.notes[name]
   if (note?.kind === 'copied') {

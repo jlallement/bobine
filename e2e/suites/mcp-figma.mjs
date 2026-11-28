@@ -152,12 +152,28 @@ export async function mcpFigmaSuite(scheme) {
         await waitUntil(() => opened().length >= 2)
         check(opened()[1] === page, '« Rouvrir la page » : la même adresse vérifiée, rouverte')
 
-        // Réglages fermés puis rouverts pendant la connexion : toujours « en cours ».
+        // Réglages fermés puis rouverts pendant la connexion : toujours « en cours ». La relecture
+        // est retenue (`holdList`) : la ligne montre tout de suite le dernier état relu pour ce
+        // dossier, jamais une ligne vide (déterministe, quelle que soit la vitesse de la machine).
         await ui.key('Escape')
         await ui.waitFor(`!${ui.$('settings')}`)
+        setState({ holdList: true })
+        const listsBefore = calls().filter((c) => c[0] === 'auth' && c[1] === 'list').length
         await h.openTab('opencode')
+        await ui.waitFor(`!!${h.row()}?.querySelector('[data-testid=mcp-auth]')`)
+        await waitUntil(
+          () => calls().filter((c) => c[0] === 'auth' && c[1] === 'list').length > listsBefore,
+          30_000
+        )
+        const during = await ui.ev(
+          `${h.row()}.querySelector('[data-testid=mcp-auth]').dataset.status`
+        )
+        setState({ holdList: false })
         await h.waitStatus('connecting')
-        check(true, 'Réglages fermés puis rouverts : la connexion est retrouvée « en cours »')
+        check(
+          during === 'connecting',
+          `Réglages fermés puis rouverts : « en cours » dès la réouverture, pendant la relecture (${during})`
+        )
 
         // 3. Accord sur la page (simulé) : « Connecté par OpenCode ».
         setState({ approve: true })

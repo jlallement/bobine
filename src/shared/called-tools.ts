@@ -23,9 +23,12 @@ export const MAX_CALLED_NAME = 64
 
 /**
  * Un outil appelé : `tool` sur le serveur `server` (s'il est connu), ou une recherche parmi les
- * outils (du serveur `server` s'il est connu ; jamais deviné).
+ * outils (du serveur `server` s'il est connu ; jamais deviné). `failed` : l'agent a noté pour cet
+ * appel un état autre que réussi (le titre le dit, fiche 293, L1).
  */
-export type CalledTool = { server?: string; tool: string } | { search: true; server?: string }
+export type CalledTool =
+  | { server?: string; tool: string; failed?: true }
+  | { search: true; server?: string; failed?: true }
 
 export interface CalledToolsMark {
   /** Les premiers appels, dans l'ordre (au plus `MAX_CALLED_TOOLS`). */
@@ -39,6 +42,12 @@ export interface CalledToolsMark {
  * forme (`\p{Cf}` : sens d'écriture, largeur nulle), séparateurs de ligne et de paragraphe.
  */
 const UNSAFE = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu
+/**
+ * Ce qui ferait passer un nom pour plusieurs morceaux ou pour une phrase (fiche 293, L3) : toute
+ * espace, et les points médians ou puces que le titre emploie comme séparateur (`·`, `•`, `‧`,
+ * `⋅`, `∙`, `・`, `･`). Remplacés par `_` : un nom reste un seul mot.
+ */
+const SEPARATORS = /[\s\u00b7\u2022\u2027\u22c5\u2219\u30fb\uff65]+/gu
 
 /** Nom lisible sur une ligne, borné ; `undefined` s'il n'en reste rien (ou si ce n'est pas un texte). */
 export function cleanCalledName(value: unknown): string | undefined {
@@ -47,8 +56,8 @@ export function cleanCalledName(value: unknown): string | undefined {
   const text = value
     .slice(0, MAX_CALLED_NAME * 4)
     .replace(UNSAFE, ' ')
-    .replace(/\s+/g, ' ')
     .trim()
+    .replace(SEPARATORS, '_')
   if (!text) return undefined
   const chars = [...text]
   return chars.length > MAX_CALLED_NAME ? `${chars.slice(0, MAX_CALLED_NAME - 1).join('')}…` : text
@@ -60,9 +69,10 @@ function cleanCalledTool(value: unknown): CalledTool | undefined {
   const v = value as Record<string, unknown>
   const server = cleanCalledName(v['server'])
   const withServer = server ? { server } : {}
-  if (v['search'] === true) return { search: true, ...withServer }
+  const failed = v['failed'] === true ? { failed: true as const } : {}
+  if (v['search'] === true) return { search: true, ...withServer, ...failed }
   const tool = cleanCalledName(v['tool'])
-  return tool ? { ...withServer, tool } : undefined
+  return tool ? { ...withServer, tool, ...failed } : undefined
 }
 
 /**
@@ -134,7 +144,7 @@ export interface CalledToolsTitle {
 }
 
 const keyOf = (tool: CalledTool) =>
-  'search' in tool ? `?\u0000${tool.server ?? ''}` : `${tool.server ?? ''}\u0000${tool.tool}`
+  `${tool.failed ? '!' : ''}${'search' in tool ? `?\u0000${tool.server ?? ''}` : `${tool.server ?? ''}\u0000${tool.tool}`}`
 
 /** Titre d'une carte d'après sa marque : au plus `shown` outils distincts, puis « +N » appels. */
 export function calledToolsTitle(mark: CalledToolsMark, shown = 3): CalledToolsTitle {

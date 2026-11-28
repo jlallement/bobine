@@ -405,9 +405,10 @@
       }
     },
     "calledTools": {
-      "search": "Cherche parmi les outils de {{server}}",
+      "search": "Cherche parmi les outils de <code>{{server}}</code>",
       "searchAny": "Cherche parmi les outils",
       "more": "+{{n}}",
+      "failed": "(échec)",
       "calls_one": "{{count}} appel",
       "calls_many": "{{count}} appels",
       "calls_other": "{{count}} appels"
@@ -2175,6 +2176,7 @@
     },
     "auth": {
       "toConnect": "À connecter",
+      "byAgent": "Connexion par {{agent}}",
       "toConnectTip": "La connexion se fait dans votre navigateur, avec {{agent}}.",
       "connect": "Se connecter",
       "pending": "Connexion en cours ({{host}})",

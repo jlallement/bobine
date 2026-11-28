@@ -568,6 +568,8 @@ Figma cautionne Bobine.
   des 50 gardés, pour un « +N » vrai. Une entrée est `{ server?, tool }` ou `{ search: true,
   server? }` (la recherche n'est pas un outil nommé). Une marque `bobine/calledTools` venue de
   l'agent lui-même est retirée par le main avant de poser la sienne.
+- **Appel en échec, carte `execute` seulement, noms en `<code>`** : voir le Journal (passe du
+  testeur sur le lot 3, L1 à L3).
 - **Plusieurs outils** : au plus trois outils distincts, le serveur dit une fois s'il est commun
   (« figma · a, b, c +1 »), sinon chacun le sien (« figma · whoami, lire ») ; « +N » compte les
   appels non représentés (autres outils, ou au-delà de la marque). La fiche proposait « figma ·
@@ -958,3 +960,31 @@ Taille : ≈ 3 j avec le lot 3, relevés compris. **Aucune dépendance nouvelle.
   Observé alors : à la réouverture des Réglages, la ligne d'état reste **vide** le temps de la
   relecture (aucun état montré avant d'être relu pour ce contexte) ; à trancher (montrer le dernier
   état relu pour ce dossier, comme le menu).
+- 2026-11-28 — **Passe du testeur sur le lot 3** (`bd025848`, `48834411`), corrigée à la cause ;
+  ses essais gardés (`src/main/agent/called-tools.revue.test.ts`, assertions intactes ; L3 n'en
+  avait pas : une ajoutée, dite sur place) :
+  - **L1, appel en échec** : chaque appel garde son état dans la marque (`failed`) : seul
+    `completed` (relevé) est réussi ; tout autre état noté (`error`, relevé en 2.0.32, ou inconnu)
+    et `isError` ne le sont pas ; sans état, rien n'est dit. Le titre l'écrit : « figma · whoami
+    (échec) », en couleur d'erreur aussi, et l'infobulle de même ; un appel réussi et un appel en
+    échec du même outil restent distincts. Clé `toolCall.calledTools.failed` (« (échec) »,
+    « (failed) »), mot de l'état « échec » de la fiche 122.
+  - **L2, cartes `execute` seulement** : le main retient le nom annoncé par le `tool_call` de chaque
+    carte (`name`, hors ACP, sinon le titre) et ne pose la marque que sur une carte annoncée sous le
+    nom que déclare l'adaptateur (`toolName: "execute"`), oublié à la fin de la carte et à une
+    nouvelle session. Carte dont le début n'a pas été vu : pas de marque, titre d'origine.
+  - **L3, noms trompeurs** : dans un nom, toute espace et tout point médian ou puce (`·`, `•`, `‧`,
+    `⋅`, `∙`, `・`, `･`) deviennent `_` : un nom reste un seul mot, jamais un second segment ni une
+    phrase. À l'écran, chaque nom (serveur, outil, espace d'une recherche) est dans un `<code>`, le
+    séparateur « · » hors des `<code>`, raccourci au-delà de 24 caractères (`…`), entier au survol.
+    **Limite assumée** : les écritures mêlées (homoglyphes, `fіgma` cyrillique) ne sont pas
+    détectées ; le `<code>` et la borne montrent que c'est une donnée de l'agent ou d'un serveur.
+    Texte propre pour un lecteur d'écran (le contenu des `<code>`, sans balise) ; la recherche ne
+    lit pas les titres d'outils et le groupe d'outils ne nomme que l'outil en cours (jamais marqué).
+  - **Réglages rouverts** (point tranché) : pendant la relecture, la ligne montre le dernier état
+    relu **pour ce dossier** (`McpAgentView.workspace`), sinon « Connexion par <agent> » sans action,
+    comme le menu ⚙ (même magasin) ; jamais une ligne vide. Le focus rendu après « Connecter Figma »
+    attend sur la ligne, puis passe à la première action quand elle arrive.
+  - Réponses du tech lead : une carte rejouée garde le même titre qu'en direct (début vu) ; l'export
+    Markdown garde « execute » ; la marque `bobine/subagent` forgeable est hors périmètre.
+  - Mutations (`293-lot3/mutate-c.py`) : 17 tuées sur 17 (une survivante tuée par un essai ajouté).

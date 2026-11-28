@@ -35,6 +35,11 @@ export class ProfileUpdates {
   private readonly workspace: string
   private readonly marker: SubagentMarker
   private readonly calls = new ToolCallMemory()
+  /**
+   * Nom annoncé par le `tool_call` de chaque carte en cours (champ `name` hors ACP, sinon le titre) :
+   * seule une carte vue dès son début sous le nom déclaré par `calledTools` est marquée.
+   */
+  private readonly started = new Map<string, string>()
   private readonly exists: FileExists
 
   constructor(profile: UpdateAdapters, workspace: string, exists: FileExists = existsOnDisk) {
@@ -66,7 +71,10 @@ export class ProfileUpdates {
     // Outils nommés par l'agent à la fin de la carte (fiche 293) : marque générique, bornée et
     // nettoyée ici (ce sont des données d'un tiers) ; celle qu'enverrait l'agent est retirée.
     const corrected = withoutCalledTools(toolStatus?.correct(completed) ?? completed)
-    const called = calledTools?.read(update)
+    const called =
+      calledTools && this.startedAs(update, calledTools.toolName)
+        ? calledTools.read(update)
+        : undefined
     const mark = called && calledToolsMark(called.tools, called.total)
     return this.marker.mark(mark ? withCalledTools(corrected, mark) : corrected)
   }
@@ -92,8 +100,31 @@ export class ProfileUpdates {
     return this.calls.locationsOf(toolCallId)
   }
 
+  /**
+   * La carte de cette mise à jour a-t-elle été annoncée sous le nom `name` ? Le nom est retenu au
+   * `tool_call`, oublié à la fin : une carte dont on n'a pas vu le début n'est jamais marquée.
+   */
+  private startedAs(update: SessionUpdate, name: string): boolean {
+    if (update.sessionUpdate === 'tool_call') {
+      const announced = (update as { name?: unknown }).name
+      if (update.status && ENDED.has(update.status)) this.started.delete(update.toolCallId)
+      else {
+        this.started.set(
+          update.toolCallId,
+          typeof announced === 'string' ? announced : (update.title ?? '')
+        )
+      }
+      return false
+    }
+    if (update.sessionUpdate !== 'tool_call_update') return false
+    const seen = this.started.get(update.toolCallId) === name
+    if (update.status && ENDED.has(update.status)) this.started.delete(update.toolCallId)
+    return seen
+  }
+
   /** Nouvelle session ou agent arrêté. */
   clear(): void {
+    this.started.clear()
     this.marker.clear()
     this.calls.clear()
   }

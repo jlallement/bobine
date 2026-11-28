@@ -499,7 +499,9 @@ describe('ligne d’état d’un serveur connecté par l’agent : un état = un
     await act(async () => {
       rerender(<McpSettings workspace="/projets/autre" initialTab="opencode" />)
     })
-    expect(within(row('figma')).queryByTestId('mcp-auth')).toBeNull()
+    // Rien de l'ancien dossier : le libellé neutre, sans action, le temps de la relecture.
+    expect(text()).toBe('Connexion par OpenCode')
+    expect(links()).toEqual([])
     expect(pending.length).toBeGreaterThan(0)
     await act(async () => {
       for (const resolve of pending)
@@ -512,6 +514,57 @@ describe('ligne d’état d’un serveur connecté par l’agent : un état = un
         })
     })
     expect(text()).toBe('À connecter')
+  })
+
+  it('Réglages rouverts, relecture lente : le dernier état relu pour ce dossier, jamais une ligne vide', async () => {
+    const mcp = setup({ views: [opencode([figma()])], states: [state('connected')] })
+    const first = await open()
+    expect(text()).toBe('Connecté par OpenCode')
+    first.unmount()
+    const pending: ((view: McpAuthView) => void)[] = []
+    mcp.authStates.mockImplementation(
+      () => new Promise<McpAuthView>((resolve) => pending.push(resolve))
+    )
+    await open()
+    expect(pending.length).toBe(1)
+    // Pendant la relecture : l'état relu la dernière fois pour ce dossier, tout de suite.
+    expect(text()).toBe('Connecté par OpenCode')
+    await act(async () =>
+      pending[0]?.({
+        profileId: 'opencode',
+        workspace: '/projets/demo',
+        agentFound: true,
+        servers: [state('expired')],
+        terminal: {}
+      })
+    )
+    expect(text()).toBe('Connexion expirée')
+  })
+
+  it('jamais relu pour ce dossier, relecture lente : libellé neutre et vrai, sans action ; le focus attend la première action', async () => {
+    const mcp = setup()
+    await open()
+    const pending: ((view: McpAuthView) => void)[] = []
+    mcp.authStates.mockImplementation(
+      () => new Promise<McpAuthView>((resolve) => pending.push(resolve))
+    )
+    const button = screen.getByTestId('mcp-preset-connect')
+    button.focus()
+    await click(button)
+    expect(text()).toBe('Connexion par OpenCode')
+    expect(links()).toEqual([])
+    expect(document.activeElement).toBe(line())
+    await act(async () => {
+      for (const resolve of pending)
+        resolve({
+          profileId: 'opencode',
+          workspace: '/projets/demo',
+          agentFound: true,
+          servers: [state('connecting', { host: 'www.figma.com' })],
+          terminal: {}
+        })
+    })
+    expect(document.activeElement).toBe(screen.getByTestId('mcp-auth-reopen'))
   })
 
   it('relecture impossible (IPC) : « état inconnu » avec la raison, jamais un état deviné', async () => {

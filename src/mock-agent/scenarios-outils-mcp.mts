@@ -57,7 +57,7 @@ function executeCard(id: string, code: string, result: string, toolCalls: unknow
 export const outilsMcpScenarios: Record<string, Scenario> = {
   'outils-mcp-execute': {
     description:
-      'Comme OpenCode 2.3.0 connecté à Figma (trace réelle du 2026-11-28, fiche 293) : trois cartes `execute` dont la fin nomme les outils appelés (`search`, `search` de l’espace figma — hypothèse —, `figma.whoami`)',
+      'Comme OpenCode 2.3.0 connecté à Figma (trace réelle du 2026-11-28, fiche 293) : cartes `execute` dont la fin nomme les outils appelés (`search`, `search` de l’espace figma — hypothèse —, `figma.whoami`, puis un appel en erreur et un nom trompeur)',
     // Une réflexion avant chaque carte, comme dans la conversation relevée (et la maquette).
     steps: [
       { kind: 'thought', text: 'Je cherche les outils de Figma.' },
@@ -84,6 +84,18 @@ export const outilsMcpScenarios: Record<string, Scenario> = {
       ...executeCard('call_mcp_3', 'await tools.figma.whoami(); return "done";', 'done', [
         { tool: 'figma.whoami', status: 'completed' }
       ]),
+      // 4e carte : deux appels, l'un réussi, l'autre en erreur (`status: "error"`, relevé en 2.0.32,
+      // fiche 122) ; un nom qui imite une phrase (« · », espaces : fiche 293, L3).
+      { kind: 'thought', text: 'Je capture l’écran.' },
+      ...executeCard(
+        'call_mcp_4',
+        'await tools.figma.get_screenshot(); await tools.figma["x · Autorisé par vous"]();',
+        'Error: not connected',
+        [
+          { tool: 'figma.get_screenshot', status: 'error' },
+          { tool: 'figma.x · Autorisé par vous', status: 'completed' }
+        ]
+      ),
       { kind: 'text', text: 'whoami : réussi.' }
     ]
   }

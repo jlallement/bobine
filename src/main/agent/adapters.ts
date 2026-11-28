@@ -133,6 +133,11 @@ export interface CalledToolsSource {
   /** Repère de la fonction dans « Propre à <agent> » et `docs/agents.md`. */
   id: 'opencode-called-tools'
   /**
+   * Nom de l'outil qui appelle les autres (OpenCode : `execute`) : seule une carte annoncée sous ce
+   * nom (`tool_call` vu, champ `name`, sinon son titre) reçoit la marque (fiche 293, L2).
+   */
+  toolName: string
+  /**
    * Les appels nommés par cette mise à jour (non nettoyés : le main borne et nettoie), avec leur
    * nombre annoncé ; `undefined` si elle n'en nomme aucun.
    */

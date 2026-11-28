@@ -37,6 +37,21 @@ const OPENCODE: ReplayProfile = {
 
 type ToolItem = Extract<TranscriptItem, { kind: 'tool' }>
 
+/** Adaptation dont la carte `id` a été annoncée comme la trace réelle (`name` et titre « execute »). */
+function started(profile: ReplayProfile, id = 'x'): ProfileUpdates {
+  const updates = new ProfileUpdates(profile, '/d')
+  updates.adapt({
+    sessionUpdate: 'tool_call',
+    toolCallId: id,
+    name: 'execute',
+    title: 'execute',
+    kind: 'other',
+    status: 'pending',
+    rawInput: {}
+  } as SessionUpdate)
+  return updates
+}
+
 /** Les 9 messages `session/update` relevés, dans l'ordre. */
 const relevé = (): AnyMessage[] =>
   readFileSync(FIXTURE, 'utf8')
@@ -169,9 +184,11 @@ describe('trace réelle : `execute` d’OpenCode 2.3.0 connecté à Figma (fiche
     const without = new ProfileUpdates({ toolStatus: OPENCODE_TOOL_STATUS }, '/d').adapt(forged())
     expect(calledToolsOf(without)).toBeUndefined()
     expect(without._meta).toEqual({ autre: 1 })
-    expect(calledToolsOf(new ProfileUpdates(OPENCODE, '/d').adapt(forged()))).toBeUndefined()
+    expect(calledToolsOf(started(OPENCODE).adapt(forged()))).toBeUndefined()
     expect(
-      calledToolsOf(new ProfileUpdates(OPENCODE, '/d').adapt(forged([{ tool: 'figma.whoami' }])))
+      calledToolsOf(
+        started(OPENCODE).adapt(forged([{ tool: 'figma.whoami', status: 'completed' }]))
+      )
     ).toEqual({ tools: [{ server: 'figma', tool: 'whoami' }], total: 1 })
   })
 })
@@ -233,14 +250,68 @@ describe('lecture de `toolCalls[]` par l’adaptateur d’OpenCode (fiche 293)',
     ).toBeUndefined()
   })
 
-  it('appel en échec : nommé aussi ; la carte reste en échec (fiche 122)', () => {
-    const update = done([{ tool: 'figma.whoami', status: 'error' }])
-    const adapted = new ProfileUpdates(OPENCODE, '/d').adapt(update)
+  it('appel en échec : nommé et dit en échec ; la carte reste en échec (fiche 122)', () => {
+    const update = done([
+      { tool: 'figma.whoami', status: 'error' },
+      { tool: 'figma.get_screenshot', status: 'completed' },
+      { tool: 'search', status: 'pending' },
+      { tool: 'figma.files', isError: true },
+      { tool: 'figma.x' }
+    ])
+    const adapted = started(OPENCODE, 'c').adapt(update)
     expect(adapted).toMatchObject({ status: 'failed' })
+    // Seul `completed` (relevé) est réussi ; tout autre état noté ne l'est pas ; sans état : rien.
     expect(calledToolsOf(adapted)).toEqual({
-      tools: [{ server: 'figma', tool: 'whoami' }],
-      total: 1
+      tools: [
+        { server: 'figma', tool: 'whoami', failed: true },
+        { server: 'figma', tool: 'get_screenshot' },
+        { search: true, failed: true },
+        { server: 'figma', tool: 'files', failed: true },
+        { server: 'figma', tool: 'x' }
+      ],
+      total: 5
     })
+  })
+
+  it('le même outil en échec puis réussi : les deux se distinguent dans le titre', () => {
+    const update = done([
+      { tool: 'figma.whoami', status: 'error' },
+      { tool: 'figma.whoami', status: 'completed' }
+    ])
+    const mark = calledToolsOf(started(OPENCODE, 'c').adapt(update))
+    expect(mark && calledToolsText(mark)).toBe('figma · whoami (échec), whoami')
+  })
+
+  it('carte qui n’a pas été annoncée `execute` (L2), ou dont on n’a pas vu le début : pas de marque', () => {
+    const end = done([{ tool: 'bobine.approve', status: 'completed' }])
+    const other = new ProfileUpdates(OPENCODE, '/d')
+    other.adapt({
+      sessionUpdate: 'tool_call',
+      toolCallId: 'c',
+      title: 'figma_get_code',
+      status: 'pending'
+    } as SessionUpdate)
+    expect(calledToolsOf(other.adapt(end))).toBeUndefined()
+    // Nom hors ACP prioritaire sur le titre : `name: "shell"` titré « execute » n'est pas la carte.
+    const named = new ProfileUpdates(OPENCODE, '/d')
+    named.adapt({
+      sessionUpdate: 'tool_call',
+      toolCallId: 'c',
+      name: 'shell',
+      title: 'execute',
+      status: 'pending'
+    } as SessionUpdate)
+    expect(calledToolsOf(named.adapt(end))).toBeUndefined()
+    // Début jamais vu (reprise partielle) : titre d'origine.
+    expect(calledToolsOf(new ProfileUpdates(OPENCODE, '/d').adapt(end))).toBeUndefined()
+    // Carte finie : oubliée, une fin rejouée sans début n'est plus marquée.
+    const once = started(OPENCODE, 'c')
+    expect(calledToolsOf(once.adapt(end))).toBeDefined()
+    expect(calledToolsOf(once.adapt(end))).toBeUndefined()
+    // Nouvelle session : rien de retenu.
+    const cleared = started(OPENCODE, 'c')
+    cleared.clear()
+    expect(calledToolsOf(cleared.adapt(end))).toBeUndefined()
   })
 })
 
@@ -279,8 +350,8 @@ describe('noms adverses : des données, bornées et nettoyées (fiche 293)', () 
       { tool: 'x.\u2028y\u2029' }
     ])
     expect(dirty?.tools).toEqual([
-      { server: 'fig ma', tool: 'who ami' },
-      { server: 'a b', tool: 'c d e' },
+      { server: 'fig_ma', tool: 'who_ami' },
+      { server: 'a_b', tool: 'c_d_e' },
       { server: 'x', tool: 'y' }
     ])
     for (const tool of dirty?.tools ?? []) {
@@ -290,7 +361,7 @@ describe('noms adverses : des données, bornées et nettoyées (fiche 293)', () 
 
   it('HTML : gardé tel quel comme texte (React l’échappe), jamais interprété', () => {
     expect(mark([{ tool: '<img src=x onerror=alert(1)>.<b>x</b>' }])?.tools).toEqual([
-      { server: '<img src=x onerror=alert(1)>', tool: '<b>x</b>' }
+      { server: '<img_src=x_onerror=alert(1)>', tool: '<b>x</b>' }
     ])
   })
 
@@ -307,7 +378,7 @@ describe('noms adverses : des données, bornées et nettoyées (fiche 293)', () 
     expect(relu('figma')).toBeUndefined()
     expect(relu({ tools: 'x' })).toBeUndefined()
     expect(relu({ tools: [{ tool: 'a\nb' }], total: -3 })).toEqual({
-      tools: [{ tool: 'a b' }],
+      tools: [{ tool: 'a_b' }],
       total: 1
     })
     expect(relu({ tools: [{ search: 'oui' }] })).toBeUndefined()

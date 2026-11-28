@@ -1125,10 +1125,14 @@ details.tool > summary.tool-row:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* Outils appelés par du code (fiche 293) : le serveur en retrait, l'outil en clair. */
-.tool-called-server,
+/* Outils appelés par du code (fiche 293) : chaque nom est une donnée, en `<code>` ; le séparateur
+   et « +N » en retrait ; un appel qui n'a pas réussi dit « (échec) », en couleur d'erreur aussi. */
+.tool-called-sep,
 .tool-called-more {
   color: var(--muted);
+}
+.tool-called-failed {
+  color: var(--err);
 }
 
 /*
