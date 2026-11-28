@@ -85,29 +85,40 @@ export function runCommand(run: CommandRun): Promise<CommandOutcome> {
   })
 }
 
-/** Mot sûr tel quel dans un shell : rien à citer. */
-const PLAIN = /^[A-Za-z0-9_@%+=:,./][A-Za-z0-9_@%+=:,./-]*$/
+/**
+ * Mot sûr tel quel dans un shell : rien à citer. Volontairement étroit, pour que sh, bash, zsh et
+ * fish le lisent tous à l'identique : ni `=` (affectation en tête de commande, `=cmd` de zsh), ni
+ * `%` (`%self` de fish), ni `~`, `{`, `[`, `*`, `?`, `!`, `#`, `^`, `$`, `\`.
+ */
+const PLAIN = /^[A-Za-z0-9_./][A-Za-z0-9_@+:,./-]*$/
 /** Caractères de contrôle (retour à la ligne compris) : jamais dans une commande à coller. */
 const CONTROL = /[\u0000-\u001f\u007f-\u009f\u2028\u2029]/
 /**
  * Apostrophes que PowerShell lit comme `'` (droite, et les guillemets simples typographiques
  * U+2018 à U+201B) : chacune doublée dans une chaîne entre apostrophes.
  */
-const PS_QUOTES = /['\u2018\u2019\u201a\u201b]/g
+const PS_QUOTES = /['‘’‚‛]/g
 
 /**
- * Commande à copier pour un terminal (« Dans un terminal », fiche 293) : une ligne par commande,
- * jamais `&&` (refusé par Windows PowerShell 5), chaque mot cité pour le shell du système, de
- * sorte qu'aucun morceau variable (dossier, nom) ne soit jamais interprété :
- * - macOS, Linux (sh, bash, zsh) : `cd -- '<dossier>'` (`--` : un dossier en `-…` n'est pas une
- *   option), apostrophe écrite `'\''` ; rien n'est développé entre apostrophes (`$(…)`, `` ` ``,
- *   `;`, `&`, `|`, `${IFS}`) ;
- * - Windows : **PowerShell** seulement (le terminal par défaut), `Set-Location -LiteralPath
- *   '<dossier>'`, apostrophes (droites et typographiques) doublées, ni `$` ni `[` interprétés ; ni
- *   `cmd.exe` (il ne connaît pas `'…'`) ni changement de lecteur dans `cmd.exe` ne sont visés.
+ * Commande à copier pour un terminal (« Dans un terminal », fiche 293). Ce qui est copié est ce
+ * qui est montré ; chaque mot cité pour le shell du système, de sorte qu'aucun morceau variable
+ * (dossier, nom) ne soit jamais interprété :
+ * - macOS, Linux : **une seule ligne** `cd -- '<dossier>' && <commande>` : si le `cd` échoue
+ *   (dossier disparu), la commande ne part pas ; `&&` est compris par sh, bash, zsh et fish ≥ 3
+ *   (fish 2 le refuse : erreur de syntaxe, rien ne part). `--` : un dossier en `-…` n'est pas une
+ *   option. Entre apostrophes, rien n'est développé ; l'apostrophe s'écrit `'\''`. **Un mot qui
+ *   contient un antislash est refusé** : entre apostrophes, fish lit `\'` et `\\` comme des
+ *   échappements, là où sh, bash et zsh lisent l'antislash tel quel (dossier `a\';touch X;:\'b` :
+ *   fish exécutait `touch X`). Sans antislash dans le mot, le seul antislash de la ligne est celui
+ *   de `'\''`, hors apostrophes, où les quatre shells lisent `\'` comme une apostrophe : la ligne
+ *   se lit pareil partout (essais : vrai `sh`, `bash`, `zsh`, et lecture selon les règles de fish) ;
+ * - Windows : **PowerShell** seulement (le terminal par défaut), deux lignes (Windows PowerShell 5
+ *   ne connaît pas `&&`) : `Set-Location -LiteralPath '<dossier>'` puis la commande ; apostrophes
+ *   (droites et typographiques) doublées, ni `$` ni `[` ni `\` interprétés ; `cmd.exe` n'est pas
+ *   visé.
  * Refus (`undefined`, pas de « Dans un terminal ») : un mot vide, ou qui contient un caractère de
- * contrôle (retour à la ligne : un collage le couperait en deux commandes), ou, sous Windows, un
- * `"` (impossible dans un chemin Windows : signe d'une donnée inattendue).
+ * contrôle (retour à la ligne : un collage le couperait en deux commandes) ; sous Windows, un `"`
+ * (impossible dans un chemin Windows : signe d'une donnée inattendue) ; ailleurs, un `\`.
  */
 export function terminalCommand(
   platform: NodeJS.Platform,
@@ -115,7 +126,8 @@ export function terminalCommand(
   cwd?: string
 ): string | undefined {
   const windows = platform === 'win32'
-  const unsafe = (word: string) => !word || CONTROL.test(word) || (windows && word.includes('"'))
+  const unsafe = (word: string) =>
+    !word || CONTROL.test(word) || (windows ? word.includes('"') : word.includes('\\'))
   if (!words.length || words.some(unsafe) || (cwd !== undefined && unsafe(cwd))) return undefined
   const quote = (word: string) =>
     PLAIN.test(word)
@@ -125,6 +137,7 @@ export function terminalCommand(
         : `'${word.replace(/'/g, "'\\''")}'`
   const line = words.map(quote).join(' ')
   if (cwd === undefined) return line
-  const cd = windows ? `Set-Location -LiteralPath ${quote(cwd)}` : `cd -- ${quote(cwd)}`
-  return `${cd}\n${line}`
+  return windows
+    ? `Set-Location -LiteralPath ${quote(cwd)}\n${line}`
+    : `cd -- ${quote(cwd)} && ${line}`
 }

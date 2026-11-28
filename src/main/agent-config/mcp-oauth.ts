@@ -214,6 +214,7 @@ export class McpOAuth {
     if (!agentFound) {
       return {
         profileId,
+        workspace,
         agentFound,
         servers: servers.map((name) => this.missing(profileId, name)),
         terminal
@@ -224,6 +225,7 @@ export class McpOAuth {
       : undefined
     return {
       profileId,
+      workspace,
       agentFound,
       servers: servers.map((name) => this.shown(profileId, name, stored)),
       terminal

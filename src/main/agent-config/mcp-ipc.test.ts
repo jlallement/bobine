@@ -31,6 +31,7 @@ function setup() {
     addPreset: vi.fn(() => ({ name: 'figma', added: true, views: [] as McpAgentView[] })),
     authStates: vi.fn(async (profileId: string) => ({
       profileId,
+      workspace: '/projets/demo',
       agentFound: true,
       servers: [],
       terminal: {}

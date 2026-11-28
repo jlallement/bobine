@@ -60,14 +60,30 @@ const byName = (states: readonly McpAuthState[]) =>
 
 /* ---------- Magasin partagé (Réglages › Serveurs MCP, menu « Réglages de la session ») ---------- */
 
-/** Dernier état connu des serveurs d'un agent : relu chez lui, puis tenu par `mcp:authState`. */
+/**
+ * Relecture récente réutilisée par le menu « Réglages de la session » (fiche 293) : ouvrir le menu
+ * dix fois de suite ne lance pas dix commandes chez l'agent. Les actions de l'onglet relisent
+ * toujours.
+ */
+export const MCP_AUTH_REUSE_MS = 5000
+
+/**
+ * Dernier état connu des serveurs d'un agent **pour un dossier** (`auth list` ne voit que les
+ * serveurs déclarés pour le dossier où il tourne, relevé R4) : relu chez lui, puis tenu par
+ * `mcp:authState`. Jamais montré pour un autre dossier.
+ */
 export interface McpAuthEntry {
+  /** Dossier pour lequel le main a relu l'état. */
+  workspace: string
   /** Commande de l'agent trouvée ; `undefined` : pas encore relu. */
   agentFound: boolean | undefined
   states: Record<string, McpAuthState>
   terminal: Record<string, string>
+  /** Heure de la relecture (`Date.now()`). */
+  readAt: number
 }
 
+/** Par contexte (agent et dossier). */
 const entries = new Map<string, McpAuthEntry>()
 const listeners = new Set<() => void>()
 let version = 0
@@ -75,59 +91,102 @@ let unsubscribe: (() => void) | undefined
 /** Numéro du dernier événement par serveur : une relecture partie avant lui ne l'écrase pas. */
 let events = 0
 const eventOf = new Map<string, number>()
+/** Dernier état reçu par événement, par serveur (agent et nom). */
+const lastEvent = new Map<string, McpAuthState>()
 /** Dernière relecture demandée par agent : une réponse plus ancienne ne range rien. */
 let requests = 0
 /** Dernière relecture partie par agent (gardée : une plus ancienne qui finit après lui cède). */
 const pending = new Map<string, { id: number; promise: Promise<McpAuthEntry> }>()
+/** Relecture en cours par contexte attendu : réutilisée par le menu plutôt que doublée. */
+const inflight = new Map<string, Promise<McpAuthEntry>>()
 
 const keyOf = (profileId: string, name: string) => `${profileId}\u0000${name}`
+const contextOf = (profileId: string, workspace: string) => `${profileId}\u0000${workspace}`
 
 function changed(): void {
   version++
   for (const listener of listeners) listener()
 }
 
-/** Écoute de `mcp:authState`, une seule pour toute la fenêtre, posée au premier abonné. */
+/**
+ * Écoute de `mcp:authState`, une seule pour toute la fenêtre, posée au premier abonné. L'état
+ * d'un serveur vaut pour tout dossier qui le déclare (la connexion est attachée au nom dans tout le
+ * profil de l'agent, relevé R4 ; une seule tentative à la fois dans l'app, d'où « une connexion
+ * est déjà en cours » partout) : il est rangé dans chaque contexte relu de cet agent, et gardé pour
+ * les relectures en cours. Un dossier ne montre que les serveurs qu'il déclare.
+ */
 function listen(): void {
   if (unsubscribe) return
   unsubscribe = window.api.mcp.onAuthState((state) => {
-    eventOf.set(keyOf(state.profileId, state.name), ++events)
-    const entry = entries.get(state.profileId) ?? {
-      agentFound: undefined,
-      states: {},
-      terminal: {}
+    const key = keyOf(state.profileId, state.name)
+    eventOf.set(key, ++events)
+    lastEvent.set(key, state)
+    for (const [context, entry] of entries) {
+      // Contexte d'un autre agent.
+      if (context !== contextOf(state.profileId, entry.workspace)) continue
+      entries.set(context, { ...entry, states: { ...entry.states, [state.name]: state } })
     }
-    entries.set(state.profileId, { ...entry, states: { ...entry.states, [state.name]: state } })
     changed()
   })
 }
 
-/** État connu des serveurs d'un agent (lecture synchrone, sans abonnement). */
-export function mcpAuthEntry(profileId: string): McpAuthEntry | undefined {
-  return entries.get(profileId)
+/** État connu des serveurs d'un agent pour ce dossier (lecture synchrone, sans abonnement). */
+export function mcpAuthEntry(profileId: string, workspace: string): McpAuthEntry | undefined {
+  return entries.get(contextOf(profileId, workspace))
 }
 
 /**
- * Relit chez l'agent l'état de ses serveurs (pour le dossier de la conversation affichée) et le
- * range : une relecture dépassée par une plus récente ne range rien ; un état reçu par événement
- * pendant la relecture l'emporte. Rejette si le main ne répond pas (l'appelant le dit).
+ * Relit chez l'agent l'état de ses serveurs (pour le dossier de la conversation affichée, choisi
+ * par le main) et le range sous ce dossier : une relecture dépassée par une plus récente ne range
+ * rien ; un état reçu par événement pendant la relecture l'emporte. Rejette si le main ne répond
+ * pas (l'appelant le dit).
+ *
+ * `reuse` (menu « Réglages de la session ») : pour le dossier `workspace` attendu, une relecture
+ * en cours est réutilisée, et une relecture de moins de `MCP_AUTH_REUSE_MS` est rendue telle quelle.
  */
-export function readMcpAuth(profileId: string): Promise<McpAuthEntry> {
+export function readMcpAuth(
+  profileId: string,
+  reuse?: { workspace: string }
+): Promise<McpAuthEntry> {
   listen()
+  if (reuse) {
+    const context = contextOf(profileId, reuse.workspace)
+    const known = entries.get(context)
+    if (known && Date.now() - known.readAt < MCP_AUTH_REUSE_MS) return Promise.resolve(known)
+    const running = inflight.get(context)
+    if (running) return running
+    const reading = read(profileId)
+    inflight.set(context, reading)
+    const done = () => inflight.get(context) === reading && inflight.delete(context)
+    reading.then(done, done)
+    return reading
+  }
+  return read(profileId)
+}
+
+function read(profileId: string): Promise<McpAuthEntry> {
   const id = ++requests
   const since = events
   const reading = window.api.mcp
     .authStates(profileId)
-    .then((read): Promise<McpAuthEntry> | McpAuthEntry => {
+    .then((view): Promise<McpAuthEntry> | McpAuthEntry => {
       // Dépassée par une relecture plus récente : c'est elle qui range, et qui répond.
       const newer = pending.get(profileId)
       if (newer && newer.id !== id) return newer.promise
-      const next = byName(read.servers)
-      for (const [name, state] of Object.entries(entries.get(profileId)?.states ?? {})) {
-        if ((eventOf.get(keyOf(profileId, name)) ?? 0) > since && name in next) next[name] = state
+      const next = byName(view.servers)
+      for (const name of Object.keys(next)) {
+        const key = keyOf(profileId, name)
+        const event = lastEvent.get(key)
+        if (event && (eventOf.get(key) ?? 0) > since) next[name] = event
       }
-      const entry = { agentFound: read.agentFound, states: next, terminal: read.terminal }
-      entries.set(profileId, entry)
+      const entry: McpAuthEntry = {
+        workspace: view.workspace,
+        agentFound: view.agentFound,
+        states: next,
+        terminal: view.terminal,
+        readAt: Date.now()
+      }
+      entries.set(contextOf(profileId, view.workspace), entry)
       changed()
       return entry
     })
@@ -153,13 +212,25 @@ export function resetMcpAuthStore(): void {
   unsubscribe = undefined
   entries.clear()
   eventOf.clear()
+  lastEvent.clear()
   pending.clear()
+  inflight.clear()
   changed()
 }
 
 /* ---------- Onglet d'un agent dans Réglages › Serveurs MCP ---------- */
 
-const EMPTY: McpAuthEntry = { agentFound: undefined, states: {}, terminal: {} }
+/**
+ * Au-delà, une action sans réponse du main ne garde plus son bouton (fiche 293) : plus que les
+ * 30 s des commandes courtes du main, moins qu'une impatience.
+ */
+export const MCP_ACTION_GUARD_MS = 45_000
+
+const EMPTY: Pick<McpAuthEntry, 'agentFound' | 'states' | 'terminal'> = {
+  agentFound: undefined,
+  states: {},
+  terminal: {}
+}
 
 export function useMcpAuth(view: McpAgentView, workspace: string): McpAuthModel {
   const { t } = useTranslation()
@@ -169,8 +240,8 @@ export function useMcpAuth(view: McpAgentView, workspace: string): McpAuthModel 
   // Dossier ou serveurs changés : rien de l'ancien contexte n'est montré, l'état est relu.
   const servers = view.servers.map((s) => `${s.scope}:${s.name}:${s.authPreset ?? ''}`).join('|')
   const context = `${profileId}\n${workspace}\n${servers}`
-  // Contexte pour lequel l'état a été relu par cet onglet.
-  const [readFor, setReadFor] = useState('')
+  // Contexte pour lequel l'état a été relu par cet onglet, et dossier que le main a relu alors.
+  const [readFor, setReadFor] = useState<{ context: string; workspace: string } | undefined>()
   const [notes, setNotes] = useState<Record<string, McpAuthNote & { context: string }>>({})
   const [error, setError] = useState<string | null>(null)
   const request = useRef(0)
@@ -180,18 +251,29 @@ export function useMcpAuth(view: McpAgentView, workspace: string): McpAuthModel 
   useLayoutEffect(() => {
     contextRef.current = context
   }, [context])
-  const shown = (readFor === context ? mcpAuthEntry(profileId) : undefined) ?? EMPTY
+  const readWorkspace = readFor?.context === context ? readFor.workspace : undefined
+  const entry = readWorkspace === undefined ? undefined : mcpAuthEntry(profileId, readWorkspace)
+  const shown = entry ?? EMPTY
   const { states } = shown
+  // Dossier relu, lu par les actions (après un `await`) : l'état courant du magasin pour lui.
+  const readWorkspaceRef = useRef(readWorkspace)
+  useLayoutEffect(() => {
+    readWorkspaceRef.current = readWorkspace
+  }, [readWorkspace])
+  const live = (name: string) => {
+    const ws = readWorkspaceRef.current
+    return ws === undefined ? undefined : mcpAuthEntry(profileId, ws)?.states[name]
+  }
 
   const refresh = useCallback(() => {
     if (!enabled) return
     const id = ++request.current
     const asked = contextRef.current
     readMcpAuth(profileId)
-      .then(() => {
+      .then((read) => {
         if (id !== request.current) return
         setError(null)
-        setReadFor(asked)
+        setReadFor({ context: asked, workspace: read.workspace })
       })
       .catch((e: unknown) => id === request.current && setError(ipcErrorText(e)))
   }, [enabled, profileId])
@@ -202,7 +284,7 @@ export function useMcpAuth(view: McpAgentView, workspace: string): McpAuthModel 
     setNotes((current) => ({
       ...current,
       [name]: {
-        status: mcpAuthEntry(profileId)?.states[name]?.status,
+        status: live(name)?.status,
         kind,
         text,
         context: contextRef.current
@@ -214,18 +296,27 @@ export function useMcpAuth(view: McpAgentView, workspace: string): McpAuthModel 
       return rest
     })
 
-  // Actions en vol par serveur : un second clic (double clic) est ignoré, jamais un refus « busy ».
-  const inFlight = useRef(new Set<string>())
+  // Actions en vol, par serveur **et par action** : un second clic sur la même (double clic) est
+  // ignoré, jamais un refus « busy » ; une autre action du même serveur passe (« Annuler » pendant
+  // que « Se connecter » attend encore le main). Libérée à la fin, ou au plus tard au bout de
+  // `MCP_ACTION_GUARD_MS` (une demande sans réponse ne bloque pas le bouton pour toujours) ; la
+  // garde vit avec l'onglet (oubliée au démontage).
+  const inFlight = useRef(new Map<string, number>())
+  const guards = useRef(0)
   // Serveurs dont l'action vient de faire disparaître le bouton cliqué : le focus y est rendu.
   const focusWanted = useRef(new Set<string>())
 
   /**
-   * Une action : ignorée si une autre de ce serveur est en vol ; la note précédente s'efface,
+   * Une action : ignorée si la même est en vol pour ce serveur ; la note précédente s'efface,
    * l'erreur IPC est dite, l'état est relu après.
    */
-  const act = async (name: string, action: () => Promise<void>) => {
-    if (inFlight.current.has(name)) return
-    inFlight.current.add(name)
+  const act = async (name: string, kind: string, action: () => Promise<void>) => {
+    const key = `${name}\u0000${kind}`
+    if (inFlight.current.has(key)) return
+    const guard = ++guards.current
+    inFlight.current.set(key, guard)
+    const release = () => inFlight.current.get(key) === guard && inFlight.current.delete(key)
+    const bound = setTimeout(release, MCP_ACTION_GUARD_MS)
     focusWanted.current.add(name)
     clear(name)
     try {
@@ -233,7 +324,8 @@ export function useMcpAuth(view: McpAgentView, workspace: string): McpAuthModel 
     } catch (e) {
       note(name, 'problem', ipcErrorText(e))
     } finally {
-      inFlight.current.delete(name)
+      clearTimeout(bound)
+      release()
     }
     refresh()
   }
@@ -253,9 +345,7 @@ export function useMcpAuth(view: McpAgentView, workspace: string): McpAuthModel 
     switch (result.reason) {
       // Déjà « en cours » pour ce serveur (un autre onglet, une autre fenêtre) : rien à dire.
       case 'busy':
-        return mcpAuthEntry(profileId)?.states[name]?.status === 'connecting'
-          ? undefined
-          : t('mcp.auth.busy')
+        return live(name)?.status === 'connecting' ? undefined : t('mcp.auth.busy')
       case 'disabled':
         return t('mcp.auth.disabled')
       case 'not-offered':
@@ -300,20 +390,20 @@ export function useMcpAuth(view: McpAgentView, workspace: string): McpAuthModel 
     focusPending: (name) => focusWanted.current.has(name),
     focusDone: (name) => void focusWanted.current.delete(name),
     connect: (name) =>
-      act(name, async () => {
+      act(name, 'connect', async () => {
         const refused = connectRefused(name, await window.api.mcp.connect(profileId, name))
         if (refused) note(name, 'problem', refused)
       }),
     cancel: (name) =>
-      act(name, async () => {
+      act(name, 'cancel', async () => {
         await window.api.mcp.cancelConnect(profileId, name)
       }),
     reopen: (name) =>
-      act(name, async () => {
+      act(name, 'reopen', async () => {
         await window.api.mcp.reopenPage(profileId, name)
       }),
     disconnect: (name) =>
-      act(name, async () => {
+      act(name, 'disconnect', async () => {
         const failed = disconnectFailed(await window.api.mcp.disconnect(profileId, name))
         if (failed) note(name, 'problem', failed)
       }),

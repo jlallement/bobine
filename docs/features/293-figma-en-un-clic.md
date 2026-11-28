@@ -530,7 +530,7 @@ Figma cautionne Bobine.
   des outils mesurés (jamais mesurés). E2e : l'agent factice connecte comme OpenCode sous
   `MOCK_AGENT_MCP_OAUTH=opencode` (seulement avec `BOBINE_CONFIG_HOME` et `BOBINE_FAKE_MCP_AUTH`,
   `docs/mock-agent.md`).
-- **Commande copiée** (relecture du tech lead) : jamais `&&` ; un serveur « ce dossier » donne
+- **Commande copiée** (relecture du tech lead ; **remplacé le 2026-11-28**, voir le Journal : une seule ligne `cd -- '…' && …` sous macOS et Linux) : jamais `&&` ; un serveur « ce dossier » donne
   **deux lignes** (`cd`, puis la commande), chaque mot cité pour le shell du système
   (`terminalCommand`, `mcp-oauth-command.ts`) : macOS et Linux `cd '<dossier>'` (apostrophe
   `'\''`, vérifié par un vrai `sh`) ; Windows, PowerShell (terminal par défaut) : `Set-Location
@@ -839,3 +839,42 @@ Taille : ≈ 3 j avec le lot 3, relevés compris. **Aucune dépendance nouvelle.
   9. **« Copiée » après une connexion faite dans le terminal** : l'état est relu quand la fenêtre
      reprend le focus, tant qu'une note « Copiée » est affichée (aucune boucle). Essai.
 
+- 2026-11-28 — **Second passage du testeur sur le lot 2** (sur `4ca2e240`), corrigé à la cause ;
+  ses essais gardés (`mcp-oauth-fish.revue.test.ts`, `SessionSettingsMenu.revue.test.tsx`,
+  `McpAuth.revue2.test.tsx`), assertions intactes sauf ce que la décision change (dit en tête de
+  chaque fichier) :
+  1. **fish (sécurité)** : entre apostrophes, fish lit `\'` et `\\` comme des échappements
+     (documentation de fish, « Quotes ») ; sh, bash et zsh non. Dossier `a\';touch PWNED;:\'b` :
+     fish exécutait `touch PWNED`. Sous POSIX, **tout mot qui contient un antislash est refusé**
+     (pas de « Dans un terminal »). Établi : sans antislash dans le mot, le seul antislash de la
+     ligne est celui de `'\''`, **hors** apostrophes, où les quatre shells lisent `\'` comme une
+     apostrophe ; l'apostrophe n'est donc pas refusée. Mots nus resserrés (`[A-Za-z0-9_./]` en
+     tête, ni `=`, ni `%`) : `=ls` (zsh), `%self` (fish), `A=b` en tête (affectation) sont cités.
+     Essais : vrai `sh`, `bash`, `zsh` (ceux présents) et lecteur de fish d'après ses règles (fish
+     absent des machines d'essai ; lecteur vérifié sur la ligne fautive d'avant), 40 lignes
+     croisées et 300 mots hostiles.
+  2. **Texte montré = texte copié** : macOS et Linux, **une seule ligne** `cd -- '…' && <commande>`
+     (dossier disparu : la commande ne part pas, vérifié par sh, bash, zsh) ; Windows (PowerShell
+     5 ne connaît pas `&&`) : deux lignes, dites (« Copiée (2 lignes) : … », clé
+     `mcp.auth.copiedLines`). La note montre la commande entière (raccourcie par `…`, entière au
+     survol) : texte et `title` du `<code>` égaux au presse-papiers (essai).
+  3. **Menu ⚙, relectures** : relecture en cours réutilisée, relecture de moins de
+     `MCP_AUTH_REUSE_MS` (5 s) rendue telle quelle, pour le même agent et le même dossier ; une
+     relecture en échec n'est pas gardée. Les actions de l'onglet relisent toujours. E2e : deux
+     réouvertures de suite, aucune `auth list` de plus.
+  4. **Menu ⚙, délai** : la relecture ne fait plus partie de ce que le menu attend (300 ms au
+     plus) ; arrivée après l'affichage, elle remplace le libellé **dans la ligne**, qui reste sur
+     une ligne (`.session-mcp-auth` : raccourcie par `…`, entière au survol) : la hauteur ne
+     change pas (fiche 234).
+  5. **État d'un autre dossier** : le magasin est rangé par **agent et dossier**
+     (`McpAuthView.workspace`, `McpAgentView.workspace` posés par le main) ; tant que le dossier de
+     la vue n'a pas été relu, « connexion par <agent> ». Même défaut dans l'onglet des Réglages
+     (une relecture faite pour un autre dossier y remplaçait l'état montré) : corrigé, essai. Un
+     événement `mcp:authState` vaut pour chaque dossier relu du même agent (connexion attachée au
+     nom dans tout le profil, relevé R4 ; une seule tentative à la fois dans l'app).
+  6. **« Annuler » avalé** : la garde « une action en vol » est posée **par serveur et par
+     action** ; libérée à la fin, ou au plus tard au bout de `MCP_ACTION_GUARD_MS` (45 s), et
+     oubliée au démontage de l'onglet.
+  Mutations (`293-lot3/mutate-a.py`) : 18 tuées sur 19 ; la survivante (dossier de l'onglet lu
+  par sa propriété plutôt que par la relecture, avec repli sur celle-ci) est équivalente par
+  construction (même dossier dans tous les cas).

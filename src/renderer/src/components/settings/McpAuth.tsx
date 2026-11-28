@@ -261,9 +261,11 @@ function useLine(
   }
   const note = model.notes[name]
   if (note?.kind === 'copied') {
-    // Copiée sur plusieurs lignes (`cd` du dossier d'abord) : la commande montrée, le tout au survol.
-    const lines = note.text.split('\n')
-    const tip = t('mcp.auth.copiedTip', { agent, name: presetName })
+    // Ce qui est montré est exactement ce qui a été copié : la commande entière (raccourcie par
+    // `…` à l'écran, en entier au survol). Plusieurs lignes (PowerShell : `Set-Location`, puis la
+    // commande ; jamais une seule, d'où une clé sans pluriel) : dit (« 2 lignes ») ; le retour à la ligne, gardé dans le texte, s'affiche comme
+    // une espace (`white-space: nowrap`).
+    const count = note.text.split('\n').length
     return {
       tone: '',
       icon: Check,
@@ -271,12 +273,12 @@ function useLine(
       text: (
         <Trans
           t={t}
-          i18nKey="mcp.auth.copied"
-          values={{ command: lines.at(-1) ?? note.text }}
-          components={{ code: <code title={note.text} /> }}
+          i18nKey={count > 1 ? 'mcp.auth.copiedLines' : 'mcp.auth.copied'}
+          values={{ command: note.text, lines: count }}
+          components={{ code: <code title={note.text} data-testid="mcp-auth-copied" /> }}
         />
       ),
-      tip: lines.length > 1 ? `${tip}\n${note.text}` : tip,
+      tip: t('mcp.auth.copiedTip', { agent, name: presetName }),
       actions: [connect('retryHere', t('mcp.auth.retryHere'))]
     }
   }

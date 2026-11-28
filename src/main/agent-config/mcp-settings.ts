@@ -76,7 +76,7 @@ export class McpSettings {
         const preset = declaredPreset(view.servers, server.name, this.presets)
         return preset ? { ...server, authPreset: preset.id } : server
       })
-      return { ...view, servers, oauth: true as const }
+      return { ...view, servers, oauth: true as const, workspace }
     })
   }
 

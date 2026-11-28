@@ -49,6 +49,11 @@ export interface McpAgentView {
    * le main d'après le profil (`mcpOAuth`), jamais d'après un identifiant.
    */
   oauth?: true
+  /**
+   * Dossier pour lequel la vue a été lue (posé par le main pour un agent `oauth`) : l'état d'une
+   * connexion n'est montré que pour ce dossier (fiche 293).
+   */
+  workspace?: string
 }
 
 /**
@@ -90,6 +95,8 @@ export interface McpAuthState {
 /** États des serveurs connectables d'un agent, pour le dossier courant (fiche 293). */
 export interface McpAuthView {
   profileId: string
+  /** Dossier pour lequel l'état a été relu (celui de la conversation affichée). */
+  workspace: string
   /** Commande de l'agent trouvée, comme pour son lancement (sinon : « agent absent »). */
   agentFound: boolean
   /** Un état par serveur déclaré dont l'adresse est celle d'un préréglage. */

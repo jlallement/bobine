@@ -2158,6 +2158,7 @@ export type FrResources = {
       readonly inTerminal: 'Dans un terminal'
       readonly inTerminalTip: 'Copie « {{command}} » ; dans un terminal, {{agent}} ouvre lui-même la page.'
       readonly copied: 'Copiée : <code>{{command}}</code>'
+      readonly copiedLines: 'Copiée ({{lines}} lignes) : <code>{{command}}</code>'
       readonly copiedTip: 'À coller dans un terminal : {{agent}} y ouvre lui-même la page de {{name}}.'
       readonly copyFailed: 'Copie impossible'
       readonly retryHere: 'Réessayer ici'

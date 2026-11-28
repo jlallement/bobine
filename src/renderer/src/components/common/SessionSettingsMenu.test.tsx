@@ -233,7 +233,8 @@ describe('menu « Réglages de la session » : serveurs connectés par l’agent
     label: 'OpenCode',
     files: { global: '~/.config/opencode/opencode.json' },
     servers: [figma],
-    oauth: true
+    oauth: true,
+    workspace: '/projets/demo'
   }
   const original = window.api
   afterEach(() => {
@@ -263,6 +264,7 @@ describe('menu « Réglages de la session » : serveurs connectés par l’agent
   }
   const read = (status: McpAuthState['status']): McpAuthView => ({
     profileId: 'opencode',
+    workspace: '/projets/demo',
     agentFound: true,
     servers: [{ profileId: 'opencode', name: 'figma', status }],
     terminal: {}
@@ -290,24 +292,39 @@ describe('menu « Réglages de la session » : serveurs connectés par l’agent
     }
   )
 
-  it('état pas encore lu (relecture lente) : libellé neutre et vrai ; le menu affiché ne change plus (fiche 234)', async () => {
+  it('état pas encore lu (relecture lente) : libellé neutre et vrai, puis l’état relu dans la même ligne, sans changer la hauteur (fiche 234)', async () => {
     vi.useFakeTimers()
     try {
       let release: (view: McpAuthView) => void = () => {}
       setup(() => new Promise<McpAuthView>((resolve) => (release = resolve)))
       fireEvent.keyDown(screen.getByTestId('session-settings'), { key: 'Enter' })
+      // Le menu n'attend pas la relecture (seuls les serveurs et les outils sont lus).
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(300)
+        await vi.advanceTimersByTimeAsync(0)
       })
       const row = () => screen.getByTestId('session-mcp')
       expect(nbsp(row().textContent)).toBe('figmaconnexion par OpenCode · tous les dossiers')
       expect(nbsp(row().textContent)).not.toContain('test')
+      const desc = () => row().querySelector('.menu-desc') as HTMLElement
+      expect(desc().className).toContain('session-mcp-auth')
       await act(async () => release(read('connected')))
-      // Arrivé après l'affichage : gardé pour l'ouverture suivante, rien ne bouge sous le pointeur.
-      expect(nbsp(row().textContent)).toBe('figmaconnexion par OpenCode · tous les dossiers')
+      // Arrivé après l'affichage : le libellé est remplacé dans sa ligne (une ligne, raccourcie au
+      // besoin), entier au survol.
+      expect(nbsp(row().textContent)).toBe('figmaconnecté · tous les dossiers')
+      expect(nbsp(desc().title)).toBe('connecté · tous les dossiers')
+      expect(screen.getAllByTestId('session-mcp')).toHaveLength(1)
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('relecture d’un autre dossier que celui de la vue : jamais montrée', async () => {
+    setup(async () => ({ ...read('connected'), workspace: '/projets/autre' }))
+    fireEvent.keyDown(screen.getByTestId('session-settings'), { key: 'Enter' })
+    await act(async () => {})
+    expect(nbsp(screen.getByTestId('session-mcp').textContent)).toBe(
+      'figmaconnexion par OpenCode · tous les dossiers'
+    )
   })
 
   it('relecture impossible : libellé neutre, pas d’erreur inventée', async () => {

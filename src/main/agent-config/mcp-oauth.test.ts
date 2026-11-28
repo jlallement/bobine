@@ -422,7 +422,7 @@ describe('connexion d’un serveur MCP par l’agent : moteur (fiche 293, ADR-00
     expect(t.engine.reopen('opencode', 'figma')).toBe(false)
   })
 
-  it('« Dans un terminal » : commande de l’agent sans `--standalone`, une ligne `cd` d’abord si le serveur n’est déclaré que là', async () => {
+  it('« Dans un terminal » : commande de l’agent sans `--standalone`, `cd` du dossier d’abord si le serveur n’est déclaré que là', async () => {
     const both = setup({
       servers: [figma(), figma({ scope: 'project', file: '/p/opencode.json' })]
     })
@@ -434,8 +434,11 @@ describe('connexion d’un serveur MCP par l’agent : moteur (fiche 293, ADR-00
     expect(terminal['figma']).toBe(
       terminalCommand(process.platform, ['opencode', 'mcp', 'auth', 'figma'], here.workspace)
     )
-    expect(terminal['figma']?.split('\n')).toHaveLength(2)
-    expect(terminal['figma']).not.toContain('&&') // Dossier illisible pour un shell (retour à la ligne) : pas de commande, pas de « Dans un terminal ».
+    // macOS, Linux : une ligne `cd -- '…' && …` ; Windows (PowerShell) : deux lignes, sans `&&`.
+    const windows = process.platform === 'win32'
+    expect(terminal['figma']?.split('\n')).toHaveLength(windows ? 2 : 1)
+    expect(terminal['figma']?.includes(' && ')).toBe(!windows)
+    // Dossier illisible pour un shell (retour à la ligne) : pas de commande, pas de « Dans un terminal ».
     const bad = await here.engine.view('opencode', `${here.workspace}\nrm -rf ~`)
     expect(bad.terminal).toEqual({})
   })
@@ -450,6 +453,7 @@ describe('connexion d’un serveur MCP par l’agent : moteur (fiche 293, ADR-00
     expect(t.last()?.status).toBe('agent-missing')
     expect(await t.engine.view('opencode', t.workspace)).toEqual({
       profileId: 'opencode',
+      workspace: t.workspace,
       agentFound: false,
       servers: [{ profileId: 'opencode', name: 'figma', status: 'agent-missing' }],
       terminal: { figma: 'opencode mcp auth figma' }

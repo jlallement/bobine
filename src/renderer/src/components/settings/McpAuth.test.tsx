@@ -13,7 +13,7 @@ import type {
   McpServerEntry
 } from '@shared/mcp'
 import { McpSettings } from './McpSettings'
-import { resetMcpAuthStore } from '../../mcp-auth'
+import { MCP_ACTION_GUARD_MS, readMcpAuth, resetMcpAuthStore } from '../../mcp-auth'
 
 const FIGMA = 'https://mcp.figma.com/mcp'
 const nbsp = (text: string) => text.replace(/ /g, ' ')
@@ -75,6 +75,7 @@ function setup(over: Partial<World> = {}) {
   }
   const authStates = vi.fn(async (profileId: string): Promise<McpAuthView> => ({
     profileId,
+    workspace: '/projets/demo',
     agentFound: world.agentFound,
     servers: world.states,
     terminal: Object.fromEntries(world.states.map((s) => [s.name, `opencode mcp auth ${s.name}`]))
@@ -333,6 +334,7 @@ describe('ligne d’état d’un serveur connecté par l’agent : un état = un
     await act(async () =>
       release({
         profileId: 'opencode',
+        workspace: '/projets/demo',
         agentFound: true,
         servers: [state('to-connect')],
         terminal: {}
@@ -434,22 +436,35 @@ describe('ligne d’état d’un serveur connecté par l’agent : un état = un
     expect(mcp.connect).toHaveBeenCalledWith('opencode', 'figma')
   })
 
-  it('commande sur deux lignes (`cd` du dossier d’abord) : la commande montrée, le tout copié et au survol', async () => {
-    setup({ views: [opencode([figma({ scope: 'project' })])], states: [state('no-page')] })
-    window.api.mcp.authStates = vi.fn(async () => ({
-      profileId: 'opencode',
-      agentFound: true,
-      servers: [state('no-page')],
-      terminal: { figma: "cd '/projets/l'\\''atelier'\nopencode mcp auth figma" }
-    }))
-    await open()
-    await click(screen.getByTestId('mcp-auth-terminal'))
-    expect(clipboard.writeText).toHaveBeenCalledWith(
-      "cd '/projets/l'\\''atelier'\nopencode mcp auth figma"
-    )
-    expect(line().querySelector('code')?.textContent).toBe('opencode mcp auth figma')
-    expect(line().title).toContain("cd '/projets/l'\\''atelier'\nopencode mcp auth figma")
-  })
+  it.each([
+    // macOS, Linux : une seule ligne.
+    ["cd -- '/projets/l'\\''atelier' && opencode mcp auth figma", 'Copiée : '],
+    // Windows (PowerShell) : deux lignes, dit.
+    [
+      "Set-Location -LiteralPath 'C:\\projets\\l''atelier'\nopencode mcp auth figma",
+      'Copiée (2 lignes) : '
+    ]
+  ])(
+    'commande copiée %j : ce qui est montré et au survol est exactement ce qui est copié',
+    async (command, prefix) => {
+      setup({ views: [opencode([figma({ scope: 'project' })])], states: [state('no-page')] })
+      window.api.mcp.authStates = vi.fn(async () => ({
+        profileId: 'opencode',
+        workspace: '/projets/demo',
+        agentFound: true,
+        servers: [state('no-page')],
+        terminal: { figma: command }
+      }))
+      await open()
+      await click(screen.getByTestId('mcp-auth-terminal'))
+      expect(clipboard.writeText).toHaveBeenCalledWith(command)
+      const copied = clipboard.writeText.mock.calls.at(-1)?.[0]
+      const code = within(line()).getByTestId('mcp-auth-copied')
+      expect(code.textContent).toBe(copied)
+      expect(code.title).toBe(copied)
+      expect(text()).toBe(nbsp(`${prefix}${copied}`))
+    }
+  )
 
   it('serveur désactivé : dit, rien à lancer ; connecté : la déconnexion reste possible', async () => {
     setup({ views: [opencode([figma({ enabled: false })])], states: [state('to-connect')] })
@@ -490,6 +505,7 @@ describe('ligne d’état d’un serveur connecté par l’agent : un état = un
       for (const resolve of pending)
         resolve({
           profileId: 'opencode',
+          workspace: '/projets/demo',
           agentFound: true,
           servers: [state('to-connect')],
           terminal: {}
@@ -564,6 +580,66 @@ describe('relecture adverse du lot 2 : clics, focus, notes, relecture', () => {
     expect(mcp.connect).toHaveBeenCalledTimes(1)
     await act(async () => release({ started: true }))
     expect(line().className).not.toContain('err')
+  })
+
+  it('« Annuler » pendant que « Se connecter » attend encore le main : envoyé (garde par action)', async () => {
+    const mcp = setup({ views: [opencode([figma()])], states: [state('to-connect')] })
+    mcp.connect.mockImplementation(() => new Promise<McpConnectResult>(() => {}))
+    await open()
+    await click(screen.getByTestId('mcp-auth-connect'))
+    world.states = [state('connecting', { host: 'www.figma.com' })]
+    await act(async () => emit(state('connecting', { host: 'www.figma.com' })))
+    const cancel = screen.getByTestId('mcp-auth-cancel')
+    await act(async () => {
+      fireEvent.click(cancel)
+      fireEvent.click(cancel)
+    })
+    // Le double clic sur « Annuler » reste une seule demande.
+    expect(mcp.cancelConnect).toHaveBeenCalledTimes(1)
+  })
+
+  it('une demande sans réponse ne garde pas son bouton pour toujours (borne)', async () => {
+    vi.useFakeTimers()
+    try {
+      const mcp = setup({ views: [opencode([figma()])], states: [state('to-connect')] })
+      mcp.connect.mockImplementation(() => new Promise<McpConnectResult>(() => {}))
+      render(<McpSettings workspace="/projets/demo" initialTab="opencode" />)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+      fireEvent.click(screen.getByTestId('mcp-auth-connect'))
+      fireEvent.click(screen.getByTestId('mcp-auth-connect'))
+      expect(mcp.connect).toHaveBeenCalledTimes(1)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(MCP_ACTION_GUARD_MS - 1)
+      })
+      fireEvent.click(screen.getByTestId('mcp-auth-connect'))
+      expect(mcp.connect).toHaveBeenCalledTimes(1)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1)
+      })
+      fireEvent.click(screen.getByTestId('mcp-auth-connect'))
+      expect(mcp.connect).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('M3 dans l’onglet : une relecture faite pour un autre dossier (menu d’une autre conversation) ne change pas ce qui est montré', async () => {
+    const mcp = setup({ views: [opencode([figma()])], states: [state('connected')] })
+    await open()
+    expect(text()).toBe('Connecté par OpenCode')
+    mcp.authStates.mockImplementationOnce(async (profileId: string) => ({
+      profileId,
+      workspace: '/projets/autre',
+      agentFound: true,
+      servers: [state('to-connect')],
+      terminal: {}
+    }))
+    await act(async () => {
+      await readMcpAuth('opencode')
+    })
+    expect(text()).toBe('Connecté par OpenCode')
   })
 
   it('« busy » alors que ce serveur est déjà « en cours » (autre fenêtre) : pas de note rouge', async () => {

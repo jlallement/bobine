@@ -8585,6 +8585,12 @@ kbd {
     opacity: 0.35;
   }
 }
+/* État de connexion dans le menu « Réglages de la session » (fiche 293) : toujours une ligne. */
+.session-mcp-auth {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 .session-mcp-dot {
   display: inline-flex;
   width: 15px;

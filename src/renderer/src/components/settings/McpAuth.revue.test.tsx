@@ -76,6 +76,7 @@ function setup(over: Partial<World> = {}) {
   }
   const authStates = vi.fn(async (profileId: string): Promise<McpAuthView> => ({
     profileId,
+    workspace: '/projets/demo',
     agentFound: world.agentFound,
     servers: world.states,
     terminal: Object.fromEntries(world.states.map((s) => [s.name, `opencode mcp auth ${s.name}`]))

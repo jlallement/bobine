@@ -24,8 +24,8 @@ export function SessionMcpServer({
   agent: string
   server: McpServerEntry
   /**
-   * États de connexion lus à l'ouverture du menu (gardés tels quels tant qu'il est ouvert : il ne
-   * change pas de taille sous le pointeur, fiche 234) ; `undefined` : pas (encore) connus.
+   * États de connexion du dossier de la conversation (dernier connu, puis relu : le libellé peut
+   * changer dans le menu affiché, jamais sa hauteur, fiche 234) ; `undefined` : pas (encore) connus.
    */
   auth: Record<string, McpAuthState> | undefined
   onOpen: (() => void) | undefined
@@ -36,6 +36,12 @@ export function SessionMcpServer({
   if (server.authPreset) {
     const state = auth?.[server.name]
     const dot = dotOf(server, state)
+    const said = !server.enabled
+      ? t('sessionSettings.mcp.disabled')
+      : state
+        ? t(`mcp.state.${dot.label}`)
+        : t('sessionSettings.mcp.agentAuth', { agent })
+    const desc = `${said} · ${scope}`
     return (
       <Dropdown.Item
         className="menu-item"
@@ -49,14 +55,10 @@ export function SessionMcpServer({
         </span>
         <span className="menu-text">
           <div className="menu-title">{server.name}</div>
-          <div className="menu-desc">
-            {!server.enabled
-              ? t('sessionSettings.mcp.disabled')
-              : state
-                ? t(`mcp.state.${dot.label}`)
-                : t('sessionSettings.mcp.agentAuth', { agent })}
-            {' · '}
-            {scope}
+          {/* Une ligne, raccourcie au besoin : l'état relu peut remplacer le libellé neutre dans
+              le menu affiché sans en changer la hauteur (fiche 234). */}
+          <div className="menu-desc session-mcp-auth" title={desc}>
+            {desc}
           </div>
         </span>
       </Dropdown.Item>

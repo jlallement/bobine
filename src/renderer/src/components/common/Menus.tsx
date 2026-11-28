@@ -525,6 +525,25 @@ export function SessionSettingsMenu({
     else update()
   }
   useMcpStatuses()
+  /**
+   * État de connexion des serveurs que l'agent connecte lui-même (fiche 293), **pour le dossier de
+   * la vue** seulement : dernier état connu de ce dossier tout de suite (sinon libellé neutre), puis
+   * relu chez l'agent (relecture récente ou en cours réutilisée, `readMcpAuth`). La relecture ne
+   * retarde pas l'affichage : arrivée après, elle remplace le libellé dans la ligne, qui garde sa
+   * hauteur (une ligne, raccourcie au besoin : le menu ne grandit pas sous le pointeur, fiche 234).
+   * Elle n'est gardée que si le main a relu ce même dossier.
+   */
+  const loadAuth = (view: McpAgentView, still: (update: () => void) => void) => {
+    const workspace = view.workspace ?? ''
+    still(() => setAuth(mcpAuthEntry(view.profileId, workspace)?.states ?? null))
+    const apply = (states: Record<string, McpAuthState> | null) => {
+      if (mounted.current) setAuth(states)
+    }
+    void readMcpAuth(view.profileId, { workspace }).then(
+      (entry) => apply(entry.workspace === workspace ? entry.states : null),
+      () => apply(null)
+    )
+  }
   const onOpenChange = (next: boolean) => {
     const ticket = ++opening.current
     clearTimeout(fallback.current)
@@ -554,13 +573,7 @@ export function SessionSettingsMenu({
           whenStill(() => setMcp(view ?? null))
           if (view) void testMcpServers(view.profileId, view.servers, true)
           // Serveurs connectés par l'agent (fiche 293) : leur état, lu dans le magasin partagé.
-          if (!view?.oauth || !view.servers.some((s) => s.authPreset)) return undefined
-          // Dernier état connu d'abord, puis relu chez l'agent (avant l'affichage, au plus 300 ms).
-          whenStill(() => setAuth(mcpAuthEntry(view.profileId)?.states ?? null))
-          return readMcpAuth(view.profileId).then(
-            (entry) => whenStill(() => setAuth(entry.states)),
-            () => whenStill(() => setAuth(null))
-          )
+          if (view?.oauth && view.servers.some((s) => s.authPreset)) loadAuth(view, whenStill)
         },
         () => whenStill(() => setMcp(null))
       ),

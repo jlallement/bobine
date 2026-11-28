@@ -1,8 +1,10 @@
 /**
  * Essai Q4 du testeur (relecture adverse du lot 2), gardé comme essai permanent. Adapté au contrat
  * de `e3168542` : la commande n'est plus faite par `joinCommandLine` + `&&` mais par
- * `terminalCommand` (une ligne `cd`, puis la commande) ; dossier temporaire au lieu d'un chemin
- * fixe. Assertion intacte : coller la ligne `cd` n'exécute rien du nom du dossier.
+ * `terminalCommand` (`cd -- '…' && <commande>`, une seule ligne depuis la seconde relecture) ;
+ * dossier temporaire au lieu d'un chemin fixe ; la commande copiée est `pwd` au lieu de celle
+ * d'OpenCode (jamais lancé par les essais). Assertion intacte : coller la ligne n'exécute rien du
+ * nom du dossier.
  */
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
@@ -19,9 +21,7 @@ it.skipIf(process.platform === 'win32')(
       rmSync(join(base, 'PWNED'), { force: true })
       const ws = join(base, 'proj$(touch${IFS}PWNED)')
       mkdirSync(ws, { recursive: true })
-      const line = terminalCommand('linux', ['opencode', 'mcp', 'auth', 'figma'], ws) ?? ''
-      // On n'exécute que la partie « cd », jamais opencode.
-      const cdPart = line.split('\n')[0] ?? ''
+      const cdPart = terminalCommand('linux', ['pwd'], ws) ?? ''
       try {
         execFileSync('/bin/sh', ['-c', cdPart], { cwd: base, stdio: 'ignore' })
       } catch {}
