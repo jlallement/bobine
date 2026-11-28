@@ -224,3 +224,19 @@ défilement de côté.
   - `pnpm e2e --changed` (français) : 241/241, code 0 ; `saisie-alignee` rejouée après le dernier
     changement de l'essai (attentes de faits) : 2/2, code 0 ; `pnpm e2e --changed --lang en` :
     241/241, code 0 ; `./scripts/verify` : code 0 (710 fichiers, 7 038 tests).
+  - Alternative en CSS seul évaluée et **écartée** (2026-11-28, à la demande du tech lead) :
+    `scrollbar-gutter: stable both-edges` sur `.scroll`, sans le crochet ni la règle de centrage.
+    La gouttière suit bien la barre classique de l'app (10 px réservés de chaque côté) et le fil
+    reste centré sur le volet entier tant que la colonne est plus étroite que le volet : aux trois
+    largeurs, fil court ou qui défile, l'essai est vert. Mais dès que la colonne remplit le volet
+    (fenêtre de 760 px, panneau de droite ouvert), le fil perd la gouttière des deux côtés et la
+    saisie non : `saisie-alignee` en barres classiques, 4 échecs — fenêtre de 760 px, texte tapé
+    284 contre texte de l'agent 294 à gauche, 736 contre 726 à droite ; panneau ouvert, 324/334 et
+    936/926 (10 px de chaque côté, la saisie passe sous la zone de la barre). Le corriger en CSS
+    demanderait la même gouttière sur la colonne de la saisie, donc un `overflow` non visible sur
+    elle ou un parent, qui couperait la flèche « Aller en bas », le fondu et les menus « / » et
+    « @ ». Elle coûterait en plus 10 à 15 px de fil à gauche avec des barres classiques. Le crochet
+    `useScrollbarGutter` est gardé.
+  - Passage final, version de `5f4b7fb4` (code inchangé depuis) : `pnpm e2e --changed` français
+    241/241, code 0 ; `--lang en` 241/241, code 0 ; `./scripts/verify` code 0 (710 fichiers,
+    7 038 tests).
