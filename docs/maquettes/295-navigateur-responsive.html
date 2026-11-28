@@ -1,0 +1,1110 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Navigateur : taille d'écran et thème — maquettes (fiche 295)</title>
+    <style>
+      /*
+       * Maquette autonome : aucune ressource du réseau. Jetons : thèmes réels de Bobine
+       * (src/renderer/src/themes.generated.css, accent par défaut, menus sans verre comme hors
+       * macOS). Composants repris de src/renderer/src/styles.css (.side-panel-head, .browser-bar,
+       * .browser-address-field, .browser-chip, .icon-button.small, .menu, .segmented,
+       * .panel-note, .browser-error). Ce qui est nouveau est préfixé « device- ».
+       * Polices : celles livrées avec l'app, lues dans le dépôt ; sinon celles du système.
+       */
+      :root {
+        --bg: #faf9f5;
+        --sidebar: #f3f1ea;
+        --surface: #ffffff;
+        --surface-2: #f0eee6;
+        --surface-3: #e8e5db;
+        --border: #e3e0d6;
+        --border-strong: #8f8b81;
+        --text: #2b2a26;
+        --text-2: #4d4b45;
+        --muted: #6d6b64;
+        --accent: #b75534;
+        --on-accent: #ffffff;
+        --ok: #22683a;
+        --err: #b3261e;
+        --err-soft: #fbe7e4;
+        --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.1), 0 1px 3px rgb(0 0 0 / 0.06);
+        --radius-xs: 4px;
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --font-ui:
+          'Bobine Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --bg: #262624;
+          --sidebar: #1f1e1d;
+          --surface: #30302e;
+          --surface-2: #383835;
+          --surface-3: #42413d;
+          --border: #3e3d39;
+          --border-strong: #7d7b74;
+          --text: #f0eee6;
+          --text-2: #d4d1c7;
+          --muted: #a6a39a;
+          --accent: #db8062;
+          --on-accent: #1a1918;
+          --ok: #7fcb93;
+          --err: #f08a7a;
+          --err-soft: #432a27;
+          --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme='dark'] {
+        --bg: #262624;
+        --sidebar: #1f1e1d;
+        --surface: #30302e;
+        --surface-2: #383835;
+        --surface-3: #42413d;
+        --border: #3e3d39;
+        --border-strong: #7d7b74;
+        --text: #f0eee6;
+        --text-2: #d4d1c7;
+        --muted: #a6a39a;
+        --accent: #db8062;
+        --on-accent: #1a1918;
+        --ok: #7fcb93;
+        --err: #f08a7a;
+        --err-soft: #432a27;
+        --shadow-menu: 0 4px 24px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
+        color-scheme: dark;
+      }
+      @font-face {
+        font-family: 'Bobine Inter';
+        src: url('../../src/renderer/src/assets/fonts/InterVariable.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--sidebar);
+        color: var(--text);
+        font-family: var(--font-ui);
+        font-size: 14px;
+        -webkit-font-smoothing: antialiased;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+        border: none;
+        background: none;
+        padding: 0;
+        cursor: pointer;
+      }
+
+      /* ---------- Page de la maquette (hors app) ---------- */
+      .doc {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 28px 24px 80px;
+      }
+      .doc h1 {
+        font-size: 22px;
+        margin: 0 0 6px;
+      }
+      .doc > p,
+      .doc li {
+        color: var(--text-2);
+        line-height: 1.5;
+        max-width: 860px;
+      }
+      .switch {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin: 14px 0 24px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .planche {
+        margin: 36px 0 0;
+      }
+      .planche h2 {
+        font-size: 16px;
+        margin: 0 0 4px;
+      }
+      .planche .legende {
+        margin: 0 0 12px;
+        color: var(--text-2);
+        line-height: 1.5;
+        max-width: 860px;
+        font-size: 13.5px;
+      }
+      .planche .row {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+      .variante {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--muted);
+        margin: 0 0 6px;
+      }
+
+      /* ---------- Le panneau de droite, comme dans l'app ---------- */
+      .frame {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        overflow: hidden;
+      }
+      .side-panel-head {
+        height: 52px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 10px 0 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      .side-panel-head .grow {
+        flex: 1;
+      }
+      .side-panel-tabs {
+        display: flex;
+        gap: 2px;
+        min-width: 0;
+      }
+      .side-panel-tab {
+        height: 30px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 9px;
+        border-radius: var(--radius-sm);
+        color: var(--muted);
+        font-size: 13px;
+        white-space: nowrap;
+      }
+      .side-panel-tab.active {
+        background: var(--surface-3);
+        color: var(--text);
+      }
+      .side-panel-tab .close {
+        display: inline-grid;
+        color: var(--muted);
+        margin-left: 2px;
+      }
+      .icon-button {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-sm);
+        display: inline-grid;
+        place-items: center;
+        color: var(--muted);
+        flex-shrink: 0;
+      }
+      .icon-button.small {
+        width: 26px;
+        height: 26px;
+      }
+      .icon-button.active {
+        background: var(--surface-3);
+        color: var(--text);
+      }
+      .icon-button:disabled {
+        opacity: 0.4;
+        cursor: default;
+      }
+      .browser-bar {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        padding: 6px 8px;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+      }
+      .browser-address-field {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: 4px;
+        padding-right: 4px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+      }
+      .browser-address {
+        flex: 1;
+        min-width: 0;
+        padding: 5px 10px;
+        font-size: 12.5px;
+        color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .browser-chip {
+        flex-shrink: 0;
+        padding: 1px 6px;
+        border-radius: var(--radius-xs);
+        background: var(--surface-2);
+        color: var(--text-2);
+        font-size: 11.5px;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .panel-note {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        font-size: 12.5px;
+        color: var(--text-2);
+        background: var(--surface-2);
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+      }
+      .panel-note .grow {
+        flex: 1;
+        min-width: 0;
+      }
+      .link-button {
+        color: var(--accent);
+        font-weight: 500;
+        font-size: 12.5px;
+        white-space: nowrap;
+      }
+      .browser-error {
+        padding: 6px 12px;
+        font-size: 12.5px;
+        color: var(--err);
+        background: var(--err-soft);
+        flex-shrink: 0;
+      }
+      .browser-page {
+        flex: 1;
+        min-height: 0;
+        position: relative;
+        background: var(--surface);
+        overflow: hidden;
+      }
+      /* Nouveau : sous une taille réglée, le fond autour de la page (sinon elle se perd). */
+      .browser-page.emulated {
+        background: var(--surface-2);
+      }
+      .segmented {
+        display: inline-flex;
+        padding: 2px;
+        border-radius: var(--radius-sm);
+        background: var(--surface-2);
+        flex-shrink: 0;
+      }
+      .segmented button {
+        white-space: nowrap;
+        color: var(--text-2);
+        font-size: 12px;
+        padding: 3px 10px;
+        border-radius: var(--radius-sm);
+      }
+      .segmented button.active {
+        background: var(--surface);
+        color: var(--text);
+        box-shadow:
+          0 1px 2px rgb(0 0 0 / 0.12),
+          inset 0 0 0 1px var(--border);
+      }
+
+      /* ---------- Nouveau : barre « Appareil » ---------- */
+      .device-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        height: 37px;
+        padding: 0 8px;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+        font-size: 12.5px;
+      }
+      .device-bar .grow {
+        flex: 1;
+        min-width: 0;
+      }
+      .device-trigger {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 26px;
+        padding: 0 6px 0 9px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        color: var(--text);
+        font-size: 12.5px;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .device-trigger.open {
+        border-color: var(--border-strong);
+      }
+      .device-trigger .chev {
+        color: var(--muted);
+        display: inline-grid;
+      }
+      .device-trigger.agent {
+        color: var(--muted);
+        background: var(--surface-2);
+        border-color: transparent;
+        cursor: default;
+      }
+      .device-trigger.agent .chev {
+        opacity: 0.4;
+      }
+      /* Panneau étroit : l'en-tête serré de l'app (fiche 185, onglets inactifs en icône). */
+      .narrow .side-panel-head {
+        gap: 4px;
+      }
+      .narrow .side-panel-tab {
+        padding: 0 7px;
+      }
+      .narrow .side-panel-head > .icon-button:not(.small) {
+        width: 26px;
+        height: 26px;
+      }
+      .device-trigger.compact {
+        padding: 0 4px 0 6px;
+        gap: 2px;
+      }
+      .device-size {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+        color: var(--muted);
+      }
+      .device-field {
+        width: 50px;
+        height: 26px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        color: var(--text);
+        font-size: 12.5px;
+        font-variant-numeric: tabular-nums;
+      }
+      .device-field.auto {
+        color: var(--muted);
+        background: transparent;
+      }
+      .device-field.agent {
+        color: var(--muted);
+        background: var(--surface-2);
+        border-color: transparent;
+      }
+      .device-field.focus {
+        border-color: var(--accent);
+      }
+      .device-field.invalid {
+        border-color: var(--err);
+        color: var(--err);
+      }
+      .caret {
+        display: inline-block;
+        width: 1px;
+        height: 13px;
+        margin-left: 1px;
+        background: var(--text);
+        vertical-align: -2px;
+      }
+      .device-scale {
+        color: var(--muted);
+        font-size: 11.5px;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      /* Menu de l'app (.menu), ouvert sous le bouton. */
+      .menu {
+        position: absolute;
+        z-index: 5;
+        min-width: 240px;
+        max-width: 340px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-menu);
+        padding: 6px;
+        font-size: 13.5px;
+        color: var(--text);
+      }
+      .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: var(--radius-sm);
+      }
+      .menu-item.hl {
+        background: var(--surface-2);
+      }
+      .menu-text {
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+      }
+      .menu-value {
+        color: var(--muted);
+        font-size: 12.5px;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .menu-check {
+        color: var(--accent);
+        width: 14px;
+        display: inline-grid;
+        flex-shrink: 0;
+      }
+      .menu-separator {
+        height: 1px;
+        background: var(--border);
+        margin: 6px 4px;
+      }
+      .menu-foot {
+        padding: 6px 10px 4px;
+        font-size: 11.5px;
+        line-height: 1.4;
+        color: var(--muted);
+        max-width: 300px;
+      }
+
+      /* Page affichée : un site de démonstration fictif, dessiné ici. */
+      .viewport {
+        position: absolute;
+        top: 0;
+        overflow: hidden;
+      }
+      .viewport.at-scale {
+        transform-origin: 0 0;
+      }
+
+      /* ---------- Site de démonstration « Potager du lundi » (fictif) ---------- */
+      .demo {
+        --d-bg: #fbfaf6;
+        --d-card: #ffffff;
+        --d-text: #24302a;
+        --d-muted: #5d6b63;
+        --d-line: #e4e7df;
+        --d-green: #2f7a4f;
+        --d-green-soft: #e3f1e7;
+        --d-sun: #f2c14e;
+        container-type: inline-size;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--d-bg);
+        color: var(--d-text);
+        font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+        font-size: 15px;
+        line-height: 1.45;
+      }
+      .demo.dark {
+        --d-bg: #17201b;
+        --d-card: #1f2a24;
+        --d-text: #e8efe9;
+        --d-muted: #a5b5ab;
+        --d-line: #2e3b33;
+        --d-green: #6cc08f;
+        --d-green-soft: #23382b;
+        --d-sun: #e0b24a;
+      }
+      .demo header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--d-line);
+        background: var(--d-card);
+      }
+      .demo .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+        font-size: 16px;
+        white-space: nowrap;
+      }
+      .demo .logo i {
+        width: 22px;
+        height: 22px;
+        border-radius: 50% 50% 50% 4px;
+        background: var(--d-green);
+        display: inline-block;
+      }
+      .demo nav {
+        display: none;
+        gap: 20px;
+        margin-left: auto;
+        color: var(--d-muted);
+        font-size: 14px;
+      }
+      .demo .burger {
+        margin-left: auto;
+        display: grid;
+        gap: 4px;
+      }
+      .demo .burger b {
+        display: block;
+        width: 20px;
+        height: 2px;
+        background: var(--d-text);
+        border-radius: 2px;
+      }
+      .demo .cta-top {
+        display: none;
+        padding: 7px 14px;
+        border-radius: 999px;
+        background: var(--d-green);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .demo.dark .cta-top,
+      .demo.dark .cta {
+        color: #0f1712;
+      }
+      .demo .hero {
+        padding: 26px 18px 22px;
+        display: grid;
+        gap: 18px;
+      }
+      .demo .kicker {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: var(--d-green-soft);
+        color: var(--d-green);
+        font-size: 12.5px;
+        font-weight: 600;
+      }
+      .demo h1 {
+        margin: 10px 0 8px;
+        font-size: 28px;
+        line-height: 1.15;
+        letter-spacing: -0.01em;
+      }
+      .demo .lead {
+        margin: 0 0 16px;
+        color: var(--d-muted);
+      }
+      .demo .cta {
+        display: inline-block;
+        padding: 11px 18px;
+        border-radius: 999px;
+        background: var(--d-green);
+        color: #fff;
+        font-weight: 600;
+      }
+      .demo .art {
+        height: 150px;
+        border-radius: 14px;
+        background:
+          radial-gradient(circle at 72% 30%, var(--d-sun) 0 26px, transparent 27px),
+          radial-gradient(ellipse at 30% 100%, var(--d-green) 0 70px, transparent 71px),
+          radial-gradient(
+            ellipse at 75% 105%,
+            color-mix(in srgb, var(--d-green) 70%, #fff) 0 80px,
+            transparent 81px
+          ),
+          var(--d-green-soft);
+      }
+      .demo .cards {
+        display: grid;
+        gap: 12px;
+        padding: 0 18px 22px;
+      }
+      .demo .card {
+        background: var(--d-card);
+        border: 1px solid var(--d-line);
+        border-radius: 12px;
+        padding: 14px 16px;
+      }
+      .demo .card h3 {
+        margin: 0 0 4px;
+        font-size: 16px;
+      }
+      .demo .card p {
+        margin: 0;
+        color: var(--d-muted);
+        font-size: 14px;
+      }
+      .demo .price {
+        margin-top: 8px;
+        font-weight: 700;
+        color: var(--d-green);
+      }
+      @container (min-width: 600px) {
+        .demo nav,
+        .demo .cta-top {
+          display: flex;
+        }
+        .demo .burger {
+          display: none;
+        }
+        .demo .hero {
+          grid-template-columns: 1.2fr 1fr;
+          align-items: center;
+          padding: 34px 28px 26px;
+        }
+        .demo .art {
+          height: 190px;
+        }
+        .demo h1 {
+          font-size: 32px;
+        }
+        .demo header {
+          padding: 14px 28px;
+        }
+        .demo .cards {
+          grid-template-columns: 1fr 1fr;
+          padding: 0 28px 26px;
+        }
+      }
+      @container (min-width: 900px) {
+        .demo .cards {
+          grid-template-columns: 1fr 1fr 1fr;
+        }
+        .demo h1 {
+          font-size: 38px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="doc">
+      <h1>Navigateur intégré : taille d'écran et thème réglés par l'utilisateur</h1>
+      <p>
+        Fiche 295, maquette à valider, rien n'est codé. Chaque planche montre le panneau de droite
+        de Bobine, onglet Navigateur, avec les vrais jetons et composants de l'app. Le site affiché
+        est un site de démonstration fictif (« Potager du lundi ») dessiné pour la maquette. Panneau
+        de 560 × 820 px sauf mention (fenêtre de 820 px de haut) ; les pourcentages affichés sont
+        ceux que le moteur actuel calculerait (<code>emulationFrame</code> : réduite pour tenir,
+        jamais au-delà de 100 %).
+      </p>
+      <div class="switch">
+        Thème de Bobine :
+        <span class="segmented" id="ui-theme">
+          <button type="button" data-t="auto" class="active">Système</button>
+          <button type="button" data-t="light">Clair</button>
+          <button type="button" data-t="dark">Sombre</button>
+        </span>
+      </div>
+      <div id="planches"></div>
+    </div>
+
+    <script>
+      /* Icônes Lucide de l'app (lucide-react 1.77), tracés repris tels quels. */
+      const P = {
+        globe:
+          '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+        gauge: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
+        plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+        max: '<path d="M15 3h6v6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/><path d="M9 21H3v-6"/>',
+        x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+        left: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+        right: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+        reload:
+          '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
+        annotate:
+          '<path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/><path d="M12 8v6"/><path d="M9 11h6"/>',
+        attach:
+          '<path d="M16 5h6"/><path d="M19 2v6"/><path d="M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/><circle cx="9" cy="9" r="2"/>',
+        device:
+          '<path d="M18 8V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h8"/><path d="M10 19v-3.96 3.15"/><path d="M7 19h5"/><rect width="6" height="10" x="16" y="12" rx="2"/>',
+        phone: '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
+        rotate:
+          '<path d="M20 9V7a2 2 0 0 0-2-2h-6"/><path d="m15 2-3 3 3 3"/><path d="M20 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/>',
+        chev: '<path d="m6 9 6 6 6-6"/>',
+        check: '<path d="M20 6 9 17l-5-5"/>',
+        sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+        moon: '<path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/>',
+        contrast: '<circle cx="12" cy="12" r="10"/><path d="M12 18a6 6 0 0 0 0-12v12z"/>'
+      }
+      const ic = (n, s = 15) =>
+        `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`
+
+      /* Liste recommandée (fiche 295) et variante avec noms d'appareils. */
+      const GENERIC = [
+        ['Petit téléphone', 375, 667],
+        ['Téléphone', 390, 844],
+        ['Grand téléphone', 430, 932],
+        ['Tablette', 768, 1024],
+        ['Grande tablette', 1024, 1366],
+        ['Portable', 1280, 800],
+        ['Bureau', 1920, 1080]
+      ]
+      const BRANDS = [
+        ['iPhone SE', 375, 667],
+        ['iPhone 14', 390, 844],
+        ['iPhone 14 Pro Max', 430, 932],
+        ['Pixel 7', 412, 915],
+        ['iPad', 768, 1024],
+        ['iPad Pro 12,9″', 1024, 1366],
+        ['Portable', 1280, 800],
+        ['Bureau', 1920, 1080]
+      ]
+
+      const DEMO = `
+        <header><span class="logo"><i></i>Potager du lundi</span>
+          <nav><span>Paniers</span><span>Producteurs</span><span>Livraison</span></nav>
+          <span class="cta-top">S'abonner</span>
+          <span class="burger"><b></b><b></b><b></b></span></header>
+        <section class="hero"><div><span class="kicker">Saison d'automne</span>
+          <h1>Des légumes de saison, livrés chaque lundi</h1>
+          <p class="lead">Un panier composé avec six fermes à moins de 40 km. Sans engagement, on saute une semaine en un clic.</p>
+          <span class="cta">Choisir mon panier</span></div>
+          <div class="art"></div></section>
+        <section class="cards">
+          <div class="card"><h3>Petit panier</h3><p>Pour une à deux personnes : 4 à 5 légumes.</p><div class="price">12 € / semaine</div></div>
+          <div class="card"><h3>Panier famille</h3><p>Pour quatre : 7 à 8 légumes et des herbes.</p><div class="price">22 € / semaine</div></div>
+          <div class="card"><h3>Fruits en plus</h3><p>Pommes, poires, raisin selon la saison.</p><div class="price">9 € / semaine</div></div>
+        </section>`
+
+      function head(narrow) {
+        return `<div class="side-panel-head">
+          <div class="side-panel-tabs">
+            <span class="side-panel-tab" aria-label="Session">${ic('gauge', 15)}${narrow ? '' : '<span>Session</span>'}</span>
+            <span class="side-panel-tab active">${ic('globe', 15)}<span>Navigateur</span><span class="close">${ic('x', 12)}</span></span>
+          </div>
+          <button class="icon-button small" aria-label="Ajouter un onglet">${ic('plus', 15)}</button>
+          <span class="grow"></span>
+          <button class="icon-button" aria-label="Agrandir le panneau">${ic('max', 15)}</button>
+          <button class="icon-button" aria-label="Fermer le panneau">${ic('x', 16)}</button>
+        </div>`
+      }
+
+      function addressBar(o) {
+        const toggle =
+          o.toggle === false
+            ? ''
+            : `<button class="icon-button small${o.bar ? ' active' : ''}" aria-pressed="${!!o.bar}" aria-label="Taille d'écran et thème">${ic('device', 15)}</button>`
+        return `<div class="browser-bar">
+          <button class="icon-button small" disabled aria-label="Précédent">${ic('left', 15)}</button>
+          <button class="icon-button small" disabled aria-label="Suivant">${ic('right', 15)}</button>
+          <button class="icon-button small" aria-label="Recharger">${ic('reload', 14)}</button>
+          <span class="browser-address-field"><span class="browser-address">http://localhost:5173/</span>${o.chip ? `<span class="browser-chip">${o.chip}</span>` : ''}</span>
+          ${toggle}
+          <button class="icon-button small" aria-label="Annoter la page">${ic('annotate', 15)}</button>
+          <button class="icon-button small" aria-label="Joindre cette page au message">${ic('attach', 15)}</button>
+        </div>`
+      }
+
+      function field(v, cls) {
+        return `<span class="device-field ${cls || ''}">${v}</span>`
+      }
+
+      function deviceBar(o) {
+        if (!o.bar) return ''
+        const label = o.label || 'Adaptatif'
+        const trigger = o.compact
+          ? `<button class="device-trigger compact${o.menu ? ' open' : ''}" aria-label="Appareil : ${label}">${ic(o.label ? 'phone' : 'device', 14)}<span class="chev">${ic('chev', 13)}</span></button>`
+          : `<button class="device-trigger${o.menu ? ' open' : ''}${o.agent ? ' agent' : ''}" ${o.agent ? 'disabled' : ''}>${label}<span class="chev">${ic('chev', 13)}</span></button>`
+        const f = o.fields || {}
+        const w = f.w ?? '{aw}'
+        const h = f.h ?? '{ah}'
+        const cls = o.label ? f.cls || '' : 'auto'
+        const theme = o.theme || 'auto'
+        const themeCtl = o.compact
+          ? `<button class="icon-button small" aria-label="Thème de la page">${ic(theme === 'dark' ? 'moon' : theme === 'light' ? 'sun' : 'contrast', 15)}</button>`
+          : `<span class="segmented" aria-label="Thème de la page">
+              <button class="${theme === 'auto' ? 'active' : ''}">Auto</button>
+              <button class="${theme === 'light' ? 'active' : ''}">Clair</button>
+              <button class="${theme === 'dark' ? 'active' : ''}">Sombre</button></span>`
+        return `<div class="device-bar">
+          ${trigger}
+          <span class="device-size">${field(w, f.wcls || cls)}<span>×</span>${field(h, f.hcls || cls)}</span>
+          <button class="icon-button small" ${o.label && !o.agent ? '' : 'disabled'} aria-label="Tourner l'écran">${ic('rotate', 15)}</button>
+          ${o.compact ? '' : '<span class="device-scale" data-scale></span>'}
+          <span class="grow"></span>
+          ${themeCtl}
+        </div>`
+      }
+
+      function menu(list, current) {
+        const rows = list
+          .map(
+            ([n, w, h]) =>
+              `<div class="menu-item${n === current ? ' hl' : ''}"><span class="menu-check">${n === current ? ic('check', 14) : ''}</span><span class="menu-text">${n}</span><span class="menu-value">${w} × ${h}</span></div>`
+          )
+          .join('')
+        return `<div class="menu" data-menu>
+          <div class="menu-item${current ? '' : ' hl'}"><span class="menu-check">${current ? '' : ic('check', 14)}</span><span class="menu-text">Adaptatif</span><span class="menu-value">largeur du panneau</span></div>
+          <div class="menu-separator"></div>${rows}
+          <div class="menu-separator"></div>
+          <div class="menu-foot">Affichée à cette taille, comme un écran tactile. Ce n'est pas un vrai téléphone : même navigateur, densité de l'écran du Mac.</div>
+        </div>`
+      }
+
+      /*
+       * Un panneau. o : w, h (px du panneau) ; bar (barre ouverte) ; label (appareil, absent =
+       * Adaptatif) ; size [w, h] émulée ; theme ; pageDark ; compact ; menu ('generic' | 'brands') ;
+       * note, error (lignes sous la barre) ; chip ; hidden (page masquée par un menu).
+       */
+      function panel(o) {
+        const w = o.w || 560
+        const h = o.h || 820
+        const note = o.note ? `<div class="panel-note">${o.note}</div>` : ''
+        const error = o.error ? `<div class="browser-error" role="alert">${o.error}</div>` : ''
+        const emu = !!o.size
+        const page = o.hidden
+          ? ''
+          : `<div class="viewport${emu ? ' at-scale' : ''}" ${emu ? `data-w="${o.size[0]}" data-h="${o.size[1]}"` : 'style="left:0;right:0;bottom:0"'}><div class="demo${o.pageDark ? ' dark' : ''}${o.pageAuto ? ' auto' : ''}">${DEMO}</div></div>`
+        return `<div class="frame${o.compact ? ' narrow' : ''}" style="width:${w}px;height:${h}px" data-frame>
+          ${head(o.compact)}${addressBar(o)}${deviceBar(o)}${note}${error}
+          <div class="browser-page${emu || o.hidden ? ' emulated' : ''}">${page}</div>
+          ${o.menu ? menu(o.menu === 'brands' ? BRANDS : GENERIC, o.label) : ''}
+        </div>`
+      }
+
+      const P_ = (id, titre, legende, ...frames) => ({ id, titre, legende, frames })
+      const V = (label, o) => ({ label, o })
+
+      const PLANCHES = [
+        P_(
+          'p0',
+          '0 — Aujourd’hui',
+          'Le panneau tel qu’il est dans l’app (1.2) : précédent, suivant, recharger, adresse, Annoter, Joindre. La page suit la largeur du panneau ; seul l’agent peut imposer une taille (outil browser_resize, puce « 375 × 812 » dans l’adresse, annulée à la fin de son tour).',
+          V('', { toggle: false, pageAuto: true })
+        ),
+        P_(
+          'p1',
+          '1 — Barre repliée (par défaut)',
+          'Un seul bouton de plus, entre l’adresse et Annoter (icône écran et téléphone, infobulle « Taille d’écran et thème »). Rien d’autre ne change tant qu’on ne s’en sert pas. Variante B (question 1) : la barre toujours visible, sans bouton ; 37 px de page en moins pour tout le monde.',
+          V('A — derrière un bouton (recommandée)', { pageAuto: true }),
+          V('B — barre toujours visible', { toggle: false, bar: true, pageAuto: true })
+        ),
+        P_(
+          'p2',
+          '2 — Barre ouverte, « Adaptatif »',
+          'Bouton enfoncé ; la barre apparaît sous l’adresse : appareil, largeur × hauteur, rotation, thème Auto / Clair / Sombre. En Adaptatif, les champs montrent en gris la taille réelle de la zone et suivent le panneau ; la rotation est grisée. La page est inchangée. Taper une valeur passe en « Personnalisé ».',
+          V('', { bar: true, pageAuto: true })
+        ),
+        P_(
+          'p3',
+          '3 — Menu d’appareils déroulé',
+          'Le menu habituel de l’app : Adaptatif, sept appareils avec leur taille, coche sur le choix, et une ligne qui dit honnêtement ce qui est émulé. Comme tout menu de l’app qui passe sur la page (règle de la fiche 129), la page se masque pendant qu’il est ouvert et revient à sa fermeture. Variante B (question 2) : noms d’appareils, comme sur la capture de référence.',
+          V('A — libellés génériques (recommandée)', {
+            bar: true,
+            label: 'Téléphone',
+            size: [390, 844],
+            fields: { w: 390, h: 844 },
+            menu: 'generic',
+            hidden: true
+          }),
+          V('B — noms d’appareils', {
+            bar: true,
+            label: 'iPhone 14',
+            size: [390, 844],
+            fields: { w: 390, h: 844 },
+            menu: 'brands',
+            hidden: true
+          })
+        ),
+        P_(
+          'p4',
+          '4 — Téléphone choisi : la page à sa taille, centrée',
+          '« Petit téléphone » 375 × 667 tient en entier dans ce panneau : page à 100 %, centrée en haut, sur le fond gris du panneau (nouveau : aujourd’hui la page réduite se perd sur fond blanc). Pas d’échelle affichée à 100 %. La page défile dans son cadre, à la molette comme au clavier.',
+          V('', {
+            bar: true,
+            label: 'Petit téléphone',
+            size: [375, 667],
+            fields: { w: 375, h: 667 },
+            pageAuto: true
+          })
+        ),
+        P_(
+          'p5',
+          '5 — Appareil plus grand que le panneau : page réduite, échelle affichée',
+          '« Tablette » 768 × 1024 dans une zone plus petite : la page est réduite pour tenir entière (jamais coupée), et l’échelle s’affiche en gris à côté de la rotation (infobulle « Affichée à … % pour tenir dans le panneau »). Les clics de l’utilisateur et de l’agent tombent juste (moteur existant).',
+          V('', {
+            bar: true,
+            label: 'Tablette',
+            size: [768, 1024],
+            fields: { w: 768, h: 1024 },
+            pageAuto: true
+          })
+        ),
+        P_(
+          'p6',
+          '6 — Taille libre : en cours de saisie, puis invalide',
+          'À gauche : saisie dans la largeur (412), l’appareil passe à « Personnalisé » ; Entrée ou sortie du champ appliquent, Échap rend la valeur précédente, ↑ / ↓ ±1, Maj ±10 ; « 412x915 » collé remplit les deux champs. À droite : 90 est hors bornes ; bord rouge, ligne d’erreur, la page garde la dernière taille valable.',
+          V('Saisie', {
+            bar: true,
+            label: 'Personnalisé',
+            size: [390, 844],
+            fields: { w: '412<span class="caret"></span>', h: 915, wcls: 'focus' },
+            pageAuto: true
+          }),
+          V('Saisie invalide', {
+            bar: true,
+            label: 'Personnalisé',
+            size: [390, 844],
+            fields: { w: 90, h: 844, wcls: 'invalid' },
+            error: 'Entre 200 et 4 000 px.',
+            pageAuto: true
+          })
+        ),
+        P_(
+          'p7',
+          '7 — Rotation',
+          'Le bouton échange largeur et hauteur : « Téléphone » 390 × 844 devient 844 × 390, « Téléphone, paysage » ; la page en paysage est plus large que le panneau, donc réduite, et l’échelle le dit. Même règle pour une taille libre.',
+          V('', {
+            bar: true,
+            label: 'Téléphone, paysage',
+            size: [844, 390],
+            fields: { w: 844, h: 390 },
+            pageAuto: true
+          })
+        ),
+        P_(
+          'p8',
+          '8 — Thème sombre forcé sur une page claire',
+          '« Sombre » choisi, Bobine restant en clair : la page reçoit prefers-color-scheme: dark. Seules les pages qui suivent ce réglage changent (infobulle du choix) ; l’interface de Bobine ne bouge pas.',
+          V('', {
+            bar: true,
+            label: 'Téléphone',
+            size: [390, 844],
+            fields: { w: 390, h: 844 },
+            theme: 'dark',
+            pageDark: true
+          })
+        ),
+        P_(
+          'p9',
+          '9 — Panneau étroit (300 px)',
+          'La barre se replie sur elle-même : l’appareil devient une icône avec chevron (son nom dans l’infobulle et le menu), le thème un seul bouton qui ouvre un petit menu Auto / Clair / Sombre, l’échelle passe dans l’infobulle des champs. Tout tient sur une ligne jusqu’au minimum du panneau (280 px).',
+          V('', {
+            w: 300,
+            bar: true,
+            compact: true,
+            label: 'Téléphone',
+            size: [390, 844],
+            fields: { w: 390, h: 844 },
+            pageAuto: true
+          })
+        ),
+        P_(
+          'p10',
+          '10 — L’agent redimensionne pendant que l’utilisateur a un réglage',
+          'L’utilisateur a choisi « Téléphone » ; pendant son tour, l’agent appelle browser_resize en tablette. A (recommandée, question 3) : l’essai de l’agent s’applique, la barre le montre en lecture seule avec « Reprendre la main », la puce de l’adresse reste ; à la fin du tour, « Téléphone » revient tel quel. B : le réglage de l’utilisateur prime, l’outil de l’agent est refusé tant que la barre est ouverte.',
+          V('A — l’agent essaie, le réglage revient (recommandée)', {
+            bar: true,
+            label: 'Essai de l’agent',
+            agent: true,
+            chip: '768 × 1024',
+            size: [768, 1024],
+            fields: { w: 768, h: 1024, cls: 'agent' },
+            note: '<span class="grow">L’agent essaie 768 × 1024 jusqu’à la fin de son tour</span><button class="link-button">Reprendre la main</button>',
+            pageAuto: true
+          }),
+          V('B — le réglage de l’utilisateur prime', {
+            bar: true,
+            label: 'Téléphone',
+            size: [390, 844],
+            fields: { w: 390, h: 844 },
+            note: '<span class="grow">L’agent a demandé 768 × 1024 : votre réglage reste en place</span>',
+            pageAuto: true
+          })
+        ),
+        P_(
+          'p11',
+          '11 — Panneau agrandi',
+          'Panneau agrandi (⤢), 1 100 px : même barre, plus de place. « Tablette, paysage » (1024 × 768) passe de 55 % dans le panneau normal à l’échelle affichée ici ; à 100 %, l’échelle disparaît.',
+          V('', {
+            w: 1100,
+            bar: true,
+            label: 'Tablette, paysage',
+            size: [1024, 768],
+            fields: { w: 1024, h: 768 },
+            pageAuto: true
+          })
+        )
+      ]
+
+      function render() {
+        document.getElementById('planches').innerHTML = PLANCHES.map(
+          (
+            p
+          ) => `<section class="planche" id="${p.id}"><h2>${p.titre}</h2><p class="legende">${p.legende}</p>
+            <div class="row">${p.frames
+              .map(
+                (f, i) =>
+                  `<div data-shot="${p.id}${p.frames.length > 1 ? 'abcd'[i] : ''}">${f.label ? `<p class="variante">${f.label}</p>` : ''}${panel(f.o)}</div>`
+              )
+              .join('')}</div></section>`
+        ).join('')
+        layout()
+      }
+
+      /* Pose de la page comme le moteur (page-view.ts, emulationFrame) ; mesure de la zone. */
+      function layout() {
+        const dark =
+          document.documentElement.dataset.theme === 'dark' ||
+          (!document.documentElement.dataset.theme &&
+            matchMedia('(prefers-color-scheme: dark)').matches)
+        for (const d of document.querySelectorAll('.demo.auto')) d.classList.toggle('dark', dark)
+        for (const frame of document.querySelectorAll('[data-frame]')) {
+          const area = frame.querySelector('.browser-page')
+          const aw = Math.round(area.clientWidth)
+          const ah = Math.round(area.clientHeight)
+          frame.querySelectorAll('.device-field').forEach((f) => {
+            f.innerHTML = f.innerHTML.replace('{aw}', aw).replace('{ah}', ah)
+          })
+          const vp = area.querySelector('.viewport.at-scale')
+          const scaleEl = frame.querySelector('[data-scale]')
+          if (!vp) continue
+          const w = +vp.dataset.w
+          const h = +vp.dataset.h
+          const s = Math.min(1, aw / w, ah / h)
+          vp.style.width = `${w}px`
+          vp.style.height = `${h}px`
+          vp.style.transform = `scale(${s})`
+          vp.style.left = `${Math.floor((aw - Math.round(w * s)) / 2)}px`
+          if (scaleEl) scaleEl.textContent = s < 0.995 ? `${Math.round(s * 100)} %` : ''
+        }
+        // Menu sous le bouton d'appareil, dans le panneau.
+        for (const m of document.querySelectorAll('[data-menu]')) {
+          const frame = m.closest('[data-frame]')
+          const t = frame.querySelector('.device-trigger')
+          const fr = frame.getBoundingClientRect()
+          const tr = t.getBoundingClientRect()
+          m.style.left = `${tr.left - fr.left}px`
+          m.style.top = `${tr.bottom - fr.top + 6}px`
+        }
+      }
+
+      document.getElementById('ui-theme').addEventListener('click', (e) => {
+        const b = e.target.closest('button')
+        if (!b) return
+        document
+          .querySelectorAll('#ui-theme button')
+          .forEach((x) => x.classList.toggle('active', x === b))
+        if (b.dataset.t === 'auto') delete document.documentElement.dataset.theme
+        else document.documentElement.dataset.theme = b.dataset.t
+        render()
+      })
+      render()
+      document.fonts?.ready.then(render)
+    </script>
+  </body>
+</html>
