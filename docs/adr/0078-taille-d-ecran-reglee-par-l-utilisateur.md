@@ -42,8 +42,10 @@ Ce qui a changé depuis :
    recommandation de libellés génériques. **Limite assumée et dite** : seule la taille de l'écran
    en pixels CSS est imitée, avec le mode mobile de Chromium et le tactile ; ni la densité de
    pixels, ni l'identité du navigateur, ni Safari. La taille figure toujours à côté du nom, et une
-   ligne en bas du menu le dit. La liste est une donnée courte (`shared/browser-devices.ts`), où
-   chaque entrée cite sa source. Elle est revue à chaque version majeure.
+   ligne en bas du menu le dit. La liste est une donnée courte (`shared/browser-devices.ts`).
+   Chaque entrée reprend la taille de l'entrée de même nom de la liste d'appareils de Chrome
+   DevTools, et non celle du dernier modèle vendu sous ce nom. La liste est relue à chaque version
+   majeure.
 5. Seul le main parle à la page ; un seul canal IPC (`browser:setDevice`) qui revérifie tout ;
    aucun pouvoir nouveau au renderer ; les autorisations du navigateur (fiches 072, 249, 269) ne
    changent pas.

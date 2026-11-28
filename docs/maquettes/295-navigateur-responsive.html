@@ -746,15 +746,15 @@
         `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`
 
       /*
-       * Liste arbitrée par Jérôme le 2026-11-28 (fiche 295, tableau des sources) : noms
-       * d'appareils, taille toujours à côté ; « Portable » et « Bureau » traduits.
+       * Liste arbitrée par Jérôme le 2026-11-28 : noms d'appareils, taille de l'entrée de même nom
+       * de la liste d'appareils de Chrome DevTools (fiche 295) ; « Portable » et « Bureau » traduits.
        */
       const DEVICES = [
         ['iPhone SE', 375, 667],
         ['iPhone 14', 390, 844],
         ['iPhone 14 Pro Max', 430, 932],
         ['Pixel 7', 412, 915],
-        ['iPad mini', 756, 1158],
+        ['iPad mini', 768, 1024],
         ['iPad Pro', 1032, 1376],
         ['Portable', 1280, 800],
         ['Bureau', 1920, 1080]
@@ -1019,13 +1019,13 @@
         P_(
           'p11',
           '11 — Panneau agrandi',
-          'Panneau agrandi (⤢), 1 100 px : même barre, plus de place. « iPad mini, paysage » (1158 × 756) est presque à sa taille ; à 100 %, l’échelle disparaît.',
+          'Panneau agrandi (⤢), 1 100 px : même barre, plus de place. « iPad mini, paysage » (1024 × 768) est presque à sa taille ; à 100 %, l’échelle disparaît.',
           V('', {
             w: 1100,
             bar: true,
             label: 'iPad mini, paysage',
-            size: [1158, 756],
-            fields: { w: 1158, h: 756 },
+            size: [1024, 768],
+            fields: { w: 1024, h: 768 },
             pageAuto: true
           })
         )

@@ -92,7 +92,7 @@ Les numéros renvoient aux planches de la maquette.
 | 8 | Thème forcé | « Sombre » choisi : `prefers-color-scheme: dark` pour la page. Seule une page qui suit ce réglage change (dit dans l'infobulle du choix) ; l'interface de Bobine ne change pas. |
 | 9 | Panneau étroit (≤ 420 px de barre) | Le thème passe en un bouton à icône qui ouvre un petit menu ; le nom de l'appareil se réduit à une icône avec chevron ; l'échelle passe dans l'infobulle des champs. À 280 px (minimum du panneau), tout tient sur une ligne, sans texte tronqué. |
 | 10 | L'agent redimensionne pendant un réglage | Voir « Qui a la main ». La barre montre l'essai de l'agent en lecture seule (menu « Essai de l'agent » grisé, champs grisés à ses valeurs) et une ligne « L'agent essaie … · Reprendre la main » ; la puce existante reste dans l'adresse. |
-| 11 | Panneau agrandi (⤢) | Même barre, plus de place : la page réduite reprend jusqu'à 100 % (l'échelle disparaît quand elle vaut 100 %). Ex. iPad mini, paysage, 1158 × 756 à 91 %. |
+| 11 | Panneau agrandi (⤢) | Même barre, plus de place : la page réduite reprend jusqu'à 100 % (l'échelle disparaît quand elle vaut 100 %). Ex. iPad mini, paysage, 1024 × 768. |
 | — | Plusieurs onglets du navigateur | Le réglage vaut pour **tous les onglets de la conversation**, y compris ceux ouverts ensuite (lien « nouvel onglet », `browser_tabs new`). Une seule barre, sous le bandeau d'onglets. |
 | — | Retour à « Adaptatif » | Choisir Adaptatif dans le menu, ou **refermer la barre** : la page reprend la largeur du panneau et le thème Auto. Rouvrir la barre rend le dernier réglage de la conversation. |
 
@@ -168,23 +168,23 @@ redémarrage (état caché qui survit, ce que la fiche 129 a déjà retiré pour
 Choix de Jérôme, contre la recommandation de libellés génériques : la liste de sa capture, avec la
 taille toujours affichée à côté du nom.
 
-**Règle des valeurs.** Largeur × hauteur en **pixels CSS**, orientation portrait, du **modèle le
-plus récent qui porte ce nom**. Source première : la liste d'appareils des outils de développement
-de Chrome (`front_end/models/emulation/EmulatedDevices.ts`, dépôt ChromeDevTools/devtools-frontend,
-branche `main`, lue le 2026-11-28), qui publie directement des tailles CSS. Quand elle est en
-retard sur le modèle vendu, la fiche technique du fabricant, divisée par le facteur d'échelle de
-l'appareil, et l'écart est dit.
+**Règle des valeurs (une seule source).** Chaque entrée reprend la taille, en **pixels CSS**, de
+**l'entrée de même nom** de la liste d'appareils des outils de développement de Chrome
+(`front_end/models/emulation/EmulatedDevices.ts`, dépôt ChromeDevTools/devtools-frontend, branche
+`main`, lue le 2026-11-28). C'est la liste que les développeurs connaissent et contre laquelle ils
+compareront. **Ces tailles sont celles de la liste de Chrome, pas celles du dernier modèle vendu
+sous ce nom** (ex. l'entrée « iPad Mini » est la taille des iPad mini de 2019 et avant).
 
-| Libellé (fr / en) | CSS (l × h) | `mobile` (tactile, `meta viewport`) | Densité (pour information, non appliquée) | Source et date |
+| Libellé (fr / en) | CSS (l × h) | `mobile` (tactile, `meta viewport`) | Densité (pour information, non appliquée) | Entrée DevTools exacte |
 |---|---|---|---|---|
-| iPhone SE | 375 × 667 | oui | 2 | DevTools « iPhone SE » (2026-11-28) ; iPhone SE 3e gén. (2022), dernier modèle de ce nom |
-| iPhone 14 | 390 × 844 | oui | 3 | DevTools « iPhone 14 » (2026-11-28) |
-| iPhone 14 Pro Max | 430 × 932 | oui | 3 | DevTools « iPhone 14 Pro Max » (2026-11-28) |
-| Pixel 7 | 412 × 915 | oui | 2,625 | DevTools « Pixel 7 » (2026-11-28) |
-| iPad mini | **756 × 1158** | oui | 2 | **Sources divergentes, tranché** : DevTools « iPad Mini » donne 768 × 1024, la taille des iPad mini 5e génération et antérieurs (2019 et avant). Apple, `apple.com/ipad-mini/specs/` (lu le 2026-11-28) : iPad mini (A20 Pro), 2316 × 1512 px à 326 ppi, soit 1158 × 756 à l'échelle 2 des iPad. On retient le modèle vendu. **Taille dérivée** : Apple ne publie pas la fenêtre CSS. À confirmer au lot 0 si une source publiée la donne. Sinon, la valeur reste dérivée et la fiche le dit. |
-| iPad Pro | 1032 × 1376 | oui | 2 | DevTools « iPad Pro 13 » (2026-11-28) : iPad Pro 13″ (2024 et après). L'iPad Pro 12,9″ (2018-2022), 1024 × 1366, n'est pas repris. |
-| Portable / Laptop | 1280 × 800 | non | 1 | DevTools « Laptop with MDPI screen » (2026-11-28) |
-| Bureau / Desktop | 1920 × 1080 | non | 1 | Pas d'entrée dans DevTools ; valeur conventionnelle (Full HD). Aucune statistique d'usage n'est citée. |
+| iPhone SE | 375 × 667 | oui | 2 | `iPhone SE` |
+| iPhone 14 | 390 × 844 | oui | 3 | `iPhone 14` |
+| iPhone 14 Pro Max | 430 × 932 | oui | 3 | `iPhone 14 Pro Max` |
+| Pixel 7 | 412 × 915 | oui | 2,625 | `Pixel 7` |
+| iPad mini | 768 × 1024 | oui | 2 | `iPad Mini` |
+| iPad Pro | 1032 × 1376 | oui | 2 | `iPad Pro 13` : la liste n'a **aucune** entrée nommée exactement « iPad Pro » (vérifié le 2026-11-28). C'est la seule entrée iPad Pro, donc la plus proche du nom. |
+| Portable / Laptop | 1280 × 800 | non | 1 | `Laptop with MDPI screen` (donnée en 800 × 1280, sens portrait de la liste ; un portable s'affiche en paysage). Aucune entrée nommée « Laptop » seule. |
+| Bureau / Desktop | 1920 × 1080 | non | 1 | Aucune entrée : valeur **conventionnelle** (Full HD). L'entrée la plus proche, `Laptop with HiDPI screen` (1440 × 900), est un portable : la prendre ferait de « Bureau » un second portable. |
 
 Plus « Adaptatif » (en tête) et « Taille libre » (sous la liste, seulement quand une taille libre
 est en vigueur). Le préréglage `tablet` de l'agent (768 × 1024) reste celui de l'agent : il n'est
@@ -197,14 +197,14 @@ libre » / « Custom size » sont des clés i18n.
 **Règle d'entretien** (risque accepté par Jérôme : liste à tenir à jour, promesse d'un appareil
 que Bobine n'émule pas vraiment) :
 
+- **on suit l'entrée de même nom de la liste d'appareils de Chrome DevTools, relue à chaque
+  version majeure** de Bobine ;
 - la liste est une **donnée**, dans `src/shared/browser-devices.ts` : identifiant, nom, largeur,
-  hauteur, `mobile`, et un champ `source` (où, et quand la valeur a été lue). Aucun code ne dépend d'un appareil
-  particulier ;
+  hauteur, `mobile`, et le nom exact de l'entrée DevTools suivie (`devtools`, absent pour
+  « Bureau », marqué conventionnel). Aucun code ne dépend d'un appareil particulier ;
 - elle reste **courte** (huit entrées au plus) ;
-- elle est **revue à chaque version majeure** de Bobine : un modèle remplacé change de nom ou de
-  taille, avec sa nouvelle source ;
-- **aucun appareil n'est ajouté sans sa source** (publiée, datée). Un essai unitaire vérifie que
-  chaque entrée porte une source et des bornes valides (200 à 4 000 px) ;
+- **aucun appareil n'est ajouté sans son entrée DevTools**. Un essai unitaire vérifie que chaque
+  entrée nomme son entrée (sauf « Bureau ») et reste dans les bornes (200 à 4 000 px) ;
 - la ligne de bas de menu dit toujours la limite.
 
 **Noms de produits de tiers.** Ils servent seulement à désigner un appareil : pas de logo, pas
@@ -286,7 +286,7 @@ Mac. » Rien sur Safari, iOS ou Android.
       `'ontouchstart' in window` ; agent factice seulement ; **clair et sombre, français et
       anglais** (`--lang en`), captures regardées.
 - [ ] Textes : aucun en dur, clés fr / en ci-dessous, glossaire respecté ; noms d'appareils identiques dans les deux langues.
-- [ ] `browser-devices.test.ts` : chaque appareil a un champ `source` non vide et daté, et des tailles dans les bornes.
+- [ ] `browser-devices.test.ts` : chaque appareil nomme son entrée DevTools (sauf « Bureau », conventionnel) et reste dans les bornes.
 - [ ] ADR-0078 accepté, statut de l'ADR-0026 mis à jour ; `docs/architecture.md` (ligne du navigateur), `CHANGELOG.md` et
       `CHANGELOG.en.md` à jour.
 
@@ -351,7 +351,7 @@ Maquette et quatre réponses arbitrées le 2026-11-28 ; rien n'est codé avant l
 
 | Lot | Contenu | Fichiers | Taille |
 |---|---|---|---|
-| 0 | Sonde (Electron du dépôt, page locale) : `pointer` / `hover` sous `setTouchEmulationEnabled`, changement de réglage pendant un `browser_resize`, Annoter sur page réduite ; taille CSS de l'iPad mini à confirmer si une source publiée la donne. ADR-0078 accepté (statut de l'ADR-0026 mis à jour). | script jetable, `docs/adr/` | ½ jour |
+| 0 | Sonde (Electron du dépôt, page locale) : `pointer` / `hover` sous `setTouchEmulationEnabled`, changement de réglage pendant un `browser_resize`, Annoter sur page réduite ; liste relue contre DevTools. ADR-0078 accepté (statut de l'ADR-0026 mis à jour). | script jetable, `docs/adr/` | ½ jour |
 | 1 | Moteur : liste et bornes partagées ; deux couches par onglet, couche en vigueur (pure) ; `endAgentTurn` qui rend le réglage ; nouveaux onglets ; `BrowserState` (`device`, `colorScheme`, `agent`) ; canal `browser:setDevice` (analyse, garde lecture seule, préload) ; phrase du résultat de `browser_resize` | `shared/browser.ts`, `shared/browser-devices.ts` (nouveau : la liste et ses sources), `shared/browser-ipc.ts`, `main/browser/page-view.ts`, `browser-manager.ts`, `browser-controller.ts`, `browser-setup.ts`, `browser-ipc.ts`, `browser-tools.ts`, `cdp-tab.ts` (rien, sauf si la sonde l'exige), `read-only-guard.ts`, `preload/api.ts` + essais | ≈ 350 lignes + 300 d'essais |
 | 2 | Interface : bouton, `DeviceBar.tsx` (nouveau ; `BrowserTab.tsx` est à 520 lignes, plafond 800), menu, champs, thème, repli étroit (requêtes de conteneur), ligne de l'agent, puce « · sombre » ; clés fr / en ; styles | `components/panel/DeviceBar.tsx`, `BrowserTab.tsx`, `styles.css`, `locales/fr.json`, `en.json` + essais | ≈ 300 lignes + 150 d'essais |
 | 3 | e2e : page locale de mesure, suite `browser-device` (ou extension de `browser-view`), scénario factice existant `navigateur-mobile` réutilisé, clair / sombre, fr / en ; captures regardées. Docs : architecture, CHANGELOG fr / en, `docs/mock-agent.md` si scénario | `e2e/suites/…`, `docs/` | ≈ 250 lignes |
@@ -388,3 +388,8 @@ Maquette et quatre réponses arbitrées le 2026-11-28 ; rien n'est codé avant l
   forme, sans les variantes écartées ; liste par noms d'appareils, avec sources et règle
   d'entretien ; « Taille libre » dès qu'un champ change (planche 6c) ; ADR-0078 proposé ; captures
   « avant » en sombre ajoutées. Rien de codé.
+- 2026-11-28 : relecture du tech lead : une seule source, l'entrée de même nom de la liste de
+  Chrome DevTools. iPad mini passe à 768 × 1024 (entrée `iPad Mini`) au lieu de la valeur dérivée
+  de la fiche Apple. Pour iPad Pro, la liste n'a pas d'entrée « iPad Pro » : on garde `iPad Pro 13`
+  (1032 × 1376), la seule entrée de ce nom. Bureau reste conventionnel. Captures du menu et du
+  panneau agrandi refaites.
