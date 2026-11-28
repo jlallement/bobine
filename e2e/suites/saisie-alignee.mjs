@@ -9,6 +9,12 @@ import { MAIN_PORT, check, mainProcess, withApp } from '../lib.mjs'
  *
  * Mesures en positions calculées (CSS), jamais en pixels de capture : les mêmes sur les trois
  * systèmes. Tolérance de 1 px : arrondis de mise en page (largeur de colonne impaire, centrage).
+ *
+ * Deux régimes de barres de défilement : celles du système (superposées sur un Mac à pavé tactile,
+ * classiques sur le Mac de GitHub, sous Windows et Linux) et les barres classiques de l'app,
+ * forcées (`classic-scrollbars`, 10 px, qui prennent de la place) ; fil court et fil qui défile.
+ * Avec une barre qui prend de la place, le fil se centrait sur une largeur plus petite que la
+ * saisie : décalage de la moitié de la barre (Mac de GitHub, 2026-11-28).
  */
 
 /** Positions de la colonne du fil, de la dernière réponse, de la dernière bulle et de la saisie. */
@@ -34,7 +40,10 @@ const MEASURE = `(() => {
   const scrolls = [document.scrollingElement, document.querySelector('.main'), dock]
     .filter(Boolean)
     .some((el) => el.scrollWidth > el.clientWidth + 1)
+  const thread = column.closest('.scroll')
   return {
+    scrollbar: thread.offsetWidth - thread.clientWidth,
+    threadScrolls: thread.scrollHeight > thread.clientHeight + 1,
     agentLeft: r(agent.getBoundingClientRect().left),
     bubbleRight: r(user.getBoundingClientRect().right),
     columnLeft: r(cb.left + parseFloat(cs.paddingLeft)),
@@ -73,12 +82,14 @@ export async function saisieAligneeSuite(scheme) {
     async (ui) => {
       const setPrefs = async (prefs) => {
         await ui.ev(`window.api.settings.setPreferences(${JSON.stringify(prefs)}).then(() => true)`)
-        // Posée sur la page : la variable de la taille, ou de la largeur, a changé.
+        // Posée sur la page : la variable de la taille, ou de la largeur, a changé (attendue,
+        // jamais supposée : les réglages arrivent au renderer par un événement).
+        const root = (name) =>
+          `getComputedStyle(document.documentElement).getPropertyValue('${name}').trim()`
         const size = prefs.conversationFontSize
-        if (size)
-          await ui.waitFor(
-            `getComputedStyle(document.documentElement).getPropertyValue('--conv-size').trim() === '${size}px'`
-          )
+        if (size) await ui.waitFor(`${root('--conv-size')} === '${size}px'`)
+        const width = { narrow: '640px', normal: '740px', wide: '960px' }[prefs.threadWidth]
+        if (width) await ui.waitFor(`${root('--column-width')} === '${width}'`)
         await ui.frames()
       }
       const setPanel = async (open) => {
@@ -91,6 +102,23 @@ export async function saisieAligneeSuite(scheme) {
       const toBottom = async () => {
         await ui.ev(
           `(() => { const s = document.querySelector('.scroll'); s.scrollTop = s.scrollHeight })()`
+        )
+        await ui.frames()
+      }
+      // Barres du système (avec la classe que l'app pose d'elle-même, s'il y a lieu) ou classiques
+      // forcées.
+      const appClassic = await ui.ev(
+        `document.documentElement.classList.contains('classic-scrollbars')`
+      )
+      const REGIMES = [
+        ['système', appClassic],
+        ['classiques', true]
+      ]
+      const setRegime = async (classic) => {
+        await ui.ev(`document.documentElement.classList.toggle('classic-scrollbars', ${classic})`)
+        // La gouttière mesurée est posée sur le volet (fait attendu, pas une durée).
+        await ui.waitFor(
+          `(() => { const s = document.querySelector('.scroll'); return getComputedStyle(s.parentElement).getPropertyValue('--thread-scrollbar').trim() === (s.offsetWidth - s.clientWidth) + 'px' })()`
         )
         await ui.frames()
       }
@@ -131,15 +159,27 @@ export async function saisieAligneeSuite(scheme) {
       await ui.type(TYPED)
       await ui.frames()
 
-      // Les trois largeurs de conversation, fenêtre de 1 280 px, panneau fermé.
-      for (const [width, name] of [
+      const WIDTHS = [
         ['normal', 'normale'],
         ['narrow', 'etroite'],
         ['wide', 'large']
-      ]) {
-        await setPrefs({ threadWidth: width, conversationFontSize: 15 })
-        await aligned(`largeur ${name}`, `294-largeur-${name}`)
+      ]
+      // Fil court (il ne défile pas) : les trois largeurs, fenêtre de 1 280 px, panneau fermé.
+      for (const [regime, classic] of REGIMES) {
+        await setRegime(classic)
+        for (const [width, name] of WIDTHS) {
+          await setPrefs({ threadWidth: width, conversationFontSize: 15 })
+          const m = await aligned(
+            `barres ${regime}, fil court, largeur ${name}`,
+            regime === 'système' ? `294-largeur-${name}` : null
+          )
+          check(!m.threadScrolls, `fil court, largeur ${name} : le fil ne défile pas`)
+          if (classic) {
+            check(m.scrollbar > 0, `barres classiques : la barre du fil prend ${m.scrollbar} px`)
+          }
+        }
       }
+      await setRegime(appClassic)
 
       // Taille du texte tapé = celle de la bulle, aux tailles 12, 15 et 22 ; la hauteur suit.
       await setPrefs({ threadWidth: 'normal', conversationFontSize: 15 })
@@ -190,14 +230,36 @@ export async function saisieAligneeSuite(scheme) {
         main.close?.()
       }
 
-      // Fenêtre étroite : la colonne remplit la zone du fil, le débord reste dans sa gouttière.
-      await ui.viewport(760, 820)
-      await aligned('fenêtre de 760 px', '294-fenetre-etroite')
-
-      // Panneau de droite ouvert : même règle.
-      await ui.viewport(1280, 820)
-      await setPanel(true)
-      await aligned('panneau de droite ouvert', '294-panneau')
+      // Fil qui défile : trois réponses de plus, puis le même texte tapé.
+      for (let i = 0; i < 3; i++) {
+        await ui.send(AGENT_TEXT)
+        await ui.ready()
+      }
+      await setPanel(false)
+      await ui.ev(`${ui.$('composer-input')}.focus()`)
+      await ui.type(TYPED)
+      for (const [regime, classic] of REGIMES) {
+        await setRegime(classic)
+        const tag = regime === 'système' ? '' : 'classique-'
+        for (const [width, name] of WIDTHS) {
+          await setPrefs({ threadWidth: width })
+          const m = await aligned(
+            `barres ${regime}, fil qui défile, largeur ${name}`,
+            name === 'normale' ? `294-${tag}defile` : null
+          )
+          check(m.threadScrolls, `fil long, largeur ${name} : le fil défile`)
+        }
+        await setPrefs({ threadWidth: 'normal' })
+        // Fenêtre étroite : la colonne remplit la zone du fil, le débord reste dans sa gouttière.
+        await ui.viewport(760, 820)
+        await aligned(`barres ${regime}, fenêtre de 760 px`, `294-${tag}fenetre-etroite`)
+        // Panneau de droite ouvert : même règle.
+        await ui.viewport(1280, 820)
+        await setPanel(true)
+        await aligned(`barres ${regime}, panneau de droite ouvert`, `294-${tag}panneau`)
+        await setPanel(false)
+      }
+      await setRegime(appClassic)
       await ui.viewport()
     },
     undefined,

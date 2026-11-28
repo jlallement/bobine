@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import type { ConversationSummary } from '@shared/agent'
 import type { AttentionState } from '@shared/attention'
 import type { TranscriptItem } from '@shared/transcript'
+import { useScrollbarGutter } from '../../useScrollbarGutter'
 import { PinnedPlan } from './PinnedPlan'
 import { ScrollDownButton } from './ScrollDownButton'
 import { DelegatedWorkCue } from './WorkCue'
@@ -39,6 +40,8 @@ export function ThreadDock({
   /** Rendre un élément d'un long fil pas encore rendu (fiche 193). */
   onReveal: (itemId: number) => void
 }) {
+  // Même gouttière que le fil quand sa barre de défilement prend de la place (fiche 294).
+  useScrollbarGutter(scroller)
   return (
     <div className="column thread-dock" style={{ width: '100%' }}>
       <ScrollDownButton

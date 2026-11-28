@@ -103,6 +103,10 @@ défilement de côté.
 - [x] La hauteur de la saisie suit le texte jusqu'à 240 px, y compris quand la taille du texte
       change pendant qu'un texte est tapé — unitaire `useTextareaLayout.test.tsx`, e2e
       `saisie-alignee` (94 → 168 px de 15 à 22).
+- [x] Fil et saisie sur le même axe que la barre de défilement du fil prenne de la place ou non
+      (barres classiques : souris sous macOS, Windows, Linux), fil court ou qui défile, aux trois
+      largeurs, fenêtre étroite et panneau ouvert — e2e `saisie-alignee` (deux régimes),
+      unitaire `useScrollbarGutter.test.tsx`.
 - [x] Flèche « Aller en bas » avec repère alignée sur le nouveau bord droit du cadre — e2e
       `repere` (mesure recalée sur le cadre au lieu de « colonne − 24 px »).
 - [x] Toutes les formes de la saisie gardent leur rendu : `pnpm e2e --changed` (241 tâches, clair et
@@ -179,3 +183,44 @@ défilement de côté.
     rien de la saisie). `./scripts/verify` vert.
   - Non vérifié : anglais (`--lang en`), Windows et Linux (aucune valeur propre au Mac : mesures en
     CSS, débord tiré de la marge et du bord du cadre).
+- 2026-11-28 : **défaut d'axe avec des barres de défilement classiques** (e2e du Mac de GitHub,
+  commit `b22fd19b` : à la taille 22, texte tapé 444 contre texte de l'agent 436,5, à droite 1136
+  contre 1128,5).
+  - Cause, prouvée ici sans toucher aux réglages du système (barres classiques de l'app forcées,
+    `classic-scrollbars`, 10 px) : le fil défile dans `.scroll`, la saisie est hors de cette zone.
+    Une barre qui prend de la place réduit la largeur utile du fil seulement : la colonne du fil se
+    centre sur `volet − barre`, la saisie sur le volet entier, d'où un décalage de la moitié de la
+    barre (5 px ici, 7,5 px avec la barre de 15 px de macOS sur le Mac de GitHub), et seulement
+    quand le fil défile (la barre n'existait pas avant). Mesuré : axe du fil 785, axe de la saisie
+    790, fil qui défile, barres classiques.
+  - **Avant la fiche : oui.** Sur `34f9f5be`, mêmes conditions : axe du fil 785, de la saisie 790 ;
+    le cadre (alors sur la colonne) débordait de 5 px à gauche et rentrait de 5 px à droite. Défaut
+    ancien, que personne ne mesurait ; la fiche 294 le rend visible (texte tapé censé tomber au
+    pixel sur celui de l'agent). Aussi touché : les avis du profil (`.profile-notices`, hors zone).
+  - Correction : `.scroll` en `scrollbar-gutter: stable` (place de la barre classique réservée
+    même quand le fil ne défile pas : rien ne saute à son apparition ; superposée, rien ne change) ;
+    `useScrollbarGutter` (nouveau) mesure la largeur de la barre du fil (`offsetWidth −
+    clientWidth`, à l'ouverture et à chaque changement de taille utile : fenêtre, style des barres)
+    et la pose sur le volet (`--thread-scrollbar`) ; les colonnes hors de la zone (`.scroll ~
+    .column` : saisie de la conversation et du volet côte à côte ; `.main > .profile-notices`) se
+    centrent sur `volet − barre`. Pourquoi du JavaScript : le CSS ne connaît pas la largeur de la
+    barre d'un autre élément ; donner à la saisie sa propre gouttière demanderait `overflow: hidden`
+    sur un parent, qui couperait la flèche « Aller en bas », le fondu et les menus « / » et « @ »,
+    posés au-dessus ; mettre la saisie dans la zone qui défile (`sticky`) toucherait tout le
+    défilement du fil (fiches 049, 050, 193). L'accueil n'a pas de zone qui défile : non concerné.
+    Flèche « Aller en bas » et fondu suivent la colonne de la saisie, donc corrigés avec elle ;
+    l'en-tête n'est pas centré sur la colonne.
+  - Mesures après (barres classiques forcées, 10 px, normale) : axe du fil = axe de la saisie (785),
+    texte de l'agent 439 = texte tapé 439, fil court comme fil qui défile ; barres du système : 444
+    = 444. L'essai rougit sur le code d'avant la correction en barres classiques (11 échecs :
+    alignement aux 3 largeurs fil qui défile, fenêtre étroite et panneau à droite, barre non
+    réservée sur fil court).
+  - Ce qui ne tenait qu'à ce Mac : les barres superposées (corrigé : régime classique forcé dans
+    l'essai) ; l'attente d'une largeur de colonne supposée posée après deux images (désormais
+    attendue sur `--column-width`, comme la taille sur `--conv-size`, et la gouttière sur
+    `--thread-scrollbar`). La densité 2 ne compte pas : mesures en positions CSS. Restent propres
+    au système et non forcés ici : la largeur réelle de la barre classique de macOS (15 px sur le
+    Mac de GitHub, 10 px pour celle de l'app forcée ici), mesurée et non supposée.
+  - `pnpm e2e --changed` (français) : 241/241, code 0 ; `saisie-alignee` rejouée après le dernier
+    changement de l'essai (attentes de faits) : 2/2, code 0 ; `pnpm e2e --changed --lang en` :
+    241/241, code 0 ; `./scripts/verify` : code 0 (710 fichiers, 7 038 tests).

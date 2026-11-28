@@ -730,6 +730,25 @@ button.main-title-origin:hover {
   flex: 1;
   overflow-y: auto;
   min-height: 0;
+  /* Barre classique (souris sous macOS, Windows, Linux) : sa place est réservée même quand le fil
+     ne défile pas encore, rien ne saute à son apparition ; superposée, rien ne change (fiche 294). */
+  scrollbar-gutter: stable;
+}
+
+/*
+ * Colonnes hors de la zone qui défile (zone de saisie, avis du profil) : centrées sur la même
+ * largeur que le fil, c'est-à-dire le volet moins la barre du fil, mesurée par
+ * `useScrollbarGutter` (`--thread-scrollbar`, 0 avec des barres superposées). Sans cela, la saisie
+ * est décalée de la moitié de la barre par rapport au fil (fiche 294).
+ */
+.scroll ~ .column,
+.main > .profile-notices {
+  max-width: min(var(--column-width, 740px), calc(100% - var(--thread-scrollbar, 0px)));
+  margin-left: max(
+    0px,
+    calc((100% - var(--thread-scrollbar, 0px) - var(--column-width, 740px)) / 2)
+  );
+  margin-right: 0;
 }
 
 .column {
