@@ -86,29 +86,45 @@ export function runCommand(run: CommandRun): Promise<CommandOutcome> {
 }
 
 /** Mot sûr tel quel dans un shell : rien à citer. */
-const PLAIN = /^[A-Za-z0-9_@%+=:,./-]+$/
+const PLAIN = /^[A-Za-z0-9_@%+=:,./][A-Za-z0-9_@%+=:,./-]*$/
+/** Caractères de contrôle (retour à la ligne compris) : jamais dans une commande à coller. */
+const CONTROL = /[\u0000-\u001f\u007f-\u009f\u2028\u2029]/
+/**
+ * Apostrophes que PowerShell lit comme `'` (droite, et les guillemets simples typographiques
+ * U+2018 à U+201B) : chacune doublée dans une chaîne entre apostrophes.
+ */
+const PS_QUOTES = /['\u2018\u2019\u201a\u201b]/g
 
 /**
  * Commande à copier pour un terminal (« Dans un terminal », fiche 293) : une ligne par commande,
- * jamais `&&` (refusé par Windows PowerShell 5), chaque mot cité pour le shell du système.
- * - macOS, Linux (sh, bash, zsh) : `cd '<dossier>'`, apostrophe écrite `'\''` ;
- * - Windows (PowerShell, le terminal par défaut) : `Set-Location -LiteralPath '<dossier>'`, apostrophe
- *   doublée ; `-LiteralPath` : ni `[`, ni `*`, ni `$` interprétés.
+ * jamais `&&` (refusé par Windows PowerShell 5), chaque mot cité pour le shell du système, de
+ * sorte qu'aucun morceau variable (dossier, nom) ne soit jamais interprété :
+ * - macOS, Linux (sh, bash, zsh) : `cd -- '<dossier>'` (`--` : un dossier en `-…` n'est pas une
+ *   option), apostrophe écrite `'\''` ; rien n'est développé entre apostrophes (`$(…)`, `` ` ``,
+ *   `;`, `&`, `|`, `${IFS}`) ;
+ * - Windows : **PowerShell** seulement (le terminal par défaut), `Set-Location -LiteralPath
+ *   '<dossier>'`, apostrophes (droites et typographiques) doublées, ni `$` ni `[` interprétés ; ni
+ *   `cmd.exe` (il ne connaît pas `'…'`) ni changement de lecteur dans `cmd.exe` ne sont visés.
+ * Refus (`undefined`, pas de « Dans un terminal ») : un mot vide, ou qui contient un caractère de
+ * contrôle (retour à la ligne : un collage le couperait en deux commandes), ou, sous Windows, un
+ * `"` (impossible dans un chemin Windows : signe d'une donnée inattendue).
  */
 export function terminalCommand(
   platform: NodeJS.Platform,
   words: readonly string[],
   cwd?: string
-): string {
+): string | undefined {
   const windows = platform === 'win32'
+  const unsafe = (word: string) => !word || CONTROL.test(word) || (windows && word.includes('"'))
+  if (!words.length || words.some(unsafe) || (cwd !== undefined && unsafe(cwd))) return undefined
   const quote = (word: string) =>
     PLAIN.test(word)
       ? word
       : windows
-        ? `'${word.replace(/'/g, "''")}'`
+        ? `'${word.replace(PS_QUOTES, (q) => q + q)}'`
         : `'${word.replace(/'/g, "'\\''")}'`
   const line = words.map(quote).join(' ')
   if (cwd === undefined) return line
-  const cd = windows ? `Set-Location -LiteralPath ${quote(cwd)}` : `cd ${quote(cwd)}`
+  const cd = windows ? `Set-Location -LiteralPath ${quote(cwd)}` : `cd -- ${quote(cwd)}`
   return `${cd}\n${line}`
 }

@@ -247,11 +247,9 @@ export class McpOAuth {
     for (const name of names) {
       const words = [profile.command, ...source.terminalArgs(name)]
       const global = servers.some((s) => s.name === name && s.scope === 'global')
-      commands[name] = terminalCommand(
-        platform,
-        words,
-        global || !workspace ? undefined : workspace
-      )
+      // Refusée (dossier ou mot illisible pour un shell) : pas de « Dans un terminal ».
+      const command = terminalCommand(platform, words, global || !workspace ? undefined : workspace)
+      if (command !== undefined) commands[name] = command
     }
     return commands
   }

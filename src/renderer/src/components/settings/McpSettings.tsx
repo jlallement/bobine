@@ -363,6 +363,8 @@ function AgentServers({
     window.api.mcp
       .addPreset(view.profileId, preset.id)
       .then(({ name, views: list }) => {
+        // La carte disparaît avec son bouton : la connexion (une action de la ligne du serveur
+        // ajouté) y rendra le focus.
         onViews(list)
         void auth.connect(name)
       })

@@ -13,6 +13,7 @@
  * Pur, sans `electron` : l'exécutable et le lancement sont donnés par l'appelant.
  */
 import type { ChildProcess, SpawnOptions } from 'node:child_process'
+import { appendFileSync } from 'node:fs'
 import type { McpOAuthAppDeps } from './mcp-settings'
 
 type Start = (
@@ -55,4 +56,20 @@ export function forcedMcpAuth(ctx: {
       ...(attemptMs ? { limits: { attemptMs, noPageMs: Math.min(attemptMs, 30_000) } } : {})
     })
   }
+}
+
+/**
+ * Ouverture de la page de connexion (fiche 293). En essai seulement (`BOBINE_OPEN_LOG`, app non
+ * installée), notée dans ce fichier au lieu d'ouvrir le navigateur ; dans l'app installée, toujours
+ * le navigateur : l'adresse de la page (`state`, `code_challenge`) n'est jamais écrite dans un
+ * fichier, même si la variable est posée.
+ */
+export function pageOpener(
+  ctx: { isPackaged: boolean; env: NodeJS.ProcessEnv },
+  openInBrowser: (url: string) => Promise<void>,
+  append: (file: string, text: string) => void = appendFileSync
+): (url: string) => Promise<void> {
+  const logTo = ctx.isPackaged ? undefined : ctx.env['BOBINE_OPEN_LOG']
+  if (!logTo) return openInBrowser
+  return async (url) => append(logTo, `external ${url}\n`)
 }

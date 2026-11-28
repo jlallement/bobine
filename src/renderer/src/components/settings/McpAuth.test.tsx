@@ -521,6 +521,156 @@ describe('ligne d’état d’un serveur connecté par l’agent : un état = un
   })
 })
 
+describe('relecture adverse du lot 2 : clics, focus, notes, relecture', () => {
+  it('focus : l’utilisateur est allé ailleurs pendant l’action, il n’est pas repris', async () => {
+    setup({ views: [opencode([recherche, figma()])], states: [state('to-connect')] })
+    await open()
+    const button = screen.getByTestId('mcp-auth-connect')
+    button.focus()
+    await click(button)
+    const elsewhere = within(row('recherche')).getByTestId('mcp-edit')
+    elsewhere.focus()
+    world.states = [state('connecting', { host: 'www.figma.com' })]
+    await act(async () => emit(state('connecting', { host: 'www.figma.com' })))
+    expect(document.activeElement).toBe(elsewhere)
+    // …ni plus tard, à un autre changement de la ligne.
+    await act(async () => emit(state('to-connect')))
+    expect(document.activeElement).toBe(elsewhere)
+  })
+
+  it('focus : après « Connecter Figma », il va à la ligne du serveur ajouté', async () => {
+    setup()
+    await open()
+    const button = screen.getByTestId('mcp-preset-connect')
+    button.focus()
+    world.states = [state('connecting', { host: 'www.figma.com' })]
+    await click(button)
+    await act(async () => {})
+    expect(document.activeElement).toBe(screen.getByTestId('mcp-auth-reopen'))
+  })
+
+  it('double clic pendant que la première demande est en vol : une seule demande au main', async () => {
+    const mcp = setup({ views: [opencode([figma()])], states: [state('to-connect')] })
+    let release: (result: McpConnectResult) => void = () => {}
+    mcp.connect.mockImplementation(
+      () => new Promise<McpConnectResult>((resolve) => (release = resolve))
+    )
+    await open()
+    const button = screen.getByTestId('mcp-auth-connect')
+    await act(async () => {
+      fireEvent.click(button)
+      fireEvent.click(button)
+    })
+    expect(mcp.connect).toHaveBeenCalledTimes(1)
+    await act(async () => release({ started: true }))
+    expect(line().className).not.toContain('err')
+  })
+
+  it('« busy » alors que ce serveur est déjà « en cours » (autre fenêtre) : pas de note rouge', async () => {
+    const mcp = setup({ views: [opencode([figma()])], states: [state('to-connect')] })
+    await open()
+    mcp.connect.mockImplementation(async () => {
+      emit(state('connecting', { host: 'www.figma.com' }))
+      return { started: false, reason: 'busy' }
+    })
+    world.states = [state('connecting', { host: 'www.figma.com' })]
+    await click(screen.getByTestId('mcp-auth-connect'))
+    expect(text()).toBe('Connexion en cours (www.figma.com)')
+    expect(line().className).not.toContain('err')
+  })
+
+  it('une nouvelle action efface la note de la précédente, même si l’état n’a pas changé', async () => {
+    const mcp = setup({
+      views: [opencode([figma()])],
+      states: [state('to-connect')],
+      connect: { started: false, reason: 'not-offered' }
+    })
+    await open()
+    await click(screen.getByTestId('mcp-auth-connect'))
+    expect(text()).toBe('OpenCode ne sait pas connecter ce serveur.')
+    mcp.connect.mockResolvedValue({ started: true })
+    await click(screen.getByTestId('mcp-auth-connect'))
+    expect(text()).toBe('À connecter')
+  })
+
+  it('une note ne survit pas à un changement de dossier (même état)', async () => {
+    setup({
+      views: [opencode([figma()])],
+      states: [state('to-connect')],
+      connect: { started: false, reason: 'not-offered' }
+    })
+    const { rerender } = await open()
+    await click(screen.getByTestId('mcp-auth-connect'))
+    expect(text()).toBe('OpenCode ne sait pas connecter ce serveur.')
+    await act(async () => {
+      rerender(<McpSettings workspace="/projets/autre" initialTab="opencode" />)
+    })
+    await act(async () => {})
+    expect(text()).toBe('À connecter')
+  })
+
+  it('presse-papiers refusé : « Copie impossible », rien de prétendu copié', async () => {
+    setup({ views: [opencode([figma()])], states: [state('no-page')] })
+    clipboard.writeText.mockRejectedValueOnce(new Error('refusé'))
+    await open()
+    await click(screen.getByTestId('mcp-auth-terminal'))
+    expect(text()).toBe('Copie impossible')
+    expect(line().querySelector('code')).toBeNull()
+  })
+
+  it('« Copiée » puis connexion faite dans le terminal : relue au retour dans la fenêtre', async () => {
+    const mcp = setup({ views: [opencode([figma()])], states: [state('no-page')] })
+    await open()
+    await click(screen.getByTestId('mcp-auth-terminal'))
+    expect(text()).toBe('Copiée : opencode mcp auth figma')
+    const reads = mcp.authStates.mock.calls.length
+    world.states = [state('connected')]
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'))
+    })
+    expect(mcp.authStates.mock.calls.length).toBe(reads + 1)
+    expect(text()).toBe('Connecté par OpenCode')
+  })
+
+  it('carte « Figma » pendant une connexion : bouton grisé, raison au survol et au focus', async () => {
+    setup({
+      views: [
+        opencode([
+          figma({
+            name: 'autre',
+            scope: 'project',
+            url: 'https://x.test/mcp',
+            authPreset: undefined
+          })
+        ])
+      ],
+      states: []
+    })
+    await open()
+    await act(async () =>
+      emit({ profileId: 'opencode', name: 'autre', status: 'connecting', host: 'h' })
+    )
+    const button = screen.getByTestId('mcp-preset-connect')
+    expect(button.getAttribute('aria-disabled')).toBe('true')
+    expect(button.getAttribute('aria-description')).toBe('Une connexion est déjà en cours.')
+  })
+
+  it('onglet de l’agent qui a la capacité : pas de ligne d’aide', async () => {
+    setup()
+    await open()
+    expect(screen.queryByTestId('mcp-preset-help')).toBeNull()
+  })
+
+  it('« Tout tester » ne teste jamais un serveur connecté par l’agent', async () => {
+    const mcp = setup({ views: [opencode([recherche, figma()])], states: [state('to-connect')] })
+    await open()
+    mcp.test.mockClear()
+    await click(screen.getByTestId('mcp-test-all'))
+    await act(async () => {})
+    expect(mcp.test.mock.calls.map((c: unknown[]) => c[2])).toEqual(['recherche'])
+  })
+})
+
 describe('onglet d’un agent sans la capacité (fiche 293, Q3)', () => {
   it('ligne d’aide d’après les profils, lien vers la liste ouvert par le main ; aucun bouton', async () => {
     const mcp = setup()

@@ -20,7 +20,7 @@ import {
   type LucideIcon
 } from 'lucide-react'
 import i18next from 'i18next'
-import { Fragment, type ReactNode } from 'react'
+import { Fragment, useEffect, useRef, type ReactNode } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import {
   MCP_AUTH_MINUTES,
@@ -119,6 +119,8 @@ interface Line {
   tone: '' | 'ok' | 'warn' | 'err'
   icon: LucideIcon
   spin?: boolean
+  /** « Copiée : … » : la commande se raccourcit plutôt que de passer à la ligne. */
+  copied?: boolean
   text: ReactNode
   tip?: string | undefined
   actions: Action[]
@@ -142,20 +144,44 @@ export function McpAuthLine({
   onAskDisconnect: () => void
 }) {
   const line = useLine(view, server, model, asking, onAskDisconnect)
+  const status = model.states[server.name]?.status ?? 'unknown'
+  const root = useRef<HTMLDivElement>(null)
+  const signature = line ? `${status}|${line.actions.map((a) => a.id).join(',')}` : ''
+  // Le bouton cliqué a disparu (la ligne a changé) : le focus, tombé sur la page, revient à la
+  // première action de la nouvelle ligne, sinon à la ligne. Jamais si l'utilisateur est allé
+  // ailleurs entre-temps.
+  useEffect(() => {
+    const { name } = server
+    if (!model.focusPending(name) || !root.current) return
+    const active = document.activeElement
+    const lost = !active || active === document.body || !active.isConnected
+    if (!lost) {
+      if (!root.current.contains(active)) model.focusDone(name)
+      return
+    }
+    model.focusDone(name)
+    const first = root.current.querySelector<HTMLElement>('button')
+    ;(first ?? root.current).focus()
+  }, [signature, model, server])
   if (!line) return null
   const { tone, icon: Icon, spin, text, tip, actions } = line
-  const status = model.states[server.name]?.status ?? 'unknown'
   return (
     <div
-      className={`mcp-auth${tone ? ` ${tone}` : ''}`}
+      ref={root}
+      className={`mcp-auth${tone ? ` ${tone}` : ''}${line.copied ? ' copied' : ''}`}
       title={tip}
+      tabIndex={-1}
+      role="group"
+      aria-labelledby={`mcp-auth-${server.scope}-${server.name}`}
       data-testid="mcp-auth"
       data-status={status}
     >
       {/* L'état est annoncé quand il change (lecteur d'écran), sans voler le focus. */}
       <span className="st" role="status" aria-live="polite" aria-description={tip}>
         <Icon size={12} className={spin ? 'spin' : undefined} aria-hidden="true" />
-        <span data-testid="mcp-auth-text">{text}</span>
+        <span id={`mcp-auth-${server.scope}-${server.name}`} data-testid="mcp-auth-text">
+          {text}
+        </span>
         {actions.length > 0 && <Sep />}
       </span>
       {actions.map((action, i) => (
@@ -241,12 +267,13 @@ function useLine(
     return {
       tone: '',
       icon: Check,
+      copied: true,
       text: (
         <Trans
           t={t}
           i18nKey="mcp.auth.copied"
           values={{ command: lines.at(-1) ?? note.text }}
-          components={{ code: <code /> }}
+          components={{ code: <code title={note.text} /> }}
         />
       ),
       tip: lines.length > 1 ? `${tip}\n${note.text}` : tip,

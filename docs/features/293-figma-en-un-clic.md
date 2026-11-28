@@ -795,3 +795,47 @@ Taille : ≈ 3 j avec le lot 3, relevés compris. **Aucune dépendance nouvelle.
   Captures anglaises regardées (`en-c*-figma-*`) : textes justes, rien de tronqué ; à 736 px les
   ligne « Copiée : … » de l’essai passe à 3 lignes (fr et en) à cause de la copie vers l’agent
   factice (absente de l'app installée) ; mesurées sans elle : 2 au plus.
+- 2026-11-28 — **Relecture adverse du lot 2** (testeur, sur `639483e2`), corrigée à la cause :
+  1. **Commande « Dans un terminal » (bloquant)** : `joinCommandLine` + `&&` exécutait du code venu
+     du nom du dossier (`proj$(touch${IFS}PWNED)`). `terminalCommand` (`mcp-oauth-command.ts`) :
+     une ligne par commande, chaque mot cité ; POSIX `cd -- '…'` (apostrophe `'\''`) ; Windows,
+     **PowerShell seulement** : `Set-Location -LiteralPath '…'`, apostrophes droites **et
+     typographiques** (U+2018 à U+201B, lues comme `'` par PowerShell) doublées ; `cmd.exe` et son
+     changement de lecteur ne sont pas visés. Refus (pas de « Dans un terminal ») : mot vide,
+     caractère de contrôle (retour à la ligne), `"` sous Windows. Essais : Q4 du testeur
+     (`mcp-oauth-inj.revue.test.ts`, adapté au contrat à deux lignes, assertion intacte), dossiers
+     hostiles passés par un vrai `sh` (`$(…)`, `` ` ``, `;`, `&`, `|`, `${IFS}`, apostrophes,
+     `'\''`, `-n`, `--`, non ASCII), refus, plateformes simulées. Autres `joinCommandLine` : formulaire
+     et résumé d'un serveur dans `McpSettings.tsx` (montré, jamais copié ni passé à un shell) ;
+     rien d'autre copié.
+  2. **Double clic sur « Se connecter »** : une action par serveur à la fois (le second clic est
+     ignoré) ; un `busy` n'est jamais dit quand ce serveur est déjà « en cours ». Essais Q1 et
+     « une seule demande au main ».
+  3. **Focus** : quand l'action fait disparaître le bouton cliqué, le focus revient à la première
+     action de la nouvelle ligne (sinon à la ligne, `tabIndex=-1`, `role=group`, nommée par son
+     texte), jamais si l'utilisateur est allé ailleurs ; « Connecter Figma » le rend à la ligne du
+     serveur ajouté. Essais Q2, Q3, « allé ailleurs », « après Connecter Figma ».
+  4. **Largeurs** : la règle (une ligne à 940, deux au plus à 736) est mesurée pour tous les états
+     (en cours, connecté, confirmation, à connecter, expiré, erreurs, copiée, pas de page, deux
+     serveurs), en français et en anglais, pour l'app réelle (IBM Bob et OpenCode) ; l'essai a un
+     troisième agent (l'agent factice, une copie de 36 px en plus) : relevé et dit, jamais de
+     débordement ni de « · » en tête, une ligne de plus admise (« Connexion en cours (www.figma.com) »
+     y fait 3 lignes en français). « Copiée : <commande> » ne passe plus à la ligne : la commande
+     se raccourcit (`…`), en entier au survol.
+  5. **Mutations** : les 8 survivantes du testeur (sur 25) adaptées au code actuel, plus 12 pour
+     les correctifs : 19 tuées sur 20 ; la survivante (« Tout tester » sans le filtre) est
+     équivalente : `testMcpServers` écarte aussi ces serveurs (`mcp-status.test.ts`). Script :
+     `mutate-l2b.py` (dossier de travail du lot).
+  6. **Gardes** : essai du branchement (`mcp-oauth-setup.test.ts`, `electron` simulé) : app
+     installée, ni fausse commande, ni délai raccourci, ni page notée ; `MOCK_AGENT_MCP_OAUTH` :
+     aucun profil factice dans l'app installée (`profiles.test.ts`).
+  7. **`BOBINE_OPEN_LOG`** : pour ce parcours, `pageOpener` (`mcp-oauth-forced.ts`) ne lit la
+     variable que hors de l'app installée ; l'app installée ouvre toujours le navigateur. Les autres
+     usages (`file-openers.ts`, `thread-ipc-electron.ts`) sont inchangés : à garder de même dans une
+     fiche à part (proposé au tech lead).
+  8. **Fausse commande e2e** : `e2e/json-state.mjs` (écriture atomique réessayée sur `EPERM`,
+     `EBUSY`, `EACCES`, lecture à attente bornée, pauses de 20 ms), utilisée par la fausse commande
+     et la suite ; essai `scripts/e2e-json-state.test.mjs`.
+  9. **« Copiée » après une connexion faite dans le terminal** : l'état est relu quand la fenêtre
+     reprend le focus, tant qu'une note « Copiée » est affichée (aucune boucle). Essai.
+

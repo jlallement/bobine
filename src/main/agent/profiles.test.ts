@@ -250,4 +250,16 @@ describe('agent factice connecté comme OpenCode (fiche 293, e2e)', () => {
       mock({ BOBINE_CONFIG_HOME: '/h', BOBINE_FAKE_MCP_AUTH: '/f.mjs' })?.mcpOAuth
     ).toBeUndefined()
   })
+
+  it('jamais dans l’app installée : aucun profil factice, donc aucune connexion d’essai', () => {
+    const all = {
+      BOBINE_AGENT_PROFILE: 'mock',
+      MOCK_AGENT_MCP_OAUTH: 'opencode',
+      BOBINE_CONFIG_HOME: '/h',
+      BOBINE_FAKE_MCP_AUTH: '/f.mjs'
+    }
+    const packaged = resolveProfiles({ ...base, isPackaged: true, env: all })
+    expect(packaged.map((p) => p.id)).not.toContain('mock')
+    expect(packaged.filter((p) => p.mcpOAuth).map((p) => p.id)).toEqual(['opencode'])
+  })
 })

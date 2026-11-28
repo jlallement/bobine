@@ -1,6 +1,6 @@
 import type { ChildProcess, SpawnOptions } from 'node:child_process'
 import { describe, expect, it, vi } from 'vitest'
-import { forcedMcpAuth } from './mcp-oauth-forced'
+import { forcedMcpAuth, pageOpener } from './mcp-oauth-forced'
 
 const child = {} as ChildProcess
 
@@ -46,5 +46,34 @@ describe('fausse commande de connexion des essais (fiche 293)', () => {
     expect(() => deps?.start?.('opencode', ['auth', 'list'], {})).toThrow(/ENOENT/)
     expect(start).not.toHaveBeenCalled()
     expect(deps?.limits).toBeUndefined()
+  })
+})
+
+describe('page de connexion en essai (`BOBINE_OPEN_LOG`, fiche 293)', () => {
+  const url = 'https://www.figma.com/oauth/mcp?state=S&code_challenge=C'
+  it('app installée : toujours le navigateur, rien d’écrit dans un fichier', async () => {
+    const browser = vi.fn(async () => {})
+    const append = vi.fn()
+    await pageOpener(
+      { isPackaged: true, env: { BOBINE_OPEN_LOG: '/x/open.log' } },
+      browser,
+      append
+    )(url)
+    expect(browser).toHaveBeenCalledWith(url)
+    expect(append).not.toHaveBeenCalled()
+  })
+
+  it('app de développement : notée dans le fichier, sans navigateur ; sans la variable, le navigateur', async () => {
+    const browser = vi.fn(async () => {})
+    const append = vi.fn()
+    await pageOpener(
+      { isPackaged: false, env: { BOBINE_OPEN_LOG: '/x/open.log' } },
+      browser,
+      append
+    )(url)
+    expect(append).toHaveBeenCalledWith('/x/open.log', `external ${url}\n`)
+    expect(browser).not.toHaveBeenCalled()
+    await pageOpener({ isPackaged: false, env: {} }, browser, append)(url)
+    expect(browser).toHaveBeenCalledWith(url)
   })
 })

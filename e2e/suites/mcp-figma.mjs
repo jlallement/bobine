@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { L, NEUTRAL_ENV, check, withApp } from '../lib.mjs'
+import { readJson, writeJson } from '../json-state.mjs'
 
 /** Fausse commande de connexion (jamais le vrai OpenCode, jamais Figma, aucun réseau). */
 const FAKE = fileURLToPath(new URL('../fake-opencode-mcp.mjs', import.meta.url))
@@ -44,9 +45,9 @@ export async function mcpFigmaSuite(scheme) {
   // Le dernier serveur retiré, le fichier n'est pas laissé vide (fiche 126, D2).
   const declared = () =>
     existsSync(configFile) && !!JSON.parse(readFileSync(configFile, 'utf8')).mcp?.figma
-  const state = () => JSON.parse(readFileSync(stateFile, 'utf8'))
-  const setState = (patch) => writeFileSync(stateFile, JSON.stringify({ ...state(), ...patch }))
-  writeFileSync(stateFile, JSON.stringify({ mode: 'success', logout: 'ok', connected: {} }))
+  const state = () => readJson(stateFile)
+  const setState = (patch) => writeJson(stateFile, { ...state(), ...patch })
+  writeJson(stateFile, { mode: 'success', logout: 'ok', connected: {} })
   const calls = () =>
     existsSync(`${stateFile}.calls`)
       ? readFileSync(`${stateFile}.calls`, 'utf8').split('\n').filter(Boolean).map(JSON.parse)
@@ -178,6 +179,7 @@ export async function mcpFigmaSuite(scheme) {
           ) && (await ui.ev(`${h.link('disconnect')}.getAttribute('aria-expanded')`)) === 'true',
           'se déconnecter : confirmation dans la ligne, rien de lancé au premier clic'
         )
+        await h.oneLine()
         await h.shots('c3-figma-deconnexion')
         await ui.click(`${h.row()}.querySelector('[data-testid=confirm-row-confirm]')`)
         await h.waitStatus('to-connect')
@@ -187,6 +189,7 @@ export async function mcpFigmaSuite(scheme) {
             (await h.text()) === L('mcp.auth.toConnect'),
           'déconnecté : `mcp logout figma --standalone`, état relu « À connecter », serveur gardé'
         )
+        await h.oneLine()
         await h.shots('c4-figma-a-connecter')
 
         // 4 bis. Connexion expirée, relue à l'ouverture de l'onglet (avant toute tentative en échec :
@@ -202,6 +205,7 @@ export async function mcpFigmaSuite(scheme) {
           'expirée (relue chez l’agent) : « Connexion expirée · Se reconnecter », pastille ambre'
         )
         await h.contrast('état expiré (ambre)', `${h.row()}.querySelector('.st')`)
+        await h.oneLine()
         await h.shots('c9-figma-expire')
 
         setState({ connected: {} })
@@ -255,6 +259,7 @@ export async function mcpFigmaSuite(scheme) {
           (await h.text()) === L('mcp.auth.reason.timeout', { minutes: 10 }),
           'délai dépassé (raccourci en essai) : « Pas de réponse en 10 min »'
         )
+        await h.oneLine()
         await h.shots('c6-figma-erreur-delai')
 
         // 8. « Dans un terminal » : la commande copiée, montrée ; « Réessayer ici ».
@@ -315,6 +320,8 @@ export async function mcpFigmaSuite(scheme) {
           'actions atteignables au clavier (focus sur « Annuler »)'
         )
         await h.contrast('lien grisé (raison au survol)', h.link('connect', 'maquettes'))
+        await h.oneLine()
+        await h.oneLine('maquettes')
         await h.shots('c10-figma-une-a-la-fois')
         await ui.click(h.link('cancel'))
         await h.waitStatus('to-connect')
@@ -544,16 +551,18 @@ function helpers(ui) {
      * Un état = une ligne à 940 px ; deux au plus à 736 px, jamais un « · » en début de ligne, rien
      * qui déborde (fiche 293).
      */
+    /**
+     * Un état = une ligne à 940 px, deux au plus à 736 px, jamais un « · » en tête, rien qui
+     * déborde, pour l'app réelle (IBM Bob et OpenCode : une copie par ligne). Aussi mesuré tel quel
+     * (l'essai a un troisième agent, l'agent factice, dont la copie prend 36 px) : dit, jamais de
+     * débordement ni de « · » en tête, mais une ligne de plus admise.
+     */
     oneLine: async (name = 'figma') => {
-      // Dans l'app installée, une ligne d'OpenCode a une copie (vers IBM Bob) ; l'essai a en plus
-      // l'agent factice, et sa copie (36 px) rétrécit la colonne : masquée le temps de la mesure,
-      // pour mesurer la largeur réelle (dite dans la fiche).
       const mock = JSON.stringify(L('mcp.server.copy', { agent: L('profiles.mock.label') }))
       const hideMock = (shown) =>
         ui.ev(
           `[...${row(name)}.querySelectorAll('[data-testid=mcp-copy]')].filter((b) => b.title === ${mock}).forEach((b) => (b.style.display = ${shown ? "''" : "'none'"}))`
         )
-      await hideMock(false)
       const measure = () =>
         ui.ev(`(() => {
           const line = ${line(name)}
@@ -561,21 +570,43 @@ function helpers(ui) {
           const lines = Math.round(line.getBoundingClientRect().height / lh)
           const left = line.getBoundingClientRect().left
           const sepFirst = [...line.querySelectorAll('.sep')].some((s) => s.getBoundingClientRect().left <= left + 1)
-          return { lines, sepFirst, overflow: line.scrollWidth > line.clientWidth + 1, width: Math.round(document.querySelector('.settings-dialog').getBoundingClientRect().width) }
+          const overflow = [line, ...line.querySelectorAll('*')].some((el) => el.getBoundingClientRect().right > line.getBoundingClientRect().right + 1)
+          return { lines, sepFirst, overflow, width: Math.round(document.querySelector('.settings-dialog').getBoundingClientRect().width) }
         })()`)
-      const wide = await measure()
-      await ui.viewport(800)
-      const narrow = await measure()
-      await ui.viewport()
+      const results = []
+      for (const real of [false, true]) {
+        if (real) await hideMock(false)
+        const wide = await measure()
+        await ui.viewport(800)
+        const narrow = await measure()
+        await ui.viewport()
+        results.push({ real, wide, narrow })
+      }
       await hideMock(true)
+      const ok = (r) =>
+        r.wide.lines === 1 &&
+        r.narrow.lines <= 2 &&
+        !r.wide.sepFirst &&
+        !r.narrow.sepFirst &&
+        !r.wide.overflow &&
+        !r.narrow.overflow
+      const said = results
+        .map(
+          (r) =>
+            `${r.real ? 'deux agents' : 'trois agents'} : ${r.wide.lines} à ${r.wide.width} px, ${r.narrow.lines} à ${r.narrow.width} px`
+        )
+        .join(' ; ')
+      // La règle vaut pour l'app réelle (deux agents) ; les trois agents de l'essai (copie vers
+      // l'agent factice en plus) sont relevés et dits, et ne doivent jamais déborder.
+      const [test, real] = results
       check(
-        wide.lines === 1 &&
-          narrow.lines <= 2 &&
-          !wide.sepFirst &&
-          !narrow.sepFirst &&
-          !wide.overflow &&
-          !narrow.overflow,
-        `un état = une ligne à ${wide.width} px (${wide.lines}), ${narrow.lines} à ${narrow.width} px, jamais « · » en tête, rien ne déborde`
+        !!real &&
+          ok(real) &&
+          !!test &&
+          !test.wide.overflow &&
+          !test.narrow.overflow &&
+          !test.narrow.sepFirst,
+        `${name} « ${await ui.ev(`${line(name)}.querySelector('[data-testid=mcp-auth-text]').innerText`)} » : ${said}, jamais « · » en tête, rien ne déborde`
       )
     },
     shots: async (name) => {

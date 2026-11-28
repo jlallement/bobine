@@ -36,6 +36,32 @@
   margin-left: 2px;
   white-space: nowrap;
 }
+/* « Copiée : <commande> » : sur une ligne, la commande se raccourcit (en entier au survol) plutôt
+   que de passer seule à la ligne ou de déborder (commande longue, `cd` d'un dossier). */
+.mcp-auth.copied .st {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-width: 0;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+.mcp-auth.copied .st > [data-testid='mcp-auth-text'] {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+}
+.mcp-auth.copied code {
+  min-width: 0;
+  margin-left: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mcp-auth.copied .sep {
+  flex-shrink: 0;
+}
+
 /* Hôte refusé (« Page inattendue ») : jamais coupé en deux. */
 .mcp-auth-host {
   white-space: nowrap;

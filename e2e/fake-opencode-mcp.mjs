@@ -16,26 +16,14 @@
  * - `auth list --format json --standalone` : les connexions notées, au format relevé (R5).
  * La commande s'arrête seule au bout de deux minutes : jamais d'orphelin.
  */
-import { appendFileSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { appendFileSync } from 'node:fs'
+import { readJson, writeJson } from './json-state.mjs'
 
 const stateFile = process.env.FAKE_OPENCODE_MCP_STATE
 const args = process.argv.slice(2)
 
-const read = () => {
-  for (let i = 0; ; i++) {
-    try {
-      return JSON.parse(readFileSync(stateFile, 'utf8'))
-    } catch (error) {
-      // Fichier en cours de remplacement par l'essai : relu un peu plus tard.
-      if (i > 50) throw error
-    }
-  }
-}
-const write = (state) => {
-  const temp = `${stateFile}.${process.pid}.tmp`
-  writeFileSync(temp, JSON.stringify(state, null, 2))
-  renameSync(temp, stateFile)
-}
+const read = () => readJson(stateFile)
+const write = (state) => writeJson(stateFile, state)
 const note = () => {
   appendFileSync(`${stateFile}.calls`, `${JSON.stringify(args)}\n`)
   return read()

@@ -50,6 +50,9 @@ export interface McpAuthModel {
   reopen: (name: string) => Promise<void>
   disconnect: (name: string) => Promise<void>
   copyCommand: (name: string) => Promise<void>
+  /** Le focus est-il à rendre à la ligne de ce serveur (une action partie d'elle) ? */
+  focusPending: (name: string) => boolean
+  focusDone: (name: string) => void
 }
 
 const byName = (states: readonly McpAuthState[]) =>
@@ -211,22 +214,48 @@ export function useMcpAuth(view: McpAgentView, workspace: string): McpAuthModel 
       return rest
     })
 
-  /** Une action : la note précédente s'efface, l'erreur IPC est dite, l'état est relu après. */
+  // Actions en vol par serveur : un second clic (double clic) est ignoré, jamais un refus « busy ».
+  const inFlight = useRef(new Set<string>())
+  // Serveurs dont l'action vient de faire disparaître le bouton cliqué : le focus y est rendu.
+  const focusWanted = useRef(new Set<string>())
+
+  /**
+   * Une action : ignorée si une autre de ce serveur est en vol ; la note précédente s'efface,
+   * l'erreur IPC est dite, l'état est relu après.
+   */
   const act = async (name: string, action: () => Promise<void>) => {
+    if (inFlight.current.has(name)) return
+    inFlight.current.add(name)
+    focusWanted.current.add(name)
     clear(name)
     try {
       await action()
     } catch (e) {
       note(name, 'problem', ipcErrorText(e))
+    } finally {
+      inFlight.current.delete(name)
     }
     refresh()
   }
 
-  const connectRefused = (result: McpConnectResult): string | undefined => {
+  // Commande copiée pour un terminal : la connexion peut s'y faire. L'état est relu quand la
+  // fenêtre reprend le focus (retour du terminal), tant qu'une note « Copiée » est affichée.
+  const copied = Object.values(notes).some((n) => n.kind === 'copied' && n.context === context)
+  useEffect(() => {
+    if (!copied) return undefined
+    const onFocus = () => refresh()
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [copied, refresh])
+
+  const connectRefused = (name: string, result: McpConnectResult): string | undefined => {
     if (result.started) return undefined
     switch (result.reason) {
+      // Déjà « en cours » pour ce serveur (un autre onglet, une autre fenêtre) : rien à dire.
       case 'busy':
-        return t('mcp.auth.busy')
+        return mcpAuthEntry(profileId)?.states[name]?.status === 'connecting'
+          ? undefined
+          : t('mcp.auth.busy')
       case 'disabled':
         return t('mcp.auth.disabled')
       case 'not-offered':
@@ -268,9 +297,11 @@ export function useMcpAuth(view: McpAgentView, workspace: string): McpAuthModel 
     ),
     busy: Object.values(states).some((s) => s.status === 'connecting'),
     error,
+    focusPending: (name) => focusWanted.current.has(name),
+    focusDone: (name) => void focusWanted.current.delete(name),
     connect: (name) =>
       act(name, async () => {
-        const refused = connectRefused(await window.api.mcp.connect(profileId, name))
+        const refused = connectRefused(name, await window.api.mcp.connect(profileId, name))
         if (refused) note(name, 'problem', refused)
       }),
     cancel: (name) =>
@@ -289,6 +320,7 @@ export function useMcpAuth(view: McpAgentView, workspace: string): McpAuthModel 
     copyCommand: async (name) => {
       const command = shown.terminal[name]
       if (!command) return
+      focusWanted.current.add(name)
       clear(name)
       try {
         await navigator.clipboard.writeText(command)

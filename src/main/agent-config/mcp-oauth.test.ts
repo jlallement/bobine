@@ -435,7 +435,9 @@ describe('connexion d’un serveur MCP par l’agent : moteur (fiche 293, ADR-00
       terminalCommand(process.platform, ['opencode', 'mcp', 'auth', 'figma'], here.workspace)
     )
     expect(terminal['figma']?.split('\n')).toHaveLength(2)
-    expect(terminal['figma']).not.toContain('&&')
+    expect(terminal['figma']).not.toContain('&&') // Dossier illisible pour un shell (retour à la ligne) : pas de commande, pas de « Dans un terminal ».
+    const bad = await here.engine.view('opencode', `${here.workspace}\nrm -rf ~`)
+    expect(bad.terminal).toEqual({})
   })
 
   it('agent absent : rien de lancé, état « agent absent » ; commande disparue au lancement aussi', async () => {
