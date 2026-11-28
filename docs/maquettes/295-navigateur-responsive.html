@@ -694,12 +694,14 @@
     <div class="doc">
       <h1>Navigateur intégré : taille d'écran et thème réglés par l'utilisateur</h1>
       <p>
-        Fiche 295, maquette à valider, rien n'est codé. Chaque planche montre le panneau de droite
-        de Bobine, onglet Navigateur, avec les vrais jetons et composants de l'app. Le site affiché
-        est un site de démonstration fictif (« Potager du lundi ») dessiné pour la maquette. Panneau
-        de 560 × 820 px sauf mention (fenêtre de 820 px de haut) ; les pourcentages affichés sont
-        ceux que le moteur actuel calculerait (<code>emulationFrame</code> : réduite pour tenir,
-        jamais au-delà de 100 %).
+        Fiche 295, maquette arbitrée par Jérôme le 2026-11-28 (barre derrière un bouton, noms
+        d'appareils, l'agent a la main pendant son tour, réglage par conversation jusqu'à la
+        fermeture) ; rien n'est codé. Chaque planche montre le panneau de droite de Bobine, onglet
+        Navigateur, avec les vrais jetons et composants de l'app. Le site affiché est un site de
+        démonstration fictif (« Potager du lundi ») dessiné pour la maquette. Panneau de 560 × 820
+        px sauf mention (fenêtre de 820 px de haut) ; les pourcentages affichés sont ceux que le
+        moteur actuel calculerait (<code>emulationFrame</code> : réduite pour tenir, jamais au-delà
+        de 100 %).
       </p>
       <div class="switch">
         Thème de Bobine :
@@ -743,23 +745,17 @@
       const ic = (n, s = 15) =>
         `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`
 
-      /* Liste recommandée (fiche 295) et variante avec noms d'appareils. */
-      const GENERIC = [
-        ['Petit téléphone', 375, 667],
-        ['Téléphone', 390, 844],
-        ['Grand téléphone', 430, 932],
-        ['Tablette', 768, 1024],
-        ['Grande tablette', 1024, 1366],
-        ['Portable', 1280, 800],
-        ['Bureau', 1920, 1080]
-      ]
-      const BRANDS = [
+      /*
+       * Liste arbitrée par Jérôme le 2026-11-28 (fiche 295, tableau des sources) : noms
+       * d'appareils, taille toujours à côté ; « Portable » et « Bureau » traduits.
+       */
+      const DEVICES = [
         ['iPhone SE', 375, 667],
         ['iPhone 14', 390, 844],
         ['iPhone 14 Pro Max', 430, 932],
         ['Pixel 7', 412, 915],
-        ['iPad', 768, 1024],
-        ['iPad Pro 12,9″', 1024, 1366],
+        ['iPad mini', 756, 1158],
+        ['iPad Pro', 1032, 1376],
         ['Portable', 1280, 800],
         ['Bureau', 1920, 1080]
       ]
@@ -840,24 +836,26 @@
         </div>`
       }
 
-      function menu(list, current) {
-        const rows = list
-          .map(
-            ([n, w, h]) =>
-              `<div class="menu-item${n === current ? ' hl' : ''}"><span class="menu-check">${n === current ? ic('check', 14) : ''}</span><span class="menu-text">${n}</span><span class="menu-value">${w} × ${h}</span></div>`
-          )
-          .join('')
+      function menu(current, free) {
+        const base = (current || '').replace(/, paysage$/, '')
+        const rows = DEVICES.map(
+          ([n, w, h]) =>
+            `<div class="menu-item${n === base ? ' hl' : ''}"><span class="menu-check">${n === base ? ic('check', 14) : ''}</span><span class="menu-text">${n}</span><span class="menu-value">${w} × ${h}</span></div>`
+        ).join('')
+        const freeRow = free
+          ? `<div class="menu-separator"></div><div class="menu-item hl"><span class="menu-check">${ic('check', 14)}</span><span class="menu-text">Taille libre</span><span class="menu-value">${free}</span></div>`
+          : ''
         return `<div class="menu" data-menu>
-          <div class="menu-item${current ? '' : ' hl'}"><span class="menu-check">${current ? '' : ic('check', 14)}</span><span class="menu-text">Adaptatif</span><span class="menu-value">largeur du panneau</span></div>
-          <div class="menu-separator"></div>${rows}
+          <div class="menu-item${current || free ? '' : ' hl'}"><span class="menu-check">${current || free ? '' : ic('check', 14)}</span><span class="menu-text">Adaptatif</span><span class="menu-value">largeur du panneau</span></div>
+          <div class="menu-separator"></div>${rows}${freeRow}
           <div class="menu-separator"></div>
-          <div class="menu-foot">Affichée à cette taille, comme un écran tactile. Ce n'est pas un vrai téléphone : même navigateur, densité de l'écran du Mac.</div>
+          <div class="menu-foot">Seule la taille de l’écran est imitée, en tactile. Ce n’est pas le vrai appareil : même navigateur, densité de l’écran du Mac.</div>
         </div>`
       }
 
       /*
        * Un panneau. o : w, h (px du panneau) ; bar (barre ouverte) ; label (appareil, absent =
-       * Adaptatif) ; size [w, h] émulée ; theme ; pageDark ; compact ; menu ('generic' | 'brands') ;
+       * Adaptatif) ; size [w, h] émulée ; theme ; pageDark ; compact ; menu (menu ouvert) ; free (taille libre en vigueur, dans le menu) ;
        * note, error (lignes sous la barre) ; chip ; hidden (page masquée par un menu).
        */
       function panel(o) {
@@ -872,7 +870,7 @@
         return `<div class="frame${o.compact ? ' narrow' : ''}" style="width:${w}px;height:${h}px" data-frame>
           ${head(o.compact)}${addressBar(o)}${deviceBar(o)}${note}${error}
           <div class="browser-page${emu || o.hidden ? ' emulated' : ''}">${page}</div>
-          ${o.menu ? menu(o.menu === 'brands' ? BRANDS : GENERIC, o.label) : ''}
+          ${o.menu ? menu(o.label === 'Taille libre' ? '' : o.label, o.free) : ''}
         </div>`
       }
 
@@ -889,44 +887,35 @@
         P_(
           'p1',
           '1 — Barre repliée (par défaut)',
-          'Un seul bouton de plus, entre l’adresse et Annoter (icône écran et téléphone, infobulle « Taille d’écran et thème »). Rien d’autre ne change tant qu’on ne s’en sert pas. Variante B (question 1) : la barre toujours visible, sans bouton ; 37 px de page en moins pour tout le monde.',
-          V('A — derrière un bouton (recommandée)', { pageAuto: true }),
-          V('B — barre toujours visible', { toggle: false, bar: true, pageAuto: true })
+          'Un seul bouton de plus, entre l’adresse et Annoter (icône écran et téléphone, infobulle « Taille d’écran et thème »). Rien d’autre ne change tant qu’on ne s’en sert pas.',
+          V('', { pageAuto: true })
         ),
         P_(
           'p2',
           '2 — Barre ouverte, « Adaptatif »',
-          'Bouton enfoncé ; la barre apparaît sous l’adresse : appareil, largeur × hauteur, rotation, thème Auto / Clair / Sombre. En Adaptatif, les champs montrent en gris la taille réelle de la zone et suivent le panneau ; la rotation est grisée. La page est inchangée. Taper une valeur passe en « Personnalisé ».',
+          'Bouton enfoncé ; la barre apparaît sous l’adresse : appareil, largeur × hauteur, rotation, thème Auto / Clair / Sombre. En Adaptatif, les champs montrent en gris la taille réelle de la zone et suivent le panneau ; la rotation est grisée. La page est inchangée. Refermer la barre rend la largeur du panneau et le thème Auto.',
           V('', { bar: true, pageAuto: true })
         ),
         P_(
           'p3',
           '3 — Menu d’appareils déroulé',
-          'Le menu habituel de l’app : Adaptatif, sept appareils avec leur taille, coche sur le choix, et une ligne qui dit honnêtement ce qui est émulé. Comme tout menu de l’app qui passe sur la page (règle de la fiche 129), la page se masque pendant qu’il est ouvert et revient à sa fermeture. Variante B (question 2) : noms d’appareils, comme sur la capture de référence.',
-          V('A — libellés génériques (recommandée)', {
-            bar: true,
-            label: 'Téléphone',
-            size: [390, 844],
-            fields: { w: 390, h: 844 },
-            menu: 'generic',
-            hidden: true
-          }),
-          V('B — noms d’appareils', {
+          'Le menu habituel de l’app : Adaptatif, huit appareils nommés avec leur taille en pixels CSS, coche sur le choix, et une ligne qui dit ce qui est imité et ce qui ne l’est pas. Les noms d’appareils ne se traduisent pas ; « Portable » et « Bureau » si. Comme tout menu de l’app qui passe sur la page (fiche 129), la page se masque pendant qu’il est ouvert et revient à sa fermeture.',
+          V('', {
             bar: true,
             label: 'iPhone 14',
             size: [390, 844],
             fields: { w: 390, h: 844 },
-            menu: 'brands',
+            menu: true,
             hidden: true
           })
         ),
         P_(
           'p4',
-          '4 — Téléphone choisi : la page à sa taille, centrée',
-          '« Petit téléphone » 375 × 667 tient en entier dans ce panneau : page à 100 %, centrée en haut, sur le fond gris du panneau (nouveau : aujourd’hui la page réduite se perd sur fond blanc). Pas d’échelle affichée à 100 %. La page défile dans son cadre, à la molette comme au clavier.',
+          '4 — Appareil choisi : la page à sa taille, centrée',
+          '« iPhone SE » 375 × 667 tient en entier dans ce panneau : page à 100 %, centrée en haut, sur le fond gris du panneau (nouveau : aujourd’hui la page réduite se perd sur fond blanc). Pas d’échelle affichée à 100 %. La page défile dans son cadre.',
           V('', {
             bar: true,
-            label: 'Petit téléphone',
+            label: 'iPhone SE',
             size: [375, 667],
             fields: { w: 375, h: 667 },
             pageAuto: true
@@ -935,42 +924,51 @@
         P_(
           'p5',
           '5 — Appareil plus grand que le panneau : page réduite, échelle affichée',
-          '« Tablette » 768 × 1024 dans une zone plus petite : la page est réduite pour tenir entière (jamais coupée), et l’échelle s’affiche en gris à côté de la rotation (infobulle « Affichée à … % pour tenir dans le panneau »). Les clics de l’utilisateur et de l’agent tombent juste (moteur existant).',
+          '« iPad Pro » 1032 × 1376 dans une zone plus petite : la page est réduite pour tenir entière (jamais coupée), et l’échelle s’affiche en gris à côté de la rotation (infobulle « Affichée à … % pour tenir dans le panneau »). Les clics de l’utilisateur et de l’agent tombent juste (moteur existant).',
           V('', {
             bar: true,
-            label: 'Tablette',
-            size: [768, 1024],
-            fields: { w: 768, h: 1024 },
+            label: 'iPad Pro',
+            size: [1032, 1376],
+            fields: { w: 1032, h: 1376 },
             pageAuto: true
           })
         ),
         P_(
           'p6',
-          '6 — Taille libre : en cours de saisie, puis invalide',
-          'À gauche : saisie dans la largeur (412), l’appareil passe à « Personnalisé » ; Entrée ou sortie du champ appliquent, Échap rend la valeur précédente, ↑ / ↓ ±1, Maj ±10 ; « 412x915 » collé remplit les deux champs. À droite : 90 est hors bornes ; bord rouge, ligne d’erreur, la page garde la dernière taille valable.',
+          '6 — Taille libre : saisie, saisie invalide, menu',
+          'Dès qu’on modifie un champ, le libellé passe de « iPhone 14 » à « Taille libre » : ce n’est plus l’appareil nommé, et le type tactile de l’appareil d’où l’on part est gardé. Entrée ou sortie du champ appliquent, Échap rend la valeur précédente, ↑ / ↓ ±1, Maj ±10 ; « 412x915 » collé remplit les deux champs. Hors bornes : bord rouge, ligne d’erreur, la page garde la dernière taille valable. Dans le menu, « Taille libre » apparaît cochée sous la liste, avec sa taille ; choisir un appareil la remplace.',
           V('Saisie', {
             bar: true,
-            label: 'Personnalisé',
+            label: 'Taille libre',
             size: [390, 844],
-            fields: { w: '412<span class="caret"></span>', h: 915, wcls: 'focus' },
+            fields: { w: '<span>412<span class="caret"></span></span>', h: 915, wcls: 'focus' },
             pageAuto: true
           }),
           V('Saisie invalide', {
             bar: true,
-            label: 'Personnalisé',
-            size: [390, 844],
-            fields: { w: 90, h: 844, wcls: 'invalid' },
+            label: 'Taille libre',
+            size: [412, 915],
+            fields: { w: 90, h: 915, wcls: 'invalid' },
             error: 'Entre 200 et 4 000 px.',
             pageAuto: true
+          }),
+          V('Menu en taille libre', {
+            bar: true,
+            label: 'Taille libre',
+            size: [412, 915],
+            fields: { w: 412, h: 915 },
+            menu: true,
+            free: '412 × 915',
+            hidden: true
           })
         ),
         P_(
           'p7',
           '7 — Rotation',
-          'Le bouton échange largeur et hauteur : « Téléphone » 390 × 844 devient 844 × 390, « Téléphone, paysage » ; la page en paysage est plus large que le panneau, donc réduite, et l’échelle le dit. Même règle pour une taille libre.',
+          'Le bouton échange largeur et hauteur : « iPhone 14 » 390 × 844 devient « iPhone 14, paysage » 844 × 390 ; plus large que le panneau, la page est réduite et l’échelle le dit. Une taille libre se tourne de même.',
           V('', {
             bar: true,
-            label: 'Téléphone, paysage',
+            label: 'iPhone 14, paysage',
             size: [844, 390],
             fields: { w: 844, h: 390 },
             pageAuto: true
@@ -982,7 +980,7 @@
           '« Sombre » choisi, Bobine restant en clair : la page reçoit prefers-color-scheme: dark. Seules les pages qui suivent ce réglage changent (infobulle du choix) ; l’interface de Bobine ne bouge pas.',
           V('', {
             bar: true,
-            label: 'Téléphone',
+            label: 'iPhone 14',
             size: [390, 844],
             fields: { w: 390, h: 844 },
             theme: 'dark',
@@ -997,7 +995,7 @@
             w: 300,
             bar: true,
             compact: true,
-            label: 'Téléphone',
+            label: 'iPhone 14',
             size: [390, 844],
             fields: { w: 390, h: 844 },
             pageAuto: true
@@ -1006,8 +1004,8 @@
         P_(
           'p10',
           '10 — L’agent redimensionne pendant que l’utilisateur a un réglage',
-          'L’utilisateur a choisi « Téléphone » ; pendant son tour, l’agent appelle browser_resize en tablette. A (recommandée, question 3) : l’essai de l’agent s’applique, la barre le montre en lecture seule avec « Reprendre la main », la puce de l’adresse reste ; à la fin du tour, « Téléphone » revient tel quel. B : le réglage de l’utilisateur prime, l’outil de l’agent est refusé tant que la barre est ouverte.',
-          V('A — l’agent essaie, le réglage revient (recommandée)', {
+          'L’utilisateur a choisi « iPhone 14 » ; pendant son tour, l’agent appelle browser_resize en tablette (768 × 1024). Son essai s’applique ; la barre le montre en lecture seule avec « Reprendre la main », la puce de l’adresse reste. À la fin du tour, « iPhone 14 » revient tel quel ; « Reprendre la main » le rend tout de suite.',
+          V('', {
             bar: true,
             label: 'Essai de l’agent',
             agent: true,
@@ -1016,26 +1014,18 @@
             fields: { w: 768, h: 1024, cls: 'agent' },
             note: '<span class="grow">L’agent essaie 768 × 1024 jusqu’à la fin de son tour</span><button class="link-button">Reprendre la main</button>',
             pageAuto: true
-          }),
-          V('B — le réglage de l’utilisateur prime', {
-            bar: true,
-            label: 'Téléphone',
-            size: [390, 844],
-            fields: { w: 390, h: 844 },
-            note: '<span class="grow">L’agent a demandé 768 × 1024 : votre réglage reste en place</span>',
-            pageAuto: true
           })
         ),
         P_(
           'p11',
           '11 — Panneau agrandi',
-          'Panneau agrandi (⤢), 1 100 px : même barre, plus de place. « Tablette, paysage » (1024 × 768) passe de 55 % dans le panneau normal à l’échelle affichée ici ; à 100 %, l’échelle disparaît.',
+          'Panneau agrandi (⤢), 1 100 px : même barre, plus de place. « iPad mini, paysage » (1158 × 756) est presque à sa taille ; à 100 %, l’échelle disparaît.',
           V('', {
             w: 1100,
             bar: true,
-            label: 'Tablette, paysage',
-            size: [1024, 768],
-            fields: { w: 1024, h: 768 },
+            label: 'iPad mini, paysage',
+            size: [1158, 756],
+            fields: { w: 1158, h: 756 },
             pageAuto: true
           })
         )

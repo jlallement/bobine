@@ -1,6 +1,6 @@
 # 295 — Navigateur intégré : taille d'écran et thème réglés par l'utilisateur
 
-- **Statut** : proposé — maquette à valider, rien de codé (1.3)
+- **Statut** : maquette arbitrée par Jérôme le 2026-11-28 ; ADR-0078 proposé ; rien de codé (1.3)
 - **Dépend de** : 007 (navigateur intégré), 031 (`browser_resize`, CDP, ADR-0006), 129 (page
   réduite pour tenir, fin de tour, ADR-0026), 072 et 249 (autorisations du navigateur), 132 et 146
   (Annoter), 269 (avertissement de certificat)
@@ -8,8 +8,9 @@
   main au navigateur intégré par le CDP (ADR-0011 : rien dans les profils, aucune ligne de
   `docs/agents.md`).
 - **Maquette** : [`docs/maquettes/295-navigateur-responsive.html`](../maquettes/295-navigateur-responsive.html),
-  captures dans `docs/maquettes/295/` (`NN-…-clair.png`, et `-sombre.png` pour les planches 2, 4
-  et 5 ; `avant-…` : l'app réelle, 1.2).
+  captures dans `docs/maquettes/295/` (`NN-…-clair.png`, et `-sombre.png` pour les planches 2, 3,
+  4 et 5 ; `avant-…-clair` et `avant-…-sombre` : l'app réelle, 1.2, suite e2e `browser-view`).
+- **ADR** : [ADR-0078](../adr/0078-taille-d-ecran-reglee-par-l-utilisateur.md) (proposé).
 
 ## Pourquoi
 
@@ -22,8 +23,9 @@ Bobine a la possibilité de régler le responsive », puis « Oui, fiche et maqu
 **Décision antérieure à remplacer.** L'ADR-0026 (accepté, 23/10) dit « Pas de menu de tailles pour
 l'utilisateur (décision de Jérôme, 23/10) », écarté alors parce que « la page suit la largeur du
 panneau, comme dans Claude Code ». La page continuera de suivre le panneau par défaut (« Adaptatif ») ;
-mais si la maquette est validée, un **nouvel ADR** remplace cette ligne de l'ADR-0026 avant tout
-code (AGENTS.md : on ne modifie pas un ADR accepté).
+l'**ADR-0078** (proposé, à valider par Jérôme, qui revient ainsi sur sa décision d'octobre)
+remplace cette ligne seulement. Le texte de l'ADR-0026 n'est pas touché ; son statut ne passera à
+« en partie remplacé par ADR-0078 » qu'une fois l'ADR-0078 accepté.
 
 ## Ce qui existe (relevé dans le code, tête `34f9f5be`)
 
@@ -82,15 +84,15 @@ Les numéros renvoient aux planches de la maquette.
 | 0 | Aujourd'hui | Barre d'adresse : précédent, suivant, recharger, adresse, Annoter, Joindre. Rien pour la taille. |
 | 1 | Barre repliée (défaut) | Un bouton « Appareil » (icône écran + téléphone, `MonitorSmartphone`) entre l'adresse et Annoter. Infobulle « Taille d'écran et thème ». Page à la largeur du panneau. |
 | 2 | Barre ouverte, « Adaptatif » | Bouton enfoncé ; sous l'adresse, une barre de 36 px : `[Adaptatif ▾] [612] × [740] [rotation] ······ [Auto · Clair · Sombre]`. Les champs montrent la taille réelle de la zone, en gris (rotation grisée). La page est inchangée. |
-| 3 | Menu d'appareils déroulé | Menu habituel de l'app (`.menu`) : Adaptatif, séparateur, sept appareils avec leur taille en gris, coche sur le choix. **Pendant que le menu est ouvert, la page se masque** (règle existante de la fiche 129 : un menu de l'app passe sur la page, la vue native le couvrirait) ; elle revient à la fermeture. |
-| 4 | Téléphone choisi | Ex. Petit téléphone 375 × 667 : la page est rendue à 375 px de large, à 100 % si elle tient, centrée en haut, sur un fond gris (`--surface-2`, **nouveau** : aujourd'hui la page réduite par l'agent se perd sur le fond blanc de la zone, capture e2e `28z`) ; elle défile dans son cadre. Pas d'échelle affichée à 100 %. |
-| 5 | Appareil plus grand que le panneau | Ex. Tablette 768 × 1024 dans une zone de 560 × 700 : page réduite pour tenir, centrée ; « 68 % » en gris dans la barre (infobulle « Affichée à 68 % pour tenir dans le panneau »). Jamais coupée, jamais agrandie au-delà de 100 %. |
-| 6 | Taille libre | Saisie dans un champ : le menu passe à « Personnalisé ». Entrée ou sortie du champ appliquent. Saisie invalide : bord rouge, ligne « Entre 200 et 4 000 px. » sous la barre, la page garde la dernière taille valable. |
-| 7 | Rotation | Largeur et hauteur échangées (844 × 390) ; le nom de l'appareil reste, suivi de « paysage » dans le menu fermé. |
+| 3 | Menu d'appareils déroulé | Menu habituel de l'app (`.menu`) : Adaptatif, séparateur, huit appareils nommés avec leur taille en gris, coche sur le choix, ligne de bas de menu sur ce qui est imité. **Pendant que le menu est ouvert, la page se masque** (règle existante de la fiche 129 : un menu de l'app passe sur la page, la vue native le couvrirait) ; elle revient à la fermeture. |
+| 4 | Appareil choisi | Ex. iPhone SE 375 × 667 : la page est rendue à 375 px de large, à 100 % si elle tient, centrée en haut, sur un fond gris (`--surface-2`, **nouveau** : aujourd'hui la page réduite par l'agent se perd sur le fond blanc de la zone, capture e2e `28z`) ; elle défile dans son cadre. Pas d'échelle affichée à 100 %. |
+| 5 | Appareil plus grand que le panneau | Ex. iPad Pro 1032 × 1376 dans une zone de 558 × 689 : page réduite pour tenir, centrée ; « 50 % » en gris dans la barre (infobulle « Affichée à 50 % pour tenir dans le panneau »). Jamais coupée, jamais agrandie au-delà de 100 %. |
+| 6 | Taille libre | Dès qu'un champ est modifié, le libellé passe du nom de l'appareil à « Taille libre » (ce n'est plus l'appareil nommé). Entrée ou sortie du champ appliquent. Saisie invalide : bord rouge, ligne « Entre 200 et 4 000 px. » sous la barre, la page garde la dernière taille valable. Dans le menu, « Taille libre » apparaît cochée sous la liste, avec sa taille ; choisir un appareil la remplace (planche 6c). |
+| 7 | Rotation | Largeur et hauteur échangées (844 × 390) ; le libellé devient « iPhone 14, paysage » ; une taille libre se tourne de même. |
 | 8 | Thème forcé | « Sombre » choisi : `prefers-color-scheme: dark` pour la page. Seule une page qui suit ce réglage change (dit dans l'infobulle du choix) ; l'interface de Bobine ne change pas. |
 | 9 | Panneau étroit (≤ 420 px de barre) | Le thème passe en un bouton à icône qui ouvre un petit menu ; le nom de l'appareil se réduit à une icône avec chevron ; l'échelle passe dans l'infobulle des champs. À 280 px (minimum du panneau), tout tient sur une ligne, sans texte tronqué. |
 | 10 | L'agent redimensionne pendant un réglage | Voir « Qui a la main ». La barre montre l'essai de l'agent en lecture seule (menu « Essai de l'agent » grisé, champs grisés à ses valeurs) et une ligne « L'agent essaie … · Reprendre la main » ; la puce existante reste dans l'adresse. |
-| 11 | Panneau agrandi (⤢) | Même barre, plus de place : la page réduite reprend jusqu'à 100 % (l'échelle disparaît quand elle vaut 100 %). |
+| 11 | Panneau agrandi (⤢) | Même barre, plus de place : la page réduite reprend jusqu'à 100 % (l'échelle disparaît quand elle vaut 100 %). Ex. iPad mini, paysage, 1158 × 756 à 91 %. |
 | — | Plusieurs onglets du navigateur | Le réglage vaut pour **tous les onglets de la conversation**, y compris ceux ouverts ensuite (lien « nouvel onglet », `browser_tabs new`). Une seule barre, sous le bandeau d'onglets. |
 | — | Retour à « Adaptatif » | Choisir Adaptatif dans le menu, ou **refermer la barre** : la page reprend la largeur du panneau et le thème Auto. Rouvrir la barre rend le dernier réglage de la conversation. |
 
@@ -102,7 +104,7 @@ La barre **est** le réglage : barre ouverte = réglage appliqué ; barre fermé
 du panneau et thème Auto (comme la barre d'appareil de Chrome). Ainsi aucune taille ni aucun thème
 forcé n'est en vigueur sans être visible. Le bouton reste enfoncé tant que la barre est ouverte.
 
-### Qui a la main (recommandation, question 3)
+### Qui a la main (tranché, question 3)
 
 Deux couches par onglet, calculées dans le main : **réglage de l'utilisateur** (pour la
 conversation) et **essai de l'agent** (par onglet, comme aujourd'hui). Ce qui s'applique : l'essai
@@ -124,12 +126,10 @@ de l'agent s'il y en a un, sinon le réglage de l'utilisateur, sinon la largeur 
   résultat la taille appliquée (déjà le cas), et, si l'utilisateur avait un réglage, qu'il
   reviendra à la fin du tour (une phrase ajoutée au résultat, en anglais, non traduite : ADR-0014).
 
-Variante B (maquette, planche 10 B) : le réglage de l'utilisateur prime, `browser_resize` est
-refusé tant que la barre est ouverte (« the user has set the page to 390×844 »). Plus simple à
-expliquer, mais l'agent ne peut plus faire ce qu'on lui demande sans que l'utilisateur ferme sa
-barre.
+Variante écartée : le réglage de l'utilisateur prime et `browser_resize` est refusé tant que la
+barre est ouverte. Raison : l'agent ne pourrait plus vérifier « en mobile » ce qu'on lui demande.
 
-### Mémoire (recommandation, question 4)
+### Mémoire (tranché, question 4)
 
 **Par conversation, en mémoire**, comme les onglets du navigateur eux-mêmes : changer de
 conversation montre le réglage de celle-ci ; une branche (fiche 094, `inherit`) ne le reprend pas
@@ -157,44 +157,72 @@ redémarrage (état caché qui survit, ce que la fiche 129 a déjà retiré pour
 - **Rotation** : échange largeur et hauteur, pour un appareil comme pour une taille libre ; grisée
   en Adaptatif.
 - **Adaptatif** : les champs montrent la taille réelle de la zone (pixels CSS de la page), en gris,
-  et suivent le panneau. Taper une valeur dans l'un passe en « Personnalisé » : l'autre champ garde
+  et suivent le panneau. Taper une valeur dans l'un passe en « Taille libre » : l'autre champ garde
   la taille de la zone à ce moment.
 - **Type d'écran** (`mobile`) : vrai pour les téléphones et tablettes, faux pour portable et
   bureau ; une taille saisie ou tournée **garde le type de l'appareil d'où elle part**
-  (Personnalisé depuis Adaptatif : faux). Pas de choix « tactile » à part.
+  (taille libre partie d'Adaptatif : faux). Pas de choix « tactile » à part.
 
-### Liste d'appareils (recommandation, question 2)
+### Liste d'appareils (tranché, question 2 : noms d'appareils)
 
-Sept entrées, valeurs publiques (fenêtres CSS des appareils de référence, mêmes que la liste
-d'appareils des outils de développement de Chrome) ; la densité est **donnée pour information et
-non appliquée** (voir plus haut).
+Choix de Jérôme, contre la recommandation de libellés génériques : la liste de sa capture, avec la
+taille toujours affichée à côté du nom.
 
-| Libellé recommandé (fr / en) | Largeur × hauteur | `mobile` | Densité de l'appareil de référence | Référence (non affichée) |
+**Règle des valeurs.** Largeur × hauteur en **pixels CSS**, orientation portrait, du **modèle le
+plus récent qui porte ce nom**. Source première : la liste d'appareils des outils de développement
+de Chrome (`front_end/models/emulation/EmulatedDevices.ts`, dépôt ChromeDevTools/devtools-frontend,
+branche `main`, lue le 2026-11-28), qui publie directement des tailles CSS. Quand elle est en
+retard sur le modèle vendu, la fiche technique du fabricant, divisée par le facteur d'échelle de
+l'appareil, et l'écart est dit.
+
+| Libellé (fr / en) | CSS (l × h) | `mobile` (tactile, `meta viewport`) | Densité (pour information, non appliquée) | Source et date |
 |---|---|---|---|---|
-| Petit téléphone / Small phone | 375 × 667 | oui | 2 | iPhone SE (2e et 3e gén.) |
-| Téléphone / Phone | 390 × 844 | oui | 3 | iPhone 12 à 14 |
-| Grand téléphone / Large phone | 430 × 932 | oui | 3 | iPhone 14 Pro Max, 15 Plus |
-| Tablette / Tablet | 768 × 1024 | oui | 2 | iPad 9,7″ (= préréglage `tablet` de l'agent) |
-| Grande tablette / Large tablet | 1024 × 1366 | oui | 2 | iPad Pro 12,9″ |
-| Portable / Laptop | 1280 × 800 | non | — | portable 13″ courant |
-| Bureau / Desktop | 1920 × 1080 | non | — | écran 24″ courant |
+| iPhone SE | 375 × 667 | oui | 2 | DevTools « iPhone SE » (2026-11-28) ; iPhone SE 3e gén. (2022), dernier modèle de ce nom |
+| iPhone 14 | 390 × 844 | oui | 3 | DevTools « iPhone 14 » (2026-11-28) |
+| iPhone 14 Pro Max | 430 × 932 | oui | 3 | DevTools « iPhone 14 Pro Max » (2026-11-28) |
+| Pixel 7 | 412 × 915 | oui | 2,625 | DevTools « Pixel 7 » (2026-11-28) |
+| iPad mini | **756 × 1158** | oui | 2 | **Sources divergentes, tranché** : DevTools « iPad Mini » donne 768 × 1024, la taille des iPad mini 5e génération et antérieurs (2019 et avant). Apple, `apple.com/ipad-mini/specs/` (lu le 2026-11-28) : iPad mini (A20 Pro), 2316 × 1512 px à 326 ppi, soit 1158 × 756 à l'échelle 2 des iPad. On retient le modèle vendu. **Taille dérivée** : Apple ne publie pas la fenêtre CSS. À confirmer au lot 0 si une source publiée la donne. Sinon, la valeur reste dérivée et la fiche le dit. |
+| iPad Pro | 1032 × 1376 | oui | 2 | DevTools « iPad Pro 13 » (2026-11-28) : iPad Pro 13″ (2024 et après). L'iPad Pro 12,9″ (2018-2022), 1024 × 1366, n'est pas repris. |
+| Portable / Laptop | 1280 × 800 | non | 1 | DevTools « Laptop with MDPI screen » (2026-11-28) |
+| Bureau / Desktop | 1920 × 1080 | non | 1 | Pas d'entrée dans DevTools ; valeur conventionnelle (Full HD). Aucune statistique d'usage n'est citée. |
 
-Plus « Adaptatif » (en tête) et « Personnalisé » (affiché seulement quand une taille libre est en
-vigueur). Pixel 7 (412 × 915) n'est pas repris : il tombe entre deux entrées, la taille libre le
-couvre.
+Plus « Adaptatif » (en tête) et « Taille libre » (sous la liste, seulement quand une taille libre
+est en vigueur). Le préréglage `tablet` de l'agent (768 × 1024) reste celui de l'agent : il n'est
+pas dans le menu et n'est pas renommé.
 
-**Libellés génériques ou noms d'appareils** : « iPhone 14 » parle tout de suite à celui qui teste
-pour un client sur iPhone, mais il vieillit chaque année, il porte une marque déposée dans
-l'interface, et il laisse croire à une émulation fidèle de l'appareil (identité, densité, Safari)
-que Bobine ne fait pas. « Téléphone 390 × 844 » dit exactement ce qui est fait — une taille — et ne
-vieillit pas. **Recommandation : libellés génériques, taille toujours visible à côté.**
+**Ce qui se traduit** : les noms d'appareils, non (« iPhone 14 » en français comme en anglais).
+« Portable » / « Laptop », « Bureau » / « Desktop », « Adaptatif » / « Responsive » et « Taille
+libre » / « Custom size » sont des clés i18n.
+
+**Règle d'entretien** (risque accepté par Jérôme : liste à tenir à jour, promesse d'un appareil
+que Bobine n'émule pas vraiment) :
+
+- la liste est une **donnée**, dans `src/shared/browser-devices.ts` : identifiant, nom, largeur,
+  hauteur, `mobile`, et un champ `source` (où, et quand la valeur a été lue). Aucun code ne dépend d'un appareil
+  particulier ;
+- elle reste **courte** (huit entrées au plus) ;
+- elle est **revue à chaque version majeure** de Bobine : un modèle remplacé change de nom ou de
+  taille, avec sa nouvelle source ;
+- **aucun appareil n'est ajouté sans sa source** (publiée, datée). Un essai unitaire vérifie que
+  chaque entrée porte une source et des bornes valides (200 à 4 000 px) ;
+- la ligne de bas de menu dit toujours la limite.
+
+**Noms de produits de tiers.** Ils servent seulement à désigner un appareil : pas de logo, pas
+d'icône de marque (l'icône générique `Smartphone` de Lucide), pas d'« officiel ». Proposition pour
+la mention de marque, **à trancher par Jérôme** : `THIRD-PARTY-NOTICES.md` est généré
+(`pnpm third-party-notices`, fiche 217) à partir des composants livrés et de leurs licences ; ce
+n'est pas sa place, et un ajout à la main y serait écrasé. Le dépôt a déjà une section « Marques et
+absence d'affiliation » dans `README.md` et `README.fr.md`. Proposé : y ajouter une phrase, en
+anglais et en français (« iPhone, iPad and iPad mini are trademarks of Apple Inc.; Pixel is a
+trademark of Google LLC. These names are used only to name the screen sizes the built-in browser
+can imitate. »). Option en plus, non recommandée pour la 1.3 : la même mention dans Réglages ›
+À propos (une clé i18n de plus).
 
 ### Ce que la fiche promet à l'utilisateur, sans survendre
 
-L'infobulle du bouton et une ligne en bas du menu d'appareils disent : « La page
-est affichée à cette taille, comme un écran tactile, avec le thème choisi. Ce n'est pas un vrai
-téléphone : même moteur (Chromium), même identité de navigateur, densité de l'écran du Mac. » Rien
-sur Safari, iOS ou Android.
+La ligne en bas du menu d'appareils (et l'infobulle du bouton) dit : « Seule la taille de l'écran
+est imitée, en tactile. Ce n'est pas le vrai appareil : même navigateur, densité de l'écran du
+Mac. » Rien sur Safari, iOS ou Android.
 
 ## Architecture
 
@@ -223,17 +251,18 @@ sur Safari, iOS ou Android.
 - **Annoter (132, 146)** : marche déjà sous l'émulation de l'agent (`page-layer.ts` lit
   `cdp.emulation`) ; à revérifier avec le réglage de l'utilisateur (épingles à leur place sur une
   page réduite).
-- **Nouvel ADR** : remplace la ligne « Pas de menu de tailles pour l'utilisateur » de l'ADR-0026
-  et pose les deux couches (utilisateur, agent) et la règle de fin de tour.
+- **ADR-0078** (proposé) : remplace la ligne « Pas de menu de tailles pour l'utilisateur » de
+  l'ADR-0026 et pose les deux couches (utilisateur, agent), la règle de fin de tour, la mémoire par
+  conversation et les noms d'appareils avec leur limite.
 
 ## Critères d'acceptation
 
 - [ ] Bouton « Appareil » dans la barre d'adresse ; barre repliée par défaut ; ouverte, elle montre
       menu, largeur × hauteur, rotation, thème ; fermée, la page reprend la largeur du panneau et
       le thème Auto.
-- [ ] Choisir « Téléphone » : `innerWidth` de la page = 390, `innerHeight` = 844, la page est
+- [ ] Choisir « iPhone 14 » : `innerWidth` de la page = 390, `innerHeight` = 844, la page est
       centrée en haut de la zone ; `matchMedia('(prefers-color-scheme: dark)')` suit le thème choisi.
-- [ ] Tablette dans une zone plus petite : page entière, réduite, échelle affichée et juste (± 1 %) ;
+- [ ] iPad Pro dans une zone plus petite : page entière, réduite, échelle affichée et juste (± 1 %) ;
       panneau agrandi : échelle recalculée, 100 % au plus, et elle disparaît à 100 %.
 - [ ] Bornes : 199, 4 001, vide, « abc » refusés (rouge, message, page inchangée) ; « 390x844 »
       collé remplit les deux champs ; Entrée, Échap, ↑ / ↓, Maj+↑ / ↓ comme décrit.
@@ -256,8 +285,9 @@ sur Safari, iOS ou Android.
       (jamais un vrai site) qui affiche `innerWidth`, `innerHeight`, le thème et
       `'ontouchstart' in window` ; agent factice seulement ; **clair et sombre, français et
       anglais** (`--lang en`), captures regardées.
-- [ ] Textes : aucun en dur, clés fr / en ci-dessous, glossaire respecté.
-- [ ] Nouvel ADR écrit ; `docs/architecture.md` (ligne du navigateur), `CHANGELOG.md` et
+- [ ] Textes : aucun en dur, clés fr / en ci-dessous, glossaire respecté ; noms d'appareils identiques dans les deux langues.
+- [ ] `browser-devices.test.ts` : chaque appareil a un champ `source` non vide et daté, et des tailles dans les bornes.
+- [ ] ADR-0078 accepté, statut de l'ADR-0026 mis à jour ; `docs/architecture.md` (ligne du navigateur), `CHANGELOG.md` et
       `CHANGELOG.en.md` à jour.
 
 ## Textes (clés i18n proposées)
@@ -267,13 +297,8 @@ sur Safari, iOS ou Android.
 | `browser.device.button` | Taille d'écran et thème | Screen size and theme |
 | `browser.device.responsive` | Adaptatif | Responsive |
 | `browser.device.responsiveHint` | Largeur du panneau | Panel width |
-| `browser.device.custom` | Personnalisé | Custom |
+| `browser.device.custom` | Taille libre | Custom size |
 | `browser.device.landscape` | {{name}}, paysage | {{name}}, landscape |
-| `browser.device.smallPhone` | Petit téléphone | Small phone |
-| `browser.device.phone` | Téléphone | Phone |
-| `browser.device.largePhone` | Grand téléphone | Large phone |
-| `browser.device.tablet` | Tablette | Tablet |
-| `browser.device.largeTablet` | Grande tablette | Large tablet |
 | `browser.device.laptop` | Portable | Laptop |
 | `browser.device.desktop` | Bureau | Desktop |
 | `browser.device.size` | {{width}} × {{height}} | {{width}} × {{height}} |
@@ -288,56 +313,46 @@ sur Safari, iOS ou Android.
 | `browser.device.themeLight` | Clair | Light |
 | `browser.device.themeDark` | Sombre | Dark |
 | `browser.device.themeTip` | Seules les pages qui suivent le thème du système changent | Only pages that follow the system theme change |
-| `browser.device.honest` | Affichée à cette taille, comme un écran tactile. Ce n'est pas un vrai téléphone : même navigateur, densité de l'écran du Mac. | Shown at this size, as a touch screen. It is not a real phone: same browser, your Mac's pixel density. |
+| `browser.device.honest` | Seule la taille de l'écran est imitée, en tactile. Ce n'est pas le vrai appareil : même navigateur, densité de l'écran du Mac. | Only the screen size is imitated, as a touch screen. It is not the real device: same browser, your Mac's pixel density. |
 | `browser.device.agent` | L'agent essaie {{size}} jusqu'à la fin de son tour | The agent is trying {{size}} until the end of its turn |
 | `browser.device.takeBack` | Reprendre la main | Take over |
 | `browser.device.agentLabel` | Essai de l'agent | Agent's test |
-| `browser.device.kept` | L'agent a demandé {{size}} : votre réglage reste en place | The agent asked for {{size}}: your setting stays (variante B seulement) |
 | `browser.emulation.chipTheme` | {{width}} × {{height}} · {{theme}} | {{width}} × {{height}} · {{theme}} |
 
 « Adaptatif / Responsive », « Clair / Light », « Sombre / Dark » : glossaire (thème clair, sombre).
 « Mac » dans `browser.device.honest` : sous Linux et Windows, variante « de votre écran » (fiche 145,
-même règle que les textes du Finder).
+même règle que les textes du Finder). Les noms d'appareils ne sont pas des clés i18n : ils viennent
+de `shared/browser-devices.ts`, identiques dans les deux langues.
 
-## Questions pour Jérôme
+## Questions pour Jérôme — tranchées le 2026-11-28
 
-1. **Où vit la barre ?**
-   - A (recommandé) : derrière un bouton de la barre d'adresse, repliée par défaut ; ouverte = réglage
-     en vigueur, fermée = largeur du panneau. Impact : un bouton de plus dans la barre d'adresse.
-     Risque : faible (l'état se voit toujours). Gain : rien de plus à l'écran pour qui ne s'en sert
-     pas.
-   - B : toujours visible sous l'adresse. Impact : 36 px de page en moins pour tout le monde. Risque :
-     panneau encombré, contraire à « pas d'interface surchargée ». Gain : découvrable sans chercher.
-2. **La liste d'appareils ?**
-   - A (recommandé) : sept libellés génériques avec leur taille (« Téléphone 390 × 844 »). Impact :
-     aucun entretien annuel. Risque : il faut lire la taille pour reconnaître son iPhone. Gain :
-     honnête, ne vieillit pas, pas de marque.
-   - B : noms d'appareils (« iPhone 14 », « Pixel 7 », « iPad Pro »), comme la capture. Impact : liste
-     à tenir à jour. Risque : promet un iPhone que Bobine n'émule pas. Gain : reconnaissance
-     immédiate.
-3. **Qui a la main entre l'utilisateur et l'agent ?**
-   - A (recommandé) : l'essai de l'agent passe devant pendant son tour, le réglage revient à la fin ;
-     l'utilisateur peut « Reprendre la main » à tout moment. Impact : deux couches dans le main.
-     Risque : moyen (fin de tour, plusieurs onglets : essais dédiés). Gain : l'agent garde son outil,
-     rien n'est perdu.
-   - B : le réglage de l'utilisateur prime, `browser_resize` refusé tant que la barre est ouverte.
-     Impact : plus simple. Risque : l'agent échoue à une demande « vérifie en mobile ». Gain : aucun
-     changement de taille surprise.
-4. **Mémoire du réglage ?**
-   - A (recommandé) : par conversation, en mémoire, perdu au redémarrage comme les pages. Risque :
-     faible. Gain : aucun état caché qui survit.
-   - B : retenu par conversation sur le disque. Impact : clé dans l'historique, profil en lecture
-     seule à traiter. Risque : page en téléphone au lancement sans qu'on s'en souvienne. Gain :
-     retrouver son réglage le lendemain.
+Réponses de Jérôme par questions interactives, après huit planches de la maquette ; aucun retour
+sur le reste de la maquette.
+
+1. **Où vit la barre ?** — « Derrière un bouton (Recommandé) ». Écartée : barre toujours visible
+   (37 px de page en moins pour tout le monde, interface chargée).
+2. **La liste d'appareils ?** — « Noms d'appareils », contre la recommandation. Écartés : libellés
+   génériques (« Téléphone 390 × 844 »), plus honnêtes et sans entretien, mais Jérôme veut
+   reconnaître ses appareils. Risque accepté et traité plus haut : règle d'entretien, taille
+   toujours affichée, ligne de bas de menu.
+3. **Qui a la main ?** — « L'agent pendant son tour (Recommandé) ». Écartée : réglage de
+   l'utilisateur prioritaire et `browser_resize` refusé (l'agent ne pourrait plus vérifier « en
+   mobile »).
+4. **Mémoire ?** — « Par conversation, jusqu'à la fermeture (Recommandé) ». Écartée : retenu sur le
+   disque (clé d'historique, profil en lecture seule à traiter, page en téléphone au lancement sans
+   qu'on s'en souvienne).
+
+Reste à trancher par Jérôme : la **mention de marque** (proposition dans « Liste d'appareils ») et
+l'**acceptation de l'ADR-0078**.
 
 ## Plan
 
-Rien n'est codé avant la validation de la maquette et des quatre réponses.
+Maquette et quatre réponses arbitrées le 2026-11-28 ; rien n'est codé avant l'acceptation de l'ADR-0078. Seule la liste d'appareils a changé depuis la première version du plan.
 
 | Lot | Contenu | Fichiers | Taille |
 |---|---|---|---|
-| 0 | Sonde (Electron du dépôt, page locale) : `pointer` / `hover` sous `setTouchEmulationEnabled`, changement de réglage pendant un `browser_resize`, Annoter sur page réduite. Nouvel ADR. | script jetable, `docs/adr/` | ½ jour |
-| 1 | Moteur : liste et bornes partagées ; deux couches par onglet, couche en vigueur (pure) ; `endAgentTurn` qui rend le réglage ; nouveaux onglets ; `BrowserState` (`device`, `colorScheme`, `agent`) ; canal `browser:setDevice` (analyse, garde lecture seule, préload) ; phrase du résultat de `browser_resize` | `shared/browser.ts`, `shared/browser-devices.ts` (nouveau), `shared/browser-ipc.ts`, `main/browser/page-view.ts`, `browser-manager.ts`, `browser-controller.ts`, `browser-setup.ts`, `browser-ipc.ts`, `browser-tools.ts`, `cdp-tab.ts` (rien, sauf si la sonde l'exige), `read-only-guard.ts`, `preload/api.ts` + essais | ≈ 350 lignes + 300 d'essais |
+| 0 | Sonde (Electron du dépôt, page locale) : `pointer` / `hover` sous `setTouchEmulationEnabled`, changement de réglage pendant un `browser_resize`, Annoter sur page réduite ; taille CSS de l'iPad mini à confirmer si une source publiée la donne. ADR-0078 accepté (statut de l'ADR-0026 mis à jour). | script jetable, `docs/adr/` | ½ jour |
+| 1 | Moteur : liste et bornes partagées ; deux couches par onglet, couche en vigueur (pure) ; `endAgentTurn` qui rend le réglage ; nouveaux onglets ; `BrowserState` (`device`, `colorScheme`, `agent`) ; canal `browser:setDevice` (analyse, garde lecture seule, préload) ; phrase du résultat de `browser_resize` | `shared/browser.ts`, `shared/browser-devices.ts` (nouveau : la liste et ses sources), `shared/browser-ipc.ts`, `main/browser/page-view.ts`, `browser-manager.ts`, `browser-controller.ts`, `browser-setup.ts`, `browser-ipc.ts`, `browser-tools.ts`, `cdp-tab.ts` (rien, sauf si la sonde l'exige), `read-only-guard.ts`, `preload/api.ts` + essais | ≈ 350 lignes + 300 d'essais |
 | 2 | Interface : bouton, `DeviceBar.tsx` (nouveau ; `BrowserTab.tsx` est à 520 lignes, plafond 800), menu, champs, thème, repli étroit (requêtes de conteneur), ligne de l'agent, puce « · sombre » ; clés fr / en ; styles | `components/panel/DeviceBar.tsx`, `BrowserTab.tsx`, `styles.css`, `locales/fr.json`, `en.json` + essais | ≈ 300 lignes + 150 d'essais |
 | 3 | e2e : page locale de mesure, suite `browser-device` (ou extension de `browser-view`), scénario factice existant `navigateur-mobile` réutilisé, clair / sombre, fr / en ; captures regardées. Docs : architecture, CHANGELOG fr / en, `docs/mock-agent.md` si scénario | `e2e/suites/…`, `docs/` | ≈ 250 lignes |
 
@@ -368,3 +383,8 @@ Rien n'est codé avant la validation de la maquette et des quatre réponses.
 - 2026-11-28 : fiche et maquette (BA / UX). Relevé du code à `34f9f5be` ; captures « avant » par la
   suite e2e `browser-view` (agent factice, page locale). Rien de codé ; en attente des réponses de
   Jérôme et de la validation de la maquette.
+- 2026-11-28 : réponses de Jérôme aux quatre questions (barre derrière un bouton, noms d'appareils,
+  l'agent pendant son tour, par conversation jusqu'à la fermeture). Maquette ramenée à une seule
+  forme, sans les variantes écartées ; liste par noms d'appareils, avec sources et règle
+  d'entretien ; « Taille libre » dès qu'un champ change (planche 6c) ; ADR-0078 proposé ; captures
+  « avant » en sombre ajoutées. Rien de codé.
