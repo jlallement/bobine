@@ -13,7 +13,11 @@
  *   rien (l'app arrête la commande : « Annuler », délai) ; `unexpected` : une page sur un autre
  *   hôte ; `unknown-command` : commande inconnue, sans page (OpenCode trop ancien) ;
  * - `mcp logout <nom> --standalone` : la connexion est oubliée (`logout: 'keep'` : gardée) ;
- * - `auth list --format json --standalone` : les connexions notées, au format relevé (R5).
+ * - `auth list --format json --standalone` : les connexions notées, au format relevé (R5) ;
+ *   `holdList: true` : la réponse attend que l'essai remette `holdList` à faux (relecture lente
+ *   rejouée de façon déterministe, 25 s au plus).
+ * `FAKE_OPENCODE_MCP_DELAY_MS` (environnement) : chaque commande attend d'abord ce délai, comme un
+ * OpenCode lent à se lancer (machine lente, Mac de GitHub) ; l'essai rejoue ainsi toute la suite.
  * La commande s'arrête seule au bout de deux minutes : jamais d'orphelin.
  */
 import { appendFileSync } from 'node:fs'
@@ -24,18 +28,21 @@ const args = process.argv.slice(2)
 
 const read = () => readJson(stateFile)
 const write = (state) => writeJson(stateFile, state)
-const note = () => {
-  appendFileSync(`${stateFile}.calls`, `${JSON.stringify(args)}\n`)
-  return read()
-}
+// Chaque appel est noté dès le lancement, avant tout délai : l'essai voit qu'une commande est partie.
+appendFileSync(`${stateFile}.calls`, `${JSON.stringify(args)}\n`)
+const note = () => read()
 
 /** Adresse de la page comme OpenCode l'écrit (valeurs factices, retour vers cette machine). */
 const page = (host) =>
   `https://${host}/oauth/mcp?response_type=code&client_id=E2E_CLIENT&code_challenge=E2E_CHALLENGE&code_challenge_method=S256&redirect_uri=http%3A%2F%2F127.0.0.1%3A54321%2Fcallback&state=E2E_STATE&scope=mcp%3Aconnect`
 
 const [first, second, name] = args
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+await sleep(Number(process.env.FAKE_OPENCODE_MCP_DELAY_MS) || 0)
 if (first === 'auth' && second === 'list') {
-  const { connected = {} } = note()
+  note()
+  for (const end = Date.now() + 25_000; read().holdList && Date.now() < end;) await sleep(20)
+  const { connected = {} } = read()
   const list = Object.entries(connected).map(([server, kind]) => ({
     id: `mcp_${server}`,
     name: server,

@@ -66,7 +66,9 @@ export async function mcpFigmaSuite(scheme) {
     BOBINE_OPEN_LOG: openLog,
     BOBINE_FAKE_MCP_AUTH: FAKE,
     BOBINE_FAKE_MCP_AUTH_MS: String(ATTEMPT_MS),
-    FAKE_OPENCODE_MCP_STATE: stateFile
+    FAKE_OPENCODE_MCP_STATE: stateFile,
+    // Fausse commande ralentie (machine lente) : `E2E_FAKE_MCP_DELAY_MS=800 pnpm e2e mcp-figma`.
+    FAKE_OPENCODE_MCP_DELAY_MS: process.env.E2E_FAKE_MCP_DELAY_MS ?? '0'
   }
   try {
     await withApp(
@@ -443,47 +445,98 @@ export async function mcpFigmaSuite(scheme) {
       async (ui) => {
         const row = `[...document.querySelectorAll('[data-testid=session-mcp]')].find((r) => r.innerText.startsWith('figma'))`
         const authLists = () => calls().filter((c) => c[0] === 'auth' && c[1] === 'list').length
-        // Le menu s'affiche sans attendre la relecture ; l'état relu remplace le libellé dans la
-        // ligne (une ligne : la hauteur ne change pas, fiche 234).
-        const menu = async (auth) => {
+        const content = ui.$('session-settings-content')
+        const open = async () => {
+          await ui.waitFor(`!${content}`)
           await ui.click(ui.$('session-settings'))
           await ui.waitFor(`!!${row}`)
-          await ui.waitFor(`${row}.dataset.auth === '${auth}'`, 10_000)
-          return ui.ev(
-            `({ auth: ${row}.dataset.auth, state: ${row}.dataset.state, text: ${row}.innerText.replace(/\\s+/g, ' ') })`
-          )
         }
+        /** Ferme le menu, et attend qu'il soit fermé (un clic suivant le rouvrira, jamais l'inverse). */
+        const close = async () => {
+          await ui.key('Escape')
+          await ui.waitFor(`!${content}`)
+        }
+        const seen = () =>
+          ui.ev(
+            `({ auth: ${row}.dataset.auth, state: ${row}.dataset.state, text: ${row}.innerText.replace(/\\s+/g, ' '), h: ${ui.$('session-settings-content')}.offsetHeight })`
+          )
+        /**
+         * Attend un fait : la fausse commande a été lancée pour une relecture de plus que `before`
+         * (notée dès son lancement). Hauteurs en `offsetHeight` : la mise en page, pas l'animation
+         * d'ouverture du menu.
+         */
+        const reread = (before) => waitUntil(() => authLists() > before, 30_000)
+        const neutral = L('sessionSettings.mcp.agentAuth', { agent: 'Agent factice' })
+
+        // Le menu s'ouvre sans attendre la relecture (fiche 293, M2), que la fausse commande retient
+        // (`holdList`) : déterministe, quelle que soit la vitesse de la machine.
+        setState({ holdList: true })
         const listsBefore = authLists()
-        const connected = await menu('connected')
+        await open()
+        await reread(listsBefore)
+        const before = await seen()
         check(
-          connected.auth === 'connected' &&
-            connected.state === 'ok' &&
+          before.auth === 'unknown' &&
+            before.text.includes(neutral) &&
+            !before.text.includes(L('sessionSettings.mcp.testing')),
+          `menu ⚙ ouvert pendant la relecture : libellé neutre et vrai (« ${before.text} »)`
+        )
+        await ui.shot('c13a-figma-menu-session-relecture')
+        // Relecture rendue : l'état remplace le libellé dans la ligne, sans changer la hauteur du
+        // menu (fiche 234).
+        setState({ holdList: false })
+        await ui.waitFor(`${row}.dataset.auth === 'connected'`, 30_000)
+        const connected = await seen()
+        check(
+          connected.state === 'ok' &&
             connected.text.includes(L('mcp.state.connected')) &&
-            !connected.text.includes(L('sessionSettings.mcp.testing')),
-          `menu ⚙ : « ${connected.text} » (état de connexion, jamais « test… »)`
+            !connected.text.includes(L('sessionSettings.mcp.testing')) &&
+            connected.h === before.h,
+          `menu ⚙ après la relecture : « ${connected.text} », hauteur ${before.h} → ${connected.h} px`
         )
         await ui.shot('c13-figma-menu-session')
-        await ui.key('Escape')
-        // Rouvert aussitôt : la relecture récente sert, aucune commande de plus chez l'agent.
+        await close()
+        // Rouvert aussitôt : le dernier état relu pour ce dossier, tout de suite ; la relecture
+        // récente sert, aucune commande de plus chez l'agent.
         const afterFirst = authLists()
-        await menu('connected')
-        await ui.key('Escape')
-        await menu('connected')
-        await ui.key('Escape')
+        for (let i = 0; i < 2; i++) {
+          await open()
+          const again = await seen()
+          check(again.auth === 'connected', `menu ⚙ rouvert : « ${again.text} » tout de suite`)
+          await close()
+        }
         check(
-          afterFirst - listsBefore >= 1 && authLists() === afterFirst,
+          authLists() === afterFirst,
           `menu ⚙ rouvert deux fois de suite : ${authLists() - afterFirst} relecture de plus chez l’agent (attendu : 0)`
         )
-        setState({ connected: { figma: 'expired' } })
-        // Passé le délai de réutilisation, la réouverture relit.
-        await new Promise((r) => setTimeout(r, 5_200))
-        const expired = await menu('expired')
+        // Connexion expirée chez l'agent. La relecture n'est refaite qu'après la réutilisation
+        // (`MCP_AUTH_REUSE_MS`) : le menu est rouvert jusqu'à ce que la fausse commande reçoive une
+        // relecture (un fait, pas une durée devinée), retenue le temps de voir le dernier état connu.
+        setState({ connected: { figma: 'expired' }, holdList: true })
+        const lists = authLists()
+        for (const end = Date.now() + 30_000; authLists() === lists && Date.now() < end;) {
+          await open()
+          try {
+            await waitUntil(() => authLists() > lists, 1_000)
+          } catch {
+            await close()
+          }
+        }
+        await reread(lists)
+        const stale = await seen()
         check(
-          expired.auth === 'expired' && expired.text.includes(L('mcp.state.expired')),
-          `menu ⚙ rouvert plus tard : l’état relu (« ${expired.text} »)`
+          stale.auth === 'connected',
+          `menu ⚙ pendant la relecture : le dernier état relu pour ce dossier (« ${stale.text} »)`
+        )
+        setState({ holdList: false })
+        await ui.waitFor(`${row}.dataset.auth === 'expired'`, 30_000)
+        const expired = await seen()
+        check(
+          expired.text.includes(L('mcp.state.expired')) && expired.h === stale.h,
+          `menu ⚙ après la relecture : « ${expired.text} », même hauteur`
         )
         await ui.shot('c14-figma-menu-session-expire')
-        await ui.key('Escape')
+        await close()
         check(
           !calls()
             .slice(callsBefore)

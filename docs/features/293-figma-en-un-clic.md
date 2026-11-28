@@ -2,7 +2,8 @@
 
 - **Statut** : spec et maquette validées par Jérôme le 2026-11-27 ; relevés R4, R5, R6 faits (R1,
   R2, R3, R7 à R9 non) ; ADR-0077 proposé ; lot 1 (moteur, main) et lot 2 (interface) codés, en
-  attente de relecture ; lot 3 (fil) et recette réelle à faire
+  attente de relecture ; lot 3 (fil) codé le 2026-11-28, en attente de relecture ; recette réelle
+  à faire
 - **Dépend de** : 025 (serveurs MCP des agents), 060 (« Tester » un serveur), 079 et 122 (outil
   `execute` d'OpenCode 2), 126 (confirmation dans la ligne), 287 (raison d'un bouton grisé)
 - **Agents** : OpenCode seulement. La connexion OAuth au serveur de Figma est faite **par l'agent**,
@@ -555,6 +556,40 @@ Figma cautionne Bobine.
   fichier à part (`?no-inline`), pas réécrit en adresse `data:` par Vite (empreinte vérifiée dans le
   build par l'e2e).
 
+## Écarts au plan (lot 3)
+
+- **Trace réelle du 2026-11-28** (et non celle du 2026-11-27 de « Contrat réel ») : la recherche
+  gardée en octets n'a que `input.query` et `limit`, pas `namespace` ; elle donne donc le libellé
+  générique « Cherche parmi les outils ». `input.namespace` reste lu (« Cherche parmi les outils de
+  figma ») comme **hypothèse** étiquetée (essais, 2e carte du scénario factice). Là où la maquette
+  montre deux fois « Cherche parmi les outils de figma », la trace réelle donnerait d'abord
+  « Cherche parmi les outils ».
+- **Marque** : `{ tools: [...], total }` plutôt qu'une simple liste : `total` compte les appels au-delà
+  des 50 gardés, pour un « +N » vrai. Une entrée est `{ server?, tool }` ou `{ search: true,
+  server? }` (la recherche n'est pas un outil nommé). Une marque `bobine/calledTools` venue de
+  l'agent lui-même est retirée par le main avant de poser la sienne.
+- **Plusieurs outils** : au plus trois outils distincts, le serveur dit une fois s'il est commun
+  (« figma · a, b, c +1 »), sinon chacun le sien (« figma · whoami, lire ») ; « +N » compte les
+  appels non représentés (autres outils, ou au-delà de la marque). La fiche proposait « figma ·
+  a · figma · b » (« · » ambigu avec le séparateur du serveur).
+- **Repère à part** : `execute-tool-names` (profil `calledTools`, `CalledToolsSource`), distinct de
+  `execute-errors`, dans « Propre à OpenCode » et `docs/agents.md`.
+- **Pendant l'appel** : inchangé, « Prépare un outil… » à l'annonce (`pending`, libellé générique de
+  toute carte), puis « execute ».
+- **Reprise (`session/load`)** : la marque est posée par le même chemin qu'en direct ; une carte
+  rejouée qui porte `toolCalls` a le même titre qu'en direct (essai). Que la reprise d'OpenCode
+  rejoue `rawOutput.metadata` n'est **pas relevé**.
+- **Export Markdown, historique, recherche, groupe d'outils** : inchangés. L'export écrit le titre de
+  l'agent (« execute »), comme pour les outils de l'app ; la recherche ne lit pas les titres
+  d'outils ; un groupe d'outils compte les genres et nomme l'outil **en cours** (jamais marqué).
+- **Sonde** : `--offline` ne lit pas `toolCalls` (rien à étendre sans modèle). Le sondage avec modèle
+  « outils de l'app » note désormais les noms lus par l'adaptateur pour le faux serveur MCP
+  « bobine » (un serveur tiers du point de vue d'OpenCode) ; la vérification ne s'applique que s'ils
+  ont été relevés : **pas encore tournée** (demande un modèle).
+- **Taille** : `findCompaction` et `blocksText` sortis de `shared/transcript.ts` vers
+  `compaction-reply.ts` (plafond de 800 lignes, fiche 089) ; titre d'un outil de l'agent sorti de
+  `ToolCall` (`agentToolTitle`, complexité 40).
+
 ## Décisions de Jérôme (2026-11-27)
 
 Réponses à ses questions, avec ses mots :
@@ -600,8 +635,9 @@ Réponses à ses questions, avec ses mots :
       l'archive officielle (`9798b710…`) ; lisible dans ses deux tailles (boîtes de 56 et 28 px, dessins ≈ 26 et 13 px),
       en clair et en sombre (captures regardées).
 - [x] `specificItems` et `docs/agents.md` : repère `mcp-oauth` (test existant des repères).
-- [ ] (Lot 3) Une carte `execute` finie avec `toolCalls: [{ tool: "figma.whoami" }]` s'intitule
-      « figma · whoami » ; une carte sans ce champ garde « execute ».
+- [x] (Lot 3) Une carte `execute` finie avec `toolCalls: [{ tool: "figma.whoami" }]` s'intitule
+      « figma · whoami » ; une carte sans ce champ garde « execute » (trace réelle rejouée,
+      unitaires, e2e `fil-outils-mcp`).
 - [x] **Unitaires** (lot 1) : lecture de la sortie (ANSI, tourniquet, adresse seule sur sa ligne, « Connected
       to », « Authorization expired », erreur, sortie inconnue), vérification d'adresse (http, autre
       hôte, `user@`, trop longue, adresse coupée), lecture de `auth list` (connecté, expiré, absent,
@@ -878,3 +914,47 @@ Taille : ≈ 3 j avec le lot 3, relevés compris. **Aucune dépendance nouvelle.
   Mutations (`293-lot3/mutate-a.py`) : 18 tuées sur 19 ; la survivante (dossier de l'onglet lu
   par sa propriété plutôt que par la relecture, avec repli sur celle-ci) est équivalente par
   construction (même dossier dans tous les cas).
+- 2026-11-28 — **Lot 3 (le nom de l'outil dans le fil)** codé, d'après la trace **réelle** du
+  2026-11-28 (OpenCode 2.3.0 connecté à Figma), gardée octet pour octet
+  (`src/main/agent/__traces__/opencode-2.3.0/acp-execute-figma.jsonl`, empreinte vérifiée,
+  `.gitattributes` `-text`) :
+  - adaptateur du profil d'OpenCode (`calledTools`, `executeCalledTools` dans
+    `opencode-contract.ts`) : à la fin d'une carte seulement, `toolCalls[].tool` séparé au premier
+    point, `search` = recherche (espace pris s'il est donné) ; repère `execute-tool-names`
+    (Réglages › Agents, `docs/agents.md`) ;
+  - main (`profile-updates.ts`) : marque générique `_meta["bobine/calledTools"]`, bornée (50
+    appels gardés, tous comptés ; noms de 64 caractères au plus) et nettoyée (contrôle, mise en
+    forme, sens d'écriture, largeur nulle, séparateurs de ligne) dans `shared/called-tools.ts` ;
+    une marque envoyée par l'agent est retirée ;
+  - fil : `calledTools` sur la carte (marque relue et nettoyée de nouveau), titre
+    `CalledToolsTitle.tsx` (serveur en retrait, comme la maquette ; titre de l'agent et nombre
+    d'appels au survol) ; un outil de l'app rattaché (fiche 079) garde son libellé ; textes
+    `toolCall.calledTools.*` (fr, en) ;
+  - agent factice : scénario `outils-mcp-execute` (forme de la trace, comparée par un essai ; 2e
+    carte : hypothèse `namespace`) ; sonde : sondage « outils de l'app » étendu (voir Écarts) ;
+  - essais : rejeu de la trace réelle dans le main (« execute » puis « Cherche parmi les outils »
+    et « figma · whoami », aussi en `session/load`), même trace rendue dans le fil, noms adverses
+    (géant, 5 000 appels, contrôle, HTML, vide, non chaîne, marque forgée ou mal formée) ;
+    mutations (`293-lot3/mutate-b.py`) : 24 tuées sur 24 (après ajout de deux essais pour deux
+    survivantes) ; e2e `fil-outils-mcp` (clair et sombre, captures `f1-fil-outils-mcp-*`, avant :
+    `avant-293-fil-outils-mcp-*`, obtenue en retirant la capacité du profil factice le temps d'un
+    build : la suite y est rouge).
+- 2026-11-28 — **E2e du Mac de GitHub rouges sur `4ca2e240`** (`mcp-figma`, menu ⚙ : libellé
+  neutre au lieu de « connecté ») : la relecture y dépassait le repli de 300 ms. **Comportement
+  retenu** (un seul) : le menu s'ouvre sans attendre la relecture ; il montre le dernier état
+  **relu pour ce dossier** s'il existe, sinon « connexion par <agent> » ; la relecture arrivée
+  **remplace le libellé dans la ligne**, qui reste sur une ligne (raccourcie, entière au survol) :
+  la hauteur du menu ne change pas (fiche 234). Raison : l'état utile est vu dès cette ouverture,
+  sans rien faire bouger sous le pointeur ; attendre l'ouverture suivante montrerait un libellé
+  neutre à chaque première ouverture avec un OpenCode réel (lancement > 300 ms). E2e rendu
+  **déterministe** : la fausse commande peut **retenir** sa réponse (`holdList`) et **ralentir** tout
+  lancement (`FAKE_OPENCODE_MCP_DELAY_MS`, par `E2E_FAKE_MCP_DELAY_MS` de la suite) ; l'étape attend
+  des faits (commande lancée, notée dès son lancement ; `data-auth` de la ligne) et vérifie les
+  deux moments (pendant la relecture : libellé neutre, ou dernier état relu ; après : état relu,
+  même `offsetHeight`). Preuves : l'ancienne étape est **rouge** avec 800 ms de retard (même message
+  que sur GitHub) ; la nouvelle est verte à 0, 800 et 3 000 ms. À 8 000 ms, l'étape « Réglages
+  fermés puis rouverts : toujours en cours » casse : la tentative raccourcie de l'essai (12 s) expire
+  avant la relecture (8 s de lancement deux fois) ; artefact du délai raccourci, l'app attend 10 min.
+  Observé alors : à la réouverture des Réglages, la ligne d'état reste **vide** le temps de la
+  relecture (aucun état montré avant d'être relu pour ce contexte) ; à trancher (montrer le dernier
+  état relu pour ce dossier, comme le menu).
