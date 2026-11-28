@@ -3,7 +3,8 @@
  * le contrôleur du main agit sur son onglet. Sortis d'`ipc.ts` pour tenir son plafond de lignes.
  */
 import { t } from 'i18next'
-import type { BrowserBounds } from '@shared/browser'
+import type { BrowserBounds, BrowserColorScheme, BrowserDeviceRequest } from '@shared/browser'
+import { findDevice, isScreenSize } from '@shared/browser-devices'
 import type { IpcHandlers } from '@shared/ipc'
 import type { BrowserController } from './browser-controller'
 import { parsePins, parseTheme } from './page-layer'
@@ -23,6 +24,68 @@ function parseBounds(value: unknown): BrowserBounds {
   return { x: n('x'), y: n('y'), width: Math.max(0, n('width')), height: Math.max(0, n('height')) }
 }
 
+const invalidDevice = () => new Error('Paramètre invalide : device')
+
+/**
+ * Objet simple venu du renderer (prototype `Object`, ni tableau ni objet sans prototype), dont
+ * chaque clé propre est une chaîne de `keys` ; refusé sinon. Seules les valeurs sont lues, jamais
+ * un accesseur exécuté : un accesseur donne `undefined`, comme une clé absente, et le champ attendu
+ * est alors refusé par sa propre vérification.
+ */
+function exactRecord(value: unknown, keys: readonly string[]): Record<string, unknown> {
+  if (typeof value !== 'object' || value === null) throw invalidDevice()
+  if (Object.getPrototypeOf(value) !== Object.prototype) throw invalidDevice()
+  const record: Record<string, unknown> = {}
+  for (const key of Reflect.ownKeys(value)) {
+    if (typeof key !== 'string' || !keys.includes(key)) throw invalidDevice()
+    record[key] = Object.getOwnPropertyDescriptor(value, key)?.value
+  }
+  return record
+}
+
+function colorSchemeOf(value: unknown): BrowserColorScheme | null {
+  if (value === null || value === 'light' || value === 'dark') return value
+  throw invalidDevice()
+}
+
+function kindOf(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null) throw invalidDevice()
+  return Object.getOwnPropertyDescriptor(value, 'kind')?.value
+}
+
+/**
+ * Réglage de taille et de thème envoyé par l'interface (fiche 295), revérifié : « Adaptatif », un
+ * appareil connu de la liste, ou une taille libre entière dans les bornes de `browser_resize` ;
+ * thème dans l'énumération. Rien d'autre (ni échelle, ni densité, ni identité du navigateur) ;
+ * l'objet rendu est neuf, jamais celui reçu.
+ */
+export function parseDeviceRequest(value: unknown): BrowserDeviceRequest | null {
+  if (value === null) return null
+  const kind = kindOf(value)
+  if (kind === 'responsive') {
+    const r = exactRecord(value, ['kind', 'colorScheme'])
+    return { kind, colorScheme: colorSchemeOf(r['colorScheme']) }
+  }
+  if (kind === 'preset') {
+    const r = exactRecord(value, ['kind', 'id', 'landscape', 'colorScheme'])
+    const id = r['id']
+    const landscape = r['landscape']
+    if (typeof id !== 'string' || !findDevice(id) || typeof landscape !== 'boolean') {
+      throw invalidDevice()
+    }
+    return { kind, id, landscape, colorScheme: colorSchemeOf(r['colorScheme']) }
+  }
+  if (kind === 'custom') {
+    const r = exactRecord(value, ['kind', 'width', 'height', 'mobile', 'colorScheme'])
+    const { width, height, mobile } = r
+    if (!isScreenSize(width) || !isScreenSize(height) || typeof mobile !== 'boolean') {
+      throw invalidDevice()
+    }
+    return { kind, width, height, mobile, colorScheme: colorSchemeOf(r['colorScheme']) }
+  }
+  throw invalidDevice()
+}
+
 export function browserHandlers(
   browser: BrowserController
 ): Pick<
@@ -39,6 +102,7 @@ export function browserHandlers(
   | 'browser:closeTab'
   | 'browser:zoom'
   | 'browser:clearEmulation'
+  | 'browser:setDevice'
   | 'browser:freeze'
   | 'browser:noteShot'
   | 'browser:annotate'
@@ -99,6 +163,15 @@ export function browserHandlers(
     'browser:clearEmulation': async (id) => {
       if (!browser.clearEmulation) throw new Error(t('ipc.unavailable.browser'))
       await browser.clearEmulation(str(id, 'id'))
+      return undefined
+    },
+    // Seul un geste dans l'interface arrive ici (émetteur vérifié, fiche 114) ; tout est revérifié,
+    // et le main refuse un onglet qui n'est pas celui de cette conversation.
+    'browser:setDevice': async (id, tabId, device) => {
+      if (!browser.setDevice) throw new Error(t('ipc.unavailable.browser'))
+      const conversationId = str(id, 'id')
+      const tab = str(tabId, 'tabId')
+      await browser.setDevice(conversationId, tab, parseDeviceRequest(device))
       return undefined
     },
     'browser:freeze': async (id) => {

@@ -653,6 +653,26 @@ export const SUITES = [
     ]
   },
   {
+    // Taille d'écran et thème réglés par l'utilisateur, essai de l'agent devant pendant son tour,
+    // réglage rendu à la fin (fiche 295, ADR-0078). Rendu sombre vérifié (ADR-0071) : le thème
+    // « Auto » de la page suit celui que l'app donne à Chromium (`nativeTheme.themeSource`).
+    name: 'browser-device',
+    file: 'browser-device.mjs',
+    run: 'browserDeviceSuite',
+    themes: BOTH,
+    dark: true,
+    sources: [
+      `${C}panel/BrowserTab.tsx`,
+      `${C}panel/SidePanel.tsx`,
+      'src/main/browser/',
+      'src/main/read-only-guard.ts',
+      'src/shared/browser.ts',
+      'src/shared/browser-devices.ts',
+      'src/shared/browser-ipc.ts',
+      'e2e/pages.mjs'
+    ]
+  },
+  {
     // Annoter la page au clic, façon Figma (fiche 132), page vivante (fiche 146).
     name: 'browser-annotate',
     file: 'browser-annotate.mjs',

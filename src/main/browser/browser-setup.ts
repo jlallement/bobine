@@ -75,6 +75,7 @@ export function browserController(
     | 'showDownload'
     | 'zoom'
     | 'clearEmulation'
+    | 'setDevice'
     | 'freeze'
     | 'noteShot'
     | 'annotate'
@@ -115,6 +116,7 @@ export function browserController(
     showDownload: (id, path) => manager.showDownload(id, path),
     zoom: (id, action) => manager.zoom(id, action),
     clearEmulation: (id) => manager.clearEmulation(id),
+    setDevice: (id, tabId, device) => manager.setDevice(id, tabId, device),
     // Page figée (fiche 132) et capture propre (fiche 146) : à pleine définition, pour un
     // affichage net.
     freeze: async (id) => asFreeze(await manager.freeze(id)),

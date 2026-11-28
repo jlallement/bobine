@@ -7,7 +7,16 @@
  * en pixels de la fenêtre (DIP), soit CSS × zoom de l'interface ; l'agent parle en pixels CSS de
  * la page (captures, clics), soit DIP ÷ zoom de la page, ou la taille émulée.
  */
-import type { BrowserBounds, BrowserEmulation, BrowserZoom } from '@shared/browser'
+import type {
+  BrowserAgentTrial,
+  BrowserBounds,
+  BrowserColorScheme,
+  BrowserDeviceRequest,
+  BrowserEmulation,
+  BrowserZoom,
+  EmulatedScreen
+} from '@shared/browser'
+import { deviceColorScheme, deviceScreen } from '@shared/browser-devices'
 
 /** Paliers de zoom de Chrome, de 25 % à 500 %. */
 export const ZOOM_STEPS = [
@@ -40,11 +49,62 @@ export function windowBounds(css: BrowserBounds, uiZoom: number): BrowserBounds 
   }
 }
 
-/** Taille d'écran demandée par l'agent (`browser_resize`). */
-export interface EmulatedSize {
-  width: number
-  height: number
-  mobile: boolean
+/** Taille d'écran demandée par l'agent (`browser_resize`) ou l'utilisateur (fiche 295). */
+export type EmulatedSize = EmulatedScreen
+
+/** Ce qui s'applique à un onglet : écran imité, thème forcé, et qui a la main. */
+export interface AppliedSettings {
+  screen?: EmulatedScreen
+  colorScheme?: BrowserColorScheme
+  control?: 'user' | 'agent'
+}
+
+/**
+ * Deux couches (fiche 295, ADR-0078), champ par champ : l'essai de l'agent sur l'onglet s'il en a
+ * un, sinon le réglage de l'utilisateur pour la conversation, sinon la largeur du panneau et le
+ * thème du système. `panel` / `auto` de l'agent passent aussi devant le réglage de l'utilisateur.
+ */
+export function appliedSettings(
+  user: BrowserDeviceRequest | undefined,
+  agent: BrowserAgentTrial | undefined
+): AppliedSettings {
+  const agentScreen = agent?.screen
+  const agentScheme = agent?.colorScheme
+  const screen =
+    agentScreen === undefined
+      ? deviceScreen(user)
+      : agentScreen === 'panel'
+        ? undefined
+        : agentScreen
+  const colorScheme =
+    agentScheme === undefined
+      ? deviceColorScheme(user)
+      : agentScheme === 'auto'
+        ? undefined
+        : agentScheme
+  const control =
+    agentScreen !== undefined || agentScheme !== undefined ? 'agent' : user ? 'user' : undefined
+  return {
+    ...(screen
+      ? { screen: { width: screen.width, height: screen.height, mobile: screen.mobile } }
+      : {}),
+    ...(colorScheme ? { colorScheme } : {}),
+    ...(control ? { control } : {})
+  }
+}
+
+/** Même écran posé : taille, mode mobile, et réduction au millième près. */
+export function sameEmulation(
+  a: BrowserEmulation | undefined,
+  b: BrowserEmulation | undefined
+): boolean {
+  if (!a || !b) return a === b
+  return (
+    a.width === b.width &&
+    a.height === b.height &&
+    a.mobile === b.mobile &&
+    Math.abs(a.scale - b.scale) <= 0.001
+  )
 }
 
 /**

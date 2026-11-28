@@ -324,8 +324,9 @@ Mac. » Rien sur Safari, iOS ou Android.
       la fiche 129, à 150 % de zoom de la page aussi).
 - [ ] Panneau à 280 px : la barre tient sur une ligne, aucun texte coupé, le menu ne déborde pas de
       la fenêtre.
-- [ ] Profil en lecture seule : le réglage marche (canal classé sûr).
-- [ ] Le main refuse un `browser:setDevice` mal formé (essai unitaire de `browser-ipc.ts`).
+- [x] Profil en lecture seule : le réglage marche (canal classé sûr ; `browser-ipc.test.ts`).
+- [x] Le main refuse un `browser:setDevice` mal formé (essai unitaire de `browser-ipc.ts` ; et par le
+      vrai canal, e2e `browser-device`).
 - [ ] **Essais** : unitaires (`page-view.test.ts` : couche en vigueur ; `browser-devices.test.ts` :
       liste, bornes, collage ; `browser-ipc` : analyse ; `browser-manager.test.ts` : fin de tour ;
       `BrowserTab` / barre : clavier, erreurs) ; e2e contre une **page locale servie par l'essai**
@@ -333,7 +334,7 @@ Mac. » Rien sur Safari, iOS ou Android.
       `'ontouchstart' in window` ; agent factice seulement ; **clair et sombre, français et
       anglais** (`--lang en`), captures regardées.
 - [ ] Textes : aucun en dur, clés fr / en ci-dessous, glossaire respecté ; noms d'appareils identiques dans les deux langues.
-- [ ] `browser-devices.test.ts` : chaque appareil nomme son entrée DevTools (sauf « Bureau », conventionnel) et reste dans les bornes.
+- [x] `browser-devices.test.ts` : chaque appareil nomme son entrée DevTools (sauf « Bureau », conventionnel) et reste dans les bornes.
 - [ ] ADR-0078 accepté, statut de l'ADR-0026 mis à jour ; `docs/architecture.md` (ligne du navigateur), `CHANGELOG.md` et
       `CHANGELOG.en.md` à jour.
 
@@ -425,6 +426,56 @@ Maquette et quatre réponses arbitrées le 2026-11-28 ; rien n'est codé avant l
 - **Molette et défilement** (fiche 129, worktree `browser-view-molette`) : la page réduite doit
   défiler jusqu'en bas ; essai existant de `browser-view` repris avec le réglage.
 
+## Lot 1 — le moteur (fait le 2026-11-28, sans interface)
+
+| Module | Rôle |
+|---|---|
+| `src/shared/browser-devices.ts` (nouveau) | Liste des huit appareils (donnée, source DevTools de chacun), bornes 200-4 000 partagées avec `browser_resize`, `isScreenSize`, `findDevice` (par identifiant, jamais par index d'objet), `deviceScreen` (paysage = échange), `deviceColorScheme`. |
+| `src/shared/browser.ts` | `BrowserDeviceRequest` (seul objet envoyé par l'interface), `BrowserAgentTrial`, `EmulatedScreen`, `BrowserColorScheme` ; `BrowserState` gagne `colorScheme` (posé), `device` (couche de l'utilisateur), `agent` (essai de l'onglet actif), `control` (`user` / `agent`) ; `emulation` = taille **posée**, quelle qu'en soit la couche. |
+| `src/main/browser/page-view.ts` | `appliedSettings` (pur) : champ par champ, essai de l'agent, sinon réglage, sinon panneau ; `sameEmulation`. |
+| `src/main/browser/device-emulation.ts` (nouveau) | Les deux couches et leur pose : une file par onglet (un passage à la fois, demandes en attente regroupées, chaque passage recalcule ce qui doit s'appliquer), rien d'envoyé si c'est déjà posé, onglet « à reposer en entier » après un échec ; l'état relit `CdpTab.emulation` / `colorScheme`. |
+| `src/main/browser/browser-manager.ts` | `setDevice(conversation, onglet, réglage)`, essai de l'agent (`emulate`, `agentColorScheme`), `endAgentTurn` qui n'efface que les essais, `clearEmulation` (puce : taille de l'agent seule, comme avant), nouvel onglet réglé, conversation fermée oubliée, réduction suivie par la file, reprise après une boîte de la page. Plus court qu'avant (`emitTab` retiré). |
+| `src/main/browser/cdp-tab.ts` | `emulate` note la taille dès que Chromium l'a prise, avant le tactile. |
+| `src/main/browser/browser-driver.ts`, `resize-result.ts` (nouveau, sorti de `browser-tools.ts` pour son plafond de lignes), `browser-tools.ts` | Thème de l'agent par le moteur ; `userDevice` ; phrase ajoutée au résultat de `browser_resize` ; bornes partagées. Description de l'outil **inchangée**. |
+| `src/shared/browser-ipc.ts`, `src/main/browser/browser-ipc.ts`, `browser-controller.ts`, `browser-setup.ts`, `src/preload/api.ts`, `src/main/read-only-guard.ts` | Canal `browser:setDevice(id, tabId, réglage \| null)` : `parseDeviceRequest` strict, classé sûr en lecture seule. |
+
+**Invariant « aucun état caché »** (`browser-device.test.ts`) : le vrai `BrowserManager` et le vrai
+`CdpTab`, sur des vues et un débogueur simulés qui tiennent la « vérité de la page », répondent
+après un nombre tiré de tours de boucle et refusent parfois une commande. 250 graines × 45 actions
+(utilisateur, agent, fin de tour, puce, onglets ouverts, choisis, fermés, conversations fermées,
+panneau déplacé ou masqué, zoom de l'interface, refus du CDP), lancées parfois sans attendre la
+précédente, plus 100 graines sans réglage de l'utilisateur. À chaque relevé : l'état (`emulation`,
+`colorScheme`) est ce que la page a pris, `device` / `agent` / `control` ceux d'un modèle de
+référence écrit d'après la fiche ; au repos : la page a pris ce que la fiche dit, réduit pour tenir,
+et la vue native est posée sur l'écran réduit. Mutations des gardes : 50 sur 50 tuées (script
+jetable, voir le compte rendu).
+
+## Écarts au plan (lot 1)
+
+- **`browser:setDevice(id, tabId, réglage | null)`** au lieu de `(id, réglage)` : « Reprendre la
+  main » vise l'onglet que l'utilisateur regarde, même si l'agent vient d'en choisir un autre ; un
+  onglet d'une autre conversation, fermé, ou une conversation sans onglet est refusé.
+- **Forme du réglage** : `{ kind: 'responsive' | 'preset' | 'custom', … }` au lieu de
+  `{ width, height, mobile, colorScheme, preset? }`. Pour un appareil nommé, l'interface n'envoie
+  que son identifiant et `landscape` : le main tire la taille de la liste (le renderer ne peut pas
+  dire « iPhone 14 » avec une autre taille). Taille libre : entiers bornés et `mobile`.
+- **Reprendre la main = renvoyer le réglage** par `browser:setDevice` (tout geste de
+  l'utilisateur efface l'essai de l'onglet regardé) : pas de second canal. `browser:clearEmulation`
+  (la puce) garde son effet d'avant : il n'efface que la **taille** de l'agent, pas son thème.
+- **Couches champ par champ** : un thème seul essayé par l'agent laisse la taille de l'utilisateur.
+- **`control`** ajouté à `BrowserState` ; `agent` vaut `{ screen?: écran | 'panel', colorScheme?:
+  thème | 'auto' }` (`desktop` et `auto` de l'agent sont des essais).
+- **`cdp-tab.ts` touché** (le plan disait « rien, sauf si la sonde l'exige ») : c'est l'invariant
+  qui l'exige, voir ci-dessus.
+- **Reste un écart connu** : si le tactile échoue après une taille prise (onglet qui meurt entre les
+  deux commandes), l'état annonce la taille posée et `mobile`, sans le tactile, jusqu'au passage
+  suivant (forcé). Taille et réduction, elles, sont toujours justes.
+- **Boîte de la page ouverte** (`alert`…) : les commandes du CDP sont refusées par
+  `page-dialogs.ts` ; la pose est reprise à la fermeture de la boîte (non prévu au plan).
+- Collage « 390x844 » : pas dans le moteur, au lot 2 (interface).
+- **E2e** : nouvelle suite `browser-device` (et non une extension de `browser-view`, laissé
+  intact) : elle appelle le canal comme le fera la barre ; le lot 3 y ajoutera l'interface.
+
 ## Journal
 
 - 2026-11-28 : fiche et maquette (BA / UX). Relevé du code à `34f9f5be` ; captures « avant » par la
@@ -445,3 +496,16 @@ Maquette et quatre réponses arbitrées le 2026-11-28 ; rien n'est codé avant l
   tailles pour l'utilisateur » et l'alternative écartée « Menu de tailles d'écran » remplacés en
   partie par ADR-0078 » (texte inchangé) ; même mention dans le statut de la fiche 129. Fiche en
   cours : lots 0 et 1.
+- 2026-11-28 : **lots 0 et 1**. Sonde sur l'Electron du dépôt (tableau « Sonde du lot 0 ») : rien
+  ne contredit la fiche ni la maquette ; `'ontouchstart' in window` ne suit qu'au rechargement (à
+  trancher au lot 2). Moteur dans le main, sans interface (tableau « Lot 1 ») : deux couches,
+  canal `browser:setDevice` revérifié, fin de tour qui rend le réglage, nouvel onglet réglé,
+  reprise après une boîte de la page. Essais : unitaires (invariant par suites tirées au sort,
+  analyse adverse de l'IPC, liste, couches, file, CDP), mutations 50/50 tuées ; e2e nouvelle suite
+  `browser-device` (24 contrôles, vrai Electron, page locale, agent factice) ; `pnpm e2e --changed`
+  241/241 (préload touché : toutes les suites, clair et sombre), suites du navigateur en anglais
+  10/10, `./scripts/verify` vert. Essais existants du navigateur verts sans modification (deux cas
+  **ajoutés** à la fin de `browser-tools.test.ts`). Non vérifié : Linux, Windows (CI) ; la souris
+  réelle. À noter pour le lot 2 : la puce existante de l'adresse montre aussi la taille réglée par
+  l'utilisateur (`emulation` = taille posée) et son clic n'y efface rien (seule la taille de
+  l'agent) : la barre doit la remplacer ou la réserver à l'agent (`control === 'agent'`).

@@ -7,7 +7,13 @@ import type { ScheduledTaskInput } from '@shared/schedule'
 import type { UserCommand } from '@shared/user-commands'
 import type { CustomAgentDraft } from '@shared/custom-agents'
 import type { PromptAttachment } from '@shared/attachments'
-import type { BrowserBounds, BrowserGo, BrowserZoom, CertificateException } from '@shared/browser'
+import type {
+  BrowserBounds,
+  BrowserDeviceRequest,
+  BrowserGo,
+  BrowserZoom,
+  CertificateException
+} from '@shared/browser'
 import type { PageLayerTheme, PagePin } from '@shared/page-notes'
 import type {
   AgentConfigureRequest,
@@ -764,6 +770,9 @@ export function createApi(
       /** Zoom de la page et taille imposée par l'agent (fiche 129). */
       zoom: (id: string, action: BrowserZoom) => invoke('browser:zoom', id, action),
       clearEmulation: (id: string) => invoke('browser:clearEmulation', id),
+      // Réglage de l'utilisateur, taille d'écran et thème (fiche 295) : revérifié dans le main.
+      setDevice: (id: string, tabId: string, device: BrowserDeviceRequest | null) =>
+        invoke('browser:setDevice', id, tabId, device),
       /** Page figée pour l'annoter (fiche 132). */
       freeze: (id: string) => invoke('browser:freeze', id),
       noteShot: (id: string) => invoke('browser:noteShot', id),

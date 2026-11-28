@@ -167,6 +167,8 @@ export const READ_ONLY_SAFE = [
   'browser:showDownload',
   'browser:zoom',
   'browser:clearEmulation',
+  // Réglage de taille et de thème (fiche 295) : en mémoire seulement, rien d'écrit.
+  'browser:setDevice',
   'browser:freeze',
   'browser:pagePins',
   // Avertissement de certificat (fiche 269) : comme une navigation ; une exception « retenue »

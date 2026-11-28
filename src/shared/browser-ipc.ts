@@ -11,6 +11,7 @@ import type { AgentSettingsView } from './agent'
 import type { ImageAttachment } from './attachments'
 import type {
   BrowserBounds,
+  BrowserDeviceRequest,
   BrowserGo,
   BrowserState,
   BrowserZoom,
@@ -39,6 +40,15 @@ export interface BrowserIpcContract {
   'browser:zoom': { args: [id: string, action: BrowserZoom]; result: undefined }
   /** La page reprend la largeur du panneau (taille imposée par l'agent, fiche 129). */
   'browser:clearEmulation': { args: [id: string]; result: undefined }
+  /**
+   * Réglage de l'utilisateur, taille d'écran et thème (fiche 295, ADR-0078) : pour toute la
+   * conversation ; `tabId` : l'onglet regardé, dont l'essai de l'agent s'efface (« Reprendre la
+   * main ») ; `null` : barre fermée. Revérifié dans le main (`browser-ipc.ts`).
+   */
+  'browser:setDevice': {
+    args: [id: string, tabId: string, device: BrowserDeviceRequest | null]
+    result: undefined
+  }
   /** Page figée le temps d'écrire une remarque (fiches 132, 146) ; `null` sans page. */
   'browser:freeze': { args: [id: string]; result: PageFreeze | null }
   /** Capture propre d'une remarque, sans ce que l'app dessine dans la page (fiche 146). */
@@ -79,6 +89,7 @@ export const BROWSER_CHANNELS = [
   'browser:showDownload',
   'browser:zoom',
   'browser:clearEmulation',
+  'browser:setDevice',
   'browser:freeze',
   'browser:noteShot',
   'browser:annotate',

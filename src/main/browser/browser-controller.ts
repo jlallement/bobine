@@ -3,7 +3,13 @@
  * `browser-setup.ts`.
  */
 import type { ImageAttachment } from '@shared/attachments'
-import type { BrowserBounds, BrowserGo, BrowserState, BrowserZoom } from '@shared/browser'
+import type {
+  BrowserBounds,
+  BrowserDeviceRequest,
+  BrowserGo,
+  BrowserState,
+  BrowserZoom
+} from '@shared/browser'
 import type { PageFreeze, PageLayerTheme, PagePin } from '@shared/page-notes'
 
 export interface BrowserController {
@@ -29,6 +35,12 @@ export interface BrowserController {
   zoom?: (conversationId: string, action: BrowserZoom) => void
   /** La page reprend la largeur du panneau : fin de la taille imposée par l'agent (fiche 129). */
   clearEmulation?: (conversationId: string) => Promise<void>
+  /** Réglage de l'utilisateur, taille d'écran et thème (fiche 295) ; déjà revérifié par l'IPC. */
+  setDevice?: (
+    conversationId: string,
+    tabId: string,
+    device: BrowserDeviceRequest | null
+  ) => Promise<void>
   /** Page figée le temps d'écrire une remarque (fiches 132, 146) ; `null` sans page. */
   freeze?: (conversationId: string) => Promise<PageFreeze | null>
   /** Capture propre d'une remarque, sans ce que l'app dessine dans la page (fiche 146). */

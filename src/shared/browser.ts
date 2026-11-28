@@ -22,8 +22,23 @@ export interface BrowserState {
   canGoForward: boolean
   /** Zoom de la page de l'onglet actif (1 = 100 %), propre à l'onglet (fiche 129). */
   zoom: number
-  /** Taille d'écran imposée par l'agent (`browser_resize`), jusqu'à la fin de son tour. */
+  /**
+   * Taille d'écran **posée** sur la page de l'onglet actif, et sa réduction pour tenir dans la zone :
+   * celle de l'essai de l'agent (`browser_resize`, jusqu'à la fin de son tour) ou du réglage de
+   * l'utilisateur (fiche 295) ; absente : la page suit la largeur du panneau.
+   */
   emulation?: BrowserEmulation
+  /** Thème posé sur la page de l'onglet actif (fiche 295) ; absent : Auto, celui du système. */
+  colorScheme?: BrowserColorScheme
+  /** Réglage de l'utilisateur pour la conversation (fiche 295) ; absent : barre fermée. */
+  device?: BrowserDeviceRequest
+  /** Essai de l'agent sur l'onglet actif, jusqu'à la fin de son tour (fiche 295) ; absent : aucun. */
+  agent?: BrowserAgentTrial
+  /**
+   * Qui a la main sur l'onglet actif (fiche 295, ADR-0078) : l'agent pendant son essai, sinon
+   * l'utilisateur s'il a un réglage ; absent : ni l'un ni l'autre (largeur du panneau, thème Auto).
+   */
+  control?: 'user' | 'agent'
   /**
    * Certificat refusé pour la page de l'onglet actif (fiche 269, ADR-0064) : l'onglet montre
    * l'avertissement à la place de la page.
@@ -82,14 +97,51 @@ export interface CertificateException {
 }
 
 /**
- * Taille d'écran imposée par l'agent (fiche 129) : pixels CSS de la page, et réduction appliquée
- * pour qu'elle tienne entière dans la zone (`scale` ≤ 1).
+ * Taille d'écran posée sur la page (fiche 129 ; agent ou utilisateur, fiche 295) : pixels CSS de la
+ * page, et réduction appliquée pour qu'elle tienne entière dans la zone (`scale` ≤ 1).
  */
 export interface BrowserEmulation {
   width: number
   height: number
   mobile: boolean
   scale: number
+}
+
+/** Thème forcé pour la page (`prefers-color-scheme`). */
+export type BrowserColorScheme = 'light' | 'dark'
+
+/** Écran imité : pixels CSS de la page ; `mobile` : mode mobile de Chromium et tactile. */
+export interface EmulatedScreen {
+  width: number
+  height: number
+  mobile: boolean
+}
+
+/**
+ * Réglage de l'utilisateur (fiche 295, ADR-0078), seul objet que l'interface envoie
+ * (`browser:setDevice`) : « Adaptatif » (largeur du panneau), un appareil de la liste
+ * (`shared/browser-devices.ts`, par identifiant), ou une taille libre ; et le thème (`null` : Auto).
+ * Le main revérifie tout.
+ */
+export type BrowserDeviceRequest =
+  | { kind: 'responsive'; colorScheme: BrowserColorScheme | null }
+  | { kind: 'preset'; id: string; landscape: boolean; colorScheme: BrowserColorScheme | null }
+  | {
+      kind: 'custom'
+      width: number
+      height: number
+      mobile: boolean
+      colorScheme: BrowserColorScheme | null
+    }
+
+/**
+ * Essai de l'agent sur un onglet (`browser_resize`), champ par champ : absent, le réglage de
+ * l'utilisateur s'applique ; `panel` / `auto` (préréglage `desktop`, thème `auto`) : la largeur du
+ * panneau, le thème du système, devant le réglage de l'utilisateur.
+ */
+export interface BrowserAgentTrial {
+  screen?: EmulatedScreen | 'panel'
+  colorScheme?: BrowserColorScheme | 'auto'
 }
 
 /** Demande de la page à l'onglet du panneau (fiche 129) : ⌘L tapé dans la page. */

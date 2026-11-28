@@ -5,6 +5,8 @@
  * Écrits contre `BrowserDriver` (une page par conversation) : testables sans Electron.
  */
 import { normalizeUrl, pageSiteToApprove, siteToApprove } from '@shared/browser'
+import { SCREEN_SIZE_MAX, SCREEN_SIZE_MIN } from '@shared/browser-devices'
+import { PRESETS, resizeResult } from './resize-result'
 import {
   dialogAnswerText,
   dialogOpenText,
@@ -93,6 +95,11 @@ export interface BrowserDriver {
   /** Taille émulée en cours et sa réduction à l'affichage. */
   emulation?: () => { width: number; height: number; scale: number } | undefined
   colorScheme: (scheme: 'light' | 'dark' | undefined) => Promise<void>
+  /**
+   * L'utilisateur a réglé lui-même la taille ou le thème (fiche 295) : il reviendra à la fin du
+   * tour. L'agent n'apprend rien d'autre de ce réglage, et ne peut pas le changer.
+   */
+  userDevice?: () => boolean
   /** Popups demandées par les actions de l'agent et bloquées depuis la dernière fois (fiche 072). */
   blockedPopups?: () => string[]
   /** Navigations vers un site non accordé, arrêtées pendant ses actions (fiche 249). */
@@ -116,12 +123,6 @@ export interface BrowserDriver {
   closeTab: (id: string) => void
 }
 
-/** Préréglages de `browser_resize`. */
-const PRESETS: Record<string, { width: number; height: number; mobile: boolean } | undefined> = {
-  mobile: { width: 375, height: 812, mobile: true },
-  tablet: { width: 768, height: 1024, mobile: true },
-  desktop: undefined
-}
 const OUTPUT_MAX_CHARS = 20_000
 
 const truncate = (text: string) =>
@@ -522,8 +523,8 @@ function createTools(
       const custom =
         args['width'] !== undefined || args['height'] !== undefined
           ? {
-              width: num(args, 'width', 375, 200, 4000),
-              height: num(args, 'height', 812, 200, 4000),
+              width: num(args, 'width', 375, SCREEN_SIZE_MIN, SCREEN_SIZE_MAX),
+              height: num(args, 'height', 812, SCREEN_SIZE_MIN, SCREEN_SIZE_MAX),
               mobile: args['mobile'] === true
             }
           : undefined
@@ -531,12 +532,8 @@ function createTools(
       const scheme = args['color_scheme']
       if (scheme === 'light' || scheme === 'dark') await page.colorScheme(scheme)
       else if (scheme === 'auto') await page.colorScheme(undefined)
-      const { width, height } = page.viewport()
-      const emulation = page.emulation?.()
-      const note = emulation
-        ? ` Shown at ${Math.round(emulation.scale * 100)}% to fit the panel; screenshots and click coordinates use these ${width}×${height} CSS pixels. The size is reset at the end of your turn.`
-        : ''
-      return [{ type: 'text', text: `Fenêtre : ${width}×${height} px.${note}` }]
+      const text = resizeResult(page.viewport(), page.emulation?.(), page.userDevice?.() === true)
+      return [{ type: 'text', text }]
     },
     browser_tabs: async (args) => {
       const action = typeof args['action'] === 'string' ? args['action'] : 'list'

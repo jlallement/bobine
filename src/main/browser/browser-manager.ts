@@ -32,7 +32,9 @@ import { t } from 'i18next'
 import type {
   BrowserBounds,
   BrowserCertificateProblem,
+  BrowserColorScheme,
   BrowserCommand,
+  BrowserDeviceRequest,
   BrowserDownload,
   BrowserGo,
   BrowserState,
@@ -44,6 +46,7 @@ import type { PageFreeze, PageLayerEvent, PageLayerTheme, PagePin } from '@share
 import type { BrowserDriver, DownloadNote } from './browser-tools'
 import { createDriver, historyStep, loadWithin } from './browser-driver'
 import { CdpTab } from './cdp-tab'
+import { DeviceEmulation } from './device-emulation'
 import { saveDownload } from './downloads'
 import { PageLayer, pageSnapshot } from './page-layer'
 import { CertificateGuard } from './certificate-guard'
@@ -152,9 +155,15 @@ export class BrowserManager {
   private readonly options: BrowserManagerOptions
   /** Certificats refusés et exceptions (fiche 269). */
   private readonly certificates: CertificateGuard
+  /** Taille d'écran et thème : réglage de l'utilisateur, essai de l'agent (fiche 295). */
+  private readonly devices: DeviceEmulation<Tab>
 
   constructor(options: BrowserManagerOptions) {
     this.options = options
+    this.devices = new DeviceEmulation<Tab>({
+      area: (conversationId) => this.browsers.get(conversationId)?.area,
+      changed: (conversationId) => this.relayout(conversationId)
+    })
     this.certificates = new CertificateGuard({
       memory: options.certificates,
       session: () => this.browserSession,
@@ -310,7 +319,7 @@ export class BrowserManager {
       canGoBack: contents.navigationHistory.canGoBack(),
       canGoForward: contents.navigationHistory.canGoForward(),
       zoom: contents.getZoomFactor(),
-      ...(tab.cdp.emulation ? { emulation: tab.cdp.emulation } : {}),
+      ...this.devices.view(conversationId, tab),
       ...(tab.certificate ? { certificate: tab.certificate } : {}),
       ...this.certificates.insecureOf(tab)
     }
@@ -338,41 +347,82 @@ export class BrowserManager {
   }
 
   /**
-   * Taille d'écran imposée par l'agent (`browser_resize`), réduite pour tenir dans la zone ;
-   * `undefined` : la page reprend la taille du panneau.
+   * Essai de l'agent (`browser_resize`) sur l'onglet actif, réduit pour tenir dans la zone ;
+   * `undefined` (préréglage `desktop`) : la largeur du panneau, devant le réglage de l'utilisateur.
    */
   async emulate(conversationId: string, size: EmulatedSize | undefined): Promise<void> {
-    const browser = this.browser(conversationId)
-    const tab = this.activeTab(conversationId)
-    await tab.cdp.emulate(size ? emulationFrame(browser.area, size).emulation : undefined)
-    this.layout(browser)
-    this.emit(conversationId)
+    await this.agentTrial(conversationId, { screen: size ? { ...size } : 'panel' })
   }
 
-  /** Fin d'un tour de l'agent : la taille et le thème qu'il a imposés s'annulent. */
+  /** Thème essayé par l'agent ; `undefined` (`auto`) : celui du système, devant le réglage. */
+  async agentColorScheme(
+    conversationId: string,
+    scheme: BrowserColorScheme | undefined
+  ): Promise<void> {
+    await this.agentTrial(conversationId, { colorScheme: scheme ?? 'auto' })
+  }
+
+  private async agentTrial(
+    conversationId: string,
+    patch: Parameters<DeviceEmulation<Tab>['setTrial']>[1]
+  ): Promise<void> {
+    const tab = this.activeTab(conversationId)
+    this.devices.setTrial(tab, patch)
+    this.emit(conversationId)
+    await this.devices.sync(conversationId, tab)
+  }
+
+  /**
+   * Fin d'un tour de l'agent : ses essais s'effacent sur tous les onglets, et le réglage de
+   * l'utilisateur revient tel quel (fiche 295) ; sans réglage, la largeur du panneau et le thème Auto.
+   */
   async endAgentTurn(conversationId: string): Promise<void> {
     const browser = this.browsers.get(conversationId)
     if (!browser) return
-    let changed = false
-    for (const tab of browser.tabs) {
-      if (!tab.cdp.emulation && !tab.cdp.colorScheme) continue
-      changed = true
-      try {
-        if (tab.cdp.emulation) await tab.cdp.emulate(undefined)
-        if (tab.cdp.colorScheme) await tab.cdp.setColorScheme(undefined)
-      } catch {
-        // Onglet fermé entre-temps : rien à rendre.
-      }
-    }
-    if (!changed || this.browsers.get(conversationId) !== browser) return
-    this.layout(browser)
+    const tabs = browser.tabs.filter((tab) => this.devices.clearTrial(tab))
+    if (tabs.length === 0) return
     this.emit(conversationId)
+    // Onglet fermé entre-temps : rien à rendre ; l'état dit ce qui a été pris.
+    await Promise.allSettled(tabs.map((tab) => this.devices.sync(conversationId, tab)))
   }
 
-  /** L'utilisateur rend sa largeur à la page (puce de la taille imposée). */
+  /** L'utilisateur rend la page à son réglage (puce de la taille imposée par l'agent). */
   async clearEmulation(conversationId: string): Promise<void> {
-    if (this.currentTab(conversationId)?.cdp.emulation)
-      await this.emulate(conversationId, undefined)
+    const tab = this.currentTab(conversationId)
+    if (!tab || !this.devices.clearTrial(tab, 'screen')) return
+    this.emit(conversationId)
+    await this.devices.sync(conversationId, tab)
+  }
+
+  /**
+   * Réglage de l'utilisateur pour la conversation (fiche 295, ADR-0078) : appliqué à tous ses
+   * onglets, nouveaux compris ; `null` : barre fermée (largeur du panneau, thème Auto). Geste de
+   * l'utilisateur : il reprend la main sur l'onglet qu'il regarde (`tabId`), dont l'essai de l'agent
+   * s'efface. Appelé seulement par l'IPC, qui a tout revérifié ; une pose refusée par le CDP ne fait
+   * pas échouer l'appel (l'état dit ce qui a été pris).
+   */
+  async setDevice(
+    conversationId: string,
+    tabId: string,
+    device: BrowserDeviceRequest | null
+  ): Promise<void> {
+    const browser = this.browsers.get(conversationId)
+    const tab = browser?.tabs.find((t) => t.id === tabId)
+    if (!browser || !tab) throw new Error(`Onglet inconnu : ${tabId}`)
+    this.devices.setDevice(conversationId, device ?? undefined)
+    this.devices.clearTrial(tab)
+    this.emit(conversationId)
+    await Promise.allSettled(browser.tabs.map((t) => this.devices.sync(conversationId, t)))
+  }
+
+  /** L'utilisateur a un réglage pour la conversation (phrase du résultat de `browser_resize`). */
+  hasDevice(conversationId: string): boolean {
+    return this.devices.device(conversationId) !== undefined
+  }
+
+  /** Le réglage de l'utilisateur est posé sur un onglet neuf (outil `browser_tabs new`). */
+  deviceSettled(tab: Tab): Promise<void> {
+    return this.devices.settled(tab)
   }
 
   private zoomTab(conversationId: string, tab: Tab, action: BrowserZoom): void {
@@ -471,12 +521,20 @@ export class BrowserManager {
     cdp.onBinding = (name, payload, contextId) => tab.layer.binding(name, payload, contextId)
     browser.tabs.push(tab)
     browser.active = tab.id
-    // Boîte de la page (alert, confirm…) : la conversation attend l'utilisateur.
-    tab.cdp.dialogs.onChange = (dialog) =>
+    // Boîte de la page (alert, confirm…) : la conversation attend l'utilisateur. Une taille posée
+    // pendant la boîte a été refusée (`page-dialogs.ts`) : reprise à sa fermeture (fiche 295).
+    tab.cdp.dialogs.onChange = (dialog) => {
       this.options.onWaiting?.(conversationId, `dialog-${tab.id}`, !!dialog, 'page-dialog')
+      if (!dialog) void this.devices.sync(conversationId, tab).catch(() => {})
+    }
     this.watch(conversationId, tab)
     this.layout(browser)
     this.emit(conversationId)
+    // Le réglage de l'utilisateur vaut pour les onglets ouverts ensuite (l'émulation est par
+    // onglet, sonde S14) ; un échec est dit par l'état, l'onglet reposé au passage suivant.
+    if (this.devices.device(conversationId)) {
+      void this.devices.sync(conversationId, tab).catch(() => {})
+    }
     return tab
   }
 
@@ -525,6 +583,7 @@ export class BrowserManager {
     this.popups.delete(conversationId)
     this.agentDownloads.delete(conversationId)
     this.savedDownloads.delete(conversationId)
+    this.devices.forget(conversationId)
     const browser = this.browsers.get(conversationId)
     if (!browser) return
     this.browsers.delete(conversationId)
@@ -637,16 +696,17 @@ export class BrowserManager {
     }
   }
 
-  /** Bornes de la vue dans la zone ; une taille imposée suit la zone (réduction recalculée). */
+  /**
+   * Bornes de la vue dans la zone ; une taille posée suit la zone : la réduction est recalculée et
+   * reposée par la file de l'onglet (`device-emulation.ts`), qui repose ensuite la vue.
+   */
   private frameOf(tab: Tab, area: BrowserBounds): BrowserBounds {
     const current = tab.cdp.emulation
     if (!current) return area
     const frame = emulationFrame(area, current)
-    if (Math.abs(frame.emulation.scale - current.scale) > 0.001) {
-      void tab.cdp
-        .emulate(frame.emulation)
-        .then(() => this.emitTab(tab))
-        .catch(() => {})
+    const owner = this.ownerOf(tab.view.webContents)?.conversationId
+    if (owner && Math.abs(frame.emulation.scale - current.scale) > 0.001) {
+      void this.devices.sync(owner, tab).catch(() => {})
     }
     return frame.bounds
   }
@@ -659,11 +719,6 @@ export class BrowserManager {
   private emit(conversationId: string): void {
     const state = this.state(conversationId)
     if (state) this.options.emitState(state)
-  }
-
-  private emitTab(tab: Tab): void {
-    const conversationId = this.ownerOf(tab.view.webContents)?.conversationId
-    if (conversationId) this.emit(conversationId)
   }
 
   private watch(conversationId: string, tab: Tab): void {

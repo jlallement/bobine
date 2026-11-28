@@ -549,3 +549,36 @@ describe('site de la page vérifié avant chaque outil (fiche 249)', () => {
     expect(await t.firstText('browser_get_page_text')).toContain('Bonjour')
   })
 })
+
+describe('réglage de l’utilisateur (fiche 295)', () => {
+  it('`browser_resize` dit que le réglage de l’utilisateur reviendra à la fin du tour', async () => {
+    const t = setup(
+      ['Autoriser'],
+      fakePage({
+        viewport: () => ({ width: 768, height: 1024 }),
+        emulation: () => ({ width: 768, height: 1024, scale: 0.5 }),
+        userDevice: () => true
+      })
+    )
+    const text = await t.firstText('browser_resize', { preset: 'tablet' })
+    expect(text).toContain('Shown at 50% to fit the panel')
+    expect(text).toContain("The user's own screen size and theme settings")
+    expect(text).not.toContain('The size is reset')
+  })
+
+  it('l’agent n’a aucun outil pour lire ou changer le réglage ; `browser_resize` garde son contrat', () => {
+    const { module, context } = setup()
+    const tools = module.tools(context)
+    expect(
+      tools.map((t) => t.definition.name).filter((n) => /device|setting|user/i.test(n))
+    ).toEqual([])
+    const resize = tools.find((t) => t.definition.name === 'browser_resize')?.definition
+    expect(Object.keys(resize?.inputSchema.properties ?? {})).toEqual([
+      'preset',
+      'width',
+      'height',
+      'mobile',
+      'color_scheme'
+    ])
+  })
+})

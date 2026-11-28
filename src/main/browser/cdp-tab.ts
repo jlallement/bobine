@@ -427,7 +427,9 @@ export class CdpTab {
 
   /**
    * Taille d'écran émulée (mobile, tablette…), réduite de `scale` pour tenir dans la zone (fiche
-   * 129) ; `undefined` : taille réelle du panneau.
+   * 129) ; `undefined` : taille réelle du panneau. La taille est notée dès que Chromium l'a prise,
+   * avant le tactile (fiche 295) : si le tactile échoue ensuite, `emulation` dit la taille vraiment
+   * posée (celle des clics × `scale`), pas l'ancienne.
    */
   async emulate(emulation: Emulation | undefined): Promise<void> {
     if (emulation) {
@@ -438,12 +440,13 @@ export class CdpTab {
         mobile: emulation.mobile,
         scale: emulation.scale
       })
+      this.emulation = emulation
       await this.send('Emulation.setTouchEmulationEnabled', { enabled: emulation.mobile })
     } else {
       await this.send('Emulation.clearDeviceMetricsOverride')
+      this.emulation = undefined
       await this.send('Emulation.setTouchEmulationEnabled', { enabled: false })
     }
-    this.emulation = emulation
   }
 
   async setColorScheme(scheme: 'light' | 'dark' | undefined): Promise<void> {

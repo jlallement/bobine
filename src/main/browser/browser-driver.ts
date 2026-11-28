@@ -160,11 +160,14 @@ export function createDriver(manager: BrowserManager, conversationId: string): B
     dialogAnswers: () => manager.currentTab(conversationId)?.cdp.dialogs.takeAnswers() ?? [],
     emulate: (size) => manager.emulate(conversationId, size),
     emulation: () => manager.currentTab(conversationId)?.cdp.emulation,
-    colorScheme: (scheme) => cdp().setColorScheme(scheme),
+    colorScheme: (scheme) => manager.agentColorScheme(conversationId, scheme),
+    userDevice: () => manager.hasDevice(conversationId),
     tabs: () => manager.tabs(conversationId),
     newTab: async () => {
       const created = manager.newTab(conversationId)
       await created.cdp.whenReady()
+      // Le réglage de l'utilisateur est posé avant la première action de l'agent (fiche 295).
+      await manager.deviceSettled(created)
       return created.id
     },
     selectTab: (id) => manager.selectTab(conversationId, id),
