@@ -4,6 +4,7 @@
  */
 import { haltMessage } from './halt-notice'
 import type { AppToolLabel } from './app-tools'
+import { calledToolsField, type CalledToolsMark } from './called-tools'
 import { planOf, toolInputOf, type ToolInput } from './tool-label'
 import { withCommand, type ToolCommand } from './command-view'
 import { withTodos, type TodoItem } from './todos'
@@ -65,7 +66,7 @@ import type { Handover } from './handover'
 import type { WorktreeStart } from './worktree-cycle'
 import { reduceWorktreeSetup, type WorktreeSetup } from './worktree-setup'
 import { contentOrKept } from './tool-call-kept'
-import { compactionReply } from './compaction-reply'
+import { blocksText, compactionReply, findCompaction } from './compaction-reply'
 import { withCompactionDone, withUsageUpdate } from './context-estimate'
 import { keptOnReset, withSentEntry } from './transcript-kept'
 import { backgroundWork, stampReplies, turnStart, withoutBackground } from './turn-stamps'
@@ -151,6 +152,11 @@ export type TranscriptItem =
        * (du code qui les appelle, `execute` d'OpenCode 2, fiche 079) ; `appTool` reste le premier.
        */
       appTools?: AppToolLabel[]
+      /**
+       * Outils que cette carte a appelés, nommés par l'agent à sa fin (marque du main
+       * `bobine/calledTools`, fiche 293) : titre de la carte finie, à défaut d'outil de l'app.
+       */
+      calledTools?: CalledToolsMark
       permission?: ToolPermission
     }
   | { kind: 'plan'; id: number; entries: PlanEntry[] }
@@ -323,17 +329,6 @@ function toolStatus(
 /** Tour en échec : compté s'il avait commencé (un message envoyé), sans jetons. */
 const withEndedTurn = (state: TranscriptState): TranscriptState =>
   state.usage?.pending ? { ...state, usage: endTurn(state.usage) } : state
-
-function findCompaction(items: TranscriptItem[], compactionId: string): number {
-  return items.findLastIndex(
-    (item) => item.kind === 'compaction' && item.compactionId === compactionId
-  )
-}
-
-/** Texte de blocs de contenu (les autres types sont signalés entre crochets). */
-function blocksText(blocks: { type: string; text?: string }[]): string {
-  return blocks.map((b) => (b.type === 'text' ? (b.text ?? '') : `[${b.type}]`)).join('')
-}
 
 // eslint-disable-next-line complexity -- un cas par type d'évènement : un switch long mais lisible (fiche 089)
 export function reduceTranscript(state: TranscriptState, event: AgentEvent): TranscriptState {
@@ -793,7 +788,8 @@ function applyUpdateItems(state: TranscriptState, update: SessionUpdate): Transc
           ...(toolInputOf(update.rawInput) ? { input: toolInputOf(update.rawInput) } : {}),
           ...withCommand(update.rawInput),
           ...withTodos(update.rawInput, undefined, update.kind),
-          ...withSubagent(update)
+          ...withSubagent(update),
+          ...calledToolsField(update)
         })
       }
       return replaceAt(state, index, (current) => {
@@ -801,6 +797,7 @@ function applyUpdateItems(state: TranscriptState, update: SessionUpdate): Transc
         return {
           ...tool,
           ...withSubagent(update, tool.subagent),
+          ...calledToolsField(update),
           title: update.title ?? tool.title,
           toolKind: update.kind ?? tool.toolKind,
           status: toolStatus(state, tool, update.status),

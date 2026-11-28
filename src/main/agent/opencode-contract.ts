@@ -6,7 +6,8 @@
  * Sans alias (`@shared`) ni import de valeur : la sonde le charge sous Node, sans bundler.
  */
 import type { SessionUpdate } from '../../shared/acp-sdk.mts'
-import type { ChildSession, SubagentStream, ToolStatusSource } from './adapters'
+import type { CalledTool } from '../../shared/called-tools.ts'
+import type { CalledToolsSource, ChildSession, SubagentStream, ToolStatusSource } from './adapters'
 
 /** Méthode de connexion d'OpenCode (1.19 et 2) : `opencode auth login` dans un terminal. */
 export const LOGIN_METHOD = 'opencode-login'
@@ -133,4 +134,54 @@ export const OPENCODE_TOOL_STATUS: ToolStatusSource = {
   id: 'opencode-tool-calls',
   correct: (update) =>
     executeFailed(update) ? ({ ...update, status: 'failed' } as SessionUpdate) : update
+}
+
+/** Appels lus au plus dans une carte (le main n'en garde que les premiers ; tous sont comptés). */
+const MAX_READ_CALLS = 200
+
+/**
+ * Un appel de `toolCalls[]` (relevé du 2026-11-28, OpenCode 2.3.0 connecté à Figma) : `tool` vaut
+ * `<serveur>.<outil>` (`figma.whoami`), séparé au **premier** point ; un nom sans point (ou vide
+ * d'un côté) n'a pas de serveur. `search` (recherche parmi les outils du Code Mode) est une
+ * recherche ; son espace (`input.namespace`) n'est pris que s'il est donné — hypothèse relevée la
+ * veille sans être gardée en octets ; la trace gardée n'a que `query` et `limit`.
+ */
+function calledToolOf(call: unknown): CalledTool | undefined {
+  const c = record(call)
+  const tool = c?.['tool']
+  if (typeof tool !== 'string') return undefined
+  if (tool === 'search') {
+    const namespace = record(c?.['input'])?.['namespace']
+    return { search: true, ...(typeof namespace === 'string' ? { server: namespace } : {}) }
+  }
+  const dot = tool.indexOf('.')
+  if (dot > 0 && dot < tool.length - 1) {
+    return { server: tool.slice(0, dot), tool: tool.slice(dot + 1) }
+  }
+  return { tool }
+}
+
+/**
+ * Outils appelés par une carte `execute` finie (« Code Mode », fiche 293) : OpenCode les nomme dans
+ * `rawOutput.metadata.toolCalls[]` à la fin seulement (la mise à jour `completed`, sans titre ni
+ * genre, relevé du 2026-11-28). Pendant l'appel, rien : la carte garde son titre.
+ */
+export function executeCalledTools(
+  update: SessionUpdate
+): { tools: CalledTool[]; total: number } | undefined {
+  if (update.sessionUpdate !== 'tool_call_update') return undefined
+  if (update.status !== 'completed' && update.status !== 'failed') return undefined
+  const calls = record(record(update.rawOutput)?.['metadata'])?.['toolCalls']
+  if (!Array.isArray(calls) || calls.length === 0) return undefined
+  const tools = calls
+    .slice(0, MAX_READ_CALLS)
+    .map(calledToolOf)
+    .filter((tool): tool is CalledTool => tool !== undefined)
+  return tools.length ? { tools, total: calls.length } : undefined
+}
+
+/** Noms des outils appelés par `execute`, tels que le profil d'OpenCode les déclare (ADR-0015). */
+export const OPENCODE_CALLED_TOOLS: CalledToolsSource = {
+  id: 'opencode-called-tools',
+  read: executeCalledTools
 }

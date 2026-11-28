@@ -1,18 +1,23 @@
 /**
  * Ce que l'agent décrit à sa façon dans ses mises à jour, remis en forme générique d'après son
  * profil (ADR-0015) avant que l'hôte ne les trie : diffs manquants (`diffSource`, fiches 096, 202),
- * échecs d'outils (`toolStatus`, fiche 122), sous-agents (`subagentFormat`, fiche 140). Avant
+ * échecs d'outils (`toolStatus`, fiche 122), outils appelés par du code (`calledTools`, fiche
+ * 293), sous-agents (`subagentFormat`, fiche 140). Avant
  * tout, ce qui est générique : le diff de la demande d'autorisation (fiche 202), les fichiers
  * nouveaux d'après le disque quand l'outil est proposé (`new-files.ts`, fiche 203).
  */
 import type { ToolCallLocation, SessionUpdate, ToolCallUpdate } from '../../shared/acp-sdk.mts'
+import { calledToolsMark, withCalledTools, withoutCalledTools } from '@shared/called-tools'
 import type { AgentProfile } from './profiles'
 import { SubagentMarker } from './subagent-marks'
 import { existsOnDisk, noteProposedFiles, withNewFiles, type FileExists } from './new-files'
 import { ToolCallMemory, withPermissionDiffs } from './tool-call-memory'
 
 /** Ce que l'adaptation reprend du profil (l'hôte passe le profil entier, le rejeu une partie). */
-export type UpdateAdapters = Pick<AgentProfile, 'diffSource' | 'toolStatus' | 'subagentFormat'>
+export type UpdateAdapters = Pick<
+  AgentProfile,
+  'diffSource' | 'toolStatus' | 'calledTools' | 'subagentFormat'
+>
 
 /** Fin d'un appel d'outil : il n'y a plus rien à compléter. */
 const ENDED = new Set(['completed', 'failed', 'cancelled'])
@@ -44,7 +49,7 @@ export class ProfileUpdates {
    * `session/load` : un outil rejoué parle du passé, le disque d'aujourd'hui n'en dit rien.
    */
   adapt(update: SessionUpdate, live = true): SessionUpdate {
-    const { diffSource, toolStatus } = this.profile
+    const { diffSource, toolStatus, calledTools } = this.profile
     const soFar = this.calls.note(update)
     if (live && soFar && isProposed(update)) noteProposedFiles(soFar, update, this.exists)
     // Générique d'abord (le diff de la demande d'autorisation, les fichiers nouveaux), puis ce
@@ -58,7 +63,12 @@ export class ProfileUpdates {
     ) {
       this.calls.forget(update.toolCallId)
     }
-    return this.marker.mark(toolStatus?.correct(completed) ?? completed)
+    // Outils nommés par l'agent à la fin de la carte (fiche 293) : marque générique, bornée et
+    // nettoyée ici (ce sont des données d'un tiers) ; celle qu'enverrait l'agent est retirée.
+    const corrected = withoutCalledTools(toolStatus?.correct(completed) ?? completed)
+    const called = calledTools?.read(update)
+    const mark = called && calledToolsMark(called.tools, called.total)
+    return this.marker.mark(mark ? withCalledTools(corrected, mark) : corrected)
   }
 
   /**

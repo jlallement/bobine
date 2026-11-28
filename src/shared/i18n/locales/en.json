@@ -366,6 +366,13 @@
         "fetch": "Web page"
       }
     },
+    "calledTools": {
+      "search": "Searches {{server}}’s tools",
+      "searchAny": "Searches tools",
+      "more": "+{{n}}",
+      "calls_one": "{{count}} call",
+      "calls_other": "{{count}} calls"
+    },
     "untitled": "Tool",
     "todos": {
       "done": "Done:",
@@ -3428,6 +3435,10 @@
     "executeErrors": {
       "label": "Errors of tools called from code",
       "detail": "When {{agent}} calls tools through its `execute` tool, it says the card finished even if one of them failed; the app reads the error it notes separately (`rawOutput.metadata.toolCalls`) and marks the card failed."
+    },
+    "executeToolNames": {
+      "label": "Names of tools called from code",
+      "detail": "When {{agent}} calls tools through its `execute` tool, the card only says “execute”; when it ends, the app reads the tools it names (`rawOutput.metadata.toolCalls[].tool`) and titles the card after them (“figma · whoami”)."
     },
     "agentLog": {
       "label": "Agent log",

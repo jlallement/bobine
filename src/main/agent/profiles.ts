@@ -30,7 +30,8 @@ import type {
   SubagentFormat,
   SubagentStream,
   RetryStatusSource,
-  ToolStatusSource
+  ToolStatusSource,
+  CalledToolsSource
 } from './adapters'
 import {
   AUTH_REQUIRED_MESSAGE as BOB_AUTH_MESSAGE,
@@ -48,7 +49,8 @@ import {
   LOGIN_METHOD,
   MODEL_UNAVAILABLE,
   OPENCODE_SUBAGENT_STREAM,
-  OPENCODE_TOOL_STATUS
+  OPENCODE_TOOL_STATUS,
+  OPENCODE_CALLED_TOOLS
 } from './opencode-contract'
 import { OPENCODE_DIFF_SOURCE } from './opencode-diffs'
 import { OPENCODE_RETRY_STATUS } from './opencode-retry'
@@ -139,6 +141,11 @@ export interface AgentProfile {
    * de son outil `execute`, `rawOutput.metadata.toolCalls[]`, fiche 122).
    */
   toolStatus?: ToolStatusSource
+  /**
+   * Outils qu'un appel d'outil a appelés, que l'agent nomme à sa façon (OpenCode 2 : à la fin d'une
+   * carte `execute`, `rawOutput.metadata.toolCalls[].tool`, fiche 293) : titre de la carte.
+   */
+  calledTools?: CalledToolsSource
   /**
    * Reprises que l'agent annonce quand il ne joint pas son modèle (OpenCode 2.3.0 :
    * `_meta["opencode/retry"]`, fiche 275) : bandeau « n'arrive pas à joindre son modèle ».
@@ -524,6 +531,7 @@ export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
       // Comme OpenCode 2 : diffs d'un « patch » rejoué retrouvés dans sa sortie (fiche 096).
       diffSource: OPENCODE_DIFF_SOURCE,
       toolStatus: OPENCODE_TOOL_STATUS,
+      calledTools: OPENCODE_CALLED_TOOLS,
       // Comme OpenCode 2.3.0 : reprises quand le modèle est injoignable (fiche 275).
       retryStatus: OPENCODE_RETRY_STATUS,
       // Pas d'invitation à `/scenario` dans les captures de la vitrine (fiche 225).
@@ -677,6 +685,7 @@ export function resolveProfiles(ctx: ProfileContext): AgentProfile[] {
       subagentStream: OPENCODE_SUBAGENT_STREAM,
       diffSource: OPENCODE_DIFF_SOURCE,
       toolStatus: OPENCODE_TOOL_STATUS,
+      calledTools: OPENCODE_CALLED_TOOLS,
       // 2.3.0 qui ne joint pas son modèle : reprises sans fin, dites seulement en `_meta` (fiche 275).
       retryStatus: OPENCODE_RETRY_STATUS,
       emptySessionTitle: EMPTY_SESSION_TITLE,

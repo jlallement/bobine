@@ -11,6 +11,7 @@ What changes for you, version by version. Shown in Settings › What’s new.
   browser: you allow access, Bobine shows where sign-in stands (signing in, signed in, expired,
   error) and lets you sign out. The token stays with OpenCode. Figma doesn’t accept IBM Bob: its
   tab says why.
+- **The names of the tools OpenCode calls**: in the thread, a finished OpenCode “execute” card shows the names of the tools it called (“figma · whoami”, “Searches figma’s tools”); OpenCode’s title stays on hover.
 
 ## 1.2.0-rc.2 — November 27, 2026
 

@@ -58,6 +58,7 @@ import {
 import { safeCut } from '@shared/display-cap'
 import { useArmedCard } from './useArmedCard'
 import { CommandBlock } from './CommandBlock'
+import { CalledToolsTitle } from './CalledToolsTitle'
 import { AgentAlwaysNote, AlwaysScopeNote, PermissionRisks, scopeCovers } from './PermissionRisks'
 import { TodosView, ToolArgsView } from './PermissionExtras'
 import { PermissionFooter } from './PermissionFooter'
@@ -123,6 +124,64 @@ const KIND_ICONS: Record<ToolKind, LucideIcon> = {
   fetch: Globe,
   switch_mode: Shuffle,
   other: Wrench
+}
+
+/**
+ * Titre d'un outil de l'agent (fiche 107) : son libellé d'après sa cible, la cible entière et le
+ * titre en infobulle ; sinon le titre brut de l'agent, chemins du dossier rendus relatifs (fiche
+ * 125), entier en infobulle.
+ */
+function agentToolTitle({
+  item,
+  label,
+  command,
+  commandHint,
+  workspace,
+  documents,
+  show
+}: {
+  item: ToolItem
+  label: ReturnType<typeof toolLabel>
+  command: ReturnType<typeof commandOfTool>
+  commandHint: string | undefined
+  workspace: string | undefined
+  documents: string | undefined
+  show: (text: string) => string
+}): ReactElement {
+  return label ? (
+    <span
+      title={
+        commandHint ??
+        labelHint(label, agentTitle(item.title, workspace, documents))?.replace(/.+/s, show)
+      }
+      className={label.file && !label.code ? 'tool-file-label' : undefined}
+      data-testid="tool-label"
+    >
+      {label.file && !label.code ? (
+        <FileLabelParts file={label.file} />
+      ) : label.code ? (
+        // Commande : la première ligne de la commande entière (`\r` seul compris, rendu ␍),
+        // nettoyée comme le libellé (fiche 125) ; sinon le libellé.
+        <code>{show(firstLine(command ? cleanCommand(command.text, workspace) : label.text))}</code>
+      ) : (
+        show(label.text)
+      )}
+    </span>
+  ) : (
+    // Titre brut de l'agent, chemins du dossier rendus relatifs (fiche 125) ; entier en infobulle.
+    <span
+      title={
+        commandHint ??
+        (cleanTitle(item.title, workspace) !== item.title ? show(item.title) : undefined)
+      }
+    >
+      {item.toolKind === 'execute' ? (
+        <code>{show(firstLine(cleanTitle(item.title, workspace)))}</code>
+      ) : (
+        show(cleanTitle(item.title, workspace))
+      )}
+    </span>
+  )
 }
 
 /** Icône de la ligne d'un outil : de l'app, liste de tâches (fiche 214), création de fichier (203), genre. */
@@ -209,47 +268,20 @@ export function ToolCall({
   // plusieurs outils appelés par du code (fiche 079) : leurs libellés à la suite. Outil de
   // l'agent : ce qu'il a fait et sur quoi (fiche 107), la cible entière et le titre en infobulle.
   const appTitle = appToolsText(item)
-  const label = !appTitle ? toolLabel(item, workspace, documents) : undefined
+  // Outils que la carte finie a appelés, nommés par l'agent (fiche 293) : à défaut d'outil de l'app.
+  const called = !appTitle ? item.calledTools : undefined
+  const label = !appTitle && !called ? toolLabel(item, workspace, documents) : undefined
   // Commande que lance l'outil (0.11, M1) : entière en infobulle de la ligne, toujours.
-  const command = !appTitle ? commandOfTool(item) : undefined
+  const command = !appTitle && !called ? commandOfTool(item) : undefined
   const commandHint = command
     ? commandTip(show(command.text), t('toolCall.command.hintMore'))
     : undefined
   const title = appTitle ? (
     <span title={show(item.title)}>{show(appTitle)}</span>
-  ) : label ? (
-    <span
-      title={
-        commandHint ??
-        labelHint(label, agentTitle(item.title, workspace, documents))?.replace(/.+/s, show)
-      }
-      className={label.file && !label.code ? 'tool-file-label' : undefined}
-      data-testid="tool-label"
-    >
-      {label.file && !label.code ? (
-        <FileLabelParts file={label.file} />
-      ) : label.code ? (
-        // Commande : la première ligne de la commande entière (`\r` seul compris, rendu ␍),
-        // nettoyée comme le libellé (fiche 125) ; sinon le libellé.
-        <code>{show(firstLine(command ? cleanCommand(command.text, workspace) : label.text))}</code>
-      ) : (
-        show(label.text)
-      )}
-    </span>
+  ) : called ? (
+    <CalledToolsTitle mark={called} agentTitle={item.title} show={show} />
   ) : (
-    // Titre brut de l'agent, chemins du dossier rendus relatifs (fiche 125) ; entier en infobulle.
-    <span
-      title={
-        commandHint ??
-        (cleanTitle(item.title, workspace) !== item.title ? show(item.title) : undefined)
-      }
-    >
-      {item.toolKind === 'execute' ? (
-        <code>{show(firstLine(cleanTitle(item.title, workspace)))}</code>
-      ) : (
-        show(cleanTitle(item.title, workspace))
-      )}
-    </span>
+    agentToolTitle({ item, label, command, commandHint, workspace, documents, show })
   )
   const row = (
     <>

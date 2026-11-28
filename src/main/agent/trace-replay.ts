@@ -21,7 +21,7 @@ import { routeUpdate } from './session-updates'
 /** Ce que le rejeu reprend du profil de l'agent (ses adaptateurs). */
 export type ReplayProfile = Pick<
   AgentProfile,
-  'diffSource' | 'toolStatus' | 'subagentFormat' | 'subagentStream'
+  'diffSource' | 'toolStatus' | 'calledTools' | 'subagentFormat' | 'subagentStream'
 >
 
 export interface TraceReplay {

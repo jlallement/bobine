@@ -11,6 +11,7 @@ Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages
   de Figma s’ouvre dans votre navigateur : vous autorisez l’accès, Bobine montre où en est la
   connexion (en cours, connecté, expirée, erreur) et permet de se déconnecter. Le jeton reste chez
   OpenCode. Figma n’accepte pas IBM Bob : son onglet dit pourquoi.
+- **Le nom des outils appelés par OpenCode** : dans le fil, une carte « execute » d’OpenCode finie porte le nom des outils qu’elle a appelés (« figma · whoami », « Cherche parmi les outils de figma ») ; le titre d’OpenCode reste au survol.
 
 ## 1.2.0-rc.2 — 27 novembre 2026
 

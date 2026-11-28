@@ -11,6 +11,7 @@ import type { AgentUnreachableView } from '@shared/agent'
 import type { McpServer } from '@shared/mcp'
 import type { ModelProvider } from '@shared/providers'
 import type { RuleFileView } from '@shared/rules'
+import type { CalledTool } from '@shared/called-tools'
 import type { Subagent } from '@shared/subagent'
 import type { AgentSpend } from '@shared/usage'
 import type { McpLocations } from '../agent-config/mcp-files'
@@ -121,6 +122,21 @@ export interface ToolStatusSource {
   id: 'opencode-tool-calls'
   /** La mise à jour, en échec si l'agent y décrit une erreur ; telle quelle sinon. */
   correct(update: SessionUpdate): SessionUpdate
+}
+
+/**
+ * Outils qu'un appel d'outil a appelés à son tour, que l'agent nomme à sa façon (OpenCode 2 : à la
+ * fin d'une carte de son outil `execute`, `rawOutput.metadata.toolCalls[].tool`, fiche 293). Le main
+ * en pose la marque générique `_meta["bobine/calledTools"]` (`shared/called-tools.ts`).
+ */
+export interface CalledToolsSource {
+  /** Repère de la fonction dans « Propre à <agent> » et `docs/agents.md`. */
+  id: 'opencode-called-tools'
+  /**
+   * Les appels nommés par cette mise à jour (non nettoyés : le main borne et nettoie), avec leur
+   * nombre annoncé ; `undefined` si elle n'en nomme aucun.
+   */
+  read(update: SessionUpdate): { tools: CalledTool[]; total: number } | undefined
 }
 
 /**

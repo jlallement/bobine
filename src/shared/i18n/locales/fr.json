@@ -404,6 +404,14 @@
         "fetch": "Page web"
       }
     },
+    "calledTools": {
+      "search": "Cherche parmi les outils de {{server}}",
+      "searchAny": "Cherche parmi les outils",
+      "more": "+{{n}}",
+      "calls_one": "{{count}} appel",
+      "calls_many": "{{count}} appels",
+      "calls_other": "{{count}} appels"
+    },
     "untitled": "Outil",
     "todos": {
       "done": "Faite :",
@@ -3548,6 +3556,10 @@
     "executeErrors": {
       "label": "Erreurs des outils appelés par du code",
       "detail": "Quand {{agent}} appelle des outils par son outil `execute`, il dit la carte finie même si l’un d’eux a échoué ; l’app lit l’erreur qu’il note à part (`rawOutput.metadata.toolCalls`) et met la carte en échec."
+    },
+    "executeToolNames": {
+      "label": "Nom des outils appelés par du code",
+      "detail": "Quand {{agent}} appelle des outils par son outil `execute`, la carte ne dit que « execute » ; à sa fin, l’app lit les outils qu’il nomme (`rawOutput.metadata.toolCalls[].tool`) et titre la carte d’après eux (« figma · whoami »)."
     },
     "agentLog": {
       "label": "Journal de l’agent",

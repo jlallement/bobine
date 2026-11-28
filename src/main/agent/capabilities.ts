@@ -306,6 +306,13 @@ export function specificItems(profile: AgentProfile): CapabilityItem[] {
       detail: t('capabilities.executeErrors.detail', { agent: name })
     })
   }
+  if (profile.calledTools?.id === 'opencode-called-tools') {
+    items.push({
+      id: 'execute-tool-names',
+      label: t('capabilities.executeToolNames.label'),
+      detail: t('capabilities.executeToolNames.detail', { agent: name })
+    })
+  }
   if (profile.childModelChoice) {
     items.push({
       id: 'child-model',

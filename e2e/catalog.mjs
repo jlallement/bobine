@@ -1565,6 +1565,25 @@ export const SUITES = [
     ]
   },
   {
+    // Nom des outils d'un serveur MCP tiers appelés par du code (fiche 293, lot 3) : cartes
+    // `execute` de l'agent factice à la forme relevée d'OpenCode 2.3.0, titrées d'après leurs outils.
+    name: 'fil-outils-mcp',
+    file: 'fil-outils-mcp.mjs',
+    run: 'filOutilsMcpSuite',
+    themes: BOTH,
+    dark: true,
+    sources: [
+      `${C}thread/ToolCall.tsx`,
+      `${C}thread/CalledToolsTitle.tsx`,
+      'src/shared/called-tools.ts',
+      'src/shared/called-tools-text.ts',
+      'src/main/agent/opencode-contract.ts',
+      'src/main/agent/profile-updates.ts',
+      'src/main/agent/profiles.ts',
+      'src/mock-agent/scenarios-outils-mcp.mts'
+    ]
+  },
+  {
     // Figma en un clic (fiche 293, lot 2) : connexion d'un serveur MCP distant par l'agent, contre
     // une fausse commande (`BOBINE_FAKE_MCP_AUTH`), page interceptée (`BOBINE_OPEN_LOG`).
     name: 'mcp-figma',

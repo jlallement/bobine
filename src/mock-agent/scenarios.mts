@@ -24,6 +24,7 @@ import { limitScenarios } from './scenarios-limites.mts'
 import { commandScenarios } from './scenarios-commandes.mts'
 import { overflowScenarios } from './scenarios-debordements.mts'
 import { openCode23Scenarios } from './scenarios-opencode-2-3.mts'
+import { outilsMcpScenarios } from './scenarios-outils-mcp.mts'
 import { consumptionScenarios } from './scenarios-consommation.mts'
 import { openCode23QuestionScenarios } from './scenarios-opencode-2-3-questions.mts'
 import { failureScenarios } from './scenarios-pannes.mts'
@@ -3234,6 +3235,7 @@ export const scenarios: Record<string, Scenario> = {
   ...overflowScenarios,
   // Sous-agents d’OpenCode 2.3.0, toujours en arrière-plan.
   ...openCode23Scenarios,
+  ...outilsMcpScenarios,
   ...consumptionScenarios,
   ...openCode23QuestionScenarios,
   ...failureScenarios,

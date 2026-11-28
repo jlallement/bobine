@@ -1,3 +1,5 @@
 # Logos de marque livrés tels quels (fiche 293) : empreinte vérifiée par un essai, jamais de
 # conversion des fins de ligne (Windows, core.autocrlf).
 src/renderer/src/assets/brands/** -text
+# Relevé réel d'OpenCode (fiche 293, lot 3) : rejoué octet pour octet, empreinte vérifiée par un essai.
+src/main/agent/__traces__/opencode-2.3.0/acp-execute-figma.jsonl -text

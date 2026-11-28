@@ -60,7 +60,11 @@ import {
   type Observation,
   type Observations
 } from '../src/main/agent/opencode-probe.ts'
-import { childSessionOf, EMPTY_SESSION_TITLE } from '../src/main/agent/opencode-contract.ts'
+import {
+  childSessionOf,
+  EMPTY_SESSION_TITLE,
+  executeCalledTools
+} from '../src/main/agent/opencode-contract.ts'
 import { filesOf, OPENCODE_DIFF_SOURCE, withPatchDiffs } from '../src/main/agent/opencode-diffs.ts'
 import { ToolCallMemory } from '../src/main/agent/tool-call-memory.ts'
 import { ProbeTraces } from '../src/main/agent/acp-trace.ts'
@@ -1022,6 +1026,9 @@ async function probeAppTools(): Promise<Observation> {
               typeof c.tool === 'string' && c.tool.endsWith(TOOL) ? [c.status] : []
             )
           })[0],
+          // Outils nommés par `execute` à sa fin (fiche 293) : lus par l'adaptateur de l'app, comme
+          // ceux d'un serveur MCP tiers (Figma) ; ici, le faux serveur « bobine ».
+          calledTools: seen.updates.flatMap((u) => executeCalledTools(u)?.tools ?? []),
           imageInContent: seen.updates.some(
             (u) =>
               u.sessionUpdate === 'tool_call_update' &&

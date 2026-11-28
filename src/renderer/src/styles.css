@@ -1125,6 +1125,11 @@ details.tool > summary.tool-row:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Outils appelés par du code (fiche 293) : le serveur en retrait, l'outil en clair. */
+.tool-called-server,
+.tool-called-more {
+  color: var(--muted);
+}
 
 /*
  * Libellé d'un outil de fichier (fiche 203, correctif de recette) : « Création de » et le texte

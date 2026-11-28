@@ -90,6 +90,30 @@ describe('sonde de suivi d’OpenCode (fiche 078)', () => {
     expect(watchNotes(lost).some((n) => n.includes('fiche 079'))).toBe(true)
   })
 
+  it('outils nommés par execute (fiche 293) : rien tant que la sonde n’a pas tourné ; puis « serveur.outil » exigé', () => {
+    const check = (observations: typeof recorded.observations) =>
+      contractChecks(observations).find((c) => c.label.includes('fiche 293'))
+    // Pas encore relevé avec un modèle : aucune vérification (ni verte, ni rouge).
+    expect(recorded.observations['outils de l’app']?.['calledTools']).toBeUndefined()
+    expect(check(recorded.observations)).toBeUndefined()
+    const named = structuredClone(recorded.observations)
+    named['outils de l’app'] = {
+      ...named['outils de l’app'],
+      calledTools: [{ server: 'bobine', tool: 'browser_screenshot' }]
+    }
+    expect(check(named)?.ok).toBe(true)
+    // Plus de serveur dans le nom (`browser_screenshot` seul) : contrat rompu.
+    const bare = structuredClone(named)
+    bare['outils de l’app'] = {
+      ...bare['outils de l’app'],
+      calledTools: [{ tool: 'browser_screenshot' }]
+    }
+    expect(check(bare)?.ok).toBe(false)
+    const none = structuredClone(named)
+    none['outils de l’app'] = { ...none['outils de l’app'], calledTools: [] }
+    expect(check(none)?.ok).toBe(false)
+  })
+
   it('erreurs des appels d’execute (fiche 122) : état noté dans toolCalls[] ; absent, contrat rompu', () => {
     const check = (observations: typeof recorded.observations) =>
       contractChecks(observations).find((c) => c.label.includes('fiche 122'))

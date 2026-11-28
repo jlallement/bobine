@@ -40,3 +40,11 @@ instantané (`../__snapshots__/trace-replay.test.ts.snap`).
   `rawInput.todos` en texte à cases, réponse `allow`, fin, `plan`). Le journal ne garde pas les
   demandes d'autorisation : ces lignes sont rebâties d'après ce qu'il montre ; `initialize` et
   `session/new` viennent d'une autre trace du même Bob.
+- **Relevé à la main, hors format de trace** (fiche 293, 2026-11-28, OpenCode 2.3.0 connecté à
+  Figma, Bobine 1.2.0-rc.2) : `opencode-2.3.0/acp-execute-figma.jsonl` — 9 messages
+  `session/update` bruts (un message JSON-RPC par ligne, **sans** l'en-tête ni l'enveloppe
+  `{from, t, msg}` ci-dessus), copiés du panneau « Échanges ACP » : deux cartes `execute` (une
+  recherche d'outils, puis `tools.figma.whoami()`). Assainis par le tech lead (`sessionId`,
+  `toolCallId`, long texte de résultat). Gardé octet pour octet (`.gitattributes` : `-text`,
+  empreinte vérifiée) ; extension `.jsonl` : pas rejoué par `trace-replay.test.ts`, mais par
+  `opencode-called-tools.test.ts`.

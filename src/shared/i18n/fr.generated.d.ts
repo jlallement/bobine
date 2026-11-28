@@ -404,6 +404,14 @@ export type FrResources = {
         readonly fetch: 'Page web'
       }
     }
+    readonly calledTools: {
+      readonly search: 'Cherche parmi les outils de {{server}}'
+      readonly searchAny: 'Cherche parmi les outils'
+      readonly more: '+{{n}}'
+      readonly calls_one: '{{count}} appel'
+      readonly calls_many: '{{count}} appels'
+      readonly calls_other: '{{count}} appels'
+    }
     readonly untitled: 'Outil'
     readonly todos: {
       readonly done: 'Faite :'
@@ -3399,6 +3407,10 @@ export type FrResources = {
     readonly executeErrors: {
       readonly label: 'Erreurs des outils appelés par du code'
       readonly detail: 'Quand {{agent}} appelle des outils par son outil `execute`, il dit la carte finie même si l’un d’eux a échoué ; l’app lit l’erreur qu’il note à part (`rawOutput.metadata.toolCalls`) et met la carte en échec.'
+    }
+    readonly executeToolNames: {
+      readonly label: 'Nom des outils appelés par du code'
+      readonly detail: 'Quand {{agent}} appelle des outils par son outil `execute`, la carte ne dit que « execute » ; à sa fin, l’app lit les outils qu’il nomme (`rawOutput.metadata.toolCalls[].tool`) et titre la carte d’après eux (« figma · whoami »).'
     }
     readonly agentLog: {
       readonly label: 'Journal de l’agent'

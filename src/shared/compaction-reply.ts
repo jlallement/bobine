@@ -44,3 +44,18 @@ export function compactionReply(state: TranscriptState, stopReason: StopReason):
   // n'a rien résumé.
   return card.status === 'completed' ? withCompactionEstimate(replaced, user.id) : replaced
 }
+
+/**
+ * Carte de compaction de cet identifiant dans le fil (la dernière), ou -1. Sortie de
+ * `transcript.ts` (taille bornée, fiche 089).
+ */
+export function findCompaction(items: TranscriptItem[], compactionId: string): number {
+  return items.findLastIndex(
+    (item) => item.kind === 'compaction' && item.compactionId === compactionId
+  )
+}
+
+/** Texte de blocs de contenu (les autres types sont signalés entre crochets). */
+export function blocksText(blocks: { type: string; text?: string }[]): string {
+  return blocks.map((b) => (b.type === 'text' ? (b.text ?? '') : `[${b.type}]`)).join('')
+}

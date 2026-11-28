@@ -10,6 +10,20 @@ import { childSessionOf, LOGIN_METHOD } from './opencode-contract.ts'
 import { openCodeSubagentOf as subagentOf } from './opencode-subagents.ts'
 import type { ContractCheck, Observation, Observations } from './probe-report.ts'
 
+/**
+ * L'adaptateur de l'app a-t-il lu, dans la fin d'une carte `execute`, un outil du serveur MCP
+ * `server` (fiche 293) ? Le nom relevé est `<serveur>.<outil>` (`figma.whoami`, 2.3.0).
+ */
+export function namesServerTool(calledTools: unknown, server: string): boolean {
+  return (
+    Array.isArray(calledTools) &&
+    calledTools.some((tool: unknown) => {
+      const t = tool as { server?: unknown; tool?: unknown } | null
+      return t?.server === server && typeof t.tool === 'string' && t.tool.length > 0
+    })
+  )
+}
+
 export {
   diffObservations,
   stablePaths,
@@ -269,6 +283,16 @@ export function contractChecks(observations: Observations): ContractCheck[] {
             label:
               'erreurs des outils de l’app appelés par execute lisibles (rawOutput.metadata.toolCalls[].status, fiche 122)',
             ok: appTools['toolCallsStatus'] === 'completed'
+          }
+        ]
+      : []),
+    // Plus récent que la sonde (fiche 293) : rien tant qu'il n'a pas tourné avec un modèle.
+    ...(appTools['via'] === 'code' && appTools['calledTools'] !== undefined
+      ? [
+          {
+            label:
+              'outils d’un serveur MCP appelés par execute nommés « <serveur>.<outil> » (rawOutput.metadata.toolCalls[].tool, fiche 293)',
+            ok: namesServerTool(appTools['calledTools'], 'bobine')
           }
         ]
       : []),

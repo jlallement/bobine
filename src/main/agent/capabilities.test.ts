@@ -113,6 +113,7 @@ describe('capacités des agents (fiche 054)', () => {
       'model-retry',
       'model-refused',
       'execute-errors',
+      'execute-tool-names',
       'child-model',
       'writes-without-asking',
       'hidden-empty-sessions',
