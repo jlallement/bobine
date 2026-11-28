@@ -733,9 +733,15 @@ button.main-title-origin:hover {
 }
 
 .column {
+  /* Gouttière de la colonne, et débord de la zone de saisie dans cette gouttière (fiche 294) :
+     la marge intérieure gauche du cadre (16 px) plus son bord (1 px), pour que le texte tapé
+     occupe exactement la colonne du fil. Borné par la gouttière : le cadre garde au moins 7 px
+     jusqu'au bord de la colonne, donc de la zone quand la colonne la remplit. */
+  --column-gutter: 24px;
+  --composer-overhang: min(17px, calc(var(--column-gutter) - 7px));
   max-width: var(--column-width, 740px);
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 var(--column-gutter);
   /* Filet de sécurité (fiche 173) : rien ne fait défiler le fil de côté, même ce qui déborderait
      encore. `clip` et non `hidden` : pas de défilement caché (scrollIntoView, sélection), et le
      `position: sticky` des enfants continue de marcher. */
@@ -2742,6 +2748,20 @@ a.btn {
   padding: 0 0 18px;
 }
 
+/*
+ * Alignée sur le fil (fiche 294) : le bloc de la saisie (cadre, menus, ligne du dossier) déborde de
+ * la colonne de chaque côté, si bien que le texte tapé commence là où commence le texte de l'agent
+ * et s'arrête au bord des bulles. La colonne coupe ce qui la dépasse (fiche 173) : sa marge de
+ * coupe laisse passer l'ombre et le halo du cadre (flou de 16 px), qui ne la font jamais défiler.
+ */
+.column .composer-dock {
+  margin-inline: calc(-1 * var(--composer-overhang));
+}
+
+.column:has(.composer-dock) {
+  overflow-clip-margin: 16px;
+}
+
 .composer {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -2772,7 +2792,9 @@ a.btn {
   background: transparent;
   color: var(--text);
   font: inherit;
-  font-size: 15px;
+  /* Taille et interligne de la bulle envoyée (`.msg-user`, fiche 294) : suit le réglage de taille
+     de la conversation et le mode présentation ; l'invite aussi. */
+  font-size: calc(var(--conv-size) - 1px);
   line-height: 1.5;
   max-height: 240px;
   padding: 2px 6px 8px 0;

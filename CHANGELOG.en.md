@@ -2,6 +2,15 @@
 
 What changes for you, version by version. Shown in Settings › What’s new.
 
+## Next version
+
+### Improved
+
+- **The message box lines up with the conversation**: what you type starts where the agent’s
+  reply starts and ends at the edge of your messages; the frame reaches slightly past them on
+  each side. Typed text is the size of your sent messages and follows the “Response size”
+  setting (Settings › Appearance) and presentation mode.
+
 ## 1.2.0-rc.2 — November 27, 2026
 
 ### New

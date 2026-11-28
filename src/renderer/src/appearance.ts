@@ -7,6 +7,7 @@
 import type { Preferences } from '@shared/preferences'
 import { PRESENTATION_FONT_BOOST } from '@shared/presentation'
 import { accentOf, paletteFor } from '@shared/themes'
+import { APPEARANCE_APPLIED } from './appearance-event'
 import './terminal-symbols.css'
 
 /** Ce qu'il faut pour l'apparence : les préférences (la vue des réglages convient). */
@@ -143,6 +144,8 @@ export function applyAppearance(source: AppearanceSource): void {
     watching = true
     darkQuery()?.addEventListener('change', applyPalette)
   }
+  // Taille du texte peut-être changée : la zone de saisie recalcule sa hauteur (fiche 294).
+  window.dispatchEvent(new Event(APPEARANCE_APPLIED))
 }
 
 /** Mode présentation activé ou coupé : reprend la taille du texte du fil. */

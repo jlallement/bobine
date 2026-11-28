@@ -2,6 +2,15 @@
 
 Ce qui change pour l’utilisateur, version par version. Affiché dans Réglages › Nouveautés.
 
+## Prochaine version
+
+### Amélioré
+
+- **La zone de saisie s’aligne sur la conversation** : ce que vous tapez commence là où commence
+  la réponse de l’agent et s’arrête au bord de vos messages ; le cadre déborde un peu de chaque
+  côté. Le texte tapé a la taille de vos messages envoyés et suit le réglage « Taille des réponses »
+  (Réglages › Apparence) et le mode présentation.
+
 ## 1.2.0-rc.2 — 27 novembre 2026
 
 ### Nouveau

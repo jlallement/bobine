@@ -1794,6 +1794,24 @@ export const SUITES = [
     sources: []
   },
   {
+    // Fiche 294 : texte tapé aligné sur la colonne du fil, à la taille de la bulle envoyée.
+    name: 'saisie-alignee',
+    file: 'saisie-alignee.mjs',
+    run: 'saisieAligneeSuite',
+    themes: BOTH,
+    // Ombre du cadre et halo du focus mesurés en sombre aussi (ombre plus marquée).
+    dark: true,
+    sources: [
+      `${R}styles.css`,
+      `${R}thread-extras.css`,
+      `${R}useTextareaLayout.ts`,
+      `${R}appearance-event.ts`,
+      `${R}appearance.ts`,
+      `${C}composer/Composer.tsx`,
+      `${C}thread/ThreadDock.tsx`
+    ]
+  },
+  {
     // Fiche 145 (D9) : Inter et JetBrains Mono livrées, ligatures du code (Réglages › Apparence).
     name: 'polices',
     file: 'polices.mjs',

@@ -314,8 +314,9 @@
 /* Repère et « ↓ N nouveaux » ensemble : la pastille passe à droite, la ligne reste lisible. */
 .thread-dock:has(.work-cue) .scroll-to-bottom {
   left: auto;
-  /* Aligné sur le bord droit de la saisie (marge de `.column`). */
-  right: 24px;
+  /* Aligné sur le bord droit de la saisie : la gouttière de `.column`, moins le débord du cadre
+     (fiche 294). */
+  right: calc(var(--column-gutter) - var(--composer-overhang));
   margin-left: 0;
   transform: none;
 }

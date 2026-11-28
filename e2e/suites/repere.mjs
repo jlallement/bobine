@@ -205,10 +205,11 @@ async function run(ui, turnLock) {
   await ui.waitFor(`!!${cue} && /\\d/.test(${ui.$('scroll-to-bottom')}?.innerText ?? '')`, 30000)
   const both = await ui.ev(`(() => {
     const pill = ${ui.$('scroll-to-bottom')}.getBoundingClientRect()
-    const dock = document.querySelector('.thread-dock').getBoundingClientRect()
+    // Alignée sur le bord droit du cadre de la saisie (qui déborde de la colonne, fiche 294).
+    const frame = document.querySelector('.thread-dock .composer').getBoundingClientRect()
     const line = ${cue}.querySelector('.work-cue-in').getBoundingClientRect()
     return {
-      right: Math.round(dock.right - 24 - pill.right),
+      right: Math.round(frame.right - pill.right),
       clear: pill.bottom <= line.top || pill.left >= line.right
     }
   })()`)
