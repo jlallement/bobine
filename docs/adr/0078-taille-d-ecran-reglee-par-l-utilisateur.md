@@ -1,8 +1,9 @@
 # ADR-0078 — Navigateur intégré : taille d'écran et thème réglés aussi par l'utilisateur
 
-- **Statut** : proposé
+- **Statut** : accepté (2026-11-28 : « Oui, accepté », Jérôme, après la maquette validée de la
+  fiche 295)
 - **Date** : 2026-11-28
-- **Remplace, une fois accepté** : dans l'ADR-0026, la phrase « Pas de menu de tailles pour
+- **Remplace en partie** : dans l'ADR-0026, la phrase « Pas de menu de tailles pour
   l'utilisateur (décision de Jérôme, 23/10) » et l'alternative écartée « Menu de tailles d'écran
   (Mobile, Tablette…) pour l'utilisateur ». Le reste de l'ADR-0026 est inchangé (vue native, taille
   par le CDP réduite pour tenir, pixels CSS pour l'agent, annotation).

@@ -1,6 +1,8 @@
 # ADR-0026 — Navigateur intégré : on garde la vue native ; taille et annotation passent par le CDP
 
-- **Statut** : accepté
+- **Statut** : accepté — « Pas de menu de tailles pour l'utilisateur » et l'alternative écartée
+  « Menu de tailles d'écran » remplacés en partie par ADR-0078 (taille d'écran et thème réglés aussi
+  par l'utilisateur, 2026-11-28)
 - **Date** : 2026-10-23
 - **Complète** : ADR-0006 (navigateur piloté par le protocole DevTools)
 

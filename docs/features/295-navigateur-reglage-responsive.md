@@ -1,6 +1,7 @@
 # 295 — Navigateur intégré : taille d'écran et thème réglés par l'utilisateur
 
-- **Statut** : maquette arbitrée par Jérôme le 2026-11-28 ; ADR-0078 proposé ; rien de codé (1.3)
+- **Statut** : en cours (1.3) — maquette validée et ADR-0078 accepté par Jérôme le 2026-11-28 ;
+  lots 0 (sonde) et 1 (moteur, main) en cours
 - **Dépend de** : 007 (navigateur intégré), 031 (`browser_resize`, CDP, ADR-0006), 129 (page
   réduite pour tenir, fin de tour, ADR-0026), 072 et 249 (autorisations du navigateur), 132 et 146
   (Annoter), 269 (avertissement de certificat)
@@ -10,7 +11,8 @@
 - **Maquette** : [`docs/maquettes/295-navigateur-responsive.html`](../maquettes/295-navigateur-responsive.html),
   captures dans `docs/maquettes/295/` (`NN-…-clair.png`, et `-sombre.png` pour les planches 2, 3,
   4 et 5 ; `avant-…-clair` et `avant-…-sombre` : l'app réelle, 1.2, suite e2e `browser-view`).
-- **ADR** : [ADR-0078](../adr/0078-taille-d-ecran-reglee-par-l-utilisateur.md) (proposé).
+- **ADR** : [ADR-0078](../adr/0078-taille-d-ecran-reglee-par-l-utilisateur.md) (accepté le 2026-11-28,
+  « Oui, accepté ») ; statut de l'ADR-0026 : « remplacé en partie par ADR-0078 ».
 
 ## Pourquoi
 
@@ -393,3 +395,8 @@ Maquette et quatre réponses arbitrées le 2026-11-28 ; rien n'est codé avant l
   de la fiche Apple. Pour iPad Pro, la liste n'a pas d'entrée « iPad Pro » : on garde `iPad Pro 13`
   (1032 × 1376), la seule entrée de ce nom. Bureau reste conventionnel. Captures du menu et du
   panneau agrandi refaites.
+- 2026-11-28 : Jérôme valide la maquette (« Oui, lance le code ») et accepte l'ADR-0078 (« Oui,
+  accepté »). ADR-0078 passé à « accepté » ; statut de l'ADR-0026 : « accepté — « Pas de menu de
+  tailles pour l'utilisateur » et l'alternative écartée « Menu de tailles d'écran » remplacés en
+  partie par ADR-0078 » (texte inchangé) ; même mention dans le statut de la fiche 129. Fiche en
+  cours : lots 0 et 1.

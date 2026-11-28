@@ -1,6 +1,7 @@
 # 129 — Navigateur : défilement, zoom, la page suit le panneau, `browser_resize` de l'agent
 
-- **Statut** : fait (essai à la vraie souris à faire par la session de coordination)
+- **Statut** : fait (essai à la vraie souris à faire par la session de coordination) ; « Pas de menu
+  de tailles d'écran » remplacé le 2026-11-28 par la fiche 295 (ADR-0078)
 - **Dépend de** : 007 (navigateur intégré), 031 (pilotage par le CDP, ADR-0006), 072 (popups),
   082 (panneau agrandi), 094 (navigateur et images)
 - **Agents** : les deux (et tout agent ACP) : tout passe par Electron et le CDP, l'agent ne voit
